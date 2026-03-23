@@ -56,3 +56,6 @@ Thumbs.db
 
 # Kotlin
 *.kotlin_module
+
+CLAUDE.md
+.devloop
