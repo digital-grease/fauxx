@@ -1,0 +1,73 @@
+package com.fauxx.engine.modules
+
+import android.util.Log
+import com.fauxx.data.crawllist.CrawlListManager
+import com.fauxx.data.db.ActionLogEntity
+import com.fauxx.data.model.ActionType
+import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.engine.webview.PhantomWebViewPool
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.random.Random
+
+private const val TAG = "CookieSaturationModule"
+
+/**
+ * Visits URLs from [CrawlListManager] in an isolated background WebView to accumulate
+ * diverse tracker cookies. URL selection is weighted by category from ActionDispatcher.
+ *
+ * Respects per-domain rate limits enforced by CrawlListManager.
+ */
+@Singleton
+class CookieSaturationModule @Inject constructor(
+    private val crawlListManager: CrawlListManager,
+    private val webViewPool: PhantomWebViewPool,
+    private val profileRepo: PoisonProfileRepository
+) : Module {
+
+    override suspend fun start() {
+        webViewPool.initialize()
+    }
+
+    override suspend fun stop() {}
+
+    override fun isEnabled(): Boolean = profileRepo.getProfile().cookieSaturationEnabled
+
+    override suspend fun onAction(category: CategoryPool): ActionLogEntity {
+        val entry = crawlListManager.nextUrl(category)
+            ?: crawlListManager.nextUrl(null)
+
+        if (entry == null) {
+            return ActionLogEntity(
+                actionType = ActionType.COOKIE_HARVEST,
+                category = category,
+                detail = "No eligible URL available",
+                success = false
+            )
+        }
+
+        val dwellMs = Random.nextLong(2_000L, 10_000L) // 2-10 second dwell
+
+        withContext(Dispatchers.Main) {
+            val webView = webViewPool.acquire()
+            try {
+                webView.loadUrl(entry.url)
+                delay(dwellMs)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to load ${entry.url}: ${e.message}")
+            } finally {
+                webViewPool.release(webView)
+            }
+        }
+
+        return ActionLogEntity(
+            actionType = ActionType.COOKIE_HARVEST,
+            category = category,
+            detail = entry.url
+        )
+    }
+}

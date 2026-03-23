@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fauxx</string>
+    <string name="notification_channel_name">Phantom Engine</string>
+    <string name="notification_channel_desc">Background privacy protection activity</string>
+    <string name="notification_title">Fauxx Active</string>
+    <string name="notification_text">Generating synthetic activity…</string>
+</resources>

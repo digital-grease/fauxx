@@ -1,0 +1,108 @@
+[
+  {
+    "ageRange": "AGE_18_24",
+    "close": ["GAMING", "ACADEMIC", "MUSIC", "ENTERTAINMENT", "FITNESS"],
+    "distant": ["RETIREMENT", "REAL_ESTATE", "LEGAL", "FINANCE"]
+  },
+  {
+    "ageRange": "AGE_18_24",
+    "profession": "STUDENT",
+    "close": ["ACADEMIC", "GAMING", "ENTERTAINMENT", "MUSIC"],
+    "distant": ["RETIREMENT", "PARENTING", "AGRICULTURE", "REAL_ESTATE"]
+  },
+  {
+    "ageRange": "AGE_25_34",
+    "close": ["FITNESS", "TRAVEL", "TECHNOLOGY", "ENTERTAINMENT", "FOOD"],
+    "distant": ["RETIREMENT", "AGRICULTURE"]
+  },
+  {
+    "ageRange": "AGE_35_44",
+    "close": ["PARENTING", "REAL_ESTATE", "FINANCE", "HOME_IMPROVEMENT"],
+    "distant": ["GAMING", "ACADEMIC"]
+  },
+  {
+    "ageRange": "AGE_45_54",
+    "close": ["FINANCE", "HOME_IMPROVEMENT", "TRAVEL", "HEALTH"],
+    "distant": ["GAMING", "ACADEMIC", "MUSIC"]
+  },
+  {
+    "ageRange": "AGE_55_64",
+    "close": ["RETIREMENT", "FINANCE", "MEDICAL", "TRAVEL"],
+    "distant": ["GAMING", "ACADEMIC", "MUSIC", "FITNESS"]
+  },
+  {
+    "ageRange": "AGE_65_PLUS",
+    "close": ["RETIREMENT", "MEDICAL", "COOKING", "PETS", "TRAVEL"],
+    "distant": ["GAMING", "ACADEMIC", "MUSIC", "TECHNOLOGY", "FITNESS"]
+  },
+  {
+    "profession": "STUDENT",
+    "close": ["ACADEMIC", "GAMING", "ENTERTAINMENT"],
+    "distant": ["RETIREMENT", "REAL_ESTATE", "AGRICULTURE"]
+  },
+  {
+    "profession": "TEACHER",
+    "close": ["ACADEMIC", "PARENTING", "COOKING"],
+    "distant": ["GAMING", "AGRICULTURE"]
+  },
+  {
+    "profession": "ENGINEER",
+    "close": ["TECHNOLOGY", "SCIENCE", "GAMING"],
+    "distant": ["FASHION", "BEAUTY", "AGRICULTURE"]
+  },
+  {
+    "profession": "HEALTHCARE",
+    "close": ["MEDICAL", "FITNESS", "SCIENCE"],
+    "distant": ["GAMING", "AGRICULTURE", "AUTOMOTIVE"]
+  },
+  {
+    "profession": "LEGAL",
+    "close": ["LEGAL", "FINANCE", "REAL_ESTATE"],
+    "distant": ["GAMING", "AGRICULTURE", "BEAUTY"]
+  },
+  {
+    "profession": "FINANCE_PROF",
+    "close": ["FINANCE", "REAL_ESTATE", "BUSINESS"],
+    "distant": ["GAMING", "AGRICULTURE", "BEAUTY", "MUSIC"]
+  },
+  {
+    "profession": "RETAIL",
+    "close": ["FASHION", "BEAUTY", "FOOD"],
+    "distant": ["TECHNOLOGY", "SCIENCE", "LEGAL"]
+  },
+  {
+    "profession": "TRADES",
+    "close": ["HOME_IMPROVEMENT", "AUTOMOTIVE", "AGRICULTURE"],
+    "distant": ["ACADEMIC", "LEGAL", "FASHION"]
+  },
+  {
+    "profession": "CREATIVE",
+    "close": ["MUSIC", "ENTERTAINMENT", "FASHION", "BEAUTY"],
+    "distant": ["FINANCE", "LEGAL", "AGRICULTURE"]
+  },
+  {
+    "profession": "RETIRED",
+    "close": ["RETIREMENT", "MEDICAL", "COOKING", "PETS"],
+    "distant": ["GAMING", "ACADEMIC", "MUSIC", "TECHNOLOGY"]
+  },
+  {
+    "profession": "HOMEMAKER",
+    "close": ["COOKING", "HOME_IMPROVEMENT", "PARENTING", "PETS"],
+    "distant": ["GAMING", "TECHNOLOGY", "LEGAL"]
+  },
+  {
+    "region": "US_MIDWEST",
+    "close": ["AGRICULTURE", "AUTOMOTIVE", "SPORTS"],
+    "distant": ["FASHION", "BEAUTY"]
+  },
+  {
+    "region": "US_NORTHEAST",
+    "close": ["FINANCE", "LEGAL", "ACADEMIC"],
+    "distant": ["AGRICULTURE", "AUTOMOTIVE"]
+  },
+  {
+    "region": "US_WEST",
+    "close": ["TECHNOLOGY", "FITNESS", "ENTERTAINMENT"],
+    "distant": ["AGRICULTURE", "RETIREMENT"]
+  }
+]

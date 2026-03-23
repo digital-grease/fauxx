@@ -1,0 +1,107 @@
+[
+  {
+    "archetype": "rural_retiree",
+    "ageRange": "65+",
+    "interests": ["AGRICULTURE", "COOKING", "PETS"],
+    "region": "US_MIDWEST",
+    "profession": "Retired"
+  },
+  {
+    "archetype": "urban_college_student",
+    "ageRange": "18-24",
+    "interests": ["ACADEMIC", "GAMING", "MUSIC"],
+    "region": "US_NORTHEAST",
+    "profession": "Student"
+  },
+  {
+    "archetype": "suburban_parent",
+    "ageRange": "35-44",
+    "interests": ["PARENTING", "HOME_IMPROVEMENT", "COOKING"],
+    "region": "US_SOUTHEAST",
+    "profession": "Professional"
+  },
+  {
+    "archetype": "tech_worker",
+    "ageRange": "25-34",
+    "interests": ["TECHNOLOGY", "GAMING", "FITNESS"],
+    "region": "US_WEST",
+    "profession": "Engineer"
+  },
+  {
+    "archetype": "fitness_enthusiast",
+    "ageRange": "25-34",
+    "interests": ["FITNESS", "SPORTS", "COOKING"],
+    "region": "US_SOUTHWEST",
+    "profession": "Healthcare Worker"
+  },
+  {
+    "archetype": "fashion_blogger",
+    "ageRange": "18-24",
+    "interests": ["FASHION", "BEAUTY", "TRAVEL"],
+    "region": "US_WEST",
+    "profession": "Creative"
+  },
+  {
+    "archetype": "financial_advisor",
+    "ageRange": "45-54",
+    "interests": ["FINANCE", "REAL_ESTATE", "BUSINESS"],
+    "region": "US_NORTHEAST",
+    "profession": "Finance Professional"
+  },
+  {
+    "archetype": "home_gardener",
+    "ageRange": "55-64",
+    "interests": ["HOME_IMPROVEMENT", "COOKING", "PETS"],
+    "region": "US_MIDWEST",
+    "profession": "Homemaker"
+  },
+  {
+    "archetype": "travel_blogger",
+    "ageRange": "25-34",
+    "interests": ["TRAVEL", "FOOD", "ENTERTAINMENT"],
+    "region": "US_WEST",
+    "profession": "Creative"
+  },
+  {
+    "archetype": "auto_mechanic",
+    "ageRange": "35-44",
+    "interests": ["AUTOMOTIVE", "SPORTS", "HOME_IMPROVEMENT"],
+    "region": "US_MIDWEST",
+    "profession": "Trades Worker"
+  },
+  {
+    "archetype": "legal_professional",
+    "ageRange": "35-44",
+    "interests": ["LEGAL", "FINANCE", "REAL_ESTATE"],
+    "region": "US_NORTHEAST",
+    "profession": "Legal"
+  },
+  {
+    "archetype": "music_enthusiast",
+    "ageRange": "18-24",
+    "interests": ["MUSIC", "ENTERTAINMENT", "FITNESS"],
+    "region": "US_WEST",
+    "profession": "Creative"
+  },
+  {
+    "archetype": "science_teacher",
+    "ageRange": "35-44",
+    "interests": ["SCIENCE", "ACADEMIC", "COOKING"],
+    "region": "US_SOUTHEAST",
+    "profession": "Teacher"
+  },
+  {
+    "archetype": "small_farmer",
+    "ageRange": "45-54",
+    "interests": ["AGRICULTURE", "HOME_IMPROVEMENT", "COOKING"],
+    "region": "US_MIDWEST",
+    "profession": "Trades Worker"
+  },
+  {
+    "archetype": "gaming_streamer",
+    "ageRange": "18-24",
+    "interests": ["GAMING", "TECHNOLOGY", "ENTERTAINMENT"],
+    "region": "US_WEST",
+    "profession": "Creative"
+  }
+]

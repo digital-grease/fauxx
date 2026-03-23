@@ -1,0 +1,289 @@
+package com.fauxx.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedFilterChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.targeting.layer1.AgeRange
+import com.fauxx.targeting.layer1.Gender
+import com.fauxx.targeting.layer1.Profession
+import com.fauxx.targeting.layer1.Region
+import com.fauxx.ui.viewmodels.OnboardingViewModel
+
+/**
+ * Optional first-launch demographic self-report flow.
+ * Screens: Welcome → Age Range → Gender → Interests → Profession → Region → Done.
+ *
+ * Every screen has a "Skip" button visually equal in prominence to "Next".
+ * All fields are optional. The app functions identically with Layer 0 uniform weights
+ * if the user skips every question.
+ */
+@Composable
+fun OnboardingScreen(
+    onFinish: () -> Unit,
+    viewModel: OnboardingViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Content per step
+        when (uiState.step) {
+            0 -> WelcomeStep()
+            1 -> AgeRangeStep(
+                selected = uiState.ageRange,
+                onSelect = { viewModel.setAgeRange(it) }
+            )
+            2 -> GenderStep(
+                selected = uiState.gender,
+                onSelect = { viewModel.setGender(it) }
+            )
+            3 -> InterestsStep(
+                selected = uiState.interests,
+                onToggle = { viewModel.toggleInterest(it) }
+            )
+            4 -> ProfessionStep(
+                selected = uiState.profession,
+                onSelect = { viewModel.setProfession(it) }
+            )
+            5 -> RegionStep(
+                selected = uiState.region,
+                onSelect = { viewModel.setRegion(it) }
+            )
+            else -> DoneStep()
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        // Navigation buttons — Skip and Next are equal prominence
+        val isLastStep = uiState.step >= 5
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = {
+                    if (isLastStep) {
+                        viewModel.saveAndFinish()
+                        onFinish()
+                    } else {
+                        viewModel.skip()
+                        if (viewModel.uiState.value.step > 5) {
+                            viewModel.saveAndFinish()
+                            onFinish()
+                        }
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(if (isLastStep) "Skip All" else "Skip")
+            }
+
+            Button(
+                onClick = {
+                    if (isLastStep) {
+                        viewModel.saveAndFinish()
+                        onFinish()
+                    } else {
+                        viewModel.next()
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(if (isLastStep) "Done" else "Next")
+            }
+        }
+    }
+}
+
+@Composable
+private fun WelcomeStep() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "FAUXX",
+            style = MaterialTheme.typography.headlineLarge,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.height(24.dp))
+        Text(
+            text = "Optional: Tell us about yourself",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "This data stays on your device and helps us generate noise that's " +
+                "different from your real profile.\n\nSkip if you prefer uniform noise.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun AgeRangeStep(selected: AgeRange?, onSelect: (AgeRange) -> Unit) {
+    StepContainer(
+        title = "What's your age range?",
+        subtitle = "Helps us avoid generating activity that matches your demographic"
+    ) {
+        AgeRange.values().forEach { age ->
+            ElevatedFilterChip(
+                selected = selected == age,
+                onClick = { onSelect(age) },
+                label = { Text(age.name.replace("AGE_", "").replace("_", "–")) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun GenderStep(selected: Gender?, onSelect: (Gender) -> Unit) {
+    StepContainer(
+        title = "Gender",
+        subtitle = "Optional — used only to bias noise away from your demographic"
+    ) {
+        Gender.values().forEach { gender ->
+            ElevatedFilterChip(
+                selected = selected == gender,
+                onClick = { onSelect(gender) },
+                label = {
+                    Text(when (gender) {
+                        Gender.MALE -> "Male"
+                        Gender.FEMALE -> "Female"
+                        Gender.PREFER_NOT_TO_SAY -> "Prefer not to say"
+                    })
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun InterestsStep(selected: Set<CategoryPool>, onToggle: (CategoryPool) -> Unit) {
+    Column {
+        Text(
+            text = "Your main interests",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "We'll generate more noise in OTHER categories",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(16.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CategoryPool.values().forEach { cat ->
+                ElevatedFilterChip(
+                    selected = cat in selected,
+                    onClick = { onToggle(cat) },
+                    label = { Text(cat.name.lowercase().replace("_", " ")) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfessionStep(selected: Profession?, onSelect: (Profession) -> Unit) {
+    StepContainer(
+        title = "Profession",
+        subtitle = "Used to compute demographic distance only"
+    ) {
+        Profession.values().forEach { prof ->
+            ElevatedFilterChip(
+                selected = selected == prof,
+                onClick = { onSelect(prof) },
+                label = { Text(prof.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RegionStep(selected: Region?, onSelect: (Region) -> Unit) {
+    StepContainer(
+        title = "Where are you located?",
+        subtitle = "Used to spoof location in regions different from yours"
+    ) {
+        Region.values().forEach { region ->
+            ElevatedFilterChip(
+                selected = selected == region,
+                onClick = { onSelect(region) },
+                label = { Text(region.name.replace("_", " ")) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun DoneStep() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "You're set!",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "Fauxx will use your profile to generate noise that's maximally different " +
+                "from your real behavioral signal.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun StepContainer(
+    title: String,
+    subtitle: String,
+    content: @Composable () -> Unit
+) {
+    Column {
+        Text(text = title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+        Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(16.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            content()
+        }
+    }
+}
