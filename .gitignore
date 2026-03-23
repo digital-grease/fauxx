@@ -1,12 +1,58 @@
-*.iml
-.gradle
-/local.properties
-/.idea
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+release/
+app/build/
+/build/
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# Local configuration
 local.properties
+
+# Android Studio / IntelliJ
+*.iml
+/.idea/
+.navigation/
+captures/
+*.iws
+*.ipr
+
+# External native build
+.externalNativeBuild/
+.cxx/
+
+# Keystore / signing
 *.jks
 *.keystore
+signing.properties
+keystore.properties
+
+# Google Services
+google-services.json
+
+# Log files
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+*~
+
+# Kotlin
+*.kotlin_module
