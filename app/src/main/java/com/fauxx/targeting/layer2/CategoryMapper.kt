@@ -5,6 +5,7 @@ import android.util.Log
 import com.fauxx.data.querybank.CategoryPool
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,7 +18,7 @@ private const val TAG = "CategoryMapper"
  */
 @Singleton
 class CategoryMapper @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     /** Raw platform string → CategoryPool name, loaded from assets. */
     private val exactMap: Map<String, String> by lazy { loadExactMap() }

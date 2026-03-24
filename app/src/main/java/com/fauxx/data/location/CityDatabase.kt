@@ -1,6 +1,7 @@
 package com.fauxx.data.location
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -15,7 +16,7 @@ private const val TAG = "CityDatabase"
  */
 @Singleton
 class CityDatabase @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     val cities: List<CityCoord> by lazy { loadCities() }
 

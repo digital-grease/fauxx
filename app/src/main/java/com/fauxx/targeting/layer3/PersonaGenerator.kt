@@ -1,6 +1,7 @@
 package com.fauxx.targeting.layer3
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import android.util.Log
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
@@ -28,7 +29,7 @@ private val NINETY_DAYS_MS = TimeUnit.DAYS.toMillis(90)
  */
 @Singleton
 class PersonaGenerator @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val historyDao: PersonaHistoryDao
 ) {
     private val gson = Gson()

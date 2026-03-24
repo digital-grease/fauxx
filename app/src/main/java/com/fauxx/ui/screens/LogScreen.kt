@@ -18,7 +18,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,7 +49,6 @@ private val DATE_FORMAT = SimpleDateFormat("HH:mm:ss", Locale.US)
  * Scrollable, filterable audit log of all synthetic actions.
  * Supports CSV/JSON export via system share sheet.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogScreen(
     viewModel: LogViewModel = hiltViewModel()

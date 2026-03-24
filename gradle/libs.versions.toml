@@ -1,16 +1,15 @@
 [versions]
-agp = "8.2.2"
-kotlin = "1.9.22"
-ksp = "1.9.22-1.0.17"
-coreKtx = "1.12.0"
-lifecycle = "2.7.0"
-activityCompose = "1.8.2"
-composeBom = "2024.02.00"
-compose = "1.6.2"
-material3 = "1.2.0"
+agp = "8.7.3"
+kotlin = "2.1.10"
+ksp = "2.1.10-1.0.31"
+coreKtx = "1.13.1"
+lifecycle = "2.8.7"
+activityCompose = "1.9.3"
+composeBom = "2024.12.01"
+material3 = "1.3.1"
 navigation = "2.7.7"
 room = "2.6.1"
-hilt = "2.50"
+hilt = "2.54"
 hiltNavCompose = "1.2.0"
 work = "2.9.0"
 hiltWork = "1.2.0"
@@ -71,4 +70,5 @@ hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testi
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

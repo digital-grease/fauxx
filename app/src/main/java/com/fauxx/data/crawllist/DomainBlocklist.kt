@@ -1,6 +1,7 @@
 package com.fauxx.data.crawllist
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -17,7 +18,7 @@ private const val TAG = "DomainBlocklist"
  */
 @Singleton
 class DomainBlocklist @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     private val blockedDomains: Set<String> by lazy { loadBlocklist() }
     private val blockedPatterns: List<Regex> by lazy { loadPatterns() }

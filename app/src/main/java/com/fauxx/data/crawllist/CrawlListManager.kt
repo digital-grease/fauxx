@@ -1,6 +1,7 @@
 package com.fauxx.data.crawllist
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import android.util.Log
 import com.fauxx.data.querybank.CategoryPool
 import com.google.gson.Gson
@@ -23,7 +24,7 @@ private const val MIN_DOMAIN_INTERVAL_MS = 5_000L
  */
 @Singleton
 class CrawlListManager @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val blocklist: DomainBlocklist
 ) {
     private val allUrls: List<CrawlEntry> by lazy { loadUrls() }
