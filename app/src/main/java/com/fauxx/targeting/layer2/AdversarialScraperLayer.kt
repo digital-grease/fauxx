@@ -4,7 +4,8 @@ import com.fauxx.data.querybank.CategoryPool
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,20 +36,20 @@ class AdversarialScraperLayer @Inject constructor(
     private val dao: PlatformProfileDao
 ) {
     private val gson = Gson()
-    private var enabled: Boolean = false
+    private val _enabled = MutableStateFlow(false)
 
-    /** Enable or disable this layer. Emits updated weights immediately. */
+    /** Enable or disable this layer. Emits updated weights immediately via the flow. */
     fun setEnabled(enabled: Boolean) {
-        this.enabled = enabled
+        _enabled.value = enabled
     }
 
     /**
      * Emits the current Layer 2 weight map, recalculating reactively whenever cached
-     * platform profiles change.
+     * platform profiles change OR the enabled flag is toggled.
      */
     fun getWeights(): Flow<Map<CategoryPool, Float>> =
-        dao.observeAll().map { profiles ->
-            if (!enabled || profiles.isEmpty()) return@map neutralWeights()
+        combine(dao.observeAll(), _enabled) { profiles, enabled ->
+            if (!enabled || profiles.isEmpty()) return@combine neutralWeights()
 
             val now = System.currentTimeMillis()
             val confirmedCategories = mutableSetOf<CategoryPool>()
@@ -59,7 +60,7 @@ class AdversarialScraperLayer @Inject constructor(
                 confirmedCategories.addAll(categories)
             }
 
-            if (confirmedCategories.isEmpty()) return@map neutralWeights()
+            if (confirmedCategories.isEmpty()) return@combine neutralWeights()
 
             CategoryPool.values().associateWith { category ->
                 if (confirmedCategories.contains(category)) CONFIRMED_WEIGHT else ABSENT_WEIGHT

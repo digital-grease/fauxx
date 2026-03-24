@@ -104,7 +104,9 @@ class TargetingViewModel @Inject constructor(
             personaHistoryDao.deleteAll()
             targetingEngine.setLayer1Enabled(false)
             targetingEngine.setLayer2Enabled(false)
-            _state.value = _state.value.copy(layer1Enabled = false, layer2Enabled = false)
+            targetingEngine.setLayer3Enabled(false)
+            saveLayerPrefs(layer1 = false, layer2 = false, layer3 = false)
+            _state.value = _state.value.copy(layer1Enabled = false, layer2Enabled = false, layer3Enabled = false)
         }
     }
 
