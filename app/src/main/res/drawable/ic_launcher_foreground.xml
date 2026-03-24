@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple "F" letter mark for Fauxx -->
+    <path
+        android:fillColor="#00E676"
+        android:pathData="M34,28 L34,80 L44,80 L44,58 L66,58 L66,49 L44,49 L44,37 L70,37 L70,28 Z"/>
+</vector>
