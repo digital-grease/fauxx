@@ -30,7 +30,7 @@ import com.fauxx.targeting.layer3.PersonaHistoryEntity
         PersonaHistoryEntity::class
     ],
     version = 1,
-    exportSchema = true
+    exportSchema = false
 )
 @TypeConverters(PhantomTypeConverters::class)
 abstract class PhantomDatabase : RoomDatabase() {

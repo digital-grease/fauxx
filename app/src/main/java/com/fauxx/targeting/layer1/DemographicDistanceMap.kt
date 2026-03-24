@@ -1,6 +1,7 @@
 package com.fauxx.targeting.layer1
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.fauxx.data.querybank.CategoryPool
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -30,7 +31,7 @@ private const val NEUTRAL_WEIGHT = 1.0f
  */
 @Singleton
 class DemographicDistanceMap @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     private val rules: List<DistanceRule> by lazy { loadRules() }
 
