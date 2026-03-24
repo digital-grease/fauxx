@@ -1,7 +1,6 @@
 package com.fauxx.data.location
 
 import android.location.Location
-import android.os.SystemClock
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.cos
@@ -45,6 +44,7 @@ class FakeRouteGenerator @Inject constructor(
         var lng = start.lng
         var bearing = Random.nextDouble(0.0, 360.0)
         val baseTime = System.currentTimeMillis() - count * intervalMs
+        val baseElapsedNanos = System.nanoTime() - count * intervalMs * 1_000_000L
 
         for (i in 0 until count) {
             val (speed, accuracy) = when (mode) {
@@ -85,7 +85,7 @@ class FakeRouteGenerator @Inject constructor(
                 this.accuracy = accuracy
                 this.speed = speed
                 time = baseTime + i * intervalMs
-                elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos()
+                elapsedRealtimeNanos = baseElapsedNanos + i * intervalMs * 1_000_000L
                 provider = "fauxx_mock"
             }
             locations.add(location)
