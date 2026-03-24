@@ -43,7 +43,7 @@ class MarkovQueryGenerator @Inject constructor(
         if (seedWords.isEmpty()) return seedQuery
 
         val result = mutableListOf(seedWords.random())
-        repeat(targetLength - 1) {
+        for (i in 1 until targetLength) {
             val lastWord = result.last().lowercase()
             val next = bigramMap[lastWord]?.randomOrNull() ?: break
             result.add(next)

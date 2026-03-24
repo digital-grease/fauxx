@@ -50,19 +50,17 @@ object PersonaConsistencyRules {
         return false
     }
 
-    companion object {
-        /** Fraction above which two personas are considered too similar. */
-        const val OVERLAP_THRESHOLD = 0.60f
+    /** Fraction above which two personas are considered too similar. */
+    const val OVERLAP_THRESHOLD = 0.60f
 
-        /**
-         * Compute trait overlap between two personas as a fraction of shared interests
-         * out of the union of both interest sets.
-         */
-        fun overlapFraction(a: SyntheticPersona, b: SyntheticPersona): Float {
-            if (a.interests.isEmpty() || b.interests.isEmpty()) return 0f
-            val intersection = a.interests.intersect(b.interests).size.toFloat()
-            val union = a.interests.union(b.interests).size.toFloat()
-            return intersection / union
-        }
+    /**
+     * Compute trait overlap between two personas as a fraction of shared interests
+     * out of the union of both interest sets.
+     */
+    fun overlapFraction(a: SyntheticPersona, b: SyntheticPersona): Float {
+        if (a.interests.isEmpty() || b.interests.isEmpty()) return 0f
+        val intersection = a.interests.intersect(b.interests).size.toFloat()
+        val union = a.interests.union(b.interests).size.toFloat()
+        return intersection / union
     }
 }
