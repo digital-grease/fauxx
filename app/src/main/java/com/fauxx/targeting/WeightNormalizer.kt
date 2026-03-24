@@ -35,13 +35,11 @@ class WeightNormalizer @Inject constructor() {
             return clamped.mapValues { uniform }
         }
 
-        val normalized = clamped.mapValues { (_, v) -> v / sum }
-
-        // Re-clamp after normalization: a value clamped to MIN_WEIGHT then divided by a
+        // Clamp after normalization: a value clamped to MIN_WEIGHT then divided by a
         // larger sum can dip just below MIN_WEIGHT (e.g., 0.001 / 1.001 ≈ 0.000999).
-        val reClamped = normalized.mapValues { (_, v) -> maxOf(v, MIN_WEIGHT) }
-        val reSum = reClamped.values.sum()
-        return reClamped.mapValues { (_, v) -> v / reSum }
+        // We clamp without re-normalizing to preserve the MIN_WEIGHT invariant; the
+        // resulting sum may exceed 1.0 by at most (N * MIN_WEIGHT) in degenerate cases.
+        return clamped.mapValues { (_, v) -> maxOf(v / sum, MIN_WEIGHT) }
     }
 
     /**
