@@ -1,6 +1,7 @@
 package com.fauxx
 
 import com.fauxx.engine.scheduling.PoissonScheduler
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
