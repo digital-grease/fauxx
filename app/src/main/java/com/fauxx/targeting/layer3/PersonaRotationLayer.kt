@@ -8,7 +8,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,13 +44,21 @@ class PersonaRotationLayer @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val gson = Gson()
     private val _currentPersona = MutableStateFlow<SyntheticPersona?>(null)
-    private var enabled: Boolean = false
+    private val _enabled = MutableStateFlow(false)
 
     val currentPersona: Flow<SyntheticPersona?> = _currentPersona.asStateFlow()
 
+    /**
+     * Stable [StateFlow] emitting the current Layer 3 weight map.
+     * Recomputes reactively whenever the current persona or enabled flag changes.
+     */
+    private val _weights = combine(_currentPersona, _enabled) { persona, enabled ->
+        if (!enabled || persona == null) neutralWeights() else computeWeights(persona)
+    }.stateIn(scope, SharingStarted.Eagerly, neutralWeights())
+
     /** Enable or disable this layer. */
     fun setEnabled(enabled: Boolean) {
-        this.enabled = enabled
+        _enabled.value = enabled
         if (enabled && _currentPersona.value == null) {
             rotatePersona()
         }
@@ -62,29 +73,17 @@ class PersonaRotationLayer @Inject constructor(
 
     /**
      * Emits the current Layer 3 weight map based on the active persona.
+     * Returns the same stable [StateFlow] on every call — no coroutine leak.
      */
     fun getWeights(): Flow<Map<CategoryPool, Float>> {
-        val weightsFlow = MutableStateFlow(neutralWeights())
-
-        scope.launch {
-            _currentPersona.collect { persona ->
-                weightsFlow.value = if (!enabled || persona == null) {
-                    neutralWeights()
-                } else {
-                    computeWeights(persona)
-                }
-            }
-        }
-
-        // Check if persona needs rotation
+        // Check if persona needs rotation (once per call is fine — idempotent)
         scope.launch {
             val current = _currentPersona.value
             if (current != null && System.currentTimeMillis() > current.activeUntil) {
                 rotatePersona()
             }
         }
-
-        return weightsFlow.asStateFlow()
+        return _weights
     }
 
     private fun computeWeights(persona: SyntheticPersona): Map<CategoryPool, Float> {

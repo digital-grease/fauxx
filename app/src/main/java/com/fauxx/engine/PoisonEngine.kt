@@ -178,7 +178,10 @@ class PoisonProfileRepository @Inject constructor(
         fingerprintEnabled = prefs.getBoolean("module_fingerprint", true),
         cookieSaturationEnabled = prefs.getBoolean("module_cookie", true),
         appSignalEnabled = prefs.getBoolean("module_appsignal", false),
-        dnsNoiseEnabled = prefs.getBoolean("module_dns", true)
+        dnsNoiseEnabled = prefs.getBoolean("module_dns", true),
+        layer1Enabled = prefs.getBoolean("layer1_enabled", false),
+        layer2Enabled = prefs.getBoolean("layer2_enabled", false),
+        layer3Enabled = prefs.getBoolean("layer3_enabled", true)
     )
 
     fun saveProfile(p: PoisonProfile) = prefs.edit().apply {
@@ -195,5 +198,8 @@ class PoisonProfileRepository @Inject constructor(
         putBoolean("module_cookie", p.cookieSaturationEnabled)
         putBoolean("module_appsignal", p.appSignalEnabled)
         putBoolean("module_dns", p.dnsNoiseEnabled)
+        putBoolean("layer1_enabled", p.layer1Enabled)
+        putBoolean("layer2_enabled", p.layer2Enabled)
+        putBoolean("layer3_enabled", p.layer3Enabled)
     }.apply()
 }

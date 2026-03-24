@@ -33,11 +33,26 @@ object AppModule {
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
 
-        // Derive SQLCipher passphrase from the AndroidKeyStore master key's encoded form
-        val passphrase = masterKey.toString().toByteArray(Charsets.UTF_8)
-            .let { net.sqlcipher.database.SQLiteDatabase.getBytes(
-                android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP).toCharArray()
-            ) }
+        // Retrieve or generate a random SQLCipher passphrase stored in EncryptedSharedPreferences.
+        // This correctly uses AndroidKeyStore-backed encryption for the passphrase at rest,
+        // rather than deriving it from the key alias string (which is not key material).
+        val securePrefs = EncryptedSharedPreferences.create(
+            context,
+            "fauxx_db_key_prefs",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+        val passphraseKey = "db_passphrase"
+        val storedPassphrase = securePrefs.getString(passphraseKey, null)
+            ?: run {
+                val generated = java.security.SecureRandom()
+                    .let { rng -> ByteArray(32).also { rng.nextBytes(it) } }
+                    .let { android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP) }
+                securePrefs.edit().putString(passphraseKey, generated).apply()
+                generated
+            }
+        val passphrase = net.sqlcipher.database.SQLiteDatabase.getBytes(storedPassphrase.toCharArray())
         val factory = SupportFactory(passphrase)
 
         return Room.databaseBuilder(
