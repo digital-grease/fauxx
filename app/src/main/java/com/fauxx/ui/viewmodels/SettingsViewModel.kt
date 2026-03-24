@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.IntensityLevel
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer2.PlatformProfileDao
 import com.fauxx.targeting.layer3.PersonaHistoryDao
@@ -32,7 +33,8 @@ class SettingsViewModel @Inject constructor(
     private val actionLogDao: ActionLogDao,
     private val demographicDao: DemographicProfileDao,
     private val platformDao: PlatformProfileDao,
-    private val personaHistoryDao: PersonaHistoryDao
+    private val personaHistoryDao: PersonaHistoryDao,
+    private val targetingEngine: TargetingEngine
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(loadFromProfile())
@@ -49,6 +51,9 @@ class SettingsViewModel @Inject constructor(
             demographicDao.delete()
             platformDao.deleteAll()
             personaHistoryDao.deleteAll()
+            targetingEngine.setLayer1Enabled(false)
+            targetingEngine.setLayer2Enabled(false)
+            targetingEngine.setLayer3Enabled(false)
             profileRepo.saveProfile(com.fauxx.data.model.PoisonProfile())
             _uiState.value = SettingsUiState()
         }
