@@ -14,7 +14,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import android.content.SharedPreferences
 import javax.inject.Singleton
 
@@ -53,8 +53,8 @@ object AppModule {
                 securePrefs.edit().putString(passphraseKey, generated).apply()
                 generated
             }
-        val passphrase = net.sqlcipher.database.SQLiteDatabase.getBytes(storedPassphrase.toCharArray())
-        val factory = SupportFactory(passphrase)
+        val passphrase = storedPassphrase.toByteArray(Charsets.UTF_8)
+        val factory = SupportOpenHelperFactory(passphrase)
 
         return Room.databaseBuilder(
             context,
