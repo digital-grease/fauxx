@@ -37,3 +37,6 @@
 # SQLCipher
 -keep class net.sqlcipher.** { *; }
 -keep class net.sqlcipher.database.** { *; }
+
+# Error-prone annotations are compile-time only; missing at runtime is expected
+-dontwarn com.google.errorprone.annotations.**
