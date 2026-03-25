@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.fauxx.di
 
 import android.content.Context
@@ -22,6 +24,7 @@ import javax.inject.Singleton
  * Hilt module providing application-level singletons: Room database (SQLCipher-encrypted),
  * OkHttpClient, EncryptedSharedPreferences, and DAOs.
  */
+// TODO: Migrate from deprecated EncryptedSharedPreferences/MasterKey to Jetpack DataStore + Tink
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
