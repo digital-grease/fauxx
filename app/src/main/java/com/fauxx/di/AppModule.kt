@@ -26,20 +26,21 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    @Provides
-    @Singleton
-    fun providePhantomDatabase(@ApplicationContext context: Context): PhantomDatabase {
-        val masterKey = MasterKey.Builder(context)
+    private fun masterKey(context: Context): MasterKey =
+        MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
 
+    @Provides
+    @Singleton
+    fun providePhantomDatabase(@ApplicationContext context: Context): PhantomDatabase {
         // Retrieve or generate a random SQLCipher passphrase stored in EncryptedSharedPreferences.
         // This correctly uses AndroidKeyStore-backed encryption for the passphrase at rest,
         // rather than deriving it from the key alias string (which is not key material).
         val securePrefs = EncryptedSharedPreferences.create(
             context,
             "fauxx_db_key_prefs",
-            masterKey,
+            masterKey(context),
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
@@ -86,13 +87,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideEncryptedSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
         return EncryptedSharedPreferences.create(
             context,
             "fauxx_secure_prefs",
-            masterKey,
+            masterKey(context),
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )

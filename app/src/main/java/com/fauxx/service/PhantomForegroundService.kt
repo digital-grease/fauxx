@@ -28,6 +28,7 @@ private const val TAG = "PhantomForegroundService"
 private const val CHANNEL_ID = "fauxx_engine"
 private const val NOTIFICATION_ID = 1
 private const val NOTIFICATION_UPDATE_INTERVAL_MS = 60_000L
+private const val MS_PER_DAY = 24 * 60 * 60 * 1000L
 
 /**
  * Persistent foreground service that hosts the [PoisonEngine] and keeps it alive in the
@@ -73,7 +74,7 @@ class PhantomForegroundService : Service() {
 
     override fun onDestroy() {
         scope.cancel()
-        poisonEngine.stop()
+        poisonEngine.destroy()
         super.onDestroy()
     }
 
@@ -89,7 +90,7 @@ class PhantomForegroundService : Service() {
     }
 
     private suspend fun updateNotification() {
-        val since = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
+        val since = System.currentTimeMillis() - MS_PER_DAY
         val count = try {
             actionLogDao.countSince(since).first()
         } catch (e: Exception) { 0 }
