@@ -10,7 +10,6 @@ import android.content.Intent
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.fauxx.data.db.ActionLogDao
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -20,7 +19,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,7 +26,6 @@ private const val TAG = "PhantomForegroundService"
 private const val CHANNEL_ID = "fauxx_engine"
 private const val NOTIFICATION_ID = 1
 private const val NOTIFICATION_UPDATE_INTERVAL_MS = 60_000L
-private const val MS_PER_DAY = 24 * 60 * 60 * 1000L
 
 /**
  * Persistent foreground service that hosts the [PoisonEngine] and keeps it alive in the
@@ -41,7 +38,6 @@ private const val MS_PER_DAY = 24 * 60 * 60 * 1000L
 class PhantomForegroundService : Service() {
 
     @Inject lateinit var poisonEngine: PoisonEngine
-    @Inject lateinit var actionLogDao: ActionLogDao
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var notificationJob: Job? = null
@@ -63,6 +59,8 @@ class PhantomForegroundService : Service() {
             }
             ACTION_STOP -> {
                 Log.i(TAG, "Stopping Phantom service")
+                notificationJob?.cancel()
+                notificationJob = null
                 poisonEngine.stop()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
@@ -89,12 +87,8 @@ class PhantomForegroundService : Service() {
         }
     }
 
-    private suspend fun updateNotification() {
-        val since = System.currentTimeMillis() - MS_PER_DAY
-        val count = try {
-            actionLogDao.countSince(since).first()
-        } catch (e: Exception) { 0 }
-
+    private fun updateNotification() {
+        val count = poisonEngine.getTodayActionCount()
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(NOTIFICATION_ID, buildNotification("Active — $count actions today", count))
     }
