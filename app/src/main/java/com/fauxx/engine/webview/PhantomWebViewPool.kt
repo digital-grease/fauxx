@@ -91,7 +91,6 @@ class PhantomWebViewPool @Inject constructor(
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            databaseEnabled = true
             loadWithOverviewMode = true
             useWideViewPort = true
             setSupportZoom(false)
