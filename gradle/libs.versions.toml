@@ -24,7 +24,7 @@ espresso = "3.5.1"
 mockk = "1.13.9"
 turbine = "1.1.0"
 mockkAndroid = "1.13.9"
-robolectric = "4.13.1"
+robolectric = "4.16.1"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
