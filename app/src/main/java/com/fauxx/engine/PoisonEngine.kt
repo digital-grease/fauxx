@@ -25,13 +25,34 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.min
 
 private const val TAG = "PoisonEngine"
+
+/** Maximum consecutive failures before a module is temporarily disabled. */
+private const val MAX_CONSECUTIVE_FAILURES = 5
+
+/** Initial backoff delay in ms after a module hits the error threshold. */
+private const val INITIAL_BACKOFF_MS = 30_000L
+
+/** Maximum backoff delay (capped at 30 minutes). */
+private const val MAX_BACKOFF_MS = 30 * 60 * 1000L
+
+/** Delay between constraint re-checks when paused. */
+private const val CONSTRAINT_CHECK_INTERVAL_MS = 60_000L
+
+/** Delay after a single module failure before retrying. */
+private const val FAILURE_RETRY_DELAY_MS = 5_000L
+
+/** Milliseconds in 24 hours. */
+private const val MS_PER_DAY = 24 * 60 * 60 * 1000L
 
 /**
  * Core orchestrator for the Fauxx privacy poisoning engine.
@@ -56,8 +77,14 @@ class PoisonEngine @Inject constructor(
     private val appSignalModule: AppSignalModule,
     private val dnsModule: DnsNoiseModule
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var engineJob: Job? = null
+
+    /** Tracks consecutive failure count per module class name. */
+    private val failureCounts = ConcurrentHashMap<String, Int>()
+
+    /** Tracks when a circuit-broken module can next be retried (epoch ms). */
+    private val circuitBreakerUntil = ConcurrentHashMap<String, Long>()
 
     /** All modules in order of dispatch preference. */
     private val allModules: List<Module> get() = listOf(
@@ -79,10 +106,17 @@ class PoisonEngine @Inject constructor(
     fun stop() {
         engineJob?.cancel()
         engineJob = null
-        scope.launch {
-            allModules.forEach { runCatching { it.stop() } }
-        }
+        allModules.forEach { runCatching { it.stop() } }
         Log.i(TAG, "PoisonEngine stopped")
+    }
+
+    /**
+     * Cancel the engine's coroutine scope entirely. Call from service [onDestroy]
+     * to ensure no leaked coroutines survive process cleanup.
+     */
+    fun destroy() {
+        stop()
+        scope.cancel()
     }
 
     private suspend fun runLoop() {
@@ -91,28 +125,45 @@ class PoisonEngine @Inject constructor(
         while (scope.isActive) {
             // Constraint checks
             if (!checkConstraints(currentProfile)) {
-                delay(60_000L) // Check again in 1 minute
+                delay(CONSTRAINT_CHECK_INTERVAL_MS)
                 continue
             }
 
             // Pick next category
             val category = dispatcher.selectCategory()
 
-            // Pick an enabled module
-            val enabledModules = allModules.filter { it.isEnabled() }
-            if (enabledModules.isEmpty()) {
-                delay(60_000L)
+            // Pick an enabled module that isn't circuit-broken
+            val now = System.currentTimeMillis()
+            val availableModules = allModules.filter { module ->
+                val name = module::class.simpleName ?: return@filter false
+                module.isEnabled() && (circuitBreakerUntil[name] ?: 0L) <= now
+            }
+            if (availableModules.isEmpty()) {
+                delay(CONSTRAINT_CHECK_INTERVAL_MS)
                 continue
             }
 
-            val module = enabledModules.random()
+            val module = availableModules.random()
+            val moduleName = module::class.simpleName ?: "Unknown"
 
             // Write-ahead log
             val logEntry = try {
-                module.onAction(category)
+                module.onAction(category).also {
+                    // Success — reset failure counter
+                    failureCounts.remove(moduleName)
+                }
             } catch (e: Exception) {
-                Log.e(TAG, "Module ${module::class.simpleName} failed for $category", e)
-                delay(5_000L)
+                val count = (failureCounts[moduleName] ?: 0) + 1
+                failureCounts[moduleName] = count
+
+                if (count >= MAX_CONSECUTIVE_FAILURES) {
+                    val backoff = min(INITIAL_BACKOFF_MS * (1L shl (count - MAX_CONSECUTIVE_FAILURES)), MAX_BACKOFF_MS)
+                    circuitBreakerUntil[moduleName] = System.currentTimeMillis() + backoff
+                    Log.w(TAG, "Circuit breaker: $moduleName disabled for ${backoff / 1000}s after $count failures", e)
+                } else {
+                    Log.e(TAG, "Module $moduleName failed for $category ($count/$MAX_CONSECUTIVE_FAILURES)", e)
+                }
+                delay(FAILURE_RETRY_DELAY_MS)
                 continue
             }
             actionLogDao.insert(logEntry)

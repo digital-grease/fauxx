@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -105,6 +106,14 @@ class PersonaRotationLayer @Inject constructor(
     private fun neutralWeights(): Map<CategoryPool, Float> =
         CategoryPool.values().associateWith { NEUTRAL_WEIGHT }
 
+    /**
+     * Cancel the layer's coroutine scope. Call during application teardown
+     * to prevent leaked coroutines.
+     */
+    fun destroy() {
+        scope.cancel()
+    }
+
     private fun rotatePersona() {
         scope.launch {
             val newPersona = generator.generate()
@@ -116,8 +125,13 @@ class PersonaRotationLayer @Inject constructor(
                 )
             )
             // Prune old history beyond 90 days
-            val cutoff = System.currentTimeMillis() - 90L * 24 * 60 * 60 * 1000
+            val cutoff = System.currentTimeMillis() - HISTORY_RETENTION_MS
             historyDao.pruneOlderThan(cutoff)
         }
+    }
+
+    companion object {
+        /** 90 days in milliseconds. */
+        private const val HISTORY_RETENTION_MS = 90L * 24 * 60 * 60 * 1000
     }
 }
