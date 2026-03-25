@@ -21,12 +21,14 @@ import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.PoissonScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
+import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -210,50 +212,75 @@ class PoisonEngine @Inject constructor(
 }
 
 /**
- * Repository providing the current [PoisonProfile] from EncryptedSharedPreferences.
+ * Repository providing the current [PoisonProfile] backed by Jetpack DataStore.
+ *
+ * Internally collects the DataStore [Flow] and caches the latest value so that
+ * [getProfile] can be called synchronously (required by [Module.isEnabled]).
+ * Writes go through [saveProfile] which is a suspend function.
  */
 @Singleton
 class PoisonProfileRepository @Inject constructor(
-    private val prefs: android.content.SharedPreferences
+    private val dataStore: androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences>
 ) {
-    fun getProfile(): PoisonProfile = PoisonProfile(
-        enabled = prefs.getBoolean("enabled", false),
-        intensity = com.fauxx.data.model.IntensityLevel.valueOf(
-            prefs.getString("intensity", com.fauxx.data.model.IntensityLevel.MEDIUM.name)
-                ?: com.fauxx.data.model.IntensityLevel.MEDIUM.name
-        ),
-        wifiOnly = prefs.getBoolean("wifi_only", true),
-        batteryThreshold = prefs.getInt("battery_threshold", 20),
-        allowedHoursStart = prefs.getInt("allowed_hours_start", 7),
-        allowedHoursEnd = prefs.getInt("allowed_hours_end", 23),
-        searchPoisonEnabled = prefs.getBoolean("module_search", true),
-        adPollutionEnabled = prefs.getBoolean("module_ad", true),
-        locationSpoofEnabled = prefs.getBoolean("module_location", false),
-        fingerprintEnabled = prefs.getBoolean("module_fingerprint", true),
-        cookieSaturationEnabled = prefs.getBoolean("module_cookie", true),
-        appSignalEnabled = prefs.getBoolean("module_appsignal", false),
-        dnsNoiseEnabled = prefs.getBoolean("module_dns", true),
-        layer1Enabled = prefs.getBoolean("layer1_enabled", false),
-        layer2Enabled = prefs.getBoolean("layer2_enabled", false),
-        layer3Enabled = prefs.getBoolean("layer3_enabled", true)
-    )
+    private val cached = java.util.concurrent.atomic.AtomicReference(PoisonProfile())
 
-    fun saveProfile(p: PoisonProfile) = prefs.edit().apply {
-        putBoolean("enabled", p.enabled)
-        putString("intensity", p.intensity.name)
-        putBoolean("wifi_only", p.wifiOnly)
-        putInt("battery_threshold", p.batteryThreshold)
-        putInt("allowed_hours_start", p.allowedHoursStart)
-        putInt("allowed_hours_end", p.allowedHoursEnd)
-        putBoolean("module_search", p.searchPoisonEnabled)
-        putBoolean("module_ad", p.adPollutionEnabled)
-        putBoolean("module_location", p.locationSpoofEnabled)
-        putBoolean("module_fingerprint", p.fingerprintEnabled)
-        putBoolean("module_cookie", p.cookieSaturationEnabled)
-        putBoolean("module_appsignal", p.appSignalEnabled)
-        putBoolean("module_dns", p.dnsNoiseEnabled)
-        putBoolean("layer1_enabled", p.layer1Enabled)
-        putBoolean("layer2_enabled", p.layer2Enabled)
-        putBoolean("layer3_enabled", p.layer3Enabled)
-    }.apply()
+    init {
+        // Seed the cache with the first read (blocking) so getProfile() never returns
+        // un-initialised defaults on a warm start.
+        runBlocking {
+            dataStore.data.first().let { cached.set(prefsToProfile(it)) }
+        }
+        // Keep cache up-to-date in the background.
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            dataStore.data.collect { cached.set(prefsToProfile(it)) }
+        }
+    }
+
+    /** Returns the latest cached profile (non-blocking). */
+    fun getProfile(): PoisonProfile = cached.get()
+
+    /** Persists [p] to DataStore. */
+    suspend fun saveProfile(p: PoisonProfile) {
+        dataStore.edit { prefs ->
+            prefs[com.fauxx.di.PreferenceKeys.ENABLED] = p.enabled
+            prefs[com.fauxx.di.PreferenceKeys.INTENSITY] = p.intensity.name
+            prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] = p.wifiOnly
+            prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] = p.batteryThreshold
+            prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] = p.allowedHoursStart
+            prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] = p.allowedHoursEnd
+            prefs[com.fauxx.di.PreferenceKeys.MODULE_SEARCH] = p.searchPoisonEnabled
+            prefs[com.fauxx.di.PreferenceKeys.MODULE_AD] = p.adPollutionEnabled
+            prefs[com.fauxx.di.PreferenceKeys.MODULE_LOCATION] = p.locationSpoofEnabled
+            prefs[com.fauxx.di.PreferenceKeys.MODULE_FINGERPRINT] = p.fingerprintEnabled
+            prefs[com.fauxx.di.PreferenceKeys.MODULE_COOKIE] = p.cookieSaturationEnabled
+            prefs[com.fauxx.di.PreferenceKeys.MODULE_APPSIGNAL] = p.appSignalEnabled
+            prefs[com.fauxx.di.PreferenceKeys.MODULE_DNS] = p.dnsNoiseEnabled
+            prefs[com.fauxx.di.PreferenceKeys.LAYER1_ENABLED] = p.layer1Enabled
+            prefs[com.fauxx.di.PreferenceKeys.LAYER2_ENABLED] = p.layer2Enabled
+            prefs[com.fauxx.di.PreferenceKeys.LAYER3_ENABLED] = p.layer3Enabled
+        }
+    }
+
+    private fun prefsToProfile(prefs: androidx.datastore.preferences.core.Preferences): PoisonProfile =
+        PoisonProfile(
+            enabled = prefs[com.fauxx.di.PreferenceKeys.ENABLED] ?: false,
+            intensity = com.fauxx.data.model.IntensityLevel.valueOf(
+                prefs[com.fauxx.di.PreferenceKeys.INTENSITY]
+                    ?: com.fauxx.data.model.IntensityLevel.MEDIUM.name
+            ),
+            wifiOnly = prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] ?: true,
+            batteryThreshold = prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] ?: 20,
+            allowedHoursStart = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] ?: 7,
+            allowedHoursEnd = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] ?: 23,
+            searchPoisonEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_SEARCH] ?: true,
+            adPollutionEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_AD] ?: true,
+            locationSpoofEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_LOCATION] ?: false,
+            fingerprintEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_FINGERPRINT] ?: true,
+            cookieSaturationEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_COOKIE] ?: true,
+            appSignalEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_APPSIGNAL] ?: false,
+            dnsNoiseEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_DNS] ?: true,
+            layer1Enabled = prefs[com.fauxx.di.PreferenceKeys.LAYER1_ENABLED] ?: false,
+            layer2Enabled = prefs[com.fauxx.di.PreferenceKeys.LAYER2_ENABLED] ?: false,
+            layer3Enabled = prefs[com.fauxx.di.PreferenceKeys.LAYER3_ENABLED] ?: true
+        )
 }

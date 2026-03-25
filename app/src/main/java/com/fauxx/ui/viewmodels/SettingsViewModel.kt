@@ -62,13 +62,15 @@ class SettingsViewModel @Inject constructor(
     private fun update(transform: (SettingsUiState) -> SettingsUiState) {
         val new = transform(_uiState.value)
         _uiState.value = new
-        profileRepo.saveProfile(profileRepo.getProfile().copy(
-            intensity = new.intensity,
-            wifiOnly = new.wifiOnly,
-            batteryThreshold = new.batteryThreshold,
-            allowedHoursStart = new.allowedHoursStart,
-            allowedHoursEnd = new.allowedHoursEnd
-        ))
+        viewModelScope.launch {
+            profileRepo.saveProfile(profileRepo.getProfile().copy(
+                intensity = new.intensity,
+                wifiOnly = new.wifiOnly,
+                batteryThreshold = new.batteryThreshold,
+                allowedHoursStart = new.allowedHoursStart,
+                allowedHoursEnd = new.allowedHoursEnd
+            ))
+        }
     }
 
     private fun loadFromProfile(): SettingsUiState {

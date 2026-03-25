@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class DashboardUiState(
@@ -59,8 +60,10 @@ class DashboardViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
     fun toggleEngine(enabled: Boolean) {
-        val profile = profileRepo.getProfile()
-        profileRepo.saveProfile(profile.copy(enabled = enabled))
+        viewModelScope.launch {
+            val profile = profileRepo.getProfile()
+            profileRepo.saveProfile(profile.copy(enabled = enabled))
+        }
         _enabled.value = enabled
         if (enabled) {
             context.startForegroundService(PhantomForegroundService.startIntent(context))

@@ -1,7 +1,7 @@
 package com.fauxx.data.model
 
 /**
- * Runtime configuration for the Fauxx poison engine. Stored in EncryptedSharedPreferences.
+ * Runtime configuration for the Fauxx poison engine. Persisted via Jetpack DataStore.
  *
  * @property enabled Whether the engine is actively running.
  * @property intensity Action rate setting.

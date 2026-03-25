@@ -115,13 +115,15 @@ class TargetingViewModel @Inject constructor(
         layer2: Boolean = _state.value.layer2Enabled,
         layer3: Boolean = _state.value.layer3Enabled
     ) {
-        val profile = profileRepo.getProfile()
-        profileRepo.saveProfile(
-            profile.copy(
-                layer1Enabled = layer1,
-                layer2Enabled = layer2,
-                layer3Enabled = layer3
+        viewModelScope.launch {
+            val profile = profileRepo.getProfile()
+            profileRepo.saveProfile(
+                profile.copy(
+                    layer1Enabled = layer1,
+                    layer2Enabled = layer2,
+                    layer3Enabled = layer3
+                )
             )
-        )
+        }
     }
 }

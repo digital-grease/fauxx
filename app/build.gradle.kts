@@ -108,6 +108,8 @@ dependencies {
 
     // Security
     implementation(libs.security.crypto)
+    implementation(libs.datastore.preferences)
+    implementation(libs.tink.android)
 
     // Gson
     implementation(libs.gson)

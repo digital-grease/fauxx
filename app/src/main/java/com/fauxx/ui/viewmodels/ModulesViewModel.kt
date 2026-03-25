@@ -1,10 +1,12 @@
 package com.fauxx.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.fauxx.engine.PoisonProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class ModulesUiState(
@@ -53,14 +55,16 @@ class ModulesViewModel @Inject constructor(
     }
 
     private fun saveToProfile(state: ModulesUiState) {
-        profileRepo.saveProfile(profileRepo.getProfile().copy(
-            searchPoisonEnabled = state.searchEnabled,
-            cookieSaturationEnabled = state.cookieEnabled,
-            dnsNoiseEnabled = state.dnsEnabled,
-            fingerprintEnabled = state.fingerprintEnabled,
-            adPollutionEnabled = state.adEnabled,
-            locationSpoofEnabled = state.locationEnabled,
-            appSignalEnabled = state.appSignalEnabled
-        ))
+        viewModelScope.launch {
+            profileRepo.saveProfile(profileRepo.getProfile().copy(
+                searchPoisonEnabled = state.searchEnabled,
+                cookieSaturationEnabled = state.cookieEnabled,
+                dnsNoiseEnabled = state.dnsEnabled,
+                fingerprintEnabled = state.fingerprintEnabled,
+                adPollutionEnabled = state.adEnabled,
+                locationSpoofEnabled = state.locationEnabled,
+                appSignalEnabled = state.appSignalEnabled
+            ))
+        }
     }
 }
