@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
+import android.os.Build
 import android.util.Log
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.PoisonProfile
@@ -33,9 +34,12 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
+import kotlin.random.Random
 
 private const val TAG = "PoisonEngine"
 
@@ -89,6 +93,39 @@ class PoisonEngine @Inject constructor(
     /** Tracks when a circuit-broken module can next be retried (epoch ms). */
     private val circuitBreakerUntil = ConcurrentHashMap<String, Long>()
 
+    // --- Cached constraint state (updated via BroadcastReceivers) ---
+    private val cachedBatteryLevel = AtomicInteger(100)
+    private val cachedOnWifi = AtomicBoolean(false)
+
+    /** Today's successful action count, incremented on each action. Reset on day rollover. */
+    private val todayActionCount = AtomicInteger(0)
+    private var actionCountDayStart = System.currentTimeMillis() - (System.currentTimeMillis() % MS_PER_DAY)
+
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context, intent: Intent) {
+            val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+            if (level >= 0 && scale > 0) cachedBatteryLevel.set(level * 100 / scale)
+        }
+    }
+
+    private val connectivityReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context, intent: Intent) {
+            cachedOnWifi.set(checkWifiNow())
+        }
+    }
+
+    /** Returns today's successful action count (non-blocking, cached). */
+    fun getTodayActionCount(): Int {
+        val now = System.currentTimeMillis()
+        val dayStart = now - (now % MS_PER_DAY)
+        if (dayStart != actionCountDayStart) {
+            actionCountDayStart = dayStart
+            todayActionCount.set(0)
+        }
+        return todayActionCount.get()
+    }
+
     /** All modules in order of dispatch preference. */
     private val allModules: List<Module> get() = listOf(
         searchModule, cookieModule, dnsModule,
@@ -98,7 +135,14 @@ class PoisonEngine @Inject constructor(
     /** Start the engine main loop. */
     fun start() {
         if (engineJob?.isActive == true) return
+        registerConstraintReceivers()
         engineJob = scope.launch {
+            // Seed today's action count from DB once on start
+            val dayStart = System.currentTimeMillis() - (System.currentTimeMillis() % MS_PER_DAY)
+            actionCountDayStart = dayStart
+            todayActionCount.set(
+                try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
+            )
             Log.i(TAG, "PoisonEngine started")
             allModules.filter { it.isEnabled() }.forEach { it.start() }
             runLoop()
@@ -109,6 +153,7 @@ class PoisonEngine @Inject constructor(
     fun stop() {
         engineJob?.cancel()
         engineJob = null
+        unregisterConstraintReceivers()
         runBlocking {
             allModules.forEach { runCatching { it.stop() } }
         }
@@ -122,6 +167,33 @@ class PoisonEngine @Inject constructor(
     fun destroy() {
         stop()
         scope.cancel()
+    }
+
+    private fun registerConstraintReceivers() {
+        // Seed battery level from sticky broadcast
+        val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        if (batteryIntent != null) {
+            val level = batteryIntent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            val scale = batteryIntent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+            if (level >= 0 && scale > 0) cachedBatteryLevel.set(level * 100 / scale)
+        }
+        // Seed WiFi state
+        cachedOnWifi.set(checkWifiNow())
+
+        // Register ongoing receivers
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED), Context.RECEIVER_NOT_EXPORTED)
+            context.registerReceiver(connectivityReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION), Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            context.registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            @Suppress("DEPRECATION")
+            context.registerReceiver(connectivityReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
+        }
+    }
+
+    private fun unregisterConstraintReceivers() {
+        runCatching { context.unregisterReceiver(batteryReceiver) }
+        runCatching { context.unregisterReceiver(connectivityReceiver) }
     }
 
     private suspend fun runLoop() {
@@ -162,7 +234,10 @@ class PoisonEngine @Inject constructor(
                 failureCounts[moduleName] = count
 
                 if (count >= MAX_CONSECUTIVE_FAILURES) {
-                    val backoff = min(INITIAL_BACKOFF_MS * (1L shl (count - MAX_CONSECUTIVE_FAILURES)), MAX_BACKOFF_MS)
+                    val baseBackoff = min(INITIAL_BACKOFF_MS * (1L shl (count - MAX_CONSECUTIVE_FAILURES)), MAX_BACKOFF_MS)
+                    // Add 0-25% random jitter to prevent thundering herd on recovery
+                    val jitter = (baseBackoff * Random.nextFloat() * 0.25f).toLong()
+                    val backoff = baseBackoff + jitter
                     circuitBreakerUntil[moduleName] = System.currentTimeMillis() + backoff
                     Log.w(TAG, "Circuit breaker: $moduleName disabled for ${backoff / 1000}s after $count failures", e)
                 } else {
@@ -172,6 +247,7 @@ class PoisonEngine @Inject constructor(
                 continue
             }
             actionLogDao.insert(logEntry)
+            if (logEntry.success) todayActionCount.incrementAndGet()
 
             // Schedule next action
             val delayMs = scheduler.nextDelayMs(
@@ -184,30 +260,23 @@ class PoisonEngine @Inject constructor(
     }
 
     private fun checkConstraints(currentProfile: PoisonProfile): Boolean {
-        if (currentProfile.wifiOnly && !isOnWifi()) {
+        if (currentProfile.wifiOnly && !cachedOnWifi.get()) {
             Log.d(TAG, "Paused: wifi-only mode, no wifi")
             return false
         }
-        if (getBatteryLevel() < currentProfile.batteryThreshold) {
+        if (cachedBatteryLevel.get() < currentProfile.batteryThreshold) {
             Log.d(TAG, "Paused: battery below threshold")
             return false
         }
         return true
     }
 
-    private fun isOnWifi(): Boolean {
+    /** One-shot WiFi check used to seed the cache. */
+    private fun checkWifiNow(): Boolean {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = cm.activeNetwork ?: return false
         val caps = cm.getNetworkCapabilities(network) ?: return false
         return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-    }
-
-    private fun getBatteryLevel(): Int {
-        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        val batteryStatus = context.registerReceiver(null, filter) ?: return 100
-        val level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-        val scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-        return if (level < 0 || scale <= 0) 100 else (level * 100 / scale)
     }
 }
 
@@ -223,6 +292,7 @@ class PoisonProfileRepository @Inject constructor(
     private val dataStore: androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences>
 ) {
     private val cached = java.util.concurrent.atomic.AtomicReference(PoisonProfile())
+    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
         // Seed the cache with the first read (blocking) so getProfile() never returns
@@ -231,9 +301,14 @@ class PoisonProfileRepository @Inject constructor(
             dataStore.data.first().let { cached.set(prefsToProfile(it)) }
         }
         // Keep cache up-to-date in the background.
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+        backgroundScope.launch {
             dataStore.data.collect { cached.set(prefsToProfile(it)) }
         }
+    }
+
+    /** Cancel background collection. Call during app teardown. */
+    fun close() {
+        backgroundScope.cancel()
     }
 
     /** Returns the latest cached profile (non-blocking). */

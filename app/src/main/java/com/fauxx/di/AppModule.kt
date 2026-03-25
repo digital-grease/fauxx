@@ -11,6 +11,7 @@ import androidx.room.Room
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.fauxx.data.db.ActionLogDao
+import com.fauxx.data.db.MIGRATION_1_2
 import com.fauxx.data.db.PhantomDatabase
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer2.PlatformProfileDao
@@ -74,6 +75,7 @@ object AppModule {
             "phantom.db"
         )
             .openHelperFactory(factory)
+            .addMigrations(MIGRATION_1_2)
             .build()
     }
 

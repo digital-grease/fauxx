@@ -8,6 +8,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
@@ -35,6 +36,7 @@ object NetworkModule {
     fun provideOkHttpClient(interceptor: HeaderRandomizerInterceptor): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(interceptor)
+            .connectionPool(ConnectionPool(20, 2, TimeUnit.MINUTES))
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
