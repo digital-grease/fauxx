@@ -3,6 +3,7 @@ package com.fauxx.engine.webview
 import android.graphics.Bitmap
 import android.net.http.SslError
 import android.util.Log
+import android.webkit.SafeBrowsingResponse
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -68,6 +69,18 @@ class PhantomWebViewClient(
         // Never proceed on SSL errors — abort the request
         Log.w(TAG, "SSL error on ${error.url}, aborting")
         handler.cancel()
+    }
+
+    override fun onSafeBrowsingHit(
+        view: WebView,
+        request: WebResourceRequest,
+        threatType: Int,
+        callback: SafeBrowsingResponse
+    ) {
+        // Silently back away from any URL flagged by Safe Browsing — no interstitial needed
+        // in a background WebView, just stop loading.
+        Log.w(TAG, "Safe Browsing hit (threat=$threatType) on ${request.url}, backing to safety")
+        callback.backToSafety(false)
     }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {

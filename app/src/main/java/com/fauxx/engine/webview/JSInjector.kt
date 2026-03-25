@@ -65,7 +65,67 @@ object JSInjector {
         })();
     """.trimIndent()
 
+    /**
+     * Disables WebAssembly and Web Workers to prevent cryptominers and other
+     * resource-intensive background scripts from running in phantom WebViews.
+     */
+    val WASM_WORKER_BLOCK_SCRIPT = """
+        (function() {
+            // Kill WebAssembly — cryptominers rely on this for near-native performance
+            if (typeof WebAssembly !== 'undefined') {
+                Object.defineProperty(window, 'WebAssembly', {
+                    get: function() { return undefined; },
+                    configurable: false
+                });
+            }
+            // Kill Worker/SharedWorker — miners offload hashing to background threads
+            window.Worker = function() { throw new TypeError('Workers are disabled'); };
+            window.SharedWorker = function() { throw new TypeError('SharedWorkers are disabled'); };
+            // Kill ServiceWorker registration
+            if (navigator.serviceWorker) {
+                Object.defineProperty(navigator, 'serviceWorker', {
+                    get: function() { return { register: function() { return Promise.reject(); } }; },
+                    configurable: false
+                });
+            }
+        })();
+    """.trimIndent()
+
+    /**
+     * Blocks eval() and the Function constructor to harden against exploit kits
+     * and obfuscated malicious payloads that rely on dynamic code generation.
+     */
+    val EVAL_BLOCK_SCRIPT = """
+        (function() {
+            // Block eval
+            window.eval = function() { return undefined; };
+            // Block Function constructor (new Function('code'))
+            var OrigFunction = Function;
+            window.Function = function() {
+                if (arguments.length > 0) { return function() {}; }
+                return new OrigFunction();
+            };
+            window.Function.prototype = OrigFunction.prototype;
+            // Block setTimeout/setInterval with string arguments (implicit eval)
+            var origSetTimeout = window.setTimeout;
+            window.setTimeout = function(fn, delay) {
+                if (typeof fn === 'string') return 0;
+                return origSetTimeout.apply(window, arguments);
+            };
+            var origSetInterval = window.setInterval;
+            window.setInterval = function(fn, delay) {
+                if (typeof fn === 'string') return 0;
+                return origSetInterval.apply(window, arguments);
+            };
+        })();
+    """.trimIndent()
+
     /** Combined script injected on every page load. */
-    val ALL_SCRIPTS = listOf(CANVAS_NOISE_SCRIPT, NAVIGATOR_OVERRIDE_SCRIPT, FONT_SPOOF_SCRIPT)
-        .joinToString("\n\n")
+    val ALL_SCRIPTS = listOf(
+        WASM_WORKER_BLOCK_SCRIPT,
+        EVAL_BLOCK_SCRIPT,
+        CANVAS_NOISE_SCRIPT,
+        NAVIGATOR_OVERRIDE_SCRIPT,
+        FONT_SPOOF_SCRIPT
+    ).joinToString("\n\n")
 }
