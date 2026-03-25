@@ -29,6 +29,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -106,7 +107,9 @@ class PoisonEngine @Inject constructor(
     fun stop() {
         engineJob?.cancel()
         engineJob = null
-        allModules.forEach { runCatching { it.stop() } }
+        runBlocking {
+            allModules.forEach { runCatching { it.stop() } }
+        }
         Log.i(TAG, "PoisonEngine stopped")
     }
 
