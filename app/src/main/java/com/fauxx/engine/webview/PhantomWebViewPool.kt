@@ -99,6 +99,7 @@ class PhantomWebViewPool @Inject constructor(
             loadsImagesAutomatically = false
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
+            safeBrowsingEnabled = true // Google Safe Browsing — real-time malicious URL checks
         }
 
         // Enable third-party cookies for realistic tracker accumulation
