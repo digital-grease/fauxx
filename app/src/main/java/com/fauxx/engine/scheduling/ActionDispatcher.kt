@@ -1,10 +1,8 @@
 package com.fauxx.engine.scheduling
 
-import android.util.Log
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.TargetingEngine
-import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -26,17 +24,11 @@ class ActionDispatcher @Inject constructor(
     /**
      * Select the next [CategoryPool] to target using the current weight distribution.
      *
-     * Over a large number of calls, the distribution of returned categories will match
-     * the weight map within statistical tolerance.
+     * Reads the cached weight snapshot from [TargetingEngine.cachedWeights] — no Flow
+     * collection overhead per call.
      */
-    suspend fun selectCategory(): CategoryPool {
-        val weights = try {
-            targetingEngine.getWeights().first()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to get weights, falling back to uniform", e)
-            CategoryPool.values().associateWith { 1f / CategoryPool.values().size }
-        }
-
+    fun selectCategory(): CategoryPool {
+        val weights = targetingEngine.cachedWeights.value
         return weightedSample(weights)
     }
 

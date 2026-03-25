@@ -1,6 +1,7 @@
 package com.fauxx.data.db
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
@@ -16,7 +17,10 @@ import com.fauxx.data.querybank.CategoryPool
  * @property detail Human-readable description (e.g., search query, URL visited).
  * @property success Whether the action completed successfully.
  */
-@Entity(tableName = "action_log")
+@Entity(
+    tableName = "action_log",
+    indices = [Index(value = ["timestamp", "success"])]
+)
 data class ActionLogEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

@@ -14,6 +14,12 @@ private const val TAG = "CrawlListManager"
 /** Minimum milliseconds between requests to the same domain (safety requirement). */
 private const val MIN_DOMAIN_INTERVAL_MS = 5_000L
 
+/** Entries older than this are evicted from the rate limit map. */
+private const val STALE_ENTRY_THRESHOLD_MS = 24 * 60 * 60 * 1000L
+
+/** Minimum entries before a cleanup pass is triggered. */
+private const val CLEANUP_THRESHOLD = 500
+
 /**
  * Manages the 10,000+ URL corpus used for cookie saturation and page visits.
  *
@@ -39,6 +45,7 @@ class CrawlListManager @Inject constructor(
      */
     fun nextUrl(category: CategoryPool? = null): CrawlEntry? {
         val now = System.currentTimeMillis()
+        cleanupStaleEntries(now)
         val candidates = if (category != null) {
             allUrls.filter { it.category == category }
                 .ifEmpty { allUrls } // Fall back to any category
@@ -66,6 +73,13 @@ class CrawlListManager @Inject constructor(
     fun isEligible(domain: String, now: Long = System.currentTimeMillis()): Boolean {
         val last = lastVisitByDomain[domain] ?: return true
         return (now - last) >= MIN_DOMAIN_INTERVAL_MS
+    }
+
+    /** Evicts entries older than 24h to prevent unbounded map growth. */
+    private fun cleanupStaleEntries(now: Long) {
+        if (lastVisitByDomain.size < CLEANUP_THRESHOLD) return
+        val cutoff = now - STALE_ENTRY_THRESHOLD_MS
+        lastVisitByDomain.entries.removeAll { it.value < cutoff }
     }
 
     private fun loadUrls(): List<CrawlEntry> {
