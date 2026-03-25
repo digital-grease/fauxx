@@ -1,7 +1,10 @@
 package com.fauxx.di
 
 import android.content.Context
-import android.content.SharedPreferences
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.db.PhantomDatabase
@@ -16,12 +19,15 @@ import dagger.hilt.testing.TestInstallIn
 import javax.inject.Singleton
 
 /**
- * Replaces [AppModule] in instrumented tests with an unencrypted in-memory Room database
- * and plain [SharedPreferences] so tests run fast and in isolation without requiring
- * AndroidKeyStore or SQLCipher native libraries to be fully initialized.
+ * Replaces [AppModule] and [DataStoreModule] in instrumented tests with an unencrypted
+ * in-memory Room database and a test DataStore so tests run fast and in isolation
+ * without requiring AndroidKeyStore, SQLCipher, or Tink to be fully initialized.
  */
 @Module
-@TestInstallIn(components = [SingletonComponent::class], replaces = [AppModule::class])
+@TestInstallIn(
+    components = [SingletonComponent::class],
+    replaces = [AppModule::class, DataStoreModule::class]
+)
 object TestDatabaseModule {
 
     @Provides
@@ -52,6 +58,13 @@ object TestDatabaseModule {
 
     @Provides
     @Singleton
-    fun provideSharedPreferences(@ApplicationContext context: Context): SharedPreferences =
-        context.getSharedPreferences("fauxx_test_prefs", Context.MODE_PRIVATE)
+    fun provideTinkKeyManager(@ApplicationContext context: Context): TinkKeyManager =
+        TinkKeyManager(context)
+
+    @Provides
+    @Singleton
+    fun provideTestDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+        PreferenceDataStoreFactory.create {
+            context.preferencesDataStoreFile("fauxx_test_prefs")
+        }
 }

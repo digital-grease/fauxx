@@ -3,10 +3,13 @@ package com.fauxx.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.fauxx.di.PreferenceKeys
+import com.fauxx.di.fauxxDataStore
 import com.fauxx.ui.navigation.FauxxNavGraph
 import com.fauxx.ui.theme.FauxxTheme
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 /**
  * Single-activity entry point for Fauxx. Hosts the Compose navigation graph.
@@ -15,13 +18,13 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject
-    lateinit var prefs: android.content.SharedPreferences
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val showOnboarding = !prefs.getBoolean("onboarding_completed", false)
+        val showOnboarding = runBlocking {
+            val prefs = fauxxDataStore.data.first()
+            !(prefs[PreferenceKeys.ONBOARDING_COMPLETED] ?: false)
+        }
 
         setContent {
             FauxxTheme {

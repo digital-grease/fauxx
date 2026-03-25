@@ -5,6 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.fauxx.di.PreferenceKeys
+import com.fauxx.di.fauxxDataStore
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 private const val TAG = "BootReceiver"
 
@@ -20,9 +24,12 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 Log.i(TAG, "Boot/update received, checking if service should restart")
 
-                // Only restart if the engine was enabled before reboot
-                val prefs = context.getSharedPreferences("fauxx_secure_prefs", Context.MODE_PRIVATE)
-                val wasEnabled = prefs.getBoolean("enabled", false)
+                // Read the enabled flag from DataStore. runBlocking is acceptable here
+                // because BroadcastReceiver.onReceive() has a short-lived synchronous scope.
+                val wasEnabled = runBlocking {
+                    val prefs = context.fauxxDataStore.data.first()
+                    prefs[PreferenceKeys.ENABLED] ?: false
+                }
 
                 if (wasEnabled) {
                     Log.i(TAG, "Restarting PhantomForegroundService after boot")

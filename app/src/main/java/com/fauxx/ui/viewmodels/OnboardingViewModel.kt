@@ -1,8 +1,12 @@
 package com.fauxx.ui.viewmodels
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.di.PreferenceKeys
 import com.fauxx.targeting.layer1.AgeRange
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer1.Gender
@@ -27,7 +31,7 @@ data class OnboardingUiState(
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val dao: DemographicProfileDao,
-    private val prefs: android.content.SharedPreferences
+    private val dataStore: DataStore<Preferences>
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
@@ -66,7 +70,7 @@ class OnboardingViewModel @Inject constructor(
                     )
                 )
             }
-            prefs.edit().putBoolean("onboarding_completed", true).apply()
+            dataStore.edit { it[PreferenceKeys.ONBOARDING_COMPLETED] = true }
         }
     }
 }
