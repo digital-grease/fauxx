@@ -151,6 +151,17 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            val windowHours = (uiState.allowedHoursEnd - uiState.allowedHoursStart).let {
+                if (it < 0) it + 24 else it
+            }
+            if (windowHours in 1..5) {
+                Text(
+                    "A narrow activity window can itself be a trackable signal. " +
+                        "Real users are active across a wider range of hours.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
 
         Spacer(Modifier.height(8.dp))
