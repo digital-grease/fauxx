@@ -53,8 +53,11 @@ private const val INITIAL_BACKOFF_MS = 30_000L
 /** Maximum backoff delay (capped at 30 minutes). */
 private const val MAX_BACKOFF_MS = 30 * 60 * 1000L
 
-/** Delay between constraint re-checks when paused. */
-private const val CONSTRAINT_CHECK_INTERVAL_MS = 60_000L
+/** Base delay between constraint re-checks when paused (scaled by intensity). */
+private const val CONSTRAINT_CHECK_BASE_MS = 60_000L
+
+/** Minimum constraint re-check interval (HIGH intensity floor). */
+private const val CONSTRAINT_CHECK_MIN_MS = 3_000L
 
 /** Delay after a single module failure before retrying. */
 private const val FAILURE_RETRY_DELAY_MS = 5_000L
@@ -208,9 +211,11 @@ class PoisonEngine @Inject constructor(
         while (scope.isActive) {
             val currentProfile = profile.getProfile()
 
+            val constraintRetryMs = constraintCheckMs(currentProfile.intensity.actionsPerHour)
+
             // Constraint checks
             if (!checkConstraints(currentProfile)) {
-                delay(CONSTRAINT_CHECK_INTERVAL_MS)
+                delay(constraintRetryMs)
                 continue
             }
 
@@ -224,14 +229,15 @@ class PoisonEngine @Inject constructor(
                 module.isEnabled() && (circuitBreakerUntil[name] ?: 0L) <= now
             }
             if (availableModules.isEmpty()) {
-                delay(CONSTRAINT_CHECK_INTERVAL_MS)
+                delay(constraintRetryMs)
                 continue
             }
 
             val module = availableModules.random()
             val moduleName = module::class.simpleName ?: "Unknown"
 
-            // Write-ahead log
+            // Write-ahead log — track execution time to subtract from scheduled delay
+            val execStart = System.currentTimeMillis()
             val logEntry = try {
                 module.onAction(category).also {
                     // Success — reset failure counter
@@ -257,13 +263,17 @@ class PoisonEngine @Inject constructor(
             actionLogDao.insert(logEntry)
             if (logEntry.success) todayActionCount.incrementAndGet()
 
-            // Schedule next action
-            val delayMs = scheduler.nextDelayMs(
+            // Schedule next action, subtracting module execution time so the
+            // inter-action interval (not post-action gap) matches the target rate.
+            val execElapsed = System.currentTimeMillis() - execStart
+            val scheduledMs = scheduler.nextDelayMs(
                 actionsPerHour = currentProfile.intensity.actionsPerHour,
                 allowedStart = currentProfile.allowedHoursStart,
                 allowedEnd = currentProfile.allowedHoursEnd
             )
-            delay(delayMs)
+            val effectiveDelay = maxOf(0L, scheduledMs - execElapsed)
+            Log.d(TAG, "Action: $moduleName/$category exec=${execElapsed}ms scheduled=${scheduledMs}ms effective=${effectiveDelay}ms")
+            delay(effectiveDelay)
         }
     }
 
@@ -278,6 +288,11 @@ class PoisonEngine @Inject constructor(
         }
         return true
     }
+
+    /** Returns the constraint-check retry interval scaled by intensity.
+     *  HIGH (200/hr) → ~3.6s, MEDIUM (60/hr) → ~12s, LOW (12/hr) → 60s. */
+    private fun constraintCheckMs(actionsPerHour: Int): Long =
+        maxOf(CONSTRAINT_CHECK_MIN_MS, CONSTRAINT_CHECK_BASE_MS / maxOf(1, actionsPerHour / 12).toLong())
 
     /** One-shot WiFi check used to seed the cache. */
     private fun checkWifiNow(): Boolean {
