@@ -38,7 +38,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,9 +46,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.EngineState
 import com.fauxx.ui.viewmodels.DashboardViewModel
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 /**
  * Dashboard screen showing: protection on/off toggle, action counters, category distribution
@@ -202,8 +198,37 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
     }
 }
 
+private const val MAX_CHART_SLICES = 8
+
+private val chartColors = listOf(
+    Color(0xFF00FF88), Color(0xFF00E5FF), Color(0xFFFF6B35),
+    Color(0xFFAA00FF), Color(0xFFFFD700), Color(0xFFFF69B4),
+    Color(0xFF7CFC00), Color(0xFF00BFFF), Color(0xFF808080)
+)
+
+/**
+ * Prepares chart data: sorts by weight descending, keeps top [MAX_CHART_SLICES] categories,
+ * and aggregates the rest into an "Other" slice.
+ */
+private fun buildChartSlices(
+    distribution: Map<CategoryPool, Float>
+): List<Pair<String, Float>> {
+    val total = distribution.values.sum()
+    if (total <= 0f) return emptyList()
+
+    val sorted = distribution.entries.sortedByDescending { it.value }
+    val top = sorted.take(MAX_CHART_SLICES).map { (cat, w) ->
+        cat.name.lowercase().replace("_", " ") to w
+    }
+    val otherWeight = sorted.drop(MAX_CHART_SLICES).sumOf { it.value.toDouble() }.toFloat()
+    return if (otherWeight > 0f) top + ("other" to otherWeight) else top
+}
+
 @Composable
 private fun CategoryDonutCard(distribution: Map<CategoryPool, Float>) {
+    val slices = remember(distribution) { buildChartSlices(distribution) }
+    val total = remember(slices) { slices.sumOf { it.second.toDouble() }.toFloat() }
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -216,43 +241,74 @@ private fun CategoryDonutCard(distribution: Map<CategoryPool, Float>) {
             )
             Spacer(Modifier.height(12.dp))
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                DonutChart(data = distribution)
+                DonutChart(slices = slices, total = total)
+                ChartLegend(
+                    slices = slices,
+                    total = total,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun DonutChart(data: Map<CategoryPool, Float>) {
-    val colors = listOf(
-        Color(0xFF00FF88), Color(0xFF00E5FF), Color(0xFFFF6B35),
-        Color(0xFFAA00FF), Color(0xFFFFD700), Color(0xFFFF69B4),
-        Color(0xFF7CFC00), Color(0xFF00BFFF)
-    )
-
-    Canvas(modifier = Modifier.size(180.dp)) {
-        val total = data.values.sum()
+private fun DonutChart(slices: List<Pair<String, Float>>, total: Float) {
+    Canvas(modifier = Modifier.size(140.dp)) {
         if (total <= 0f) return@Canvas
 
         var startAngle = -90f
-        data.entries.toList().take(8).forEachIndexed { index, (_, weight) ->
+        slices.forEachIndexed { index, (_, weight) ->
             val sweep = (weight / total) * 360f
             drawArc(
-                color = colors[index % colors.size],
+                color = chartColors[index % chartColors.size],
                 startAngle = startAngle,
                 sweepAngle = sweep,
                 useCenter = false,
                 topLeft = Offset(size.width * 0.1f, size.height * 0.1f),
                 size = Size(size.width * 0.8f, size.height * 0.8f),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 30f)
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 24f)
             )
             startAngle += sweep
+        }
+    }
+}
+
+@Composable
+private fun ChartLegend(
+    slices: List<Pair<String, Float>>,
+    total: Float,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        slices.forEachIndexed { index, (label, weight) ->
+            val pct = if (total > 0f) (weight / total * 100f).toInt() else 0
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(chartColors[index % chartColors.size])
+                )
+                Text(
+                    text = "$label $pct%",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
         }
     }
 }
