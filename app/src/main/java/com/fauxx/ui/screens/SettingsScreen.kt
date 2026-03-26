@@ -37,8 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.BuildConfig
 import com.fauxx.data.model.IntensityLevel
 import com.fauxx.ui.viewmodels.SettingsViewModel
 
@@ -174,6 +176,18 @@ fun SettingsScreen(
         ) {
             Text("Clear All Data")
         }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Version info
+        Text(
+            text = "Fauxx v${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 
     if (showClearDialog) {

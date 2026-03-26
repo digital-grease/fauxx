@@ -16,6 +16,7 @@ import com.fauxx.engine.modules.LocationSpoofModule
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.targeting.TargetingEngine
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -112,8 +113,13 @@ class PoisonEngineConstraintTest {
         every { dnsModule.isEnabled() } returns false
 
         val context: android.content.Context = mockk(relaxed = true)
+        val targetingEngine: TargetingEngine = mockk(relaxed = true) {
+            every { setLayer1Enabled(any()) } answers { }
+            every { setLayer2Enabled(any()) } answers { }
+            every { setLayer3Enabled(any()) } answers { }
+        }
         return PoisonEngine(
-            context, profileRepo, dispatcher, scheduler, actionLogDao,
+            context, profileRepo, targetingEngine, dispatcher, scheduler, actionLogDao,
             searchModule, adModule, locationModule, fingerprintModule,
             cookieModule, appSignalModule, dnsModule
         )

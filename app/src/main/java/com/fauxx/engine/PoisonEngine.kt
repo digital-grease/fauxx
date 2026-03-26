@@ -21,6 +21,7 @@ import com.fauxx.engine.modules.Module
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.targeting.TargetingEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
 import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.CoroutineScope
@@ -73,6 +74,7 @@ private const val MS_PER_DAY = 24 * 60 * 60 * 1000L
 class PoisonEngine @Inject constructor(
     @ApplicationContext private val context: Context,
     private val profile: PoisonProfileRepository,
+    private val targetingEngine: TargetingEngine,
     private val dispatcher: ActionDispatcher,
     private val scheduler: PoissonScheduler,
     private val actionLogDao: ActionLogDao,
@@ -137,13 +139,19 @@ class PoisonEngine @Inject constructor(
         if (engineJob?.isActive == true) return
         registerConstraintReceivers()
         engineJob = scope.launch {
+            // Sync targeting layer enable flags from persisted profile
+            val savedProfile = profile.getProfile()
+            targetingEngine.setLayer1Enabled(savedProfile.layer1Enabled)
+            targetingEngine.setLayer2Enabled(savedProfile.layer2Enabled)
+            targetingEngine.setLayer3Enabled(savedProfile.layer3Enabled)
+
             // Seed today's action count from DB once on start
             val dayStart = System.currentTimeMillis() - (System.currentTimeMillis() % MS_PER_DAY)
             actionCountDayStart = dayStart
             todayActionCount.set(
                 try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
             )
-            Log.i(TAG, "PoisonEngine started")
+            Log.i(TAG, "PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled})")
             allModules.filter { it.isEnabled() }.forEach { it.start() }
             runLoop()
         }
@@ -197,9 +205,9 @@ class PoisonEngine @Inject constructor(
     }
 
     private suspend fun runLoop() {
-        val currentProfile = profile.getProfile()
-
         while (scope.isActive) {
+            val currentProfile = profile.getProfile()
+
             // Constraint checks
             if (!checkConstraints(currentProfile)) {
                 delay(CONSTRAINT_CHECK_INTERVAL_MS)

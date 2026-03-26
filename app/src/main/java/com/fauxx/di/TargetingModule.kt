@@ -55,8 +55,9 @@ object TargetingModule {
     @Singleton
     fun providePersonaGenerator(
         @ApplicationContext context: Context,
-        historyDao: PersonaHistoryDao
-    ): PersonaGenerator = PersonaGenerator(context, historyDao)
+        historyDao: PersonaHistoryDao,
+        demographicProfileDao: DemographicProfileDao
+    ): PersonaGenerator = PersonaGenerator(context, historyDao, demographicProfileDao)
 
     @Provides
     @Singleton
