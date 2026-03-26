@@ -148,6 +148,29 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.primary,
                 fontFamily = FontFamily.Monospace
             )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Start",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Slider(
+                value = uiState.allowedHoursStart.toFloat(),
+                onValueChange = { viewModel.setAllowedHoursStart(it.toInt()) },
+                valueRange = 0f..23f,
+                steps = 22
+            )
+            Text(
+                "End",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Slider(
+                value = uiState.allowedHoursEnd.toFloat(),
+                onValueChange = { viewModel.setAllowedHoursEnd(it.toInt()) },
+                valueRange = 0f..23f,
+                steps = 22
+            )
             Text(
                 "Activity is paused outside these hours",
                 style = MaterialTheme.typography.bodySmall,

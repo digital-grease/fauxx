@@ -43,6 +43,8 @@ class SettingsViewModel @Inject constructor(
     fun setIntensity(level: IntensityLevel) { update { it.copy(intensity = level) } }
     fun setWifiOnly(v: Boolean) { update { it.copy(wifiOnly = v) } }
     fun setBatteryThreshold(v: Int) { update { it.copy(batteryThreshold = v) } }
+    fun setAllowedHoursStart(v: Int) { update { it.copy(allowedHoursStart = v) } }
+    fun setAllowedHoursEnd(v: Int) { update { it.copy(allowedHoursEnd = v) } }
 
     /** Delete all locally-stored data and reset settings to defaults. */
     fun resetToDefaults() {
