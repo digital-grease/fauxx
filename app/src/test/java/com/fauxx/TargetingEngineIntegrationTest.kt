@@ -9,13 +9,18 @@ import com.fauxx.targeting.layer2.AdversarialScraperLayer
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TargetingEngineIntegrationTest {
 
     private val normalizer = WeightNormalizer()
@@ -169,7 +174,9 @@ class TargetingEngineIntegrationTest {
         val layer2: AdversarialScraperLayer = mockk(relaxed = true) { every { getWeights() } returns flowOf(l2Weights) }
         val layer3: PersonaRotationLayer = mockk(relaxed = true) { every { getWeights() } returns flowOf(l3Weights) }
 
-        val engine = TargetingEngine(layer0, layer1, layer2, layer3, normalizer)
+        // Use UnconfinedTestDispatcher so combine processes synchronously in tests
+        val testScope = kotlinx.coroutines.CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher())
+        val engine = TargetingEngine(layer0, layer1, layer2, layer3, normalizer, testScope)
         engine.setLayer1Enabled(l1Enabled)
         engine.setLayer2Enabled(l2Enabled)
         engine.setLayer3Enabled(l3Enabled)
