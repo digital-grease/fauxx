@@ -49,6 +49,7 @@ import com.fauxx.ui.viewmodels.SettingsViewModel
  */
 @Composable
 fun SettingsScreen(
+    onNavigateToAbout: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -125,7 +126,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Battery Threshold", style = MaterialTheme.typography.titleSmall)
+                Text("Pause below", style = MaterialTheme.typography.titleSmall)
                 Text(
                     "${uiState.batteryThreshold}%",
                     color = MaterialTheme.colorScheme.primary,
@@ -179,10 +180,10 @@ fun SettingsScreen(
             val windowHours = (uiState.allowedHoursEnd - uiState.allowedHoursStart).let {
                 if (it < 0) it + 24 else it
             }
-            if (windowHours in 1..5) {
+            if (windowHours in 1..8) {
                 Text(
-                    "A narrow activity window can itself be a trackable signal. " +
-                        "Real users are active across a wider range of hours.",
+                    "A narrow activity window (${windowHours}h) can itself be a trackable signal. " +
+                        "Wider windows (12h+) are harder for trackers to distinguish from real usage.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -198,6 +199,17 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Clear All Data")
+        }
+
+        // About & Privacy
+        Button(
+            onClick = onNavigateToAbout,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("About & Privacy Policy", color = MaterialTheme.colorScheme.onSurface)
         }
 
         Spacer(Modifier.height(16.dp))
@@ -219,8 +231,14 @@ fun SettingsScreen(
             title = { Text("Clear All Data?") },
             text = {
                 Text(
-                    "This will delete all action logs, your demographic profile, platform data, " +
-                    "and persona history. Settings will be reset to defaults. This cannot be undone."
+                    "This will permanently delete:\n" +
+                    "\u2022 All action logs\n" +
+                    "\u2022 Your demographic profile\n" +
+                    "\u2022 Ad platform profile cache\n" +
+                    "\u2022 Persona generation history\n\n" +
+                    "All settings will be reset to defaults. " +
+                    "The engine will stop and return to Layer 0 (uniform noise).\n\n" +
+                    "This cannot be undone."
                 )
             },
             confirmButton = {

@@ -44,6 +44,18 @@ import kotlin.random.Random
 
 private const val TAG = "PoisonEngine"
 
+/** Observable state of the engine for UI/notification display. */
+enum class EngineState {
+    /** Actively dispatching noise actions. */
+    ACTIVE,
+    /** Running but paused due to WiFi/battery/time constraints. */
+    PAUSED_WIFI,
+    PAUSED_BATTERY,
+    PAUSED_RATE_LIMIT,
+    /** Not started or stopped. */
+    STOPPED
+}
+
 /** Maximum consecutive failures before a module is temporarily disabled. */
 private const val MAX_CONSECUTIVE_FAILURES = 5
 
@@ -64,6 +76,12 @@ private const val FAILURE_RETRY_DELAY_MS = 5_000L
 
 /** Milliseconds in 24 hours. */
 private const val MS_PER_DAY = 24 * 60 * 60 * 1000L
+
+/** Sliding window duration for per-hour rate limiting. */
+private const val RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000L
+
+/** Delay when rate limit is hit before rechecking. */
+private const val RATE_LIMIT_PAUSE_MS = 15_000L
 
 /**
  * Core orchestrator for the Fauxx privacy poisoning engine.
@@ -105,6 +123,17 @@ class PoisonEngine @Inject constructor(
     /** Today's successful action count, incremented on each action. Reset on day rollover. */
     private val todayActionCount = AtomicInteger(0)
     private var actionCountDayStart = System.currentTimeMillis() - (System.currentTimeMillis() % MS_PER_DAY)
+
+    /**
+     * Sliding window of action timestamps (epoch ms) for per-hour rate limiting.
+     * Entries older than [RATE_LIMIT_WINDOW_MS] are pruned on each check.
+     */
+    private val recentActionTimestamps = java.util.concurrent.ConcurrentLinkedQueue<Long>()
+
+    /** Current engine state for notification/UI display. */
+    @Volatile
+    var engineState: EngineState = EngineState.STOPPED
+        private set
 
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context, intent: Intent) {
@@ -154,6 +183,7 @@ class PoisonEngine @Inject constructor(
             todayActionCount.set(
                 try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
             )
+            engineState = EngineState.ACTIVE
             Log.i(TAG, "PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled})")
             allModules.filter { it.isEnabled() }.forEach { it.start() }
             runLoop()
@@ -164,6 +194,7 @@ class PoisonEngine @Inject constructor(
     fun stop() {
         engineJob?.cancel()
         engineJob = null
+        engineState = EngineState.STOPPED
         unregisterConstraintReceivers()
         runBlocking {
             allModules.forEach { runCatching { it.stop() } }
@@ -214,10 +245,27 @@ class PoisonEngine @Inject constructor(
             val constraintRetryMs = constraintCheckMs(currentProfile.intensity.actionsPerHour)
 
             // Constraint checks
-            if (!checkConstraints(currentProfile)) {
+            val constraintState = checkConstraints(currentProfile)
+            if (constraintState != null) {
+                engineState = constraintState
                 delay(constraintRetryMs)
                 continue
             }
+
+            // Per-hour rate limit: prune stale timestamps and check cap
+            val rateLimitNow = System.currentTimeMillis()
+            val cutoff = rateLimitNow - RATE_LIMIT_WINDOW_MS
+            while (recentActionTimestamps.peek()?.let { it < cutoff } == true) {
+                recentActionTimestamps.poll()
+            }
+            if (recentActionTimestamps.size >= currentProfile.intensity.actionsPerHour) {
+                engineState = EngineState.PAUSED_RATE_LIMIT
+                Log.d(TAG, "Rate limit reached: ${recentActionTimestamps.size}/${currentProfile.intensity.actionsPerHour} actions/hour")
+                delay(RATE_LIMIT_PAUSE_MS)
+                continue
+            }
+
+            engineState = EngineState.ACTIVE
 
             // Pick next category
             val category = dispatcher.selectCategory()
@@ -261,7 +309,10 @@ class PoisonEngine @Inject constructor(
                 continue
             }
             actionLogDao.insert(logEntry)
-            if (logEntry.success) todayActionCount.incrementAndGet()
+            if (logEntry.success) {
+                todayActionCount.incrementAndGet()
+                recentActionTimestamps.add(System.currentTimeMillis())
+            }
 
             // Schedule next action, subtracting module execution time so the
             // inter-action interval (not post-action gap) matches the target rate.
@@ -277,16 +328,19 @@ class PoisonEngine @Inject constructor(
         }
     }
 
-    private fun checkConstraints(currentProfile: PoisonProfile): Boolean {
+    /**
+     * Returns null if all constraints pass, or the specific [EngineState] pause reason.
+     */
+    private fun checkConstraints(currentProfile: PoisonProfile): EngineState? {
         if (currentProfile.wifiOnly && !cachedOnWifi.get()) {
             Log.d(TAG, "Paused: wifi-only mode, no wifi")
-            return false
+            return EngineState.PAUSED_WIFI
         }
         if (cachedBatteryLevel.get() < currentProfile.batteryThreshold) {
             Log.d(TAG, "Paused: battery below threshold")
-            return false
+            return EngineState.PAUSED_BATTERY
         }
-        return true
+        return null
     }
 
     /** Returns the constraint-check retry interval scaled by intensity.

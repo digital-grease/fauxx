@@ -24,6 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import com.fauxx.ui.screens.DashboardScreen
 import com.fauxx.ui.screens.LogScreen
 import com.fauxx.ui.screens.ModulesScreen
+import com.fauxx.ui.screens.AboutScreen
 import com.fauxx.ui.screens.SettingsScreen
 import com.fauxx.ui.screens.TargetingScreen
 
@@ -35,6 +36,7 @@ sealed class Screen(val route: String, val label: String) {
     object Log : Screen("log", "Log")
     object Settings : Screen("settings", "Settings")
     object Onboarding : Screen("onboarding", "Onboarding")
+    object About : Screen("about", "About & Privacy")
 }
 
 private val bottomNavItems = listOf(
@@ -95,7 +97,14 @@ fun FauxxNavGraph(showOnboarding: Boolean) {
             composable(Screen.Targeting.route) { TargetingScreen() }
             composable(Screen.Modules.route) { ModulesScreen() }
             composable(Screen.Log.route) { LogScreen() }
-            composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    onNavigateToAbout = { navController.navigate(Screen.About.route) }
+                )
+            }
+            composable(Screen.About.route) {
+                AboutScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }
