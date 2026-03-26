@@ -325,23 +325,40 @@ class PoisonProfileRepository @Inject constructor(
     /** Persists [p] to DataStore. */
     suspend fun saveProfile(p: PoisonProfile) {
         dataStore.edit { prefs ->
-            prefs[com.fauxx.di.PreferenceKeys.ENABLED] = p.enabled
-            prefs[com.fauxx.di.PreferenceKeys.INTENSITY] = p.intensity.name
-            prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] = p.wifiOnly
-            prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] = p.batteryThreshold
-            prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] = p.allowedHoursStart
-            prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] = p.allowedHoursEnd
-            prefs[com.fauxx.di.PreferenceKeys.MODULE_SEARCH] = p.searchPoisonEnabled
-            prefs[com.fauxx.di.PreferenceKeys.MODULE_AD] = p.adPollutionEnabled
-            prefs[com.fauxx.di.PreferenceKeys.MODULE_LOCATION] = p.locationSpoofEnabled
-            prefs[com.fauxx.di.PreferenceKeys.MODULE_FINGERPRINT] = p.fingerprintEnabled
-            prefs[com.fauxx.di.PreferenceKeys.MODULE_COOKIE] = p.cookieSaturationEnabled
-            prefs[com.fauxx.di.PreferenceKeys.MODULE_APPSIGNAL] = p.appSignalEnabled
-            prefs[com.fauxx.di.PreferenceKeys.MODULE_DNS] = p.dnsNoiseEnabled
-            prefs[com.fauxx.di.PreferenceKeys.LAYER1_ENABLED] = p.layer1Enabled
-            prefs[com.fauxx.di.PreferenceKeys.LAYER2_ENABLED] = p.layer2Enabled
-            prefs[com.fauxx.di.PreferenceKeys.LAYER3_ENABLED] = p.layer3Enabled
+            profileToPrefs(p, prefs)
         }
+    }
+
+    /**
+     * Atomically reads the current profile, applies [transform], and writes the result back
+     * inside a single DataStore transaction. This prevents concurrent writes from losing
+     * earlier changes (e.g., rapid slider drags overwriting a prior intensity change).
+     */
+    suspend fun updateProfile(transform: (PoisonProfile) -> PoisonProfile) {
+        dataStore.edit { prefs ->
+            val current = prefsToProfile(prefs)
+            val updated = transform(current)
+            profileToPrefs(updated, prefs)
+        }
+    }
+
+    private fun profileToPrefs(p: PoisonProfile, prefs: androidx.datastore.preferences.core.MutablePreferences) {
+        prefs[com.fauxx.di.PreferenceKeys.ENABLED] = p.enabled
+        prefs[com.fauxx.di.PreferenceKeys.INTENSITY] = p.intensity.name
+        prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] = p.wifiOnly
+        prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] = p.batteryThreshold
+        prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] = p.allowedHoursStart
+        prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] = p.allowedHoursEnd
+        prefs[com.fauxx.di.PreferenceKeys.MODULE_SEARCH] = p.searchPoisonEnabled
+        prefs[com.fauxx.di.PreferenceKeys.MODULE_AD] = p.adPollutionEnabled
+        prefs[com.fauxx.di.PreferenceKeys.MODULE_LOCATION] = p.locationSpoofEnabled
+        prefs[com.fauxx.di.PreferenceKeys.MODULE_FINGERPRINT] = p.fingerprintEnabled
+        prefs[com.fauxx.di.PreferenceKeys.MODULE_COOKIE] = p.cookieSaturationEnabled
+        prefs[com.fauxx.di.PreferenceKeys.MODULE_APPSIGNAL] = p.appSignalEnabled
+        prefs[com.fauxx.di.PreferenceKeys.MODULE_DNS] = p.dnsNoiseEnabled
+        prefs[com.fauxx.di.PreferenceKeys.LAYER1_ENABLED] = p.layer1Enabled
+        prefs[com.fauxx.di.PreferenceKeys.LAYER2_ENABLED] = p.layer2Enabled
+        prefs[com.fauxx.di.PreferenceKeys.LAYER3_ENABLED] = p.layer3Enabled
     }
 
     private fun prefsToProfile(prefs: androidx.datastore.preferences.core.Preferences): PoisonProfile =

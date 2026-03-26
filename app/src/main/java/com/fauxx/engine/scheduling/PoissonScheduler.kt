@@ -23,8 +23,6 @@ class PoissonScheduler @Inject constructor() {
         const val DEFAULT_QUIET_START = 23
         const val DEFAULT_QUIET_END = 7
 
-        /** Hours in a day worth of active time (roughly 16 hours). */
-        private const val ACTIVE_HOURS_PER_DAY = 16
     }
 
     /**
@@ -48,9 +46,9 @@ class PoissonScheduler @Inject constructor() {
             return msUntilHour(now, allowedStart)
         }
 
-        // Effective rate: divide by active fraction to account for circadian suppression
-        val activeHours = effectiveActiveHours(allowedStart, allowedEnd)
-        val effectiveRate = actionsPerHour.toFloat() * (activeHours / 24f)
+        // Use the target rate directly — actionsPerHour already represents the desired
+        // rate during active hours, no need to scale by active fraction.
+        val effectiveRate = actionsPerHour.toFloat()
 
         // Burst-gap behavior: 30% chance of burst mode (short delay), 70% normal
         return if (Random.nextFloat() < 0.30f) {
@@ -82,10 +80,6 @@ class PoissonScheduler @Inject constructor() {
             // Wraps midnight: e.g., start=22, end=6 means 22:00 to 06:00
             currentHour >= start || currentHour < end
         }
-    }
-
-    private fun effectiveActiveHours(start: Int, end: Int): Int {
-        return if (start <= end) end - start else (24 - start) + end
     }
 
     private fun msUntilHour(now: Calendar, targetHour: Int): Long {

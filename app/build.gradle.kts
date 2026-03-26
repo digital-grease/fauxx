@@ -1,3 +1,15 @@
+fun gitVersionName(): String {
+    return providers.exec {
+        commandLine("git", "describe", "--tags", "--abbrev=0")
+    }.standardOutput.asText.get().trim().removePrefix("v").ifEmpty { "0.0.0" }
+}
+
+fun gitVersionCode(): Int {
+    return providers.exec {
+        commandLine("git", "tag", "--list")
+    }.standardOutput.asText.get().trim().lines().count { it.isNotBlank() }.coerceAtLeast(1)
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.ksp)
@@ -13,8 +25,8 @@ android {
         applicationId = "com.fauxx"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = gitVersionCode()
+        versionName = gitVersionName()
 
         testInstrumentationRunner = "com.fauxx.HiltTestRunner"
         vectorDrawables {
