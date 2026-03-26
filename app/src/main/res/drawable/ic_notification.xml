@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fauxx notification icon: shield with signal-noise motif.
+  Monochrome white per Android notification icon requirements.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+
+    <!-- Shield outline -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,1L3,5v6c0,5.55 3.84,10.74 9,12 5.16,-1.26 9,-6.45 9,-12V5L12,1zM12,21.07C7.85,19.84 5,15.62 5,11V6.3l7,-3.11 7,3.11V11c0,4.62 -2.85,8.84 -7,10.07z" />
+
+    <!-- Noise bars inside shield (signal interference motif) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8,14v-4h1.5v4zM10.5,16v-8h1.5v8zM13,13v-2h1.5v2zM15.5,15v-6h1.5v6z" />
+</vector>

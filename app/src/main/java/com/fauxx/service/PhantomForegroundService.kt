@@ -10,6 +10,8 @@ import android.content.Intent
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.fauxx.R
+import com.fauxx.engine.EngineState
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -89,8 +91,15 @@ class PhantomForegroundService : Service() {
 
     private fun updateNotification() {
         val count = poisonEngine.getTodayActionCount()
+        val status = when (poisonEngine.engineState) {
+            EngineState.ACTIVE -> "Active — $count actions today"
+            EngineState.PAUSED_WIFI -> "Paused — waiting for WiFi"
+            EngineState.PAUSED_BATTERY -> "Paused — battery low"
+            EngineState.PAUSED_RATE_LIMIT -> "Paused — hourly limit reached"
+            EngineState.STOPPED -> "Stopped"
+        }
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(NOTIFICATION_ID, buildNotification("Active — $count actions today", count))
+        nm.notify(NOTIFICATION_ID, buildNotification(status, count))
     }
 
     private fun buildNotification(status: String, actionsToday: Int): Notification {
@@ -105,11 +114,20 @@ class PhantomForegroundService : Service() {
             PendingIntent.FLAG_IMMUTABLE
         )
 
+        val openIntent = PendingIntent.getActivity(
+            this, 2,
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            },
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Fauxx")
             .setContentText(status)
-            .setSmallIcon(android.R.drawable.ic_menu_manage) // TODO: replace with custom icon
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(tapIntent)
+            .addAction(R.drawable.ic_notification, "Open", openIntent)
             .addAction(android.R.drawable.ic_media_pause, "Stop", stopIntent)
             .setOngoing(true)
             .setSilent(true)
