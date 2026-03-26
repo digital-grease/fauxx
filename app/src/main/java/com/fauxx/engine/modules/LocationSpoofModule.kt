@@ -1,7 +1,6 @@
 package com.fauxx.engine.modules
 
 import android.content.Context
-import android.location.Location
 import android.location.LocationManager
 import android.util.Log
 import com.fauxx.data.db.ActionLogEntity
@@ -76,10 +75,10 @@ class LocationSpoofModule @Inject constructor(
         val city = cityDatabase.randomCity()
         val route = routeGenerator.generateRoute(origin = city, mode = mode, count = 5)
 
-        for (location in route) {
+        for (point in route) {
             try {
-                locationManager.setTestProviderLocation(MOCK_PROVIDER, location)
-                delay(location.time - (route.firstOrNull()?.time ?: 0L))
+                locationManager.setTestProviderLocation(MOCK_PROVIDER, point.toLocation())
+                delay(point.time - (route.firstOrNull()?.time ?: 0L))
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to set mock location: ${e.message}")
             }
