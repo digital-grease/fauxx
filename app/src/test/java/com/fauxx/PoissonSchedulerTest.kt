@@ -19,10 +19,21 @@ class PoissonSchedulerTest {
     }
 
     @Test
-    fun `poissonDelay clamps to maximum 30 minutes`() {
+    fun `poissonDelay clamps to intensity-scaled maximum`() {
+        // MEDIUM (60/hr): mean=60s, max=3*60s=180s
         repeat(100) {
             val delay = scheduler.poissonDelay(60f)
-            assertTrue("Delay must not exceed 30 min", delay <= 30 * 60 * 1000L)
+            assertTrue("MEDIUM delay must not exceed 180s, got ${delay}ms", delay <= 180_000L)
+        }
+        // HIGH (200/hr): mean=18s, max=max(60s, 3*18s)=60s
+        repeat(100) {
+            val delay = scheduler.poissonDelay(200f)
+            assertTrue("HIGH delay must not exceed 60s, got ${delay}ms", delay <= 60_000L)
+        }
+        // LOW (12/hr): mean=300s, max=3*300s=900s (15 min)
+        repeat(100) {
+            val delay = scheduler.poissonDelay(12f)
+            assertTrue("LOW delay must not exceed 900s, got ${delay}ms", delay <= 900_000L)
         }
     }
 

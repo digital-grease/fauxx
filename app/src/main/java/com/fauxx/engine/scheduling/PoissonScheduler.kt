@@ -63,14 +63,19 @@ class PoissonScheduler @Inject constructor() {
     /**
      * Generate an exponentially-distributed delay matching a Poisson process
      * with rate [actionsPerHour].
+     *
+     * The upper clamp scales with intensity: 3× the mean inter-arrival time
+     * (minimum 60 s) so HIGH mode (200/hr, mean 18 s) caps at ~54 s while
+     * LOW mode (12/hr, mean 300 s) caps at ~15 min.
      */
     fun poissonDelay(actionsPerHour: Float): Long {
         if (actionsPerHour <= 0f) return 60_000L
         val ratePerMs = actionsPerHour / (60f * 60f * 1000f)
+        val meanDelayMs = (3_600_000f / actionsPerHour).toLong()
+        val maxDelayMs = maxOf(60_000L, meanDelayMs * 3)
         val u = Random.nextDouble()
         val delayMs = (-ln(1.0 - u) / ratePerMs).toLong()
-        // Clamp to reasonable range (1s - 30min)
-        return delayMs.coerceIn(1_000L, 30L * 60L * 1000L)
+        return delayMs.coerceIn(1_000L, maxDelayMs)
     }
 
     private fun isWithinAllowedHours(currentHour: Int, start: Int, end: Int): Boolean {
