@@ -1,13 +1,17 @@
 fun gitVersionName(): String {
-    return providers.exec {
+    val result = providers.exec {
         commandLine("git", "describe", "--tags", "--abbrev=0")
-    }.standardOutput.asText.get().trim().removePrefix("v").ifEmpty { "0.0.0" }
+        isIgnoreExitValue = true
+    }
+    return result.standardOutput.asText.get().trim().removePrefix("v").ifEmpty { "0.0.0" }
 }
 
 fun gitVersionCode(): Int {
-    return providers.exec {
+    val result = providers.exec {
         commandLine("git", "tag", "--list")
-    }.standardOutput.asText.get().trim().lines().count { it.isNotBlank() }.coerceAtLeast(1)
+        isIgnoreExitValue = true
+    }
+    return result.standardOutput.asText.get().trim().lines().count { it.isNotBlank() }.coerceAtLeast(1)
 }
 
 plugins {
