@@ -1,8 +1,12 @@
 package com.fauxx.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +29,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.engine.EngineState
 import com.fauxx.ui.viewmodels.DashboardViewModel
 import kotlin.math.PI
 import kotlin.math.cos
@@ -73,6 +81,7 @@ fun DashboardScreen(
         // Protection toggle
         ProtectionCard(
             enabled = uiState.engineEnabled,
+            engineState = uiState.engineState,
             onToggle = { viewModel.toggleEngine(it) }
         )
 
@@ -105,13 +114,16 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun ProtectionCard(enabled: Boolean, onToggle: (Boolean) -> Unit) {
+private fun ProtectionCard(enabled: Boolean, engineState: EngineState, onToggle: (Boolean) -> Unit) {
+    val isPaused = enabled && engineState != EngineState.ACTIVE && engineState != EngineState.STOPPED
+
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = if (enabled)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceVariant
+            containerColor = when {
+                isPaused -> MaterialTheme.colorScheme.tertiaryContainer
+                enabled -> MaterialTheme.colorScheme.primaryContainer
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            }
         )
     ) {
         Row(
@@ -123,15 +135,27 @@ private fun ProtectionCard(enabled: Boolean, onToggle: (Boolean) -> Unit) {
         ) {
             Column {
                 Text(
-                    text = if (enabled) "ACTIVE" else "INACTIVE",
+                    text = when {
+                        isPaused -> "PAUSED"
+                        enabled -> "ACTIVE"
+                        else -> "INACTIVE"
+                    },
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
-                    color = if (enabled) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = when {
+                        isPaused -> MaterialTheme.colorScheme.tertiary
+                        enabled -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
                 Text(
-                    text = if (enabled) "Generating synthetic activity"
-                    else "Engine stopped",
+                    text = when (engineState) {
+                        EngineState.ACTIVE -> "Generating synthetic activity"
+                        EngineState.PAUSED_WIFI -> "Waiting for WiFi connection"
+                        EngineState.PAUSED_BATTERY -> "Battery below threshold"
+                        EngineState.PAUSED_RATE_LIMIT -> "Hourly rate limit reached"
+                        EngineState.STOPPED -> "Engine stopped"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -184,11 +208,11 @@ private fun CategoryDonutCard(distribution: Map<CategoryPool, Float>) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "CATEGORY DISTRIBUTION",
-                style = MaterialTheme.typography.labelMedium,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            SectionHeaderWithHelp(
+                title = "CATEGORY DISTRIBUTION",
+                help = "Shows how your synthetic noise is spread across topic categories. " +
+                    "A wider spread means trackers see a more confused profile. " +
+                    "Categories are weighted by the targeting engine to maximize distance from your real interests."
             )
             Spacer(Modifier.height(12.dp))
 
@@ -239,11 +263,13 @@ private fun PersonaCard(name: String, ageRange: String, profession: String, inte
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "ACTIVE PERSONA",
-                style = MaterialTheme.typography.labelMedium,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.secondary
+            SectionHeaderWithHelp(
+                title = "ACTIVE PERSONA",
+                titleColor = MaterialTheme.colorScheme.secondary,
+                help = "A synthetic identity the engine adopts for about a week. " +
+                    "Activity is weighted toward this persona's interests to create " +
+                    "temporally coherent noise — making it harder for trackers to " +
+                    "filter out the fake signal. Personas rotate automatically."
             )
             Spacer(Modifier.height(8.dp))
             Text(
@@ -267,6 +293,47 @@ private fun PersonaCard(name: String, ageRange: String, profession: String, inte
 }
 
 @Composable
+private fun SectionHeaderWithHelp(
+    title: String,
+    help: String,
+    titleColor: Color = Color.Unspecified
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Column {
+        Row(
+            modifier = Modifier.clickable { expanded = !expanded },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                fontFamily = FontFamily.Monospace,
+                color = if (titleColor != Color.Unspecified) titleColor
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = if (expanded) "\u25B2" else "?",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+            )
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            Text(
+                text = help,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun NoiseRatioCard(ratio: Float) {
     val animated by animateFloatAsState(
         targetValue = ratio.coerceIn(0f, 1f),
@@ -282,11 +349,11 @@ private fun NoiseRatioCard(ratio: Float) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "NOISE RATIO",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                SectionHeaderWithHelp(
+                    title = "NOISE RATIO",
+                    help = "Estimates how much of your visible browsing profile is synthetic noise " +
+                        "vs real activity. Higher is better — at 80%+, a data broker would need " +
+                        "to correctly identify 4 out of 5 signals as fake to build an accurate profile."
                 )
                 Text(
                     text = "${(animated * 100).toInt()}%",

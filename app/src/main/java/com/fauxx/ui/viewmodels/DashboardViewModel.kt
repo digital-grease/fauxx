@@ -7,6 +7,8 @@ import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.engine.EngineState
+import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.service.PhantomForegroundService
 import com.fauxx.targeting.TargetingEngine
@@ -24,6 +26,7 @@ import javax.inject.Inject
 
 data class DashboardUiState(
     val engineEnabled: Boolean = false,
+    val engineState: EngineState = EngineState.STOPPED,
     val actionsToday: Int = 0,
     val actionsThisWeek: Int = 0,
     val categoryDistribution: Map<CategoryPool, Float> = emptyMap(),
@@ -36,6 +39,7 @@ class DashboardViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val actionLogDao: ActionLogDao,
     private val profileRepo: PoisonProfileRepository,
+    private val poisonEngine: PoisonEngine,
     private val targetingEngine: TargetingEngine,
     private val personaLayer: PersonaRotationLayer
 ) : ViewModel() {
@@ -51,6 +55,7 @@ class DashboardViewModel @Inject constructor(
     ) { enabled, today, week, weights, persona ->
         DashboardUiState(
             engineEnabled = enabled,
+            engineState = poisonEngine.engineState,
             actionsToday = today,
             actionsThisWeek = week,
             categoryDistribution = weights,
