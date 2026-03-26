@@ -26,7 +26,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], application = android.app.Application::class)
 class PoisonEngineConstraintTest {
 
     private val profile = PoisonProfile(
@@ -112,7 +117,10 @@ class PoisonEngineConstraintTest {
         every { appSignalModule.isEnabled() } returns false
         every { dnsModule.isEnabled() } returns false
 
-        val context: android.content.Context = mockk(relaxed = true)
+        val connectivityManager: android.net.ConnectivityManager = mockk(relaxed = true)
+        val context: android.content.Context = mockk(relaxed = true) {
+            every { getSystemService(android.content.Context.CONNECTIVITY_SERVICE) } returns connectivityManager
+        }
         val targetingEngine: TargetingEngine = mockk(relaxed = true) {
             every { setLayer1Enabled(any()) } answers { }
             every { setLayer2Enabled(any()) } answers { }

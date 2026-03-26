@@ -8,12 +8,7 @@ import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class FakeRouteGeneratorTest {
 
     private val cityDatabase: CityDatabase = mockk()
@@ -30,27 +25,27 @@ class FakeRouteGeneratorTest {
     @Test
     fun `walking speed within valid range`() {
         val route = generator.generateRoute(testCity, FakeRouteGenerator.MovementMode.WALKING, count = 20)
-        route.forEach { location ->
+        route.forEach { point ->
             // Walking speed: 0.8 to 2.3 m/s
-            assertTrue("Speed ${location.speed} should be in walking range", location.speed in 0f..3f)
+            assertTrue("Speed ${point.speed} should be in walking range", point.speed in 0f..3f)
         }
     }
 
     @Test
     fun `driving speed within valid range`() {
         val route = generator.generateRoute(testCity, FakeRouteGenerator.MovementMode.DRIVING, count = 20)
-        route.forEach { location ->
+        route.forEach { point ->
             // Driving speed: 8 to 28 m/s (30-100 km/h)
-            assertTrue("Speed ${location.speed} should be in driving range", location.speed in 0f..30f)
+            assertTrue("Speed ${point.speed} should be in driving range", point.speed in 0f..30f)
         }
     }
 
     @Test
     fun `stationary mode stays near origin`() {
         val route = generator.generateRoute(testCity, FakeRouteGenerator.MovementMode.STATIONARY, count = 20)
-        route.forEach { location ->
-            val latDiff = Math.abs(location.latitude - testCity.lat)
-            val lngDiff = Math.abs(location.longitude - testCity.lng)
+        route.forEach { point ->
+            val latDiff = Math.abs(point.latitude - testCity.lat)
+            val lngDiff = Math.abs(point.longitude - testCity.lng)
             // Should not stray more than ~10 meters (~0.0001 degrees)
             assertTrue("Stationary lat drift $latDiff too large", latDiff < 0.001)
             assertTrue("Stationary lng drift $lngDiff too large", lngDiff < 0.001)
@@ -68,9 +63,9 @@ class FakeRouteGeneratorTest {
     @Test
     fun `all locations have valid coordinates`() {
         val route = generator.generateRoute(testCity, FakeRouteGenerator.MovementMode.DRIVING, count = 10)
-        route.forEach { location ->
-            assertTrue("Latitude out of range", location.latitude in -90.0..90.0)
-            assertTrue("Longitude out of range", location.longitude in -180.0..180.0)
+        route.forEach { point ->
+            assertTrue("Latitude out of range", point.latitude in -90.0..90.0)
+            assertTrue("Longitude out of range", point.longitude in -180.0..180.0)
         }
     }
 }

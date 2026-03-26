@@ -8,6 +8,30 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
+ * A plain data representation of a GPS point, free of Android framework dependencies.
+ * Use [toLocation] to convert to an [android.location.Location] when needed.
+ */
+data class RoutePoint(
+    val latitude: Double,
+    val longitude: Double,
+    val speed: Float,
+    val accuracy: Float,
+    val time: Long,
+    val elapsedRealtimeNanos: Long
+) {
+    /** Convert to an Android [Location] for use with [LocationManager]. */
+    fun toLocation(): Location = Location("fauxx_mock").apply {
+        latitude = this@RoutePoint.latitude
+        longitude = this@RoutePoint.longitude
+        this.accuracy = this@RoutePoint.accuracy
+        this.speed = this@RoutePoint.speed
+        time = this@RoutePoint.time
+        elapsedRealtimeNanos = this@RoutePoint.elapsedRealtimeNanos
+        provider = "fauxx_mock"
+    }
+}
+
+/**
  * Generates GPS coordinate sequences along plausible movement paths.
  *
  * Supports three movement modes:
@@ -37,9 +61,9 @@ class FakeRouteGenerator @Inject constructor(
         mode: MovementMode = MovementMode.STATIONARY,
         count: Int = 10,
         intervalMs: Long = 5_000L
-    ): List<Location> {
+    ): List<RoutePoint> {
         val start = origin ?: cityDatabase.randomCity()
-        val locations = mutableListOf<Location>()
+        val points = mutableListOf<RoutePoint>()
         var lat = start.lat
         var lng = start.lng
         var bearing = Random.nextDouble(0.0, 360.0)
@@ -79,18 +103,18 @@ class FakeRouteGenerator @Inject constructor(
                 lng += Random.nextDouble(-0.00002, 0.00002)
             }
 
-            val location = Location("fauxx_mock").apply {
-                latitude = lat
-                longitude = lng
-                this.accuracy = accuracy
-                this.speed = speed
-                time = baseTime + i * intervalMs
-                elapsedRealtimeNanos = baseElapsedNanos + i * intervalMs * 1_000_000L
-                provider = "fauxx_mock"
-            }
-            locations.add(location)
+            points.add(
+                RoutePoint(
+                    latitude = lat,
+                    longitude = lng,
+                    speed = speed,
+                    accuracy = accuracy,
+                    time = baseTime + i * intervalMs,
+                    elapsedRealtimeNanos = baseElapsedNanos + i * intervalMs * 1_000_000L
+                )
+            )
         }
 
-        return locations
+        return points
     }
 }
