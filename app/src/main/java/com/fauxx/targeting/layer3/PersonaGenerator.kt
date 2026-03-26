@@ -5,6 +5,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import android.util.Log
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.targeting.layer1.DemographicProfileDao
+import com.fauxx.targeting.layer1.UserDemographicProfile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.UUID
@@ -30,7 +32,8 @@ private val NINETY_DAYS_MS = TimeUnit.DAYS.toMillis(90)
 @Singleton
 class PersonaGenerator @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val historyDao: PersonaHistoryDao
+    private val historyDao: PersonaHistoryDao,
+    private val demographicProfileDao: DemographicProfileDao
 ) {
     private val gson = Gson()
     private val templates: List<PersonaTemplate> by lazy { loadTemplates() }
@@ -39,6 +42,8 @@ class PersonaGenerator @Inject constructor(
         private const val MAX_ATTEMPTS = 10
         private val ROTATION_JITTER_DAYS = 1L..3L
         private val BASE_ROTATION_DAYS = 7L
+        /** Reject personas matching user demographics on this many or more traits. */
+        private const val MIN_DEMOGRAPHIC_MATCHES = 2
     }
 
     /**
@@ -53,10 +58,13 @@ class PersonaGenerator @Inject constructor(
                 gson.fromJson(entry.personaJson, SyntheticPersona::class.java)
             }.getOrNull()
         }
+        val userProfile = try { demographicProfileDao.get() } catch (_: Exception) { null }
 
         repeat(MAX_ATTEMPTS) {
             val candidate = buildPersona(weightHints)
             if (!PersonaConsistencyRules.isValid(candidate)) return@repeat
+
+            if (matchesUserDemographics(candidate, userProfile)) return@repeat
 
             val tooSimilar = recentPersonas.any { recent ->
                 PersonaConsistencyRules.overlapFraction(candidate, recent) >
@@ -135,6 +143,56 @@ class PersonaGenerator @Inject constructor(
             remaining.remove(chosen)
         }
         return result
+    }
+
+    /**
+     * Returns true if the candidate persona matches the user's self-reported demographics
+     * on 2 or more traits (ageRange, profession, region). Gender is intentionally excluded.
+     * Returns false if the user has no profile (skipped onboarding).
+     */
+    private fun matchesUserDemographics(
+        candidate: SyntheticPersona,
+        userProfile: UserDemographicProfile?
+    ): Boolean {
+        if (userProfile == null) return false
+
+        var matchCount = 0
+
+        if (userProfile.ageRange != null) {
+            val userAge = when (userProfile.ageRange) {
+                com.fauxx.targeting.layer1.AgeRange.AGE_18_24 -> "18-24"
+                com.fauxx.targeting.layer1.AgeRange.AGE_25_34 -> "25-34"
+                com.fauxx.targeting.layer1.AgeRange.AGE_35_44 -> "35-44"
+                com.fauxx.targeting.layer1.AgeRange.AGE_45_54 -> "45-54"
+                com.fauxx.targeting.layer1.AgeRange.AGE_55_64 -> "55-64"
+                com.fauxx.targeting.layer1.AgeRange.AGE_65_PLUS -> "65+"
+            }
+            if (candidate.ageRange == userAge) matchCount++
+        }
+
+        if (userProfile.profession != null) {
+            val userProf = when (userProfile.profession) {
+                com.fauxx.targeting.layer1.Profession.STUDENT -> "Student"
+                com.fauxx.targeting.layer1.Profession.TEACHER -> "Teacher"
+                com.fauxx.targeting.layer1.Profession.ENGINEER -> "Engineer"
+                com.fauxx.targeting.layer1.Profession.HEALTHCARE -> "Healthcare Worker"
+                com.fauxx.targeting.layer1.Profession.LEGAL -> "Legal"
+                com.fauxx.targeting.layer1.Profession.FINANCE_PROF -> "Business Professional"
+                com.fauxx.targeting.layer1.Profession.RETAIL -> "Retail Worker"
+                com.fauxx.targeting.layer1.Profession.TRADES -> "Trades"
+                com.fauxx.targeting.layer1.Profession.CREATIVE -> "Creative"
+                com.fauxx.targeting.layer1.Profession.RETIRED -> "Retired"
+                com.fauxx.targeting.layer1.Profession.HOMEMAKER -> "Homemaker"
+                com.fauxx.targeting.layer1.Profession.OTHER -> "Professional"
+            }
+            if (candidate.profession == userProf) matchCount++
+        }
+
+        if (userProfile.region != null && candidate.region == userProfile.region.name) {
+            matchCount++
+        }
+
+        return matchCount >= MIN_DEMOGRAPHIC_MATCHES
     }
 
     private fun buildFallbackPersona(): SyntheticPersona {
