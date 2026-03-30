@@ -1,6 +1,6 @@
 package com.fauxx.engine.modules
 
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.crawllist.CrawlListManager
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.model.ActionType
@@ -13,8 +13,6 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
-
-private const val TAG = "CookieSaturationModule"
 
 /**
  * Visits URLs from [CrawlListManager] in an isolated background WebView to accumulate
@@ -58,7 +56,7 @@ class CookieSaturationModule @Inject constructor(
                 webView.loadUrl(entry.url)
                 delay(dwellMs)
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to load ${entry.url}: ${e.message}")
+                Timber.w("Failed to load ${entry.url}: ${e.message}")
             } finally {
                 webViewPool.release(webView)
             }

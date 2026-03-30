@@ -1,6 +1,6 @@
 package com.fauxx.engine.modules
 
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.crawllist.CrawlListManager
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.model.ActionType
@@ -11,8 +11,6 @@ import kotlinx.coroutines.withContext
 import java.net.InetAddress
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val TAG = "DnsNoiseModule"
 
 /**
  * Resolves diverse domain names to generate DNS query noise visible to ISP and
@@ -47,7 +45,7 @@ class DnsNoiseModule @Inject constructor(
                 InetAddress.getByName(entry.domain)
                 true
             } catch (e: Exception) {
-                Log.d(TAG, "DNS lookup failed for ${entry.domain}: ${e.message}")
+                Timber.d("DNS lookup failed for ${entry.domain}: ${e.message}")
                 false
             }
         }

@@ -1,6 +1,6 @@
 package com.fauxx.engine.modules
 
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
@@ -8,8 +8,6 @@ import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.network.UserAgentPool
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val TAG = "FingerprintModule"
 
 /**
  * Rotates User-Agent and injects canvas noise to reduce fingerprinting consistency.
@@ -22,7 +20,7 @@ class FingerprintModule @Inject constructor(
 ) : Module {
 
     override suspend fun start() {
-        Log.d(TAG, "FingerprintModule started")
+        Timber.d("FingerprintModule started")
     }
 
     override suspend fun stop() {}

@@ -3,20 +3,32 @@ package com.fauxx.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.fauxx.di.PreferenceKeys
 import com.fauxx.di.fauxxDataStore
+import com.fauxx.logging.CrashDetector
 import com.fauxx.ui.navigation.FauxxNavGraph
+import com.fauxx.ui.screens.CrashReportDialog
+import com.fauxx.ui.screens.shareCrashReport
 import com.fauxx.ui.theme.FauxxTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import javax.inject.Inject
 
 /**
  * Single-activity entry point for Fauxx. Hosts the Compose navigation graph.
  * Shows [com.fauxx.ui.screens.OnboardingScreen] on first launch only.
+ * Shows [CrashReportDialog] if the previous session crashed.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var crashDetector: CrashDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,6 +40,27 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FauxxTheme {
+                var showCrashDialog by remember {
+                    mutableStateOf(crashDetector.hasCrashReport())
+                }
+
+                if (showCrashDialog) {
+                    CrashReportDialog(
+                        onDismiss = {
+                            crashDetector.dismissCrashReport()
+                            showCrashDialog = false
+                        },
+                        onShare = {
+                            val report = crashDetector.readCrashReport()
+                            if (report != null) {
+                                shareCrashReport(this@MainActivity, report)
+                            }
+                            crashDetector.dismissCrashReport()
+                            showCrashDialog = false
+                        }
+                    )
+                }
+
                 FauxxNavGraph(showOnboarding = showOnboarding)
             }
         }

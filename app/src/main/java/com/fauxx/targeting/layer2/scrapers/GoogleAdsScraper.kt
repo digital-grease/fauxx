@@ -1,6 +1,6 @@
 package com.fauxx.targeting.layer2.scrapers
 
-import android.util.Log
+import timber.log.Timber
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import kotlinx.coroutines.Dispatchers
@@ -10,7 +10,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import kotlin.coroutines.resume
 
-private const val TAG = "GoogleAdsScraper"
 private const val SCRAPE_TIMEOUT_MS = 30_000L
 private const val ADS_SETTINGS_URL = "https://adssettings.google.com/authenticated"
 
@@ -31,7 +30,7 @@ class GoogleAdsScraper @Inject constructor() : PlatformScraper {
                 extractCategories(webView)
             }
         } ?: run {
-            Log.w(TAG, "Scrape timed out after ${SCRAPE_TIMEOUT_MS}ms")
+            Timber.w("Scrape timed out after ${SCRAPE_TIMEOUT_MS}ms")
             emptySet()
         }
     }
@@ -49,7 +48,7 @@ class GoogleAdsScraper @Inject constructor() : PlatformScraper {
 
                 @JavascriptInterface
                 fun onError(error: String) {
-                    Log.d(TAG, "JS error: $error")
+                    Timber.d("JS error: $error")
                     cont.resume(emptySet())
                 }
             }

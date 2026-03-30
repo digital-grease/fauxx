@@ -2,7 +2,7 @@ package com.fauxx.engine.modules
 
 import android.content.Context
 import android.location.LocationManager
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.location.CityDatabase
 import com.fauxx.data.location.FakeRouteGenerator
@@ -14,7 +14,6 @@ import kotlinx.coroutines.delay
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val TAG = "LocationSpoofModule"
 private const val MOCK_PROVIDER = "fauxx_mock"
 
 /**
@@ -44,11 +43,11 @@ class LocationSpoofModule @Inject constructor(
             )
             locationManager.setTestProviderEnabled(MOCK_PROVIDER, true)
             mockProviderAdded = true
-            Log.d(TAG, "Mock location provider started")
+            Timber.d("Mock location provider started")
         } catch (e: SecurityException) {
-            Log.w(TAG, "Cannot add mock provider — developer options not enabled")
+            Timber.w("Cannot add mock provider — developer options not enabled")
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to start mock provider: ${e.message}")
+            Timber.w("Failed to start mock provider: ${e.message}")
         }
     }
 
@@ -80,7 +79,7 @@ class LocationSpoofModule @Inject constructor(
                 locationManager.setTestProviderLocation(MOCK_PROVIDER, point.toLocation())
                 delay(point.time - (route.firstOrNull()?.time ?: 0L))
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to set mock location: ${e.message}")
+                Timber.w("Failed to set mock location: ${e.message}")
             }
         }
 
