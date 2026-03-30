@@ -2,14 +2,12 @@ package com.fauxx.data.crawllist
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.querybank.CategoryPool
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val TAG = "CrawlListManager"
 
 /** Minimum milliseconds between requests to the same domain (safety requirement). */
 private const val MIN_DOMAIN_INTERVAL_MS = 5_000L
@@ -90,7 +88,7 @@ class CrawlListManager @Inject constructor(
             val raw: List<CrawlEntryJson> = Gson().fromJson(json, type)
             raw.mapNotNull { it.toCrawlEntry() }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to load crawl_urls.json", e)
+            Timber.e(e, "Failed to load crawl_urls.json")
             emptyList()
         }
     }

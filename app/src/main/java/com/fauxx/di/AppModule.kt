@@ -3,7 +3,7 @@
 package com.fauxx.di
 
 import android.content.Context
-import android.util.Log
+import timber.log.Timber
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -25,8 +25,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import javax.inject.Singleton
-
-private const val TAG = "AppModule"
 
 /**
  * Hilt module providing application-level singletons: Room database (SQLCipher-encrypted)
@@ -99,10 +97,10 @@ object AppModule {
             val legacyPassphrase = legacyPrefs.getString("db_passphrase", null)
             if (legacyPassphrase != null) {
                 tinkKeyManager.storeDatabasePassphrase(legacyPassphrase)
-                Log.i(TAG, "Migrated DB passphrase from EncryptedSharedPreferences to Tink")
+                Timber.i("Migrated DB passphrase from EncryptedSharedPreferences to Tink")
             }
         } catch (e: Exception) {
-            Log.d(TAG, "No legacy DB passphrase to migrate: ${e.message}")
+            Timber.d("No legacy DB passphrase to migrate: ${e.message}")
         }
     }
 
@@ -161,9 +159,9 @@ object AppModule {
                     prefs[PreferenceKeys.ONBOARDING_COMPLETED] = legacy.getBoolean("onboarding_completed", false)
                 }
             }
-            Log.i(TAG, "Migrated app preferences from EncryptedSharedPreferences to DataStore")
+            Timber.i("Migrated app preferences from EncryptedSharedPreferences to DataStore")
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to migrate legacy app preferences: ${e.message}")
+            Timber.w("Failed to migrate legacy app preferences: ${e.message}")
         }
     }
 

@@ -2,13 +2,11 @@ package com.fauxx.data.querybank
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import android.util.Log
+import timber.log.Timber
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val TAG = "QueryBankManager"
 
 /**
  * Loads and serves synthetic search queries from bundled JSON assets.
@@ -45,7 +43,7 @@ class QueryBankManager @Inject constructor(
             val type = object : TypeToken<List<String>>() {}.type
             Gson().fromJson(json, type)
         } catch (e: Exception) {
-            Log.w(TAG, "Could not load query bank: $filename")
+            Timber.w("Could not load query bank: $filename")
             emptyList()
         }
     }

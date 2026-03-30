@@ -143,6 +143,9 @@ dependencies {
     // Gson
     implementation(libs.gson)
 
+    // Logging
+    implementation(libs.timber)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

@@ -1,15 +1,13 @@
 package com.fauxx.targeting.layer2
 
 import android.content.Context
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.querybank.CategoryPool
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val TAG = "CategoryMapper"
 
 /**
  * Maps raw ad platform category strings (e.g., "Video Games", "Software Development") to
@@ -50,7 +48,7 @@ class CategoryMapper @Inject constructor(
         val heuristic = applyHeuristics(lowerInput)
         if (heuristic != null) return heuristic
 
-        Log.d(TAG, "No CategoryPool match for platform string: '$platformString'")
+        Timber.d("No CategoryPool match for platform string: '$platformString'")
         return null
     }
 
@@ -95,7 +93,7 @@ class CategoryMapper @Inject constructor(
             val type = object : TypeToken<Map<String, String>>() {}.type
             Gson().fromJson(json, type)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to load platform_category_map.json", e)
+            Timber.e(e, "Failed to load platform_category_map.json")
             emptyMap()
         }
     }

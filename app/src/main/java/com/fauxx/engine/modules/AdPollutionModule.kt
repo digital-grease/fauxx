@@ -1,6 +1,6 @@
 package com.fauxx.engine.modules
 
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.crawllist.CrawlListManager
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.model.ActionType
@@ -13,8 +13,6 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
-
-private const val TAG = "AdPollutionModule"
 
 /** Ad preference dashboard URLs to visit. */
 private val AD_DASHBOARD_URLS = listOf(
@@ -63,7 +61,7 @@ class AdPollutionModule @Inject constructor(
                 webView.loadUrl(url)
                 delay(Random.nextLong(3_000L, 15_000L))
             } catch (e: Exception) {
-                Log.w(TAG, "Ad page load failed: ${e.message}")
+                Timber.w("Ad page load failed: ${e.message}")
             } finally {
                 webViewPool.release(webView)
             }

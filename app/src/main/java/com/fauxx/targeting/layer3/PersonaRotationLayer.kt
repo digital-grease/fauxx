@@ -1,6 +1,6 @@
 package com.fauxx.targeting.layer3
 
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
 import com.google.gson.Gson
@@ -17,8 +17,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val TAG = "PersonaRotationLayer"
 
 /** Weight for categories aligned with the current persona. */
 private const val ALIGNED_WEIGHT = 2.0f
@@ -63,7 +61,7 @@ class PersonaRotationLayer @Inject constructor(
             try {
                 computeWeights(persona)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to compute persona weights, using neutral", e)
+                Timber.e(e, "Failed to compute persona weights, using neutral")
                 neutralWeights()
             }
         }
@@ -141,7 +139,7 @@ class PersonaRotationLayer @Inject constructor(
                 val cutoff = System.currentTimeMillis() - HISTORY_RETENTION_MS
                 historyDao.pruneOlderThan(cutoff)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to rotate persona, falling back to neutral weights", e)
+                Timber.e(e, "Failed to rotate persona, falling back to neutral weights")
             }
         }
     }

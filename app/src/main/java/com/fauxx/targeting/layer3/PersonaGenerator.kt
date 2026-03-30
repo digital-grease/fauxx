@@ -2,7 +2,7 @@ package com.fauxx.targeting.layer3
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.DemographicProfileDao
@@ -15,7 +15,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
 
-private const val TAG = "PersonaGenerator"
 private val NINETY_DAYS_MS = TimeUnit.DAYS.toMillis(90)
 
 /**
@@ -73,7 +72,7 @@ class PersonaGenerator @Inject constructor(
             if (!tooSimilar) return candidate
         }
 
-        Log.w(TAG, "Could not generate unique persona after $MAX_ATTEMPTS attempts, using fallback")
+        Timber.w("Could not generate unique persona after $MAX_ATTEMPTS attempts, using fallback")
         return buildFallbackPersona()
     }
 
@@ -235,7 +234,7 @@ class PersonaGenerator @Inject constructor(
             val type = object : TypeToken<List<PersonaTemplate>>() {}.type
             gson.fromJson(json, type)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to load persona_templates.json", e)
+            Timber.e(e, "Failed to load persona_templates.json")
             emptyList()
         }
     }

@@ -8,8 +8,8 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
+import timber.log.Timber
 import com.fauxx.R
 import com.fauxx.engine.EngineState
 import com.fauxx.engine.PoisonEngine
@@ -24,7 +24,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-private const val TAG = "PhantomForegroundService"
 private const val CHANNEL_ID = "fauxx_engine"
 private const val NOTIFICATION_ID = 1
 private const val NOTIFICATION_UPDATE_INTERVAL_MS = 60_000L
@@ -54,19 +53,19 @@ class PhantomForegroundService : Service() {
 
         when (action) {
             ACTION_START -> {
-                Log.i(TAG, "Starting Phantom service")
+                Timber.i("Starting Phantom service")
                 startForeground(NOTIFICATION_ID, buildNotification("Initializing…", 0))
                 try {
                     poisonEngine.start()
                     startNotificationUpdates()
                 } catch (e: Exception) {
-                    Log.e(TAG, "Engine failed to start, stopping service", e)
+                    Timber.e(e, "Engine failed to start, stopping service")
                     stopForeground(STOP_FOREGROUND_REMOVE)
                     stopSelf()
                 }
             }
             ACTION_STOP -> {
-                Log.i(TAG, "Stopping Phantom service")
+                Timber.i("Stopping Phantom service")
                 notificationJob?.cancel()
                 notificationJob = null
                 poisonEngine.stop()

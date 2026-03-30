@@ -1,6 +1,6 @@
 package com.fauxx.engine.modules
 
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.model.PoisonProfile
@@ -13,8 +13,6 @@ import okhttp3.Request
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
-
-private const val TAG = "SearchPoisonModule"
 
 /** Search engines to rotate across. */
 private val SEARCH_ENGINES = listOf(
@@ -39,11 +37,11 @@ class SearchPoisonModule @Inject constructor(
 ) : Module {
 
     override suspend fun start() {
-        Log.d(TAG, "SearchPoisonModule started")
+        Timber.d("SearchPoisonModule started")
     }
 
     override suspend fun stop() {
-        Log.d(TAG, "SearchPoisonModule stopped")
+        Timber.d("SearchPoisonModule stopped")
     }
 
     override fun isEnabled(): Boolean = profileRepo.getProfile().searchPoisonEnabled
@@ -64,11 +62,11 @@ class SearchPoisonModule @Inject constructor(
             val request = Request.Builder().url(url).get().build()
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    Log.d(TAG, "Search request to $engine returned ${response.code}")
+                    Timber.d("Search request to $engine returned ${response.code}")
                 }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Search request failed: ${e.message}")
+            Timber.w("Search request failed: ${e.message}")
         }
 
         return ActionLogEntity(

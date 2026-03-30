@@ -1,7 +1,7 @@
 package com.fauxx.targeting.layer2
 
 import android.content.Context
-import android.util.Log
+import timber.log.Timber
 import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val TAG = "ScrapeScheduler"
 private const val WORK_NAME = "fauxx_scrape"
 
 /**
@@ -54,7 +53,7 @@ class ScrapeScheduler @Inject constructor(
             ExistingPeriodicWorkPolicy.KEEP,
             request
         )
-        Log.d(TAG, "Scrape job scheduled")
+        Timber.d("Scrape job scheduled")
     }
 
     /** Cancel the scheduled scrape job. */
@@ -81,7 +80,7 @@ class ScrapeWorker @AssistedInject constructor(
     private val gson = Gson()
 
     override suspend fun doWork(): Result {
-        Log.i(TAG, "Starting ad profile scrape")
+        Timber.i("Starting ad profile scrape")
         webViewPool.initialize()
 
         val scraperWebView = withContext(Dispatchers.Main) {
@@ -92,7 +91,7 @@ class ScrapeWorker @AssistedInject constructor(
             try {
                 val rawCategories = scraper.scrape(scraperWebView)
                 if (rawCategories.isEmpty()) {
-                    Log.d(TAG, "${scraper.platformId}: no categories found (may need auth)")
+                    Timber.d("${scraper.platformId}: no categories found (may need auth)")
                     continue
                 }
 
@@ -106,10 +105,10 @@ class ScrapeWorker @AssistedInject constructor(
                         lastScraped = System.currentTimeMillis()
                     )
                 )
-                Log.i(TAG, "${scraper.platformId}: scraped ${mapped.size} categories")
+                Timber.i("${scraper.platformId}: scraped ${mapped.size} categories")
 
             } catch (e: Exception) {
-                Log.e(TAG, "${scraper.platformId} scrape failed", e)
+                Timber.e(e, "${scraper.platformId} scrape failed")
                 // Keep existing cache — do not clear on failure
             }
         }

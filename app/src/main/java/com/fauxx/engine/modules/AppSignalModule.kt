@@ -3,7 +3,7 @@ package com.fauxx.engine.modules
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
@@ -11,8 +11,6 @@ import com.fauxx.engine.PoisonProfileRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val TAG = "AppSignalModule"
 
 /** App store search URLs per category for off-profile attribution signals. */
 private val CATEGORY_APP_URLS = mapOf(
@@ -53,7 +51,7 @@ class AppSignalModule @Inject constructor(
             // Note: this will open Play Store or browser — guard with try/catch
             context.startActivity(intent)
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to open app signal URL: ${e.message}")
+            Timber.w("Failed to open app signal URL: ${e.message}")
         }
 
         return ActionLogEntity(

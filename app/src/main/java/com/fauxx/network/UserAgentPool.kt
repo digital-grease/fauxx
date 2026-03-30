@@ -2,13 +2,11 @@ package com.fauxx.network
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import android.util.Log
+import timber.log.Timber
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val TAG = "UserAgentPool"
 
 /**
  * Curated pool of real User-Agent strings loaded from assets/user_agents.json.
@@ -30,7 +28,7 @@ class UserAgentPool @Inject constructor(
             val type = object : TypeToken<List<String>>() {}.type
             Gson().fromJson(json, type)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to load user_agents.json", e)
+            Timber.e(e, "Failed to load user_agents.json")
             listOf(DEFAULT_UA)
         }
     }
