@@ -13,25 +13,41 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedFilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.AgeRange
 import com.fauxx.targeting.layer1.Gender
+import com.fauxx.targeting.layer1.InterestMapping
+import com.fauxx.targeting.layer1.MappingConfidence
 import com.fauxx.targeting.layer1.Profession
 import com.fauxx.targeting.layer1.Region
 import com.fauxx.ui.viewmodels.OnboardingViewModel
@@ -72,7 +88,10 @@ fun OnboardingScreen(
             )
             3 -> InterestsStep(
                 selected = uiState.interests,
-                onToggle = { viewModel.toggleInterest(it) }
+                onToggle = { viewModel.toggleInterest(it) },
+                customMappings = uiState.customInterestMappings,
+                onAddCustom = { viewModel.addCustomInterest(it) },
+                onRemoveCustom = { viewModel.removeCustomInterest(it) }
             )
             4 -> ProfessionStep(
                 selected = uiState.profession,
@@ -195,7 +214,13 @@ private fun GenderStep(selected: Gender?, onSelect: (Gender) -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun InterestsStep(selected: Set<CategoryPool>, onToggle: (CategoryPool) -> Unit) {
+private fun InterestsStep(
+    selected: Set<CategoryPool>,
+    onToggle: (CategoryPool) -> Unit,
+    customMappings: List<InterestMapping>,
+    onAddCustom: (String) -> Unit,
+    onRemoveCustom: (Int) -> Unit
+) {
     Column {
         Text(
             text = "Your main interests",
@@ -217,7 +242,90 @@ private fun InterestsStep(selected: Set<CategoryPool>, onToggle: (CategoryPool) 
                 )
             }
         }
+
+        Spacer(Modifier.height(20.dp))
+        Text(
+            text = "Or add your own",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "Type specific interests not covered above (e.g., \"woodworking\", \"cryptocurrency\")",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(8.dp))
+
+        var textFieldValue by remember { mutableStateOf("") }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = textFieldValue,
+                onValueChange = { textFieldValue = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("e.g., woodworking") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    if (textFieldValue.isNotBlank()) {
+                        onAddCustom(textFieldValue)
+                        textFieldValue = ""
+                    }
+                })
+            )
+            IconButton(onClick = {
+                if (textFieldValue.isNotBlank()) {
+                    onAddCustom(textFieldValue)
+                    textFieldValue = ""
+                }
+            }) {
+                Icon(Icons.Default.Add, contentDescription = "Add interest")
+            }
+        }
+
+        if (customMappings.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                customMappings.forEachIndexed { index, mapping ->
+                    CustomInterestChip(mapping = mapping, onRemove = { onRemoveCustom(index) })
+                }
+            }
+        }
     }
+}
+
+@Composable
+private fun CustomInterestChip(mapping: InterestMapping, onRemove: () -> Unit) {
+    val categoryLabel = mapping.category?.name?.lowercase()?.replace("_", " ")
+    val label = if (categoryLabel != null) {
+        "${mapping.interest} → $categoryLabel"
+    } else {
+        "${mapping.interest} (unmapped)"
+    }
+    val containerColor = when (mapping.confidence) {
+        MappingConfidence.HIGH -> MaterialTheme.colorScheme.primaryContainer
+        MappingConfidence.LOW -> MaterialTheme.colorScheme.tertiaryContainer
+        MappingConfidence.NONE -> MaterialTheme.colorScheme.errorContainer
+    }
+
+    InputChip(
+        selected = true,
+        onClick = onRemove,
+        label = { Text(label, style = MaterialTheme.typography.bodySmall) },
+        trailingIcon = {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Remove",
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    )
 }
 
 @Composable

@@ -20,7 +20,14 @@ private val CATEGORY_APP_URLS = mapOf(
     CategoryPool.TRAVEL to "https://play.google.com/store/search?q=travel+planning&c=apps",
     CategoryPool.FINANCE to "https://play.google.com/store/search?q=budget+finance&c=apps",
     CategoryPool.MEDICAL to "https://play.google.com/store/search?q=health+medical&c=apps",
-    CategoryPool.SPORTS to "https://play.google.com/store/search?q=sports+scores&c=apps"
+    CategoryPool.SPORTS to "https://play.google.com/store/search?q=sports+scores&c=apps",
+    CategoryPool.OUTDOOR_RECREATION to "https://play.google.com/store/search?q=hiking+trails+outdoor&c=apps",
+    CategoryPool.CRAFTS to "https://play.google.com/store/search?q=craft+ideas+DIY&c=apps",
+    CategoryPool.HISTORY to "https://play.google.com/store/search?q=history+trivia+museum&c=apps",
+    CategoryPool.ENVIRONMENT to "https://play.google.com/store/search?q=carbon+footprint+sustainability&c=apps",
+    CategoryPool.MILITARY_DEFENSE to "https://play.google.com/store/search?q=military+veteran+benefits&c=apps",
+    CategoryPool.WELLNESS_ALTERNATIVE to "https://play.google.com/store/search?q=meditation+astrology+wellness&c=apps",
+    CategoryPool.RELATIONSHIPS_DATING to "https://play.google.com/store/search?q=dating+relationships&c=apps"
 )
 
 private const val DEFAULT_APP_URL =
