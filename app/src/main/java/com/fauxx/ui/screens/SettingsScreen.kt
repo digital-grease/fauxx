@@ -56,6 +56,8 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showClearDialog by remember { mutableStateOf(false) }
     var showIntensityMenu by remember { mutableStateOf(false) }
+    var showLogExportSheet by remember { mutableStateOf(false) }
+    var exportedLogs by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -203,12 +205,12 @@ fun SettingsScreen(
         }
 
         // Export debug logs
-        val context = LocalContext.current
         Button(
             onClick = {
                 val logs = viewModel.getScrubbedLogs()
                 if (logs.isNotBlank()) {
-                    shareCrashReport(context, logs)
+                    exportedLogs = logs
+                    showLogExportSheet = true
                 }
             },
             colors = ButtonDefaults.buttonColors(
@@ -268,6 +270,15 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) { Text("Cancel") }
             }
+        )
+    }
+
+    if (showLogExportSheet) {
+        LogExportSheet(
+            title = "Export Debug Logs",
+            content = exportedLogs,
+            fileName = "fauxx_debug_logs.txt",
+            onDismiss = { showLogExportSheet = false }
         )
     }
 }

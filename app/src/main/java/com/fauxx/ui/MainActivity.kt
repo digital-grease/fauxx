@@ -12,7 +12,7 @@ import com.fauxx.di.fauxxDataStore
 import com.fauxx.logging.CrashDetector
 import com.fauxx.ui.navigation.FauxxNavGraph
 import com.fauxx.ui.screens.CrashReportDialog
-import com.fauxx.ui.screens.shareCrashReport
+import com.fauxx.ui.screens.LogExportSheet
 import com.fauxx.ui.theme.FauxxTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
@@ -43,6 +43,8 @@ class MainActivity : ComponentActivity() {
                 var showCrashDialog by remember {
                     mutableStateOf(crashDetector.hasCrashReport())
                 }
+                var showCrashExportSheet by remember { mutableStateOf(false) }
+                var crashReportContent by remember { mutableStateOf("") }
 
                 if (showCrashDialog) {
                     CrashReportDialog(
@@ -53,11 +55,21 @@ class MainActivity : ComponentActivity() {
                         onShare = {
                             val report = crashDetector.readCrashReport()
                             if (report != null) {
-                                shareCrashReport(this@MainActivity, report)
+                                crashReportContent = report
+                                showCrashExportSheet = true
                             }
                             crashDetector.dismissCrashReport()
                             showCrashDialog = false
                         }
+                    )
+                }
+
+                if (showCrashExportSheet) {
+                    LogExportSheet(
+                        title = "Crash Report",
+                        content = crashReportContent,
+                        fileName = "fauxx_crash_report.txt",
+                        onDismiss = { showCrashExportSheet = false }
                     )
                 }
 
