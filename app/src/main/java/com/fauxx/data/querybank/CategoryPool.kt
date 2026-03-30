@@ -33,5 +33,22 @@ enum class CategoryPool {
     FOOD,
     POLITICS,
     SCIENCE,
-    BUSINESS
+    BUSINESS,
+
+    // --- Added categories for broader demographic distance coverage ---
+
+    /** Hiking, camping, fishing, hunting, national parks, kayaking. Distinct from FITNESS (exercise) and SPORTS (spectator/competitive). */
+    OUTDOOR_RECREATION,
+    /** Knitting, pottery, scrapbooking, quilting, hobby woodworking, candle making. Distinct from HOME_IMPROVEMENT (structural). */
+    CRAFTS,
+    /** Historical events, museums, genealogy, antiques, historical documentaries. Distinct from ACADEMIC (formal education) and SCIENCE (research). */
+    HISTORY,
+    /** Climate change, sustainability, conservation, renewable energy, recycling, environmental policy. Distinct from SCIENCE (research-focused). */
+    ENVIRONMENT,
+    /** Veterans, defense technology, military history, VA benefits, service branches. */
+    MILITARY_DEFENSE,
+    /** Meditation lifestyle, crystals, astrology, holistic health, essential oils. Distinct from MEDICAL (evidence-based) and FITNESS (exercise). */
+    WELLNESS_ALTERNATIVE,
+    /** Dating apps, relationship advice, weddings, social skills, breakups. Strongly age-gated (18-34). */
+    RELATIONSHIPS_DATING
 }

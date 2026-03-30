@@ -5,7 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.targeting.TargetingEngine
+import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicProfileDao
+import com.fauxx.targeting.layer1.InterestMapping
+import com.fauxx.targeting.layer1.UserDemographicProfile
 import com.fauxx.targeting.layer2.PlatformProfileDao
 import com.fauxx.targeting.layer2.ScrapeScheduler
 import com.fauxx.targeting.layer3.PersonaHistoryDao
@@ -29,7 +32,8 @@ data class TargetingUiState(
     val hasProfile: Boolean = false,
     val lastScrapeDate: String = "Never",
     val currentPersonaName: String? = null,
-    val weights: Map<CategoryPool, Float> = emptyMap()
+    val weights: Map<CategoryPool, Float> = emptyMap(),
+    val customInterestMappings: List<InterestMapping> = emptyList()
 )
 
 private val DATE_FMT = SimpleDateFormat("MMM d, yyyy", Locale.US)
@@ -39,6 +43,7 @@ class TargetingViewModel @Inject constructor(
     private val targetingEngine: TargetingEngine,
     private val profileRepo: PoisonProfileRepository,
     private val demographicDao: DemographicProfileDao,
+    private val customInterestMapper: CustomInterestMapper,
     private val platformDao: PlatformProfileDao,
     private val personaHistoryDao: PersonaHistoryDao,
     private val personaLayer: PersonaRotationLayer,
@@ -54,11 +59,15 @@ class TargetingViewModel @Inject constructor(
         targetingEngine.getWeights()
     ) { state, profile, platforms, persona, weights ->
         val lastScrape = platforms.maxOfOrNull { it.lastScraped }
+        val customInterests = profile?.getCustomInterests().orEmpty()
         state.copy(
             hasProfile = profile != null,
             lastScrapeDate = lastScrape?.takeIf { it > 0 }?.let { DATE_FMT.format(Date(it)) } ?: "Never",
             currentPersonaName = persona?.name,
-            weights = weights
+            weights = weights,
+            customInterestMappings = if (customInterests.isNotEmpty())
+                customInterestMapper.mapAll(customInterests)
+            else emptyList()
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TargetingUiState())
 
@@ -95,6 +104,38 @@ class TargetingViewModel @Inject constructor(
 
     fun rotatePersona() {
         personaLayer.rotateNow()
+    }
+
+    fun addCustomInterest(interest: String) {
+        val trimmed = interest.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch {
+            val profile = demographicDao.get() ?: UserDemographicProfile()
+            val current = profile.getCustomInterests().toMutableList()
+            if (current.any { it.equals(trimmed, ignoreCase = true) }) return@launch
+            current.add(trimmed)
+            demographicDao.upsert(
+                profile.copy(
+                    customInterestsJson = UserDemographicProfile.serializeCustomInterests(current)
+                )
+            )
+        }
+    }
+
+    fun removeCustomInterest(index: Int) {
+        viewModelScope.launch {
+            val profile = demographicDao.get() ?: return@launch
+            val current = profile.getCustomInterests().toMutableList()
+            if (index !in current.indices) return@launch
+            current.removeAt(index)
+            demographicDao.upsert(
+                profile.copy(
+                    customInterestsJson = if (current.isNotEmpty())
+                        UserDemographicProfile.serializeCustomInterests(current)
+                    else null
+                )
+            )
+        }
     }
 
     fun clearProfile() {

@@ -4,22 +4,34 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,9 +47,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.targeting.layer1.InterestMapping
+import com.fauxx.targeting.layer1.MappingConfidence
 import com.fauxx.ui.viewmodels.TargetingViewModel
 
 /**
@@ -75,6 +90,15 @@ fun TargetingScreen(
             onToggle = { viewModel.setLayer1Enabled(it) },
             statusText = if (uiState.hasProfile) "Profile set" else "No profile"
         )
+
+        // Custom interests (part of Layer 1)
+        if (uiState.layer1Enabled) {
+            CustomInterestsCard(
+                mappings = uiState.customInterestMappings,
+                onAdd = { viewModel.addCustomInterest(it) },
+                onRemove = { viewModel.removeCustomInterest(it) }
+            )
+        }
 
         // Layer 2 toggle
         LayerToggleCard(
@@ -223,6 +247,92 @@ private fun WeightChart(weights: Map<CategoryPool, Float>) {
                     )
                     Spacer(Modifier.height(4.dp))
                 }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CustomInterestsCard(
+    mappings: List<InterestMapping>,
+    onAdd: (String) -> Unit,
+    onRemove: (Int) -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Custom Interests",
+                style = MaterialTheme.typography.titleSmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "Add specific interests to suppress (mapped to nearest category)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+
+            var textFieldValue by remember { mutableStateOf("") }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = textFieldValue,
+                    onValueChange = { textFieldValue = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("e.g., woodworking") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        if (textFieldValue.isNotBlank()) {
+                            onAdd(textFieldValue)
+                            textFieldValue = ""
+                        }
+                    })
+                )
+                IconButton(onClick = {
+                    if (textFieldValue.isNotBlank()) {
+                        onAdd(textFieldValue)
+                        textFieldValue = ""
+                    }
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add interest")
+                }
+            }
+
+            if (mappings.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    mappings.forEachIndexed { index, mapping ->
+                        val categoryLabel = mapping.category?.name?.lowercase()?.replace("_", " ")
+                        val label = if (categoryLabel != null) {
+                            "${mapping.interest} → $categoryLabel"
+                        } else {
+                            "${mapping.interest} (unmapped)"
+                        }
+                        InputChip(
+                            selected = true,
+                            onClick = { onRemove(index) },
+                            label = { Text(label, style = MaterialTheme.typography.bodySmall) },
+                            trailingIcon = {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Remove",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }

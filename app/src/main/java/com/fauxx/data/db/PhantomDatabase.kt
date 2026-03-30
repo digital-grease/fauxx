@@ -31,7 +31,7 @@ import com.fauxx.targeting.layer3.PersonaHistoryEntity
         PlatformProfileCache::class,
         PersonaHistoryEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(PhantomTypeConverters::class)
@@ -46,6 +46,13 @@ abstract class PhantomDatabase : RoomDatabase() {
 val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_action_log_timestamp_success` ON `action_log` (`timestamp`, `success`)")
+    }
+}
+
+/** Migration from v2 to v3: add customInterestsJson column to user_demographic_profile. */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `user_demographic_profile` ADD COLUMN `customInterestsJson` TEXT DEFAULT NULL")
     }
 }
 
