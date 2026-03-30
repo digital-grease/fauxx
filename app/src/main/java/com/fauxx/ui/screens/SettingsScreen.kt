@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -199,6 +200,23 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Clear All Data")
+        }
+
+        // Export debug logs
+        val context = LocalContext.current
+        Button(
+            onClick = {
+                val logs = viewModel.getScrubbedLogs()
+                if (logs.isNotBlank()) {
+                    shareCrashReport(context, logs)
+                }
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Export Debug Logs", color = MaterialTheme.colorScheme.onSurface)
         }
 
         // About & Privacy

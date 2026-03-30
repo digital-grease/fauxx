@@ -2,13 +2,11 @@ package com.fauxx.data.crawllist
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import android.util.Log
+import timber.log.Timber
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val TAG = "DomainBlocklist"
 
 /**
  * Hard-coded blocklist of domains that must never be loaded by any Fauxx module.
@@ -55,7 +53,7 @@ class DomainBlocklist @Inject constructor(
             val data: BlocklistJson = Gson().fromJson(json, type)
             data.domains.map { it.lowercase().trim() }.toSet()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to load blocklist.json — using empty list", e)
+            Timber.e(e, "Failed to load blocklist.json — using empty list")
             emptySet()
         }
     }

@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.IntensityLevel
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.logging.EncryptedFileTree
+import com.fauxx.logging.LogScrubber
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer2.PlatformProfileDao
@@ -34,7 +36,8 @@ class SettingsViewModel @Inject constructor(
     private val demographicDao: DemographicProfileDao,
     private val platformDao: PlatformProfileDao,
     private val personaHistoryDao: PersonaHistoryDao,
-    private val targetingEngine: TargetingEngine
+    private val targetingEngine: TargetingEngine,
+    private val encryptedFileTree: EncryptedFileTree
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(loadFromProfile())
@@ -59,6 +62,16 @@ class SettingsViewModel @Inject constructor(
             profileRepo.saveProfile(com.fauxx.data.model.PoisonProfile())
             _uiState.value = SettingsUiState()
         }
+    }
+
+    /**
+     * Returns scrubbed debug log content suitable for sharing.
+     * Flushes pending log lines first, then reads and scrubs all stored logs.
+     */
+    fun getScrubbedLogs(): String {
+        encryptedFileTree.flush()
+        val raw = encryptedFileTree.readAllLogs()
+        return LogScrubber.scrub(raw)
     }
 
     private fun update(transform: (SettingsUiState) -> SettingsUiState) {

@@ -3,7 +3,10 @@ package com.fauxx
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.fauxx.logging.CrashReportWriter
+import com.fauxx.logging.EncryptedFileTree
 import dagger.hilt.android.HiltAndroidApp
+import timber.log.Timber
 import javax.inject.Inject
 
 /**
@@ -16,12 +19,31 @@ class FauxxApp : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    @Inject
+    lateinit var encryptedFileTree: EncryptedFileTree
+
+    @Inject
+    lateinit var crashReportWriter: CrashReportWriter
+
     override fun onCreate() {
         super.onCreate()
         // Load SQLCipher native library early, before any Room database access.
         // Must happen at app startup — not lazily in a Hilt provider — to avoid
         // UnsatisfiedLinkError when a DAO is accessed before the DB singleton is created.
         System.loadLibrary("sqlcipher")
+
+        // Plant Timber trees: DebugTree for logcat in debug builds, EncryptedFileTree always.
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
+        Timber.plant(encryptedFileTree)
+
+        // Install crash handler that writes stack trace + recent logs to a file.
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            crashReportWriter.writeCrashReport(throwable)
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
     }
 
     override val workManagerConfiguration: Configuration

@@ -8,7 +8,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.os.Build
-import android.util.Log
+import timber.log.Timber
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.engine.modules.AdPollutionModule
@@ -41,8 +41,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
 import kotlin.random.Random
-
-private const val TAG = "PoisonEngine"
 
 /** Observable state of the engine for UI/notification display. */
 enum class EngineState {
@@ -184,13 +182,13 @@ class PoisonEngine @Inject constructor(
                 try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
             )
             engineState = EngineState.ACTIVE
-            Log.i(TAG, "PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled})")
+            Timber.i("PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled})")
             allModules.filter { it.isEnabled() }.forEach { module ->
                 try {
                     module.start()
                 } catch (e: Exception) {
                     val name = module::class.simpleName ?: "Unknown"
-                    Log.e(TAG, "Module $name failed to start, circuit-breaking", e)
+                    Timber.e(e, "Module $name failed to start, circuit-breaking")
                     circuitBreakerUntil[name] = System.currentTimeMillis() + MAX_BACKOFF_MS
                 }
             }
@@ -207,7 +205,7 @@ class PoisonEngine @Inject constructor(
         runBlocking {
             allModules.forEach { runCatching { it.stop() } }
         }
-        Log.i(TAG, "PoisonEngine stopped")
+        Timber.i("PoisonEngine stopped")
     }
 
     /**
@@ -268,7 +266,7 @@ class PoisonEngine @Inject constructor(
             }
             if (recentActionTimestamps.size >= currentProfile.intensity.actionsPerHour) {
                 engineState = EngineState.PAUSED_RATE_LIMIT
-                Log.d(TAG, "Rate limit reached: ${recentActionTimestamps.size}/${currentProfile.intensity.actionsPerHour} actions/hour")
+                Timber.d("Rate limit reached: ${recentActionTimestamps.size}/${currentProfile.intensity.actionsPerHour} actions/hour")
                 delay(RATE_LIMIT_PAUSE_MS)
                 continue
             }
@@ -309,9 +307,9 @@ class PoisonEngine @Inject constructor(
                     val jitter = (baseBackoff * Random.nextFloat() * 0.25f).toLong()
                     val backoff = baseBackoff + jitter
                     circuitBreakerUntil[moduleName] = System.currentTimeMillis() + backoff
-                    Log.w(TAG, "Circuit breaker: $moduleName disabled for ${backoff / 1000}s after $count failures", e)
+                    Timber.w(e, "Circuit breaker: $moduleName disabled for ${backoff / 1000}s after $count failures")
                 } else {
-                    Log.e(TAG, "Module $moduleName failed for $category ($count/$MAX_CONSECUTIVE_FAILURES)", e)
+                    Timber.e(e, "Module $moduleName failed for $category ($count/$MAX_CONSECUTIVE_FAILURES)")
                 }
                 delay(FAILURE_RETRY_DELAY_MS)
                 continue
@@ -319,7 +317,7 @@ class PoisonEngine @Inject constructor(
             try {
                 actionLogDao.insert(logEntry)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to insert action log entry", e)
+                Timber.e(e, "Failed to insert action log entry")
             }
             if (logEntry.success) {
                 todayActionCount.incrementAndGet()
@@ -335,7 +333,7 @@ class PoisonEngine @Inject constructor(
                 allowedEnd = currentProfile.allowedHoursEnd
             )
             val effectiveDelay = maxOf(0L, scheduledMs - execElapsed)
-            Log.d(TAG, "Action: $moduleName/$category exec=${execElapsed}ms scheduled=${scheduledMs}ms effective=${effectiveDelay}ms")
+            Timber.d("Action: $moduleName/$category exec=${execElapsed}ms scheduled=${scheduledMs}ms effective=${effectiveDelay}ms")
             delay(effectiveDelay)
         }
     }
@@ -345,11 +343,11 @@ class PoisonEngine @Inject constructor(
      */
     private fun checkConstraints(currentProfile: PoisonProfile): EngineState? {
         if (currentProfile.wifiOnly && !cachedOnWifi.get()) {
-            Log.d(TAG, "Paused: wifi-only mode, no wifi")
+            Timber.d("Paused: wifi-only mode, no wifi")
             return EngineState.PAUSED_WIFI
         }
         if (cachedBatteryLevel.get() < currentProfile.batteryThreshold) {
-            Log.d(TAG, "Paused: battery below threshold")
+            Timber.d("Paused: battery below threshold")
             return EngineState.PAUSED_BATTERY
         }
         return null

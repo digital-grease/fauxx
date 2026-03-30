@@ -2,7 +2,7 @@ package com.fauxx.engine.webview
 
 import android.graphics.Bitmap
 import android.net.http.SslError
-import android.util.Log
+import timber.log.Timber
 import android.webkit.SafeBrowsingResponse
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
@@ -10,8 +10,6 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.fauxx.data.crawllist.DomainBlocklist
-
-private const val TAG = "PhantomWebViewClient"
 
 /** MIME types that should not be loaded in background WebViews. */
 private val BLOCKED_MIME_TYPES = setOf(
@@ -52,7 +50,7 @@ class PhantomWebViewClient(
 
         // Block domains on the blocklist
         if (blocklist.isBlocked(host)) {
-            Log.d(TAG, "Blocked request to: $host")
+            Timber.d("Blocked request to: $host")
             return WebResourceResponse("text/plain", "utf-8", null)
         }
 
@@ -67,7 +65,7 @@ class PhantomWebViewClient(
 
     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
         // Never proceed on SSL errors — abort the request
-        Log.w(TAG, "SSL error on ${error.url}, aborting")
+        Timber.w("SSL error on ${error.url}, aborting")
         handler.cancel()
     }
 
@@ -79,14 +77,14 @@ class PhantomWebViewClient(
     ) {
         // Silently back away from any URL flagged by Safe Browsing — no interstitial needed
         // in a background WebView, just stop loading.
-        Log.w(TAG, "Safe Browsing hit (threat=$threatType) on ${request.url}, backing to safety")
+        Timber.w("Safe Browsing hit (threat=$threatType) on ${request.url}, backing to safety")
         callback.backToSafety(false)
     }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         val host = request.url.host ?: return true
         if (blocklist.isBlocked(host)) {
-            Log.d(TAG, "Blocked navigation to: $host")
+            Timber.d("Blocked navigation to: $host")
             return true
         }
         return false
