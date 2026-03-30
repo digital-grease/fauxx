@@ -4,10 +4,12 @@ import android.content.Context
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.WeightNormalizer
 import com.fauxx.targeting.layer0.UniformEntropyLayer
+import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicDistanceMap
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer1.SelfReportLayer
 import com.fauxx.targeting.layer2.AdversarialScraperLayer
+import com.fauxx.targeting.layer2.CategoryMapper
 import com.fauxx.targeting.layer2.PlatformProfileDao
 import com.fauxx.targeting.layer3.PersonaGenerator
 import com.fauxx.targeting.layer3.PersonaHistoryDao
@@ -41,10 +43,16 @@ object TargetingModule {
 
     @Provides
     @Singleton
+    fun provideCustomInterestMapper(categoryMapper: CategoryMapper): CustomInterestMapper =
+        CustomInterestMapper(categoryMapper)
+
+    @Provides
+    @Singleton
     fun provideSelfReportLayer(
         dao: DemographicProfileDao,
-        distanceMap: DemographicDistanceMap
-    ): SelfReportLayer = SelfReportLayer(dao, distanceMap)
+        distanceMap: DemographicDistanceMap,
+        customInterestMapper: CustomInterestMapper
+    ): SelfReportLayer = SelfReportLayer(dao, distanceMap, customInterestMapper)
 
     @Provides
     @Singleton

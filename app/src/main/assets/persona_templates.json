@@ -1,107 +1,1043 @@
 [
   {
     "archetype": "rural_retiree",
-    "ageRange": "65+",
-    "interests": ["AGRICULTURE", "COOKING", "PETS"],
+    "ageRange": "AGE_65_PLUS",
+    "interests": [
+      "AGRICULTURE",
+      "COOKING",
+      "PETS"
+    ],
     "region": "US_MIDWEST",
-    "profession": "Retired"
+    "profession": "RETIRED"
   },
   {
     "archetype": "urban_college_student",
-    "ageRange": "18-24",
-    "interests": ["ACADEMIC", "GAMING", "MUSIC"],
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "ACADEMIC",
+      "GAMING",
+      "MUSIC"
+    ],
     "region": "US_NORTHEAST",
-    "profession": "Student"
+    "profession": "STUDENT"
   },
   {
     "archetype": "suburban_parent",
-    "ageRange": "35-44",
-    "interests": ["PARENTING", "HOME_IMPROVEMENT", "COOKING"],
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "PARENTING",
+      "HOME_IMPROVEMENT",
+      "COOKING"
+    ],
     "region": "US_SOUTHEAST",
-    "profession": "Professional"
+    "profession": "OTHER"
   },
   {
     "archetype": "tech_worker",
-    "ageRange": "25-34",
-    "interests": ["TECHNOLOGY", "GAMING", "FITNESS"],
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "TECHNOLOGY",
+      "GAMING",
+      "FITNESS"
+    ],
     "region": "US_WEST",
-    "profession": "Engineer"
+    "profession": "ENGINEER"
   },
   {
     "archetype": "fitness_enthusiast",
-    "ageRange": "25-34",
-    "interests": ["FITNESS", "SPORTS", "COOKING"],
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "FITNESS",
+      "SPORTS",
+      "COOKING"
+    ],
     "region": "US_SOUTHWEST",
-    "profession": "Healthcare Worker"
+    "profession": "HEALTHCARE"
   },
   {
     "archetype": "fashion_blogger",
-    "ageRange": "18-24",
-    "interests": ["FASHION", "BEAUTY", "TRAVEL"],
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "FASHION",
+      "BEAUTY",
+      "TRAVEL"
+    ],
     "region": "US_WEST",
-    "profession": "Creative"
+    "profession": "CREATIVE"
   },
   {
     "archetype": "financial_advisor",
-    "ageRange": "45-54",
-    "interests": ["FINANCE", "REAL_ESTATE", "BUSINESS"],
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "FINANCE",
+      "REAL_ESTATE",
+      "BUSINESS"
+    ],
     "region": "US_NORTHEAST",
-    "profession": "Finance Professional"
+    "profession": "FINANCE_PROF"
   },
   {
     "archetype": "home_gardener",
-    "ageRange": "55-64",
-    "interests": ["HOME_IMPROVEMENT", "COOKING", "PETS"],
+    "ageRange": "AGE_55_64",
+    "interests": [
+      "HOME_IMPROVEMENT",
+      "COOKING",
+      "PETS"
+    ],
     "region": "US_MIDWEST",
-    "profession": "Homemaker"
+    "profession": "HOMEMAKER"
   },
   {
     "archetype": "travel_blogger",
-    "ageRange": "25-34",
-    "interests": ["TRAVEL", "FOOD", "ENTERTAINMENT"],
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "TRAVEL",
+      "FOOD",
+      "ENTERTAINMENT"
+    ],
     "region": "US_WEST",
-    "profession": "Creative"
+    "profession": "CREATIVE"
   },
   {
     "archetype": "auto_mechanic",
-    "ageRange": "35-44",
-    "interests": ["AUTOMOTIVE", "SPORTS", "HOME_IMPROVEMENT"],
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "AUTOMOTIVE",
+      "SPORTS",
+      "HOME_IMPROVEMENT"
+    ],
     "region": "US_MIDWEST",
-    "profession": "Trades Worker"
+    "profession": "TRADES"
   },
   {
     "archetype": "legal_professional",
-    "ageRange": "35-44",
-    "interests": ["LEGAL", "FINANCE", "REAL_ESTATE"],
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "LEGAL",
+      "FINANCE",
+      "REAL_ESTATE"
+    ],
     "region": "US_NORTHEAST",
-    "profession": "Legal"
+    "profession": "LEGAL"
   },
   {
     "archetype": "music_enthusiast",
-    "ageRange": "18-24",
-    "interests": ["MUSIC", "ENTERTAINMENT", "FITNESS"],
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "MUSIC",
+      "ENTERTAINMENT",
+      "FITNESS"
+    ],
     "region": "US_WEST",
-    "profession": "Creative"
+    "profession": "CREATIVE"
   },
   {
     "archetype": "science_teacher",
-    "ageRange": "35-44",
-    "interests": ["SCIENCE", "ACADEMIC", "COOKING"],
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "SCIENCE",
+      "ACADEMIC",
+      "COOKING"
+    ],
     "region": "US_SOUTHEAST",
-    "profession": "Teacher"
+    "profession": "TEACHER"
   },
   {
     "archetype": "small_farmer",
-    "ageRange": "45-54",
-    "interests": ["AGRICULTURE", "HOME_IMPROVEMENT", "COOKING"],
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "AGRICULTURE",
+      "HOME_IMPROVEMENT",
+      "COOKING"
+    ],
     "region": "US_MIDWEST",
-    "profession": "Trades Worker"
+    "profession": "TRADES"
   },
   {
     "archetype": "gaming_streamer",
-    "ageRange": "18-24",
-    "interests": ["GAMING", "TECHNOLOGY", "ENTERTAINMENT"],
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "GAMING",
+      "TECHNOLOGY",
+      "ENTERTAINMENT"
+    ],
     "region": "US_WEST",
-    "profession": "Creative"
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "urban_professional",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "BUSINESS",
+      "FINANCE",
+      "TRAVEL",
+      "FITNESS"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "FINANCE_PROF"
+  },
+  {
+    "archetype": "college_athlete",
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "SPORTS",
+      "FITNESS",
+      "ACADEMIC",
+      "FOOD"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "tech_entrepreneur",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "TECHNOLOGY",
+      "BUSINESS",
+      "FINANCE",
+      "TRAVEL"
+    ],
+    "region": "US_WEST",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "military_veteran",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "SPORTS",
+      "AUTOMOTIVE",
+      "HOME_IMPROVEMENT",
+      "POLITICS"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "digital_nomad",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "TRAVEL",
+      "TECHNOLOGY",
+      "FOOD",
+      "ENTERTAINMENT"
+    ],
+    "region": "OTHER",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "aspiring_chef",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "COOKING",
+      "FOOD",
+      "TRAVEL",
+      "BUSINESS"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "RETAIL"
+  },
+  {
+    "archetype": "fitness_influencer",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "FITNESS",
+      "BEAUTY",
+      "FOOD",
+      "TRAVEL"
+    ],
+    "region": "US_SOUTHWEST",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "retired_teacher",
+    "ageRange": "AGE_65_PLUS",
+    "interests": [
+      "ACADEMIC",
+      "TRAVEL",
+      "COOKING",
+      "PETS"
+    ],
+    "region": "US_MIDWEST",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "stay_at_home_parent",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "PARENTING",
+      "COOKING",
+      "HOME_IMPROVEMENT",
+      "PETS"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "HOMEMAKER"
+  },
+  {
+    "archetype": "crypto_investor",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "FINANCE",
+      "TECHNOLOGY",
+      "BUSINESS",
+      "GAMING"
+    ],
+    "region": "US_WEST",
+    "profession": "FINANCE_PROF"
+  },
+  {
+    "archetype": "uk_journalist",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "POLITICS",
+      "TRAVEL",
+      "ENTERTAINMENT",
+      "FOOD"
+    ],
+    "region": "UK",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "european_academic",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "ACADEMIC",
+      "SCIENCE",
+      "TRAVEL",
+      "FOOD"
+    ],
+    "region": "WESTERN_EUROPE",
+    "profession": "TEACHER"
+  },
+  {
+    "archetype": "latin_american_entrepreneur",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "BUSINESS",
+      "FINANCE",
+      "TECHNOLOGY",
+      "SPORTS"
+    ],
+    "region": "LATIN_AMERICA",
+    "profession": "FINANCE_PROF"
+  },
+  {
+    "archetype": "southeast_asian_student",
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "ACADEMIC",
+      "GAMING",
+      "TECHNOLOGY",
+      "MUSIC"
+    ],
+    "region": "ASIA_PACIFIC",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "canadian_outdoorsman",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "SPORTS",
+      "AGRICULTURE",
+      "HOME_IMPROVEMENT",
+      "PETS"
+    ],
+    "region": "CANADA",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "midwest_nurse",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "MEDICAL",
+      "FITNESS",
+      "PARENTING",
+      "COOKING"
+    ],
+    "region": "US_MIDWEST",
+    "profession": "HEALTHCARE"
+  },
+  {
+    "archetype": "southern_pastor",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "COOKING",
+      "MUSIC",
+      "POLITICS",
+      "PARENTING"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "nyc_fashion_designer",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "FASHION",
+      "BEAUTY",
+      "ENTERTAINMENT",
+      "TRAVEL"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "rural_electrician",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "HOME_IMPROVEMENT",
+      "AUTOMOTIVE",
+      "SPORTS",
+      "AGRICULTURE"
+    ],
+    "region": "US_SOUTHWEST",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "retired_military_officer",
+    "ageRange": "AGE_55_64",
+    "interests": [
+      "POLITICS",
+      "SPORTS",
+      "REAL_ESTATE",
+      "AUTOMOTIVE"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "indie_game_developer",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "GAMING",
+      "TECHNOLOGY",
+      "SCIENCE",
+      "MUSIC"
+    ],
+    "region": "US_WEST",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "high_school_art_teacher",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "ENTERTAINMENT",
+      "ACADEMIC",
+      "MUSIC",
+      "FITNESS"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "TEACHER"
+  },
+  {
+    "archetype": "organic_farmer",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "AGRICULTURE",
+      "COOKING",
+      "SCIENCE",
+      "BUSINESS"
+    ],
+    "region": "US_WEST",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "real_estate_agent",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "REAL_ESTATE",
+      "FINANCE",
+      "HOME_IMPROVEMENT",
+      "BUSINESS"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "RETAIL"
+  },
+  {
+    "archetype": "eastern_european_engineer",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "TECHNOLOGY",
+      "SCIENCE",
+      "ACADEMIC",
+      "GAMING"
+    ],
+    "region": "EASTERN_EUROPE",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "middle_east_business_exec",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "BUSINESS",
+      "TRAVEL",
+      "FINANCE",
+      "REAL_ESTATE"
+    ],
+    "region": "MIDDLE_EAST_AFRICA",
+    "profession": "FINANCE_PROF"
+  },
+  {
+    "archetype": "budget_backpacker",
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "TRAVEL",
+      "FOOD",
+      "MUSIC",
+      "FITNESS"
+    ],
+    "region": "OTHER",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "medical_researcher",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "MEDICAL",
+      "SCIENCE",
+      "ACADEMIC",
+      "FITNESS"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "HEALTHCARE"
+  },
+  {
+    "archetype": "vintage_car_collector",
+    "ageRange": "AGE_55_64",
+    "interests": [
+      "AUTOMOTIVE",
+      "HOME_IMPROVEMENT",
+      "FINANCE",
+      "SPORTS"
+    ],
+    "region": "US_MIDWEST",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "yoga_instructor",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "FITNESS",
+      "BEAUTY",
+      "COOKING",
+      "TRAVEL"
+    ],
+    "region": "US_WEST",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "podcast_host",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "ENTERTAINMENT",
+      "POLITICS",
+      "BUSINESS",
+      "MUSIC"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "senior_software_architect",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "TECHNOLOGY",
+      "SCIENCE",
+      "BUSINESS",
+      "FITNESS"
+    ],
+    "region": "US_WEST",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "rural_homesteader",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "AGRICULTURE",
+      "HOME_IMPROVEMENT",
+      "COOKING",
+      "PETS"
+    ],
+    "region": "US_SOUTHWEST",
+    "profession": "HOMEMAKER"
+  },
+  {
+    "archetype": "competitive_esports_player",
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "GAMING",
+      "TECHNOLOGY",
+      "SPORTS",
+      "ENTERTAINMENT"
+    ],
+    "region": "ASIA_PACIFIC",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "uk_pharmacist",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "MEDICAL",
+      "SCIENCE",
+      "FITNESS",
+      "COOKING"
+    ],
+    "region": "UK",
+    "profession": "HEALTHCARE"
+  },
+  {
+    "archetype": "wildlife_photographer",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "TRAVEL",
+      "SCIENCE",
+      "PETS",
+      "TECHNOLOGY"
+    ],
+    "region": "OTHER",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "suburban_realtor",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "REAL_ESTATE",
+      "HOME_IMPROVEMENT",
+      "FINANCE",
+      "PARENTING"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "RETAIL"
+  },
+  {
+    "archetype": "corporate_lawyer",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "LEGAL",
+      "BUSINESS",
+      "TRAVEL",
+      "FINANCE"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "LEGAL"
+  },
+  {
+    "archetype": "retired_nurse",
+    "ageRange": "AGE_65_PLUS",
+    "interests": [
+      "MEDICAL",
+      "PETS",
+      "COOKING",
+      "TRAVEL"
+    ],
+    "region": "US_MIDWEST",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "vegan_food_blogger",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "FOOD",
+      "COOKING",
+      "FITNESS",
+      "BEAUTY"
+    ],
+    "region": "US_WEST",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "construction_foreman",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "BUSINESS",
+      "HOME_IMPROVEMENT",
+      "AUTOMOTIVE",
+      "SPORTS"
+    ],
+    "region": "US_SOUTHWEST",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "startup_marketing_manager",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "BUSINESS",
+      "TECHNOLOGY",
+      "ENTERTAINMENT",
+      "TRAVEL"
+    ],
+    "region": "US_WEST",
+    "profession": "RETAIL"
+  },
+  {
+    "archetype": "grandparent_hobbyist",
+    "ageRange": "AGE_65_PLUS",
+    "interests": [
+      "HOME_IMPROVEMENT",
+      "COOKING",
+      "PETS",
+      "RETIREMENT"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "high_school_debate_student",
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "ACADEMIC",
+      "POLITICS",
+      "LEGAL",
+      "ENTERTAINMENT"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "nordic_outdoor_enthusiast",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "SPORTS",
+      "FITNESS",
+      "TRAVEL",
+      "SCIENCE"
+    ],
+    "region": "WESTERN_EUROPE",
+    "profession": "TEACHER"
+  },
+  {
+    "archetype": "music_producer",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "MUSIC",
+      "TECHNOLOGY",
+      "ENTERTAINMENT",
+      "BUSINESS"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "disability_advocate",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "MEDICAL",
+      "LEGAL",
+      "POLITICS",
+      "ACADEMIC"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "independent_insurance_broker",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "FINANCE",
+      "LEGAL",
+      "BUSINESS",
+      "REAL_ESTATE"
+    ],
+    "region": "US_MIDWEST",
+    "profession": "FINANCE_PROF"
+  },
+  {
+    "archetype": "kenyan_marathon_runner",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "SPORTS",
+      "FITNESS",
+      "FOOD",
+      "TRAVEL"
+    ],
+    "region": "MIDDLE_EAST_AFRICA",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "australian_surf_instructor",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "SPORTS",
+      "FITNESS",
+      "TRAVEL",
+      "FOOD"
+    ],
+    "region": "ASIA_PACIFIC",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "comic_book_artist",
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "ENTERTAINMENT",
+      "GAMING",
+      "ACADEMIC",
+      "TECHNOLOGY"
+    ],
+    "region": "US_WEST",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "pediatric_dentist",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "MEDICAL",
+      "PARENTING",
+      "FITNESS",
+      "SCIENCE"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "HEALTHCARE"
+  },
+  {
+    "archetype": "antique_dealer",
+    "ageRange": "AGE_55_64",
+    "interests": [
+      "HOME_IMPROVEMENT",
+      "REAL_ESTATE",
+      "BUSINESS",
+      "TRAVEL"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "RETAIL"
+  },
+  {
+    "archetype": "nature_enthusiast",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "OUTDOOR_RECREATION",
+      "PETS",
+      "ENVIRONMENT",
+      "FITNESS"
+    ],
+    "region": "US_WEST",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "wilderness_guide",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "OUTDOOR_RECREATION",
+      "ENVIRONMENT",
+      "FITNESS"
+    ],
+    "region": "US_SOUTHWEST",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "retired_outdoorsman",
+    "ageRange": "AGE_65_PLUS",
+    "interests": [
+      "OUTDOOR_RECREATION",
+      "HISTORY",
+      "PETS"
+    ],
+    "region": "US_MIDWEST",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "crafty_homemaker",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "CRAFTS",
+      "COOKING",
+      "HOME_IMPROVEMENT",
+      "PETS"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "HOMEMAKER"
+  },
+  {
+    "archetype": "art_quilter",
+    "ageRange": "AGE_55_64",
+    "interests": [
+      "CRAFTS",
+      "FASHION",
+      "ENTERTAINMENT"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "young_crafter",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "CRAFTS",
+      "BEAUTY",
+      "ENTERTAINMENT"
+    ],
+    "region": "UK",
+    "profession": "RETAIL"
+  },
+  {
+    "archetype": "history_professor",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "HISTORY",
+      "ACADEMIC",
+      "TRAVEL",
+      "POLITICS"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "TEACHER"
+  },
+  {
+    "archetype": "genealogy_hobbyist",
+    "ageRange": "AGE_55_64",
+    "interests": [
+      "HISTORY",
+      "TECHNOLOGY",
+      "TRAVEL"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "museum_curator",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "HISTORY",
+      "SCIENCE",
+      "ACADEMIC"
+    ],
+    "region": "WESTERN_EUROPE",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "eco_activist",
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "ENVIRONMENT",
+      "POLITICS",
+      "SCIENCE"
+    ],
+    "region": "US_WEST",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "sustainability_consultant",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "ENVIRONMENT",
+      "BUSINESS",
+      "TECHNOLOGY"
+    ],
+    "region": "WESTERN_EUROPE",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "green_parent",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "ENVIRONMENT",
+      "PARENTING",
+      "COOKING",
+      "OUTDOOR_RECREATION"
+    ],
+    "region": "CANADA",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "military_veteran",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "MILITARY_DEFENSE",
+      "FITNESS",
+      "OUTDOOR_RECREATION",
+      "SPORTS"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "defense_analyst",
+    "ageRange": "AGE_45_54",
+    "interests": [
+      "MILITARY_DEFENSE",
+      "POLITICS",
+      "TECHNOLOGY",
+      "HISTORY"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "military_spouse",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "MILITARY_DEFENSE",
+      "PARENTING",
+      "COOKING"
+    ],
+    "region": "US_SOUTHWEST",
+    "profession": "HOMEMAKER"
+  },
+  {
+    "archetype": "wellness_seeker",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "WELLNESS_ALTERNATIVE",
+      "FITNESS",
+      "BEAUTY",
+      "FOOD"
+    ],
+    "region": "US_WEST",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "holistic_practitioner",
+    "ageRange": "AGE_35_44",
+    "interests": [
+      "WELLNESS_ALTERNATIVE",
+      "MEDICAL",
+      "BUSINESS"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "HEALTHCARE"
+  },
+  {
+    "archetype": "spiritual_retiree",
+    "ageRange": "AGE_65_PLUS",
+    "interests": [
+      "WELLNESS_ALTERNATIVE",
+      "CRAFTS",
+      "COOKING"
+    ],
+    "region": "US_SOUTHWEST",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "dating_scene_urbanite",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "RELATIONSHIPS_DATING",
+      "FOOD",
+      "ENTERTAINMENT",
+      "FITNESS"
+    ],
+    "region": "US_NORTHEAST",
+    "profession": "FINANCE_PROF"
+  },
+  {
+    "archetype": "college_dater",
+    "ageRange": "AGE_18_24",
+    "interests": [
+      "RELATIONSHIPS_DATING",
+      "ENTERTAINMENT",
+      "MUSIC"
+    ],
+    "region": "US_WEST",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "wedding_planner_bride",
+    "ageRange": "AGE_25_34",
+    "interests": [
+      "RELATIONSHIPS_DATING",
+      "FASHION",
+      "BEAUTY",
+      "FOOD"
+    ],
+    "region": "US_SOUTHEAST",
+    "profession": "CREATIVE"
   }
 ]

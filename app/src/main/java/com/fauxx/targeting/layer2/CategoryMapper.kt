@@ -83,6 +83,13 @@ class CategoryMapper @Inject constructor(
         lower.contains("entertain") || lower.contains("movie") || lower.contains("film") -> CategoryPool.ENTERTAINMENT
         lower.contains("science") || lower.contains("research") || lower.contains("lab") -> CategoryPool.SCIENCE
         lower.contains("business") || lower.contains("entrepreneur") || lower.contains("startup") -> CategoryPool.BUSINESS
+        lower.contains("hiking") || lower.contains("camping") || lower.contains("fishing") || lower.contains("outdoor") || lower.contains("hunting") -> CategoryPool.OUTDOOR_RECREATION
+        lower.contains("craft") || lower.contains("knitting") || lower.contains("pottery") || lower.contains("quilt") || lower.contains("scrapbook") -> CategoryPool.CRAFTS
+        lower.contains("history") || lower.contains("museum") || lower.contains("genealogy") || lower.contains("antique") || lower.contains("historical") -> CategoryPool.HISTORY
+        lower.contains("climate") || lower.contains("sustainability") || lower.contains("conservation") || lower.contains("renewable") || lower.contains("environment") -> CategoryPool.ENVIRONMENT
+        lower.contains("military") || lower.contains("veteran") || lower.contains("defense") || lower.contains("army") || lower.contains("navy") -> CategoryPool.MILITARY_DEFENSE
+        lower.contains("meditation") || lower.contains("astrology") || lower.contains("crystal") || lower.contains("holistic") || lower.contains("essential oil") -> CategoryPool.WELLNESS_ALTERNATIVE
+        lower.contains("dating") || lower.contains("relationship") || lower.contains("wedding") || lower.contains("marriage") || lower.contains("breakup") -> CategoryPool.RELATIONSHIPS_DATING
         else -> null
     }
 

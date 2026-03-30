@@ -1,52 +1,4032 @@
 [
-  {"name": "New York", "lat": 40.7128, "lng": -74.0060, "region": "US_NORTHEAST"},
-  {"name": "Los Angeles", "lat": 34.0522, "lng": -118.2437, "region": "US_WEST"},
-  {"name": "Chicago", "lat": 41.8781, "lng": -87.6298, "region": "US_MIDWEST"},
-  {"name": "Houston", "lat": 29.7604, "lng": -95.3698, "region": "US_SOUTHWEST"},
-  {"name": "Phoenix", "lat": 33.4484, "lng": -112.0740, "region": "US_SOUTHWEST"},
-  {"name": "Philadelphia", "lat": 39.9526, "lng": -75.1652, "region": "US_NORTHEAST"},
-  {"name": "San Antonio", "lat": 29.4241, "lng": -98.4936, "region": "US_SOUTHWEST"},
-  {"name": "San Diego", "lat": 32.7157, "lng": -117.1611, "region": "US_WEST"},
-  {"name": "Dallas", "lat": 32.7767, "lng": -96.7970, "region": "US_SOUTHWEST"},
-  {"name": "San Jose", "lat": 37.3382, "lng": -121.8863, "region": "US_WEST"},
-  {"name": "Austin", "lat": 30.2672, "lng": -97.7431, "region": "US_SOUTHWEST"},
-  {"name": "Jacksonville", "lat": 30.3322, "lng": -81.6557, "region": "US_SOUTHEAST"},
-  {"name": "Fort Worth", "lat": 32.7555, "lng": -97.3308, "region": "US_SOUTHWEST"},
-  {"name": "Columbus", "lat": 39.9612, "lng": -82.9988, "region": "US_MIDWEST"},
-  {"name": "Charlotte", "lat": 35.2271, "lng": -80.8431, "region": "US_SOUTHEAST"},
-  {"name": "Indianapolis", "lat": 39.7684, "lng": -86.1581, "region": "US_MIDWEST"},
-  {"name": "San Francisco", "lat": 37.7749, "lng": -122.4194, "region": "US_WEST"},
-  {"name": "Seattle", "lat": 47.6062, "lng": -122.3321, "region": "US_WEST"},
-  {"name": "Denver", "lat": 39.7392, "lng": -104.9903, "region": "US_WEST"},
-  {"name": "Nashville", "lat": 36.1627, "lng": -86.7816, "region": "US_SOUTHEAST"},
-  {"name": "Boston", "lat": 42.3601, "lng": -71.0589, "region": "US_NORTHEAST"},
-  {"name": "Atlanta", "lat": 33.7490, "lng": -84.3880, "region": "US_SOUTHEAST"},
-  {"name": "Miami", "lat": 25.7617, "lng": -80.1918, "region": "US_SOUTHEAST"},
-  {"name": "Minneapolis", "lat": 44.9778, "lng": -93.2650, "region": "US_MIDWEST"},
-  {"name": "Portland", "lat": 45.5231, "lng": -122.6765, "region": "US_WEST"},
-  {"name": "Toronto", "lat": 43.6532, "lng": -79.3832, "region": "CANADA"},
-  {"name": "Vancouver", "lat": 49.2827, "lng": -123.1207, "region": "CANADA"},
-  {"name": "Montreal", "lat": 45.5017, "lng": -73.5673, "region": "CANADA"},
-  {"name": "London", "lat": 51.5074, "lng": -0.1278, "region": "UK"},
-  {"name": "Manchester", "lat": 53.4808, "lng": -2.2426, "region": "UK"},
-  {"name": "Birmingham", "lat": 52.4862, "lng": -1.8904, "region": "UK"},
-  {"name": "Paris", "lat": 48.8566, "lng": 2.3522, "region": "WESTERN_EUROPE"},
-  {"name": "Berlin", "lat": 52.5200, "lng": 13.4050, "region": "WESTERN_EUROPE"},
-  {"name": "Madrid", "lat": 40.4168, "lng": -3.7038, "region": "WESTERN_EUROPE"},
-  {"name": "Rome", "lat": 41.9028, "lng": 12.4964, "region": "WESTERN_EUROPE"},
-  {"name": "Amsterdam", "lat": 52.3676, "lng": 4.9041, "region": "WESTERN_EUROPE"},
-  {"name": "Vienna", "lat": 48.2082, "lng": 16.3738, "region": "WESTERN_EUROPE"},
-  {"name": "Zurich", "lat": 47.3769, "lng": 8.5417, "region": "WESTERN_EUROPE"},
-  {"name": "Barcelona", "lat": 41.3851, "lng": 2.1734, "region": "WESTERN_EUROPE"},
-  {"name": "Brussels", "lat": 50.8503, "lng": 4.3517, "region": "WESTERN_EUROPE"},
-  {"name": "Sydney", "lat": -33.8688, "lng": 151.2093, "region": "ASIA_PACIFIC"},
-  {"name": "Melbourne", "lat": -37.8136, "lng": 144.9631, "region": "ASIA_PACIFIC"},
-  {"name": "Tokyo", "lat": 35.6762, "lng": 139.6503, "region": "ASIA_PACIFIC"},
-  {"name": "Seoul", "lat": 37.5665, "lng": 126.9780, "region": "ASIA_PACIFIC"},
-  {"name": "Singapore", "lat": 1.3521, "lng": 103.8198, "region": "ASIA_PACIFIC"},
-  {"name": "Hong Kong", "lat": 22.3193, "lng": 114.1694, "region": "ASIA_PACIFIC"},
-  {"name": "São Paulo", "lat": -23.5505, "lng": -46.6333, "region": "LATIN_AMERICA"},
-  {"name": "Buenos Aires", "lat": -34.6037, "lng": -58.3816, "region": "LATIN_AMERICA"},
-  {"name": "Mexico City", "lat": 19.4326, "lng": -99.1332, "region": "LATIN_AMERICA"},
-  {"name": "Bogota", "lat": 4.7110, "lng": -74.0721, "region": "LATIN_AMERICA"}
+  {
+    "name": "New York, United States",
+    "lat": 40.7128,
+    "lng": -74.006
+  },
+  {
+    "name": "Los Angeles, United States",
+    "lat": 34.0522,
+    "lng": -118.2437
+  },
+  {
+    "name": "Chicago, United States",
+    "lat": 41.8781,
+    "lng": -87.6298
+  },
+  {
+    "name": "Houston, United States",
+    "lat": 29.7604,
+    "lng": -95.3698
+  },
+  {
+    "name": "Phoenix, United States",
+    "lat": 33.4484,
+    "lng": -112.074
+  },
+  {
+    "name": "Philadelphia, United States",
+    "lat": 39.9526,
+    "lng": -75.1652
+  },
+  {
+    "name": "San Antonio, United States",
+    "lat": 29.4241,
+    "lng": -98.4936
+  },
+  {
+    "name": "San Diego, United States",
+    "lat": 32.7157,
+    "lng": -117.1611
+  },
+  {
+    "name": "Dallas, United States",
+    "lat": 32.7767,
+    "lng": -96.797
+  },
+  {
+    "name": "San Jose, United States",
+    "lat": 37.3382,
+    "lng": -121.8863
+  },
+  {
+    "name": "Austin, United States",
+    "lat": 30.2672,
+    "lng": -97.7431
+  },
+  {
+    "name": "Jacksonville, United States",
+    "lat": 30.3322,
+    "lng": -81.6557
+  },
+  {
+    "name": "Fort Worth, United States",
+    "lat": 32.7555,
+    "lng": -97.3308
+  },
+  {
+    "name": "Columbus, United States",
+    "lat": 39.9612,
+    "lng": -82.9988
+  },
+  {
+    "name": "Charlotte, United States",
+    "lat": 35.2271,
+    "lng": -80.8431
+  },
+  {
+    "name": "Indianapolis, United States",
+    "lat": 39.7684,
+    "lng": -86.1581
+  },
+  {
+    "name": "San Francisco, United States",
+    "lat": 37.7749,
+    "lng": -122.4194
+  },
+  {
+    "name": "Seattle, United States",
+    "lat": 47.6062,
+    "lng": -122.3321
+  },
+  {
+    "name": "Denver, United States",
+    "lat": 39.7392,
+    "lng": -104.9903
+  },
+  {
+    "name": "Nashville, United States",
+    "lat": 36.1627,
+    "lng": -86.7816
+  },
+  {
+    "name": "Boston, United States",
+    "lat": 42.3601,
+    "lng": -71.0589
+  },
+  {
+    "name": "Atlanta, United States",
+    "lat": 33.749,
+    "lng": -84.388
+  },
+  {
+    "name": "Miami, United States",
+    "lat": 25.7617,
+    "lng": -80.1918
+  },
+  {
+    "name": "Minneapolis, United States",
+    "lat": 44.9778,
+    "lng": -93.265
+  },
+  {
+    "name": "Portland, United States",
+    "lat": 45.5231,
+    "lng": -122.6765
+  },
+  {
+    "name": "Las Vegas, United States",
+    "lat": 36.1699,
+    "lng": -115.1398
+  },
+  {
+    "name": "Memphis, United States",
+    "lat": 35.1495,
+    "lng": -90.049
+  },
+  {
+    "name": "Louisville, United States",
+    "lat": 38.2527,
+    "lng": -85.7585
+  },
+  {
+    "name": "Baltimore, United States",
+    "lat": 39.2904,
+    "lng": -76.6122
+  },
+  {
+    "name": "Milwaukee, United States",
+    "lat": 43.0389,
+    "lng": -87.9065
+  },
+  {
+    "name": "Albuquerque, United States",
+    "lat": 35.0844,
+    "lng": -106.6504
+  },
+  {
+    "name": "Tucson, United States",
+    "lat": 32.2226,
+    "lng": -110.9747
+  },
+  {
+    "name": "Fresno, United States",
+    "lat": 36.7378,
+    "lng": -119.7871
+  },
+  {
+    "name": "Sacramento, United States",
+    "lat": 38.5816,
+    "lng": -121.4944
+  },
+  {
+    "name": "Kansas City, United States",
+    "lat": 39.0997,
+    "lng": -94.5786
+  },
+  {
+    "name": "Mesa, United States",
+    "lat": 33.4152,
+    "lng": -111.8315
+  },
+  {
+    "name": "Omaha, United States",
+    "lat": 41.2565,
+    "lng": -95.9345
+  },
+  {
+    "name": "Colorado Springs, United States",
+    "lat": 38.8339,
+    "lng": -104.8214
+  },
+  {
+    "name": "Raleigh, United States",
+    "lat": 35.7796,
+    "lng": -78.6382
+  },
+  {
+    "name": "Long Beach, United States",
+    "lat": 33.7701,
+    "lng": -118.1937
+  },
+  {
+    "name": "Virginia Beach, United States",
+    "lat": 36.8529,
+    "lng": -75.978
+  },
+  {
+    "name": "Oakland, United States",
+    "lat": 37.8044,
+    "lng": -122.2712
+  },
+  {
+    "name": "Tampa, United States",
+    "lat": 27.9506,
+    "lng": -82.4572
+  },
+  {
+    "name": "New Orleans, United States",
+    "lat": 29.9511,
+    "lng": -90.0715
+  },
+  {
+    "name": "Cleveland, United States",
+    "lat": 41.4993,
+    "lng": -81.6944
+  },
+  {
+    "name": "Bakersfield, United States",
+    "lat": 35.3733,
+    "lng": -119.0187
+  },
+  {
+    "name": "Aurora, United States",
+    "lat": 39.7294,
+    "lng": -104.8319
+  },
+  {
+    "name": "Anaheim, United States",
+    "lat": 33.8366,
+    "lng": -117.9143
+  },
+  {
+    "name": "Santa Ana, United States",
+    "lat": 33.7455,
+    "lng": -117.8677
+  },
+  {
+    "name": "Corpus Christi, United States",
+    "lat": 27.8006,
+    "lng": -97.3964
+  },
+  {
+    "name": "Riverside, United States",
+    "lat": 33.9533,
+    "lng": -117.3962
+  },
+  {
+    "name": "Lexington, United States",
+    "lat": 38.0406,
+    "lng": -84.5037
+  },
+  {
+    "name": "St. Louis, United States",
+    "lat": 38.627,
+    "lng": -90.1994
+  },
+  {
+    "name": "Pittsburgh, United States",
+    "lat": 40.4406,
+    "lng": -79.9959
+  },
+  {
+    "name": "Anchorage, United States",
+    "lat": 61.2181,
+    "lng": -149.9003
+  },
+  {
+    "name": "Stockton, United States",
+    "lat": 37.9577,
+    "lng": -121.2908
+  },
+  {
+    "name": "Cincinnati, United States",
+    "lat": 39.1031,
+    "lng": -84.512
+  },
+  {
+    "name": "Salt Lake City, United States",
+    "lat": 40.7608,
+    "lng": -111.891
+  },
+  {
+    "name": "Tulsa, United States",
+    "lat": 36.154,
+    "lng": -95.9928
+  },
+  {
+    "name": "Greensboro, United States",
+    "lat": 36.0726,
+    "lng": -79.792
+  },
+  {
+    "name": "Buffalo, United States",
+    "lat": 42.8864,
+    "lng": -78.8784
+  },
+  {
+    "name": "Newark, United States",
+    "lat": 40.7357,
+    "lng": -74.1724
+  },
+  {
+    "name": "Plano, United States",
+    "lat": 33.0198,
+    "lng": -96.6989
+  },
+  {
+    "name": "Henderson, United States",
+    "lat": 36.0395,
+    "lng": -114.9817
+  },
+  {
+    "name": "Lincoln, United States",
+    "lat": 40.8136,
+    "lng": -96.7026
+  },
+  {
+    "name": "St. Paul, United States",
+    "lat": 44.9537,
+    "lng": -93.09
+  },
+  {
+    "name": "Orlando, United States",
+    "lat": 28.5383,
+    "lng": -81.3792
+  },
+  {
+    "name": "Boise, United States",
+    "lat": 43.615,
+    "lng": -116.2023
+  },
+  {
+    "name": "Richmond, United States",
+    "lat": 37.5407,
+    "lng": -77.436
+  },
+  {
+    "name": "Spokane, United States",
+    "lat": 47.6588,
+    "lng": -117.426
+  },
+  {
+    "name": "Des Moines, United States",
+    "lat": 41.5868,
+    "lng": -93.625
+  },
+  {
+    "name": "Detroit, United States",
+    "lat": 42.3314,
+    "lng": -83.0458
+  },
+  {
+    "name": "Madison, United States",
+    "lat": 43.0731,
+    "lng": -89.4012
+  },
+  {
+    "name": "Lubbock, United States",
+    "lat": 33.5779,
+    "lng": -101.8552
+  },
+  {
+    "name": "Durham, United States",
+    "lat": 35.994,
+    "lng": -78.8986
+  },
+  {
+    "name": "Winston-Salem, United States",
+    "lat": 36.0999,
+    "lng": -80.2442
+  },
+  {
+    "name": "Chandler, United States",
+    "lat": 33.3062,
+    "lng": -111.8413
+  },
+  {
+    "name": "Laredo, United States",
+    "lat": 27.5306,
+    "lng": -99.4803
+  },
+  {
+    "name": "Honolulu, United States",
+    "lat": 21.3069,
+    "lng": -157.8583
+  },
+  {
+    "name": "Scottsdale, United States",
+    "lat": 33.4942,
+    "lng": -111.9261
+  },
+  {
+    "name": "Toronto, Canada",
+    "lat": 43.6532,
+    "lng": -79.3832
+  },
+  {
+    "name": "Montreal, Canada",
+    "lat": 45.5017,
+    "lng": -73.5673
+  },
+  {
+    "name": "Vancouver, Canada",
+    "lat": 49.2827,
+    "lng": -123.1207
+  },
+  {
+    "name": "Calgary, Canada",
+    "lat": 51.0447,
+    "lng": -114.0719
+  },
+  {
+    "name": "Edmonton, Canada",
+    "lat": 53.5461,
+    "lng": -113.4938
+  },
+  {
+    "name": "Ottawa, Canada",
+    "lat": 45.4215,
+    "lng": -75.6972
+  },
+  {
+    "name": "Winnipeg, Canada",
+    "lat": 49.8951,
+    "lng": -97.1384
+  },
+  {
+    "name": "Quebec City, Canada",
+    "lat": 46.8139,
+    "lng": -71.208
+  },
+  {
+    "name": "Hamilton, Canada",
+    "lat": 43.2557,
+    "lng": -79.8711
+  },
+  {
+    "name": "Halifax, Canada",
+    "lat": 44.6488,
+    "lng": -63.5752
+  },
+  {
+    "name": "Victoria, Canada",
+    "lat": 48.4284,
+    "lng": -123.3656
+  },
+  {
+    "name": "Saskatoon, Canada",
+    "lat": 52.1332,
+    "lng": -106.67
+  },
+  {
+    "name": "Regina, Canada",
+    "lat": 50.4452,
+    "lng": -104.6189
+  },
+  {
+    "name": "Mexico City, Mexico",
+    "lat": 19.4326,
+    "lng": -99.1332
+  },
+  {
+    "name": "Guadalajara, Mexico",
+    "lat": 20.6597,
+    "lng": -103.3496
+  },
+  {
+    "name": "Monterrey, Mexico",
+    "lat": 25.6866,
+    "lng": -100.3161
+  },
+  {
+    "name": "Puebla, Mexico",
+    "lat": 19.0414,
+    "lng": -98.2063
+  },
+  {
+    "name": "Tijuana, Mexico",
+    "lat": 32.5027,
+    "lng": -117.0036
+  },
+  {
+    "name": "León, Mexico",
+    "lat": 21.1221,
+    "lng": -101.6822
+  },
+  {
+    "name": "Ciudad Juárez, Mexico",
+    "lat": 31.6904,
+    "lng": -106.4245
+  },
+  {
+    "name": "Cancún, Mexico",
+    "lat": 21.1619,
+    "lng": -86.8515
+  },
+  {
+    "name": "Mérida, Mexico",
+    "lat": 20.9674,
+    "lng": -89.5926
+  },
+  {
+    "name": "Culiacán, Mexico",
+    "lat": 24.8091,
+    "lng": -107.394
+  },
+  {
+    "name": "London, United Kingdom",
+    "lat": 51.5074,
+    "lng": -0.1278
+  },
+  {
+    "name": "Birmingham, United Kingdom",
+    "lat": 52.4862,
+    "lng": -1.8904
+  },
+  {
+    "name": "Manchester, United Kingdom",
+    "lat": 53.4808,
+    "lng": -2.2426
+  },
+  {
+    "name": "Glasgow, United Kingdom",
+    "lat": 55.8642,
+    "lng": -4.2518
+  },
+  {
+    "name": "Liverpool, United Kingdom",
+    "lat": 53.4084,
+    "lng": -2.9916
+  },
+  {
+    "name": "Leeds, United Kingdom",
+    "lat": 53.8008,
+    "lng": -1.5491
+  },
+  {
+    "name": "Sheffield, United Kingdom",
+    "lat": 53.3811,
+    "lng": -1.4701
+  },
+  {
+    "name": "Edinburgh, United Kingdom",
+    "lat": 55.9533,
+    "lng": -3.1883
+  },
+  {
+    "name": "Bristol, United Kingdom",
+    "lat": 51.4545,
+    "lng": -2.5879
+  },
+  {
+    "name": "Cardiff, United Kingdom",
+    "lat": 51.4816,
+    "lng": -3.1791
+  },
+  {
+    "name": "Belfast, United Kingdom",
+    "lat": 54.5973,
+    "lng": -5.9301
+  },
+  {
+    "name": "Dublin, Ireland",
+    "lat": 53.3498,
+    "lng": -6.2603
+  },
+  {
+    "name": "Cork, Ireland",
+    "lat": 51.8985,
+    "lng": -8.4756
+  },
+  {
+    "name": "Paris, France",
+    "lat": 48.8566,
+    "lng": 2.3522
+  },
+  {
+    "name": "Lyon, France",
+    "lat": 45.764,
+    "lng": 4.8357
+  },
+  {
+    "name": "Marseille, France",
+    "lat": 43.2965,
+    "lng": 5.3698
+  },
+  {
+    "name": "Toulouse, France",
+    "lat": 43.6047,
+    "lng": 1.4442
+  },
+  {
+    "name": "Nice, France",
+    "lat": 43.7102,
+    "lng": 7.262
+  },
+  {
+    "name": "Nantes, France",
+    "lat": 47.2184,
+    "lng": -1.5536
+  },
+  {
+    "name": "Strasbourg, France",
+    "lat": 48.5734,
+    "lng": 7.7521
+  },
+  {
+    "name": "Bordeaux, France",
+    "lat": 44.8378,
+    "lng": -0.5792
+  },
+  {
+    "name": "Berlin, Germany",
+    "lat": 52.52,
+    "lng": 13.405
+  },
+  {
+    "name": "Hamburg, Germany",
+    "lat": 53.5753,
+    "lng": 10.0153
+  },
+  {
+    "name": "Munich, Germany",
+    "lat": 48.1351,
+    "lng": 11.582
+  },
+  {
+    "name": "Cologne, Germany",
+    "lat": 50.9333,
+    "lng": 6.95
+  },
+  {
+    "name": "Frankfurt, Germany",
+    "lat": 50.1109,
+    "lng": 8.6821
+  },
+  {
+    "name": "Stuttgart, Germany",
+    "lat": 48.7758,
+    "lng": 9.1829
+  },
+  {
+    "name": "Düsseldorf, Germany",
+    "lat": 51.2217,
+    "lng": 6.7762
+  },
+  {
+    "name": "Dortmund, Germany",
+    "lat": 51.5136,
+    "lng": 7.4653
+  },
+  {
+    "name": "Essen, Germany",
+    "lat": 51.4556,
+    "lng": 7.0116
+  },
+  {
+    "name": "Leipzig, Germany",
+    "lat": 51.3397,
+    "lng": 12.3731
+  },
+  {
+    "name": "Madrid, Spain",
+    "lat": 40.4168,
+    "lng": -3.7038
+  },
+  {
+    "name": "Barcelona, Spain",
+    "lat": 41.3851,
+    "lng": 2.1734
+  },
+  {
+    "name": "Valencia, Spain",
+    "lat": 39.4699,
+    "lng": -0.3763
+  },
+  {
+    "name": "Seville, Spain",
+    "lat": 37.3891,
+    "lng": -5.9845
+  },
+  {
+    "name": "Zaragoza, Spain",
+    "lat": 41.6488,
+    "lng": -0.8891
+  },
+  {
+    "name": "Bilbao, Spain",
+    "lat": 43.263,
+    "lng": -2.935
+  },
+  {
+    "name": "Málaga, Spain",
+    "lat": 36.7213,
+    "lng": -4.4214
+  },
+  {
+    "name": "Rome, Italy",
+    "lat": 41.9028,
+    "lng": 12.4964
+  },
+  {
+    "name": "Milan, Italy",
+    "lat": 45.4642,
+    "lng": 9.19
+  },
+  {
+    "name": "Naples, Italy",
+    "lat": 40.8518,
+    "lng": 14.2681
+  },
+  {
+    "name": "Turin, Italy",
+    "lat": 45.0703,
+    "lng": 7.6869
+  },
+  {
+    "name": "Palermo, Italy",
+    "lat": 38.1157,
+    "lng": 13.3615
+  },
+  {
+    "name": "Genoa, Italy",
+    "lat": 44.4056,
+    "lng": 8.9463
+  },
+  {
+    "name": "Florence, Italy",
+    "lat": 43.7696,
+    "lng": 11.2558
+  },
+  {
+    "name": "Bologna, Italy",
+    "lat": 44.4949,
+    "lng": 11.3426
+  },
+  {
+    "name": "Amsterdam, Netherlands",
+    "lat": 52.3676,
+    "lng": 4.9041
+  },
+  {
+    "name": "Rotterdam, Netherlands",
+    "lat": 51.9244,
+    "lng": 4.4777
+  },
+  {
+    "name": "The Hague, Netherlands",
+    "lat": 52.0705,
+    "lng": 4.3007
+  },
+  {
+    "name": "Utrecht, Netherlands",
+    "lat": 52.0907,
+    "lng": 5.1214
+  },
+  {
+    "name": "Brussels, Belgium",
+    "lat": 50.8503,
+    "lng": 4.3517
+  },
+  {
+    "name": "Antwerp, Belgium",
+    "lat": 51.2194,
+    "lng": 4.4025
+  },
+  {
+    "name": "Vienna, Austria",
+    "lat": 48.2082,
+    "lng": 16.3738
+  },
+  {
+    "name": "Graz, Austria",
+    "lat": 47.0707,
+    "lng": 15.4395
+  },
+  {
+    "name": "Zurich, Switzerland",
+    "lat": 47.3769,
+    "lng": 8.5417
+  },
+  {
+    "name": "Geneva, Switzerland",
+    "lat": 46.2044,
+    "lng": 6.1432
+  },
+  {
+    "name": "Basel, Switzerland",
+    "lat": 47.5596,
+    "lng": 7.5886
+  },
+  {
+    "name": "Bern, Switzerland",
+    "lat": 46.948,
+    "lng": 7.4474
+  },
+  {
+    "name": "Stockholm, Sweden",
+    "lat": 59.3293,
+    "lng": 18.0686
+  },
+  {
+    "name": "Gothenburg, Sweden",
+    "lat": 57.7089,
+    "lng": 11.9746
+  },
+  {
+    "name": "Malmö, Sweden",
+    "lat": 55.605,
+    "lng": 13.0038
+  },
+  {
+    "name": "Oslo, Norway",
+    "lat": 59.9139,
+    "lng": 10.7522
+  },
+  {
+    "name": "Bergen, Norway",
+    "lat": 60.3913,
+    "lng": 5.3221
+  },
+  {
+    "name": "Trondheim, Norway",
+    "lat": 63.4305,
+    "lng": 10.3951
+  },
+  {
+    "name": "Copenhagen, Denmark",
+    "lat": 55.6761,
+    "lng": 12.5683
+  },
+  {
+    "name": "Aarhus, Denmark",
+    "lat": 56.1629,
+    "lng": 10.2039
+  },
+  {
+    "name": "Helsinki, Finland",
+    "lat": 60.1699,
+    "lng": 24.9384
+  },
+  {
+    "name": "Tampere, Finland",
+    "lat": 61.4978,
+    "lng": 23.761
+  },
+  {
+    "name": "Reykjavik, Iceland",
+    "lat": 64.1265,
+    "lng": -21.8174
+  },
+  {
+    "name": "Warsaw, Poland",
+    "lat": 52.2297,
+    "lng": 21.0122
+  },
+  {
+    "name": "Krakow, Poland",
+    "lat": 50.0647,
+    "lng": 19.945
+  },
+  {
+    "name": "Łódź, Poland",
+    "lat": 51.7592,
+    "lng": 19.456
+  },
+  {
+    "name": "Wrocław, Poland",
+    "lat": 51.1079,
+    "lng": 17.0385
+  },
+  {
+    "name": "Prague, Czech Republic",
+    "lat": 50.0755,
+    "lng": 14.4378
+  },
+  {
+    "name": "Brno, Czech Republic",
+    "lat": 49.1951,
+    "lng": 16.6068
+  },
+  {
+    "name": "Budapest, Hungary",
+    "lat": 47.4979,
+    "lng": 19.0402
+  },
+  {
+    "name": "Bucharest, Romania",
+    "lat": 44.4268,
+    "lng": 26.1025
+  },
+  {
+    "name": "Cluj-Napoca, Romania",
+    "lat": 46.7712,
+    "lng": 23.6236
+  },
+  {
+    "name": "Sofia, Bulgaria",
+    "lat": 42.6977,
+    "lng": 23.3219
+  },
+  {
+    "name": "Athens, Greece",
+    "lat": 37.9838,
+    "lng": 23.7275
+  },
+  {
+    "name": "Thessaloniki, Greece",
+    "lat": 40.6401,
+    "lng": 22.9444
+  },
+  {
+    "name": "Belgrade, Serbia",
+    "lat": 44.8176,
+    "lng": 20.4633
+  },
+  {
+    "name": "Zagreb, Croatia",
+    "lat": 45.815,
+    "lng": 15.9819
+  },
+  {
+    "name": "Kyiv, Ukraine",
+    "lat": 50.4501,
+    "lng": 30.5234
+  },
+  {
+    "name": "Kharkiv, Ukraine",
+    "lat": 49.9935,
+    "lng": 36.2304
+  },
+  {
+    "name": "Odessa, Ukraine",
+    "lat": 46.4825,
+    "lng": 30.7233
+  },
+  {
+    "name": "Lviv, Ukraine",
+    "lat": 49.8397,
+    "lng": 24.0297
+  },
+  {
+    "name": "Minsk, Belarus",
+    "lat": 53.9045,
+    "lng": 27.5615
+  },
+  {
+    "name": "Riga, Latvia",
+    "lat": 56.9496,
+    "lng": 24.1052
+  },
+  {
+    "name": "Tallinn, Estonia",
+    "lat": 59.437,
+    "lng": 24.7536
+  },
+  {
+    "name": "Vilnius, Lithuania",
+    "lat": 54.6872,
+    "lng": 25.2797
+  },
+  {
+    "name": "Bratislava, Slovakia",
+    "lat": 48.1486,
+    "lng": 17.1077
+  },
+  {
+    "name": "Ljubljana, Slovenia",
+    "lat": 46.0569,
+    "lng": 14.5058
+  },
+  {
+    "name": "Sarajevo, Bosnia and Herzegovina",
+    "lat": 43.8563,
+    "lng": 18.4131
+  },
+  {
+    "name": "Skopje, North Macedonia",
+    "lat": 41.9981,
+    "lng": 21.4254
+  },
+  {
+    "name": "Tirana, Albania",
+    "lat": 41.3275,
+    "lng": 19.8187
+  },
+  {
+    "name": "Chisinau, Moldova",
+    "lat": 47.0105,
+    "lng": 28.8638
+  },
+  {
+    "name": "Lisbon, Portugal",
+    "lat": 38.7223,
+    "lng": -9.1393
+  },
+  {
+    "name": "Porto, Portugal",
+    "lat": 41.1579,
+    "lng": -8.6291
+  },
+  {
+    "name": "Luxembourg City, Luxembourg",
+    "lat": 49.6116,
+    "lng": 6.1319
+  },
+  {
+    "name": "Tokyo, Japan",
+    "lat": 35.6762,
+    "lng": 139.6503
+  },
+  {
+    "name": "Osaka, Japan",
+    "lat": 34.6937,
+    "lng": 135.5023
+  },
+  {
+    "name": "Nagoya, Japan",
+    "lat": 35.1815,
+    "lng": 136.9066
+  },
+  {
+    "name": "Sapporo, Japan",
+    "lat": 43.0618,
+    "lng": 141.3545
+  },
+  {
+    "name": "Fukuoka, Japan",
+    "lat": 33.5904,
+    "lng": 130.4017
+  },
+  {
+    "name": "Kobe, Japan",
+    "lat": 34.6901,
+    "lng": 135.1956
+  },
+  {
+    "name": "Kyoto, Japan",
+    "lat": 35.0116,
+    "lng": 135.7681
+  },
+  {
+    "name": "Sendai, Japan",
+    "lat": 38.2682,
+    "lng": 140.8694
+  },
+  {
+    "name": "Hiroshima, Japan",
+    "lat": 34.3853,
+    "lng": 132.4553
+  },
+  {
+    "name": "Seoul, South Korea",
+    "lat": 37.5665,
+    "lng": 126.978
+  },
+  {
+    "name": "Busan, South Korea",
+    "lat": 35.1796,
+    "lng": 129.0756
+  },
+  {
+    "name": "Incheon, South Korea",
+    "lat": 37.4563,
+    "lng": 126.7052
+  },
+  {
+    "name": "Daegu, South Korea",
+    "lat": 35.8714,
+    "lng": 128.6014
+  },
+  {
+    "name": "Daejeon, South Korea",
+    "lat": 36.3504,
+    "lng": 127.3845
+  },
+  {
+    "name": "Gwangju, South Korea",
+    "lat": 35.1595,
+    "lng": 126.8526
+  },
+  {
+    "name": "Beijing, China",
+    "lat": 39.9042,
+    "lng": 116.4074
+  },
+  {
+    "name": "Shanghai, China",
+    "lat": 31.2304,
+    "lng": 121.4737
+  },
+  {
+    "name": "Guangzhou, China",
+    "lat": 23.1291,
+    "lng": 113.2644
+  },
+  {
+    "name": "Shenzhen, China",
+    "lat": 22.5431,
+    "lng": 114.0579
+  },
+  {
+    "name": "Chengdu, China",
+    "lat": 30.5728,
+    "lng": 104.0668
+  },
+  {
+    "name": "Chongqing, China",
+    "lat": 29.4316,
+    "lng": 106.9123
+  },
+  {
+    "name": "Wuhan, China",
+    "lat": 30.5928,
+    "lng": 114.3055
+  },
+  {
+    "name": "Xi'an, China",
+    "lat": 34.3416,
+    "lng": 108.9398
+  },
+  {
+    "name": "Tianjin, China",
+    "lat": 39.3434,
+    "lng": 117.3616
+  },
+  {
+    "name": "Nanjing, China",
+    "lat": 32.0603,
+    "lng": 118.7969
+  },
+  {
+    "name": "Hangzhou, China",
+    "lat": 30.2741,
+    "lng": 120.1551
+  },
+  {
+    "name": "Qingdao, China",
+    "lat": 36.0671,
+    "lng": 120.3826
+  },
+  {
+    "name": "Shenyang, China",
+    "lat": 41.7968,
+    "lng": 123.4291
+  },
+  {
+    "name": "Zhengzhou, China",
+    "lat": 34.7466,
+    "lng": 113.6254
+  },
+  {
+    "name": "Harbin, China",
+    "lat": 45.8038,
+    "lng": 126.5349
+  },
+  {
+    "name": "Kunming, China",
+    "lat": 25.0389,
+    "lng": 102.7183
+  },
+  {
+    "name": "Dalian, China",
+    "lat": 38.914,
+    "lng": 121.6147
+  },
+  {
+    "name": "Xiamen, China",
+    "lat": 24.4798,
+    "lng": 118.0894
+  },
+  {
+    "name": "Urumqi, China",
+    "lat": 43.8256,
+    "lng": 87.6168
+  },
+  {
+    "name": "Hong Kong, China",
+    "lat": 22.3193,
+    "lng": 114.1694
+  },
+  {
+    "name": "Taipei, Taiwan",
+    "lat": 25.033,
+    "lng": 121.5654
+  },
+  {
+    "name": "Kaohsiung, Taiwan",
+    "lat": 22.6273,
+    "lng": 120.3014
+  },
+  {
+    "name": "Singapore, Singapore",
+    "lat": 1.3521,
+    "lng": 103.8198
+  },
+  {
+    "name": "Bangkok, Thailand",
+    "lat": 13.7563,
+    "lng": 100.5018
+  },
+  {
+    "name": "Chiang Mai, Thailand",
+    "lat": 18.7883,
+    "lng": 98.9853
+  },
+  {
+    "name": "Pattaya, Thailand",
+    "lat": 12.9236,
+    "lng": 100.8825
+  },
+  {
+    "name": "Jakarta, Indonesia",
+    "lat": -6.2088,
+    "lng": 106.8456
+  },
+  {
+    "name": "Surabaya, Indonesia",
+    "lat": -7.2575,
+    "lng": 112.7521
+  },
+  {
+    "name": "Bandung, Indonesia",
+    "lat": -6.9175,
+    "lng": 107.6191
+  },
+  {
+    "name": "Medan, Indonesia",
+    "lat": 3.5952,
+    "lng": 98.6722
+  },
+  {
+    "name": "Makassar, Indonesia",
+    "lat": -5.1477,
+    "lng": 119.4327
+  },
+  {
+    "name": "Kuala Lumpur, Malaysia",
+    "lat": 3.139,
+    "lng": 101.6869
+  },
+  {
+    "name": "George Town, Malaysia",
+    "lat": 5.4141,
+    "lng": 100.3288
+  },
+  {
+    "name": "Johor Bahru, Malaysia",
+    "lat": 1.4927,
+    "lng": 103.7414
+  },
+  {
+    "name": "Manila, Philippines",
+    "lat": 14.5995,
+    "lng": 120.9842
+  },
+  {
+    "name": "Quezon City, Philippines",
+    "lat": 14.676,
+    "lng": 121.0437
+  },
+  {
+    "name": "Davao, Philippines",
+    "lat": 7.1907,
+    "lng": 125.4553
+  },
+  {
+    "name": "Cebu City, Philippines",
+    "lat": 10.3157,
+    "lng": 123.8854
+  },
+  {
+    "name": "Hanoi, Vietnam",
+    "lat": 21.0278,
+    "lng": 105.8342
+  },
+  {
+    "name": "Ho Chi Minh City, Vietnam",
+    "lat": 10.8231,
+    "lng": 106.6297
+  },
+  {
+    "name": "Da Nang, Vietnam",
+    "lat": 16.0544,
+    "lng": 108.2022
+  },
+  {
+    "name": "Phnom Penh, Cambodia",
+    "lat": 11.5564,
+    "lng": 104.9282
+  },
+  {
+    "name": "Yangon, Myanmar",
+    "lat": 16.8661,
+    "lng": 96.1951
+  },
+  {
+    "name": "Vientiane, Laos",
+    "lat": 17.9757,
+    "lng": 102.6331
+  },
+  {
+    "name": "Mumbai, India",
+    "lat": 19.076,
+    "lng": 72.8777
+  },
+  {
+    "name": "Delhi, India",
+    "lat": 28.6139,
+    "lng": 77.209
+  },
+  {
+    "name": "Bangalore, India",
+    "lat": 12.9716,
+    "lng": 77.5946
+  },
+  {
+    "name": "Hyderabad, India",
+    "lat": 17.385,
+    "lng": 78.4867
+  },
+  {
+    "name": "Chennai, India",
+    "lat": 13.0827,
+    "lng": 80.2707
+  },
+  {
+    "name": "Kolkata, India",
+    "lat": 22.5726,
+    "lng": 88.3639
+  },
+  {
+    "name": "Ahmedabad, India",
+    "lat": 23.0225,
+    "lng": 72.5714
+  },
+  {
+    "name": "Pune, India",
+    "lat": 18.5204,
+    "lng": 73.8567
+  },
+  {
+    "name": "Surat, India",
+    "lat": 21.1702,
+    "lng": 72.8311
+  },
+  {
+    "name": "Jaipur, India",
+    "lat": 26.9124,
+    "lng": 75.7873
+  },
+  {
+    "name": "Lucknow, India",
+    "lat": 26.8467,
+    "lng": 80.9462
+  },
+  {
+    "name": "Kanpur, India",
+    "lat": 26.4499,
+    "lng": 80.3319
+  },
+  {
+    "name": "Nagpur, India",
+    "lat": 21.1458,
+    "lng": 79.0882
+  },
+  {
+    "name": "Bhopal, India",
+    "lat": 23.2599,
+    "lng": 77.4126
+  },
+  {
+    "name": "Visakhapatnam, India",
+    "lat": 17.6868,
+    "lng": 83.2185
+  },
+  {
+    "name": "Dhaka, Bangladesh",
+    "lat": 23.8103,
+    "lng": 90.4125
+  },
+  {
+    "name": "Chittagong, Bangladesh",
+    "lat": 22.3569,
+    "lng": 91.7832
+  },
+  {
+    "name": "Karachi, Pakistan",
+    "lat": 24.8607,
+    "lng": 67.0011
+  },
+  {
+    "name": "Lahore, Pakistan",
+    "lat": 31.5204,
+    "lng": 74.3587
+  },
+  {
+    "name": "Islamabad, Pakistan",
+    "lat": 33.6844,
+    "lng": 73.0479
+  },
+  {
+    "name": "Faisalabad, Pakistan",
+    "lat": 31.4504,
+    "lng": 73.135
+  },
+  {
+    "name": "Rawalpindi, Pakistan",
+    "lat": 33.5651,
+    "lng": 73.0169
+  },
+  {
+    "name": "Colombo, Sri Lanka",
+    "lat": 6.9271,
+    "lng": 79.8612
+  },
+  {
+    "name": "Kathmandu, Nepal",
+    "lat": 27.7172,
+    "lng": 85.324
+  },
+  {
+    "name": "Kabul, Afghanistan",
+    "lat": 34.5553,
+    "lng": 69.2075
+  },
+  {
+    "name": "Tashkent, Uzbekistan",
+    "lat": 41.2995,
+    "lng": 69.2401
+  },
+  {
+    "name": "Almaty, Kazakhstan",
+    "lat": 43.222,
+    "lng": 76.8512
+  },
+  {
+    "name": "Nur-Sultan, Kazakhstan",
+    "lat": 51.1801,
+    "lng": 71.446
+  },
+  {
+    "name": "Bishkek, Kyrgyzstan",
+    "lat": 42.8746,
+    "lng": 74.5698
+  },
+  {
+    "name": "Dushanbe, Tajikistan",
+    "lat": 38.5598,
+    "lng": 68.787
+  },
+  {
+    "name": "Ashgabat, Turkmenistan",
+    "lat": 37.9601,
+    "lng": 58.3261
+  },
+  {
+    "name": "Ulaanbaatar, Mongolia",
+    "lat": 47.8864,
+    "lng": 106.9057
+  },
+  {
+    "name": "Dubai, United Arab Emirates",
+    "lat": 25.2048,
+    "lng": 55.2708
+  },
+  {
+    "name": "Abu Dhabi, United Arab Emirates",
+    "lat": 24.4539,
+    "lng": 54.3773
+  },
+  {
+    "name": "Sharjah, United Arab Emirates",
+    "lat": 25.3462,
+    "lng": 55.4209
+  },
+  {
+    "name": "Riyadh, Saudi Arabia",
+    "lat": 24.7136,
+    "lng": 46.6753
+  },
+  {
+    "name": "Jeddah, Saudi Arabia",
+    "lat": 21.4858,
+    "lng": 39.1925
+  },
+  {
+    "name": "Mecca, Saudi Arabia",
+    "lat": 21.3891,
+    "lng": 39.8579
+  },
+  {
+    "name": "Medina, Saudi Arabia",
+    "lat": 24.5247,
+    "lng": 39.5692
+  },
+  {
+    "name": "Dammam, Saudi Arabia",
+    "lat": 26.4207,
+    "lng": 50.0888
+  },
+  {
+    "name": "Doha, Qatar",
+    "lat": 25.2854,
+    "lng": 51.531
+  },
+  {
+    "name": "Kuwait City, Kuwait",
+    "lat": 29.3759,
+    "lng": 47.9774
+  },
+  {
+    "name": "Manama, Bahrain",
+    "lat": 26.2285,
+    "lng": 50.586
+  },
+  {
+    "name": "Muscat, Oman",
+    "lat": 23.588,
+    "lng": 58.3829
+  },
+  {
+    "name": "Sanaa, Yemen",
+    "lat": 15.3694,
+    "lng": 44.191
+  },
+  {
+    "name": "Amman, Jordan",
+    "lat": 31.9454,
+    "lng": 35.9284
+  },
+  {
+    "name": "Beirut, Lebanon",
+    "lat": 33.8938,
+    "lng": 35.5018
+  },
+  {
+    "name": "Damascus, Syria",
+    "lat": 33.5138,
+    "lng": 36.2765
+  },
+  {
+    "name": "Baghdad, Iraq",
+    "lat": 33.3152,
+    "lng": 44.3661
+  },
+  {
+    "name": "Basra, Iraq",
+    "lat": 30.5085,
+    "lng": 47.7835
+  },
+  {
+    "name": "Tehran, Iran",
+    "lat": 35.6892,
+    "lng": 51.389
+  },
+  {
+    "name": "Isfahan, Iran",
+    "lat": 32.6546,
+    "lng": 51.668
+  },
+  {
+    "name": "Mashhad, Iran",
+    "lat": 36.2605,
+    "lng": 59.6168
+  },
+  {
+    "name": "Tabriz, Iran",
+    "lat": 38.0962,
+    "lng": 46.2738
+  },
+  {
+    "name": "Ankara, Turkey",
+    "lat": 39.9334,
+    "lng": 32.8597
+  },
+  {
+    "name": "Istanbul, Turkey",
+    "lat": 41.0082,
+    "lng": 28.9784
+  },
+  {
+    "name": "Izmir, Turkey",
+    "lat": 38.4192,
+    "lng": 27.1287
+  },
+  {
+    "name": "Bursa, Turkey",
+    "lat": 40.1885,
+    "lng": 29.061
+  },
+  {
+    "name": "Antalya, Turkey",
+    "lat": 36.8969,
+    "lng": 30.7133
+  },
+  {
+    "name": "Tel Aviv, Israel",
+    "lat": 32.0853,
+    "lng": 34.7818
+  },
+  {
+    "name": "Jerusalem, Israel",
+    "lat": 31.7683,
+    "lng": 35.2137
+  },
+  {
+    "name": "Haifa, Israel",
+    "lat": 32.794,
+    "lng": 34.9896
+  },
+  {
+    "name": "Tbilisi, Georgia",
+    "lat": 41.7151,
+    "lng": 44.8271
+  },
+  {
+    "name": "Baku, Azerbaijan",
+    "lat": 40.4093,
+    "lng": 49.8671
+  },
+  {
+    "name": "Yerevan, Armenia",
+    "lat": 40.1872,
+    "lng": 44.5152
+  },
+  {
+    "name": "Moscow, Russia",
+    "lat": 55.7558,
+    "lng": 37.6173
+  },
+  {
+    "name": "Saint Petersburg, Russia",
+    "lat": 59.9311,
+    "lng": 30.3609
+  },
+  {
+    "name": "Novosibirsk, Russia",
+    "lat": 54.9884,
+    "lng": 82.9357
+  },
+  {
+    "name": "Yekaterinburg, Russia",
+    "lat": 56.8389,
+    "lng": 60.6057
+  },
+  {
+    "name": "Kazan, Russia",
+    "lat": 55.8304,
+    "lng": 49.0661
+  },
+  {
+    "name": "Nizhny Novgorod, Russia",
+    "lat": 56.2965,
+    "lng": 43.9361
+  },
+  {
+    "name": "Vladivostok, Russia",
+    "lat": 43.1332,
+    "lng": 131.9113
+  },
+  {
+    "name": "São Paulo, Brazil",
+    "lat": -23.5505,
+    "lng": -46.6333
+  },
+  {
+    "name": "Rio de Janeiro, Brazil",
+    "lat": -22.9068,
+    "lng": -43.1729
+  },
+  {
+    "name": "Brasília, Brazil",
+    "lat": -15.7975,
+    "lng": -47.8919
+  },
+  {
+    "name": "Salvador, Brazil",
+    "lat": -12.9714,
+    "lng": -38.5014
+  },
+  {
+    "name": "Fortaleza, Brazil",
+    "lat": -3.7319,
+    "lng": -38.5267
+  },
+  {
+    "name": "Belo Horizonte, Brazil",
+    "lat": -19.9191,
+    "lng": -43.9386
+  },
+  {
+    "name": "Manaus, Brazil",
+    "lat": -3.119,
+    "lng": -60.0217
+  },
+  {
+    "name": "Curitiba, Brazil",
+    "lat": -25.4284,
+    "lng": -49.2733
+  },
+  {
+    "name": "Recife, Brazil",
+    "lat": -8.0476,
+    "lng": -34.877
+  },
+  {
+    "name": "Porto Alegre, Brazil",
+    "lat": -30.0346,
+    "lng": -51.2177
+  },
+  {
+    "name": "Belém, Brazil",
+    "lat": -1.4558,
+    "lng": -48.5044
+  },
+  {
+    "name": "Goiânia, Brazil",
+    "lat": -16.6869,
+    "lng": -49.2648
+  },
+  {
+    "name": "Florianópolis, Brazil",
+    "lat": -27.5954,
+    "lng": -48.548
+  },
+  {
+    "name": "Natal, Brazil",
+    "lat": -5.7945,
+    "lng": -35.211
+  },
+  {
+    "name": "Maceió, Brazil",
+    "lat": -9.6498,
+    "lng": -35.7089
+  },
+  {
+    "name": "Buenos Aires, Argentina",
+    "lat": -34.6037,
+    "lng": -58.3816
+  },
+  {
+    "name": "Córdoba, Argentina",
+    "lat": -31.4201,
+    "lng": -64.1888
+  },
+  {
+    "name": "Rosario, Argentina",
+    "lat": -32.9442,
+    "lng": -60.6505
+  },
+  {
+    "name": "Mendoza, Argentina",
+    "lat": -32.8908,
+    "lng": -68.8272
+  },
+  {
+    "name": "Tucumán, Argentina",
+    "lat": -26.8083,
+    "lng": -65.2176
+  },
+  {
+    "name": "Mar del Plata, Argentina",
+    "lat": -38.0023,
+    "lng": -57.5575
+  },
+  {
+    "name": "Salta, Argentina",
+    "lat": -24.7821,
+    "lng": -65.4232
+  },
+  {
+    "name": "Santiago, Chile",
+    "lat": -33.4489,
+    "lng": -70.6693
+  },
+  {
+    "name": "Valparaíso, Chile",
+    "lat": -33.0472,
+    "lng": -71.6127
+  },
+  {
+    "name": "Concepción, Chile",
+    "lat": -36.827,
+    "lng": -73.0503
+  },
+  {
+    "name": "Antofagasta, Chile",
+    "lat": -23.6509,
+    "lng": -70.3975
+  },
+  {
+    "name": "Bogotá, Colombia",
+    "lat": 4.711,
+    "lng": -74.0721
+  },
+  {
+    "name": "Medellín, Colombia",
+    "lat": 6.2476,
+    "lng": -75.5658
+  },
+  {
+    "name": "Cali, Colombia",
+    "lat": 3.4516,
+    "lng": -76.532
+  },
+  {
+    "name": "Barranquilla, Colombia",
+    "lat": 10.9685,
+    "lng": -74.7813
+  },
+  {
+    "name": "Cartagena, Colombia",
+    "lat": 10.391,
+    "lng": -75.4794
+  },
+  {
+    "name": "Lima, Peru",
+    "lat": -12.0464,
+    "lng": -77.0428
+  },
+  {
+    "name": "Arequipa, Peru",
+    "lat": -16.409,
+    "lng": -71.5375
+  },
+  {
+    "name": "Trujillo, Peru",
+    "lat": -8.109,
+    "lng": -79.0215
+  },
+  {
+    "name": "Cusco, Peru",
+    "lat": -13.532,
+    "lng": -71.9675
+  },
+  {
+    "name": "Caracas, Venezuela",
+    "lat": 10.4806,
+    "lng": -66.9036
+  },
+  {
+    "name": "Maracaibo, Venezuela",
+    "lat": 10.6319,
+    "lng": -71.6438
+  },
+  {
+    "name": "Valencia, Venezuela",
+    "lat": 10.162,
+    "lng": -67.9935
+  },
+  {
+    "name": "Quito, Ecuador",
+    "lat": -0.1807,
+    "lng": -78.4678
+  },
+  {
+    "name": "Guayaquil, Ecuador",
+    "lat": -2.1711,
+    "lng": -79.9224
+  },
+  {
+    "name": "La Paz, Bolivia",
+    "lat": -16.5,
+    "lng": -68.15
+  },
+  {
+    "name": "Santa Cruz, Bolivia",
+    "lat": -17.7833,
+    "lng": -63.1822
+  },
+  {
+    "name": "Asunción, Paraguay",
+    "lat": -25.2867,
+    "lng": -57.647
+  },
+  {
+    "name": "Montevideo, Uruguay",
+    "lat": -34.9011,
+    "lng": -56.1645
+  },
+  {
+    "name": "Georgetown, Guyana",
+    "lat": 6.8013,
+    "lng": -58.1553
+  },
+  {
+    "name": "Paramaribo, Suriname",
+    "lat": 5.852,
+    "lng": -55.2038
+  },
+  {
+    "name": "Cairo, Egypt",
+    "lat": 30.0444,
+    "lng": 31.2357
+  },
+  {
+    "name": "Alexandria, Egypt",
+    "lat": 31.2001,
+    "lng": 29.9187
+  },
+  {
+    "name": "Giza, Egypt",
+    "lat": 30.0131,
+    "lng": 31.2089
+  },
+  {
+    "name": "Casablanca, Morocco",
+    "lat": 33.5731,
+    "lng": -7.5898
+  },
+  {
+    "name": "Rabat, Morocco",
+    "lat": 34.0209,
+    "lng": -6.8416
+  },
+  {
+    "name": "Marrakech, Morocco",
+    "lat": 31.6295,
+    "lng": -7.9811
+  },
+  {
+    "name": "Fez, Morocco",
+    "lat": 34.0181,
+    "lng": -5.0078
+  },
+  {
+    "name": "Algiers, Algeria",
+    "lat": 36.7372,
+    "lng": 3.0863
+  },
+  {
+    "name": "Oran, Algeria",
+    "lat": 35.6969,
+    "lng": -0.6331
+  },
+  {
+    "name": "Tunis, Tunisia",
+    "lat": 36.8188,
+    "lng": 10.1658
+  },
+  {
+    "name": "Tripoli, Libya",
+    "lat": 32.9,
+    "lng": 13.18
+  },
+  {
+    "name": "Khartoum, Sudan",
+    "lat": 15.5007,
+    "lng": 32.5599
+  },
+  {
+    "name": "Addis Ababa, Ethiopia",
+    "lat": 9.032,
+    "lng": 38.7469
+  },
+  {
+    "name": "Nairobi, Kenya",
+    "lat": -1.2921,
+    "lng": 36.8219
+  },
+  {
+    "name": "Mombasa, Kenya",
+    "lat": -4.0435,
+    "lng": 39.6682
+  },
+  {
+    "name": "Dar es Salaam, Tanzania",
+    "lat": -6.7924,
+    "lng": 39.2083
+  },
+  {
+    "name": "Kampala, Uganda",
+    "lat": 0.3476,
+    "lng": 32.5825
+  },
+  {
+    "name": "Kigali, Rwanda",
+    "lat": -1.9441,
+    "lng": 30.0619
+  },
+  {
+    "name": "Lusaka, Zambia",
+    "lat": -15.3875,
+    "lng": 28.3228
+  },
+  {
+    "name": "Harare, Zimbabwe",
+    "lat": -17.8252,
+    "lng": 31.0335
+  },
+  {
+    "name": "Maputo, Mozambique",
+    "lat": -25.9655,
+    "lng": 32.5832
+  },
+  {
+    "name": "Antananarivo, Madagascar",
+    "lat": -18.9137,
+    "lng": 47.5361
+  },
+  {
+    "name": "Johannesburg, South Africa",
+    "lat": -26.2041,
+    "lng": 28.0473
+  },
+  {
+    "name": "Cape Town, South Africa",
+    "lat": -33.9249,
+    "lng": 18.4241
+  },
+  {
+    "name": "Durban, South Africa",
+    "lat": -29.8587,
+    "lng": 31.0218
+  },
+  {
+    "name": "Pretoria, South Africa",
+    "lat": -25.7479,
+    "lng": 28.2293
+  },
+  {
+    "name": "Port Elizabeth, South Africa",
+    "lat": -33.9608,
+    "lng": 25.6022
+  },
+  {
+    "name": "Bloemfontein, South Africa",
+    "lat": -29.121,
+    "lng": 26.2041
+  },
+  {
+    "name": "Lagos, Nigeria",
+    "lat": 6.5244,
+    "lng": 3.3792
+  },
+  {
+    "name": "Kano, Nigeria",
+    "lat": 12.0022,
+    "lng": 8.592
+  },
+  {
+    "name": "Ibadan, Nigeria",
+    "lat": 7.3775,
+    "lng": 3.947
+  },
+  {
+    "name": "Abuja, Nigeria",
+    "lat": 9.0579,
+    "lng": 7.4951
+  },
+  {
+    "name": "Port Harcourt, Nigeria",
+    "lat": 4.8156,
+    "lng": 7.0498
+  },
+  {
+    "name": "Accra, Ghana",
+    "lat": 5.6037,
+    "lng": -0.187
+  },
+  {
+    "name": "Kumasi, Ghana",
+    "lat": 6.6885,
+    "lng": -1.6244
+  },
+  {
+    "name": "Dakar, Senegal",
+    "lat": 14.7167,
+    "lng": -17.4677
+  },
+  {
+    "name": "Abidjan, Côte d'Ivoire",
+    "lat": 5.36,
+    "lng": -4.0083
+  },
+  {
+    "name": "Conakry, Guinea",
+    "lat": 9.537,
+    "lng": -13.6773
+  },
+  {
+    "name": "Freetown, Sierra Leone",
+    "lat": 8.4657,
+    "lng": -13.2317
+  },
+  {
+    "name": "Monrovia, Liberia",
+    "lat": 6.2907,
+    "lng": -10.7605
+  },
+  {
+    "name": "Bamako, Mali",
+    "lat": 12.6392,
+    "lng": -8.0029
+  },
+  {
+    "name": "Ouagadougou, Burkina Faso",
+    "lat": 12.3569,
+    "lng": -1.5353
+  },
+  {
+    "name": "Niamey, Niger",
+    "lat": 13.5137,
+    "lng": 2.1098
+  },
+  {
+    "name": "N'Djamena, Chad",
+    "lat": 12.1348,
+    "lng": 15.0557
+  },
+  {
+    "name": "Douala, Cameroon",
+    "lat": 4.0511,
+    "lng": 9.7679
+  },
+  {
+    "name": "Yaoundé, Cameroon",
+    "lat": 3.848,
+    "lng": 11.5021
+  },
+  {
+    "name": "Kinshasa, Democratic Republic of the Congo",
+    "lat": -4.3217,
+    "lng": 15.3222
+  },
+  {
+    "name": "Lubumbashi, Democratic Republic of the Congo",
+    "lat": -11.6609,
+    "lng": 27.4794
+  },
+  {
+    "name": "Luanda, Angola",
+    "lat": -8.8368,
+    "lng": 13.2343
+  },
+  {
+    "name": "Brazzaville, Republic of the Congo",
+    "lat": -4.2661,
+    "lng": 15.2832
+  },
+  {
+    "name": "Libreville, Gabon",
+    "lat": 0.3901,
+    "lng": 9.4544
+  },
+  {
+    "name": "Malabo, Equatorial Guinea",
+    "lat": 3.7523,
+    "lng": 8.7742
+  },
+  {
+    "name": "Bangui, Central African Republic",
+    "lat": 4.3612,
+    "lng": 18.555
+  },
+  {
+    "name": "Lomé, Togo",
+    "lat": 6.1375,
+    "lng": 1.2123
+  },
+  {
+    "name": "Cotonou, Benin",
+    "lat": 6.3703,
+    "lng": 2.3912
+  },
+  {
+    "name": "Banjul, Gambia",
+    "lat": 13.4549,
+    "lng": -16.579
+  },
+  {
+    "name": "Bissau, Guinea-Bissau",
+    "lat": 11.8636,
+    "lng": -15.5977
+  },
+  {
+    "name": "Praia, Cape Verde",
+    "lat": 14.933,
+    "lng": -23.5133
+  },
+  {
+    "name": "Djibouti City, Djibouti",
+    "lat": 11.572,
+    "lng": 43.1456
+  },
+  {
+    "name": "Asmara, Eritrea",
+    "lat": 15.3389,
+    "lng": 38.9318
+  },
+  {
+    "name": "Mogadishu, Somalia",
+    "lat": 2.0469,
+    "lng": 45.3182
+  },
+  {
+    "name": "Lilongwe, Malawi",
+    "lat": -13.9626,
+    "lng": 33.7741
+  },
+  {
+    "name": "Gaborone, Botswana",
+    "lat": -24.6282,
+    "lng": 25.9231
+  },
+  {
+    "name": "Windhoek, Namibia",
+    "lat": -22.5609,
+    "lng": 17.0658
+  },
+  {
+    "name": "Maseru, Lesotho",
+    "lat": -29.3167,
+    "lng": 27.4833
+  },
+  {
+    "name": "Mbabane, Eswatini",
+    "lat": -26.3054,
+    "lng": 31.1367
+  },
+  {
+    "name": "Moroni, Comoros",
+    "lat": -11.7022,
+    "lng": 43.2551
+  },
+  {
+    "name": "Sydney, Australia",
+    "lat": -33.8688,
+    "lng": 151.2093
+  },
+  {
+    "name": "Melbourne, Australia",
+    "lat": -37.8136,
+    "lng": 144.9631
+  },
+  {
+    "name": "Brisbane, Australia",
+    "lat": -27.4698,
+    "lng": 153.0251
+  },
+  {
+    "name": "Perth, Australia",
+    "lat": -31.9505,
+    "lng": 115.8605
+  },
+  {
+    "name": "Adelaide, Australia",
+    "lat": -34.9285,
+    "lng": 138.6007
+  },
+  {
+    "name": "Canberra, Australia",
+    "lat": -35.2809,
+    "lng": 149.13
+  },
+  {
+    "name": "Gold Coast, Australia",
+    "lat": -28.0167,
+    "lng": 153.4
+  },
+  {
+    "name": "Newcastle, Australia",
+    "lat": -32.9267,
+    "lng": 151.7789
+  },
+  {
+    "name": "Hobart, Australia",
+    "lat": -42.8826,
+    "lng": 147.3257
+  },
+  {
+    "name": "Darwin, Australia",
+    "lat": -12.4634,
+    "lng": 130.8456
+  },
+  {
+    "name": "Cairns, Australia",
+    "lat": -16.9186,
+    "lng": 145.7781
+  },
+  {
+    "name": "Townsville, Australia",
+    "lat": -19.259,
+    "lng": 146.8169
+  },
+  {
+    "name": "Wollongong, Australia",
+    "lat": -34.4278,
+    "lng": 150.8931
+  },
+  {
+    "name": "Auckland, New Zealand",
+    "lat": -36.8485,
+    "lng": 174.7633
+  },
+  {
+    "name": "Wellington, New Zealand",
+    "lat": -41.2865,
+    "lng": 174.7762
+  },
+  {
+    "name": "Christchurch, New Zealand",
+    "lat": -43.5321,
+    "lng": 172.6362
+  },
+  {
+    "name": "Hamilton, New Zealand",
+    "lat": -37.787,
+    "lng": 175.2793
+  },
+  {
+    "name": "Dunedin, New Zealand",
+    "lat": -45.8788,
+    "lng": 170.5028
+  },
+  {
+    "name": "Tauranga, New Zealand",
+    "lat": -37.6878,
+    "lng": 176.1651
+  },
+  {
+    "name": "Port Moresby, Papua New Guinea",
+    "lat": -9.4438,
+    "lng": 147.1803
+  },
+  {
+    "name": "Suva, Fiji",
+    "lat": -18.1416,
+    "lng": 178.4415
+  },
+  {
+    "name": "Honiara, Solomon Islands",
+    "lat": -9.4333,
+    "lng": 160.05
+  },
+  {
+    "name": "Port Vila, Vanuatu",
+    "lat": -17.7333,
+    "lng": 168.3167
+  },
+  {
+    "name": "Noumea, New Caledonia",
+    "lat": -22.2758,
+    "lng": 166.4581
+  },
+  {
+    "name": "Papeete, French Polynesia",
+    "lat": -17.5334,
+    "lng": -149.5667
+  },
+  {
+    "name": "Apia, Samoa",
+    "lat": -13.8314,
+    "lng": -171.872
+  },
+  {
+    "name": "Nuku'alofa, Tonga",
+    "lat": -21.1393,
+    "lng": -175.2049
+  },
+  {
+    "name": "Tarawa, Kiribati",
+    "lat": 1.3282,
+    "lng": 172.9784
+  },
+  {
+    "name": "Funafuti, Tuvalu",
+    "lat": -8.5243,
+    "lng": 179.1942
+  },
+  {
+    "name": "Guatemala City, Guatemala",
+    "lat": 14.6349,
+    "lng": -90.5069
+  },
+  {
+    "name": "San Salvador, El Salvador",
+    "lat": 13.6929,
+    "lng": -89.2182
+  },
+  {
+    "name": "Tegucigalpa, Honduras",
+    "lat": 14.0723,
+    "lng": -87.2062
+  },
+  {
+    "name": "Managua, Nicaragua",
+    "lat": 12.1328,
+    "lng": -86.2504
+  },
+  {
+    "name": "San José, Costa Rica",
+    "lat": 9.9281,
+    "lng": -84.0907
+  },
+  {
+    "name": "Panama City, Panama",
+    "lat": 8.9936,
+    "lng": -79.5197
+  },
+  {
+    "name": "Belmopan, Belize",
+    "lat": 17.2514,
+    "lng": -88.759
+  },
+  {
+    "name": "Havana, Cuba",
+    "lat": 23.1136,
+    "lng": -82.3666
+  },
+  {
+    "name": "Santiago de Cuba, Cuba",
+    "lat": 20.0236,
+    "lng": -75.822
+  },
+  {
+    "name": "Santo Domingo, Dominican Republic",
+    "lat": 18.4861,
+    "lng": -69.9312
+  },
+  {
+    "name": "Port-au-Prince, Haiti",
+    "lat": 18.5944,
+    "lng": -72.3074
+  },
+  {
+    "name": "San Juan, Puerto Rico",
+    "lat": 18.4655,
+    "lng": -66.1057
+  },
+  {
+    "name": "Kingston, Jamaica",
+    "lat": 17.997,
+    "lng": -76.7936
+  },
+  {
+    "name": "Port of Spain, Trinidad and Tobago",
+    "lat": 10.6549,
+    "lng": -61.5019
+  },
+  {
+    "name": "Bridgetown, Barbados",
+    "lat": 13.1132,
+    "lng": -59.5988
+  },
+  {
+    "name": "Nassau, Bahamas",
+    "lat": 25.048,
+    "lng": -77.3554
+  },
+  {
+    "name": "Willemstad, Curaçao",
+    "lat": 12.1224,
+    "lng": -68.8824
+  },
+  {
+    "name": "Oranjestad, Aruba",
+    "lat": 12.5246,
+    "lng": -70.0265
+  },
+  {
+    "name": "Castries, Saint Lucia",
+    "lat": 14.0101,
+    "lng": -60.9875
+  },
+  {
+    "name": "Kingstown, Saint Vincent and the Grenadines",
+    "lat": 13.16,
+    "lng": -61.2248
+  },
+  {
+    "name": "Saint George's, Grenada",
+    "lat": 12.0561,
+    "lng": -61.7488
+  },
+  {
+    "name": "Roseau, Dominica",
+    "lat": 15.3017,
+    "lng": -61.3881
+  },
+  {
+    "name": "Basseterre, Saint Kitts and Nevis",
+    "lat": 17.3026,
+    "lng": -62.7177
+  },
+  {
+    "name": "St. John's, Antigua and Barbuda",
+    "lat": 17.1274,
+    "lng": -61.8468
+  },
+  {
+    "name": "Road Town, British Virgin Islands",
+    "lat": 18.4207,
+    "lng": -64.64
+  },
+  {
+    "name": "Philipsburg, Sint Maarten",
+    "lat": 18.0255,
+    "lng": -63.0526
+  },
+  {
+    "name": "Nuuk, Greenland",
+    "lat": 64.1836,
+    "lng": -51.7214
+  },
+  {
+    "name": "Longyearbyen, Norway",
+    "lat": 78.2232,
+    "lng": 15.6267
+  },
+  {
+    "name": "Valletta, Malta",
+    "lat": 35.8997,
+    "lng": 14.5146
+  },
+  {
+    "name": "Nicosia, Cyprus",
+    "lat": 35.1856,
+    "lng": 33.3823
+  },
+  {
+    "name": "Podgorica, Montenegro",
+    "lat": 42.4304,
+    "lng": 19.2594
+  },
+  {
+    "name": "Pristina, Kosovo",
+    "lat": 42.6629,
+    "lng": 21.1655
+  },
+  {
+    "name": "Andorra la Vella, Andorra",
+    "lat": 42.5063,
+    "lng": 1.5218
+  },
+  {
+    "name": "Monaco, Monaco",
+    "lat": 43.7384,
+    "lng": 7.4246
+  },
+  {
+    "name": "San Marino, San Marino",
+    "lat": 43.9424,
+    "lng": 12.4578
+  },
+  {
+    "name": "Vaduz, Liechtenstein",
+    "lat": 47.141,
+    "lng": 9.5215
+  },
+  {
+    "name": "Saint-Denis, Réunion",
+    "lat": -20.8789,
+    "lng": 55.4481
+  },
+  {
+    "name": "Fort-de-France, Martinique",
+    "lat": 14.6037,
+    "lng": -61.0736
+  },
+  {
+    "name": "Pointe-à-Pitre, Guadeloupe",
+    "lat": 16.2418,
+    "lng": -61.5336
+  },
+  {
+    "name": "Cayenne, French Guiana",
+    "lat": 4.9224,
+    "lng": -52.3135
+  },
+  {
+    "name": "Macau, China",
+    "lat": 22.1987,
+    "lng": 113.5439
+  },
+  {
+    "name": "Malé, Maldives",
+    "lat": 4.1755,
+    "lng": 73.5093
+  },
+  {
+    "name": "Thimphu, Bhutan",
+    "lat": 27.4728,
+    "lng": 89.639
+  },
+  {
+    "name": "Nay Pyi Taw, Myanmar",
+    "lat": 19.7633,
+    "lng": 96.0785
+  },
+  {
+    "name": "Bandar Seri Begawan, Brunei",
+    "lat": 4.9031,
+    "lng": 114.9398
+  },
+  {
+    "name": "Dili, East Timor",
+    "lat": -8.5568,
+    "lng": 125.5786
+  },
+  {
+    "name": "Naypyidaw, Myanmar",
+    "lat": 19.7633,
+    "lng": 96.0785
+  },
+  {
+    "name": "Kandy, Sri Lanka",
+    "lat": 7.2906,
+    "lng": 80.6337
+  },
+  {
+    "name": "Jaffna, Sri Lanka",
+    "lat": 9.6615,
+    "lng": 80.0255
+  },
+  {
+    "name": "Peshawar, Pakistan",
+    "lat": 34.0151,
+    "lng": 71.5249
+  },
+  {
+    "name": "Quetta, Pakistan",
+    "lat": 30.1798,
+    "lng": 66.975
+  },
+  {
+    "name": "Multan, Pakistan",
+    "lat": 30.1575,
+    "lng": 71.5249
+  },
+  {
+    "name": "Hyderabad, Pakistan",
+    "lat": 25.396,
+    "lng": 68.3578
+  },
+  {
+    "name": "Varanasi, India",
+    "lat": 25.3176,
+    "lng": 82.9739
+  },
+  {
+    "name": "Agra, India",
+    "lat": 27.1767,
+    "lng": 78.0081
+  },
+  {
+    "name": "Indore, India",
+    "lat": 22.7196,
+    "lng": 75.8577
+  },
+  {
+    "name": "Patna, India",
+    "lat": 25.5941,
+    "lng": 85.1376
+  },
+  {
+    "name": "Kochi, India",
+    "lat": 9.9312,
+    "lng": 76.2673
+  },
+  {
+    "name": "Coimbatore, India",
+    "lat": 11.0168,
+    "lng": 76.9558
+  },
+  {
+    "name": "Guwahati, India",
+    "lat": 26.1445,
+    "lng": 91.7362
+  },
+  {
+    "name": "Bhubaneswar, India",
+    "lat": 20.2961,
+    "lng": 85.8245
+  },
+  {
+    "name": "Thiruvananthapuram, India",
+    "lat": 8.5241,
+    "lng": 76.9366
+  },
+  {
+    "name": "Amritsar, India",
+    "lat": 31.634,
+    "lng": 74.8723
+  },
+  {
+    "name": "Chandigarh, India",
+    "lat": 30.7333,
+    "lng": 76.7794
+  },
+  {
+    "name": "Goa, India",
+    "lat": 15.2993,
+    "lng": 74.124
+  },
+  {
+    "name": "Nanning, China",
+    "lat": 22.817,
+    "lng": 108.3665
+  },
+  {
+    "name": "Guiyang, China",
+    "lat": 26.5783,
+    "lng": 106.7275
+  },
+  {
+    "name": "Lanzhou, China",
+    "lat": 36.0611,
+    "lng": 103.8343
+  },
+  {
+    "name": "Taiyuan, China",
+    "lat": 37.8706,
+    "lng": 112.5489
+  },
+  {
+    "name": "Shijiazhuang, China",
+    "lat": 38.0428,
+    "lng": 114.5149
+  },
+  {
+    "name": "Hefei, China",
+    "lat": 31.8639,
+    "lng": 117.2808
+  },
+  {
+    "name": "Changchun, China",
+    "lat": 43.8171,
+    "lng": 125.3235
+  },
+  {
+    "name": "Jinan, China",
+    "lat": 36.6512,
+    "lng": 117.1201
+  },
+  {
+    "name": "Fuzhou, China",
+    "lat": 26.0745,
+    "lng": 119.2965
+  },
+  {
+    "name": "Wenzhou, China",
+    "lat": 27.9938,
+    "lng": 120.6997
+  },
+  {
+    "name": "Changsha, China",
+    "lat": 28.2282,
+    "lng": 112.9388
+  },
+  {
+    "name": "Wuxi, China",
+    "lat": 31.4912,
+    "lng": 120.3119
+  },
+  {
+    "name": "Suzhou, China",
+    "lat": 31.299,
+    "lng": 120.5853
+  },
+  {
+    "name": "Nanchang, China",
+    "lat": 28.682,
+    "lng": 115.8581
+  },
+  {
+    "name": "Zibo, China",
+    "lat": 36.804,
+    "lng": 118.055
+  },
+  {
+    "name": "Tangshan, China",
+    "lat": 39.6243,
+    "lng": 118.1943
+  },
+  {
+    "name": "Baotou, China",
+    "lat": 40.6553,
+    "lng": 109.84
+  },
+  {
+    "name": "Medellin, Colombia",
+    "lat": 6.2476,
+    "lng": -75.5658
+  },
+  {
+    "name": "Bucaramanga, Colombia",
+    "lat": 7.1253,
+    "lng": -73.1198
+  },
+  {
+    "name": "Pereira, Colombia",
+    "lat": 4.8087,
+    "lng": -75.6906
+  },
+  {
+    "name": "Manizales, Colombia",
+    "lat": 5.0703,
+    "lng": -75.5138
+  },
+  {
+    "name": "Cochabamba, Bolivia",
+    "lat": -17.3895,
+    "lng": -66.1568
+  },
+  {
+    "name": "Sucre, Bolivia",
+    "lat": -19.0196,
+    "lng": -65.2619
+  },
+  {
+    "name": "Cuenca, Ecuador",
+    "lat": -2.9001,
+    "lng": -79.0059
+  },
+  {
+    "name": "Loja, Ecuador",
+    "lat": -3.9931,
+    "lng": -79.2042
+  },
+  {
+    "name": "Callao, Peru",
+    "lat": -12.056,
+    "lng": -77.1183
+  },
+  {
+    "name": "Piura, Peru",
+    "lat": -5.1945,
+    "lng": -80.6328
+  },
+  {
+    "name": "Iquitos, Peru",
+    "lat": -3.7437,
+    "lng": -73.2516
+  },
+  {
+    "name": "Concepción, Paraguay",
+    "lat": -23.409,
+    "lng": -57.428
+  },
+  {
+    "name": "Ciudad del Este, Paraguay",
+    "lat": -25.5096,
+    "lng": -54.611
+  },
+  {
+    "name": "Salto, Uruguay",
+    "lat": -31.3833,
+    "lng": -57.9667
+  },
+  {
+    "name": "Paysandú, Uruguay",
+    "lat": -32.3167,
+    "lng": -58.0833
+  },
+  {
+    "name": "Maracay, Venezuela",
+    "lat": 10.2469,
+    "lng": -67.5958
+  },
+  {
+    "name": "Barquisimeto, Venezuela",
+    "lat": 10.0647,
+    "lng": -69.357
+  },
+  {
+    "name": "Sorocaba, Brazil",
+    "lat": -23.5015,
+    "lng": -47.4526
+  },
+  {
+    "name": "Campinas, Brazil",
+    "lat": -22.9056,
+    "lng": -47.0608
+  },
+  {
+    "name": "São Luís, Brazil",
+    "lat": -2.5307,
+    "lng": -44.3068
+  },
+  {
+    "name": "Teresina, Brazil",
+    "lat": -5.0892,
+    "lng": -42.8019
+  },
+  {
+    "name": "Campo Grande, Brazil",
+    "lat": -20.4697,
+    "lng": -54.6201
+  },
+  {
+    "name": "João Pessoa, Brazil",
+    "lat": -7.1195,
+    "lng": -34.845
+  },
+  {
+    "name": "Aracaju, Brazil",
+    "lat": -10.9167,
+    "lng": -37.05
+  },
+  {
+    "name": "Macapá, Brazil",
+    "lat": 0.0356,
+    "lng": -51.0705
+  },
+  {
+    "name": "Porto Velho, Brazil",
+    "lat": -8.7612,
+    "lng": -63.9004
+  },
+  {
+    "name": "Cuiabá, Brazil",
+    "lat": -15.6014,
+    "lng": -56.0979
+  },
+  {
+    "name": "Kaduna, Nigeria",
+    "lat": 10.5222,
+    "lng": 7.4383
+  },
+  {
+    "name": "Benin City, Nigeria",
+    "lat": 6.335,
+    "lng": 5.6037
+  },
+  {
+    "name": "Enugu, Nigeria",
+    "lat": 6.4584,
+    "lng": 7.5464
+  },
+  {
+    "name": "Onitsha, Nigeria",
+    "lat": 6.1667,
+    "lng": 6.7833
+  },
+  {
+    "name": "Kisumu, Kenya",
+    "lat": -0.1022,
+    "lng": 34.7617
+  },
+  {
+    "name": "Nakuru, Kenya",
+    "lat": -0.3031,
+    "lng": 36.08
+  },
+  {
+    "name": "Mwanza, Tanzania",
+    "lat": -2.5167,
+    "lng": 32.9
+  },
+  {
+    "name": "Zanzibar City, Tanzania",
+    "lat": -6.1659,
+    "lng": 39.1989
+  },
+  {
+    "name": "Gulu, Uganda",
+    "lat": 2.7748,
+    "lng": 32.3049
+  },
+  {
+    "name": "Bujumbura, Burundi",
+    "lat": -3.3822,
+    "lng": 29.3644
+  },
+  {
+    "name": "Blantyre, Malawi",
+    "lat": -15.7861,
+    "lng": 35.0058
+  },
+  {
+    "name": "Ndola, Zambia",
+    "lat": -12.9587,
+    "lng": 28.6366
+  },
+  {
+    "name": "Bulawayo, Zimbabwe",
+    "lat": -20.15,
+    "lng": 28.5833
+  },
+  {
+    "name": "Beira, Mozambique",
+    "lat": -19.8437,
+    "lng": 34.8389
+  },
+  {
+    "name": "Toamasina, Madagascar",
+    "lat": -18.15,
+    "lng": 49.4
+  },
+  {
+    "name": "Huambo, Angola",
+    "lat": -12.7756,
+    "lng": 15.7394
+  },
+  {
+    "name": "Thiès, Senegal",
+    "lat": 14.7833,
+    "lng": -16.9167
+  },
+  {
+    "name": "Bouaké, Côte d'Ivoire",
+    "lat": 7.6833,
+    "lng": -5.0333
+  },
+  {
+    "name": "Tamale, Ghana",
+    "lat": 9.4008,
+    "lng": -0.8393
+  },
+  {
+    "name": "Mekelle, Ethiopia",
+    "lat": 13.4969,
+    "lng": 39.4769
+  },
+  {
+    "name": "Dire Dawa, Ethiopia",
+    "lat": 9.5931,
+    "lng": 41.8661
+  },
+  {
+    "name": "Omdurman, Sudan",
+    "lat": 15.65,
+    "lng": 32.4833
+  },
+  {
+    "name": "Port Sudan, Sudan",
+    "lat": 19.6158,
+    "lng": 37.2164
+  },
+  {
+    "name": "Hargeisa, Somalia",
+    "lat": 9.55,
+    "lng": 44.05
+  },
+  {
+    "name": "Juba, South Sudan",
+    "lat": 4.8594,
+    "lng": 31.5713
+  },
+  {
+    "name": "Wau, South Sudan",
+    "lat": 7.7,
+    "lng": 28.0
+  },
+  {
+    "name": "Walvis Bay, Namibia",
+    "lat": -22.9575,
+    "lng": 14.5053
+  },
+  {
+    "name": "Luxor, Egypt",
+    "lat": 25.6872,
+    "lng": 32.6396
+  },
+  {
+    "name": "Aswan, Egypt",
+    "lat": 24.0889,
+    "lng": 32.8998
+  },
+  {
+    "name": "Tangier, Morocco",
+    "lat": 35.7595,
+    "lng": -5.834
+  },
+  {
+    "name": "Annaba, Algeria",
+    "lat": 36.9,
+    "lng": 7.7667
+  },
+  {
+    "name": "Sfax, Tunisia",
+    "lat": 34.74,
+    "lng": 10.76
+  },
+  {
+    "name": "Benghazi, Libya",
+    "lat": 32.1194,
+    "lng": 20.0867
+  },
+  {
+    "name": "Nouakchott, Mauritania",
+    "lat": 18.0735,
+    "lng": -15.9582
+  },
+  {
+    "name": "Timbuktu, Mali",
+    "lat": 16.7667,
+    "lng": -3.0026
+  },
+  {
+    "name": "Ndjamena, Chad",
+    "lat": 12.1348,
+    "lng": 15.0557
+  },
+  {
+    "name": "Kinshasa, DR Congo",
+    "lat": -4.3217,
+    "lng": 15.3222
+  },
+  {
+    "name": "Goma, DR Congo",
+    "lat": -1.6792,
+    "lng": 29.2228
+  },
+  {
+    "name": "Kisangani, DR Congo",
+    "lat": 0.5153,
+    "lng": 25.19
+  },
+  {
+    "name": "Pointe-Noire, Republic of the Congo",
+    "lat": -4.7692,
+    "lng": 11.866
+  },
+  {
+    "name": "São Tomé, São Tomé and Príncipe",
+    "lat": 0.3365,
+    "lng": 6.7273
+  },
+  {
+    "name": "Victoria, Seychelles",
+    "lat": -4.6191,
+    "lng": 55.4513
+  },
+  {
+    "name": "Port Louis, Mauritius",
+    "lat": -20.1609,
+    "lng": 57.4977
+  },
+  {
+    "name": "Yokohama, Japan",
+    "lat": 35.4437,
+    "lng": 139.638
+  },
+  {
+    "name": "Kawasaki, Japan",
+    "lat": 35.5308,
+    "lng": 139.703
+  },
+  {
+    "name": "Kitakyushu, Japan",
+    "lat": 33.8833,
+    "lng": 130.875
+  },
+  {
+    "name": "Chiba, Japan",
+    "lat": 35.605,
+    "lng": 140.1233
+  },
+  {
+    "name": "Sakai, Japan",
+    "lat": 34.5733,
+    "lng": 135.483
+  },
+  {
+    "name": "Niigata, Japan",
+    "lat": 37.9161,
+    "lng": 139.0364
+  },
+  {
+    "name": "Hamamatsu, Japan",
+    "lat": 34.7108,
+    "lng": 137.7261
+  },
+  {
+    "name": "Pyongyang, North Korea",
+    "lat": 39.0194,
+    "lng": 125.7381
+  },
+  {
+    "name": "Lhasa, China",
+    "lat": 29.65,
+    "lng": 91.1
+  },
+  {
+    "name": "Hohhot, China",
+    "lat": 40.842,
+    "lng": 111.749
+  },
+  {
+    "name": "Yinchuan, China",
+    "lat": 38.4872,
+    "lng": 106.2309
+  },
+  {
+    "name": "Xining, China",
+    "lat": 36.6171,
+    "lng": 101.7782
+  },
+  {
+    "name": "Haikou, China",
+    "lat": 20.044,
+    "lng": 110.3416
+  },
+  {
+    "name": "Sanya, China",
+    "lat": 18.2479,
+    "lng": 109.5146
+  },
+  {
+    "name": "Mazar-i-Sharif, Afghanistan",
+    "lat": 36.7069,
+    "lng": 67.1107
+  },
+  {
+    "name": "Samarkand, Uzbekistan",
+    "lat": 39.655,
+    "lng": 66.9597
+  },
+  {
+    "name": "Osh, Kyrgyzstan",
+    "lat": 40.5283,
+    "lng": 72.7985
+  },
+  {
+    "name": "Mary, Turkmenistan",
+    "lat": 37.5931,
+    "lng": 61.83
+  },
+  {
+    "name": "Kutaisi, Georgia",
+    "lat": 42.2679,
+    "lng": 42.6961
+  },
+  {
+    "name": "Ganja, Azerbaijan",
+    "lat": 40.6828,
+    "lng": 46.3606
+  },
+  {
+    "name": "Gyumri, Armenia",
+    "lat": 40.7942,
+    "lng": 43.8453
+  },
+  {
+    "name": "Chelyabinsk, Russia",
+    "lat": 55.154,
+    "lng": 61.4291
+  },
+  {
+    "name": "Omsk, Russia",
+    "lat": 54.9885,
+    "lng": 73.3242
+  },
+  {
+    "name": "Samara, Russia",
+    "lat": 53.2001,
+    "lng": 50.15
+  },
+  {
+    "name": "Ufa, Russia",
+    "lat": 54.7388,
+    "lng": 55.9721
+  },
+  {
+    "name": "Rostov-on-Don, Russia",
+    "lat": 47.2357,
+    "lng": 39.7015
+  },
+  {
+    "name": "Volgograd, Russia",
+    "lat": 48.708,
+    "lng": 44.5133
+  },
+  {
+    "name": "Perm, Russia",
+    "lat": 58.0105,
+    "lng": 56.2502
+  },
+  {
+    "name": "Krasnoyarsk, Russia",
+    "lat": 56.0184,
+    "lng": 92.8672
+  },
+  {
+    "name": "Voronezh, Russia",
+    "lat": 51.672,
+    "lng": 39.1843
+  },
+  {
+    "name": "Saratov, Russia",
+    "lat": 51.5339,
+    "lng": 46.0342
+  },
+  {
+    "name": "Irkutsk, Russia",
+    "lat": 52.2978,
+    "lng": 104.2964
+  },
+  {
+    "name": "Khabarovsk, Russia",
+    "lat": 48.4827,
+    "lng": 135.084
+  },
+  {
+    "name": "Makhachkala, Russia",
+    "lat": 42.9849,
+    "lng": 47.5047
+  },
+  {
+    "name": "Tolyatti, Russia",
+    "lat": 53.5303,
+    "lng": 49.3461
+  },
+  {
+    "name": "Izhevsk, Russia",
+    "lat": 56.8526,
+    "lng": 53.2115
+  },
+  {
+    "name": "Barnaul, Russia",
+    "lat": 53.3606,
+    "lng": 83.7636
+  },
+  {
+    "name": "Ulyanovsk, Russia",
+    "lat": 54.3282,
+    "lng": 48.3866
+  },
+  {
+    "name": "Yaroslavl, Russia",
+    "lat": 57.6261,
+    "lng": 39.8845
+  },
+  {
+    "name": "Tyumen, Russia",
+    "lat": 57.1522,
+    "lng": 68.0
+  },
+  {
+    "name": "Kemerovo, Russia",
+    "lat": 55.3908,
+    "lng": 86.0847
+  },
+  {
+    "name": "Murmansk, Russia",
+    "lat": 68.9585,
+    "lng": 33.0827
+  },
+  {
+    "name": "Tomsk, Russia",
+    "lat": 56.4977,
+    "lng": 84.9744
+  },
+  {
+    "name": "Oral, Kazakhstan",
+    "lat": 51.2333,
+    "lng": 51.3667
+  },
+  {
+    "name": "Shymkent, Kazakhstan",
+    "lat": 42.3,
+    "lng": 69.6
+  },
+  {
+    "name": "Aktobe, Kazakhstan",
+    "lat": 50.2839,
+    "lng": 57.1669
+  },
+  {
+    "name": "Karaganda, Kazakhstan",
+    "lat": 49.8047,
+    "lng": 73.0878
+  },
+  {
+    "name": "Gomel, Belarus",
+    "lat": 52.4413,
+    "lng": 31.0139
+  },
+  {
+    "name": "Vitebsk, Belarus",
+    "lat": 55.1904,
+    "lng": 30.2049
+  },
+  {
+    "name": "Grodno, Belarus",
+    "lat": 53.6884,
+    "lng": 23.8258
+  },
+  {
+    "name": "Kraków, Poland",
+    "lat": 50.0647,
+    "lng": 19.945
+  },
+  {
+    "name": "Poznań, Poland",
+    "lat": 52.4064,
+    "lng": 16.9252
+  },
+  {
+    "name": "Gdańsk, Poland",
+    "lat": 54.3521,
+    "lng": 18.6466
+  },
+  {
+    "name": "Szczecin, Poland",
+    "lat": 53.4285,
+    "lng": 14.5528
+  },
+  {
+    "name": "Bydgoszcz, Poland",
+    "lat": 53.1235,
+    "lng": 18.0084
+  },
+  {
+    "name": "Lublin, Poland",
+    "lat": 51.2465,
+    "lng": 22.5684
+  },
+  {
+    "name": "Katowice, Poland",
+    "lat": 50.2649,
+    "lng": 19.0238
+  },
+  {
+    "name": "Stavanger, Norway",
+    "lat": 58.97,
+    "lng": 5.7331
+  },
+  {
+    "name": "Odense, Denmark",
+    "lat": 55.4037,
+    "lng": 10.4024
+  },
+  {
+    "name": "Aalborg, Denmark",
+    "lat": 57.048,
+    "lng": 9.9187
+  },
+  {
+    "name": "Turku, Finland",
+    "lat": 60.4518,
+    "lng": 22.2666
+  },
+  {
+    "name": "Oulu, Finland",
+    "lat": 65.0121,
+    "lng": 25.4651
+  },
+  {
+    "name": "Uppsala, Sweden",
+    "lat": 59.8586,
+    "lng": 17.6389
+  },
+  {
+    "name": "Akureyri, Iceland",
+    "lat": 65.6835,
+    "lng": -18.1002
+  },
+  {
+    "name": "Ostrava, Czech Republic",
+    "lat": 49.8209,
+    "lng": 18.2625
+  },
+  {
+    "name": "Košice, Slovakia",
+    "lat": 48.7164,
+    "lng": 21.2611
+  },
+  {
+    "name": "Debrecen, Hungary",
+    "lat": 47.5316,
+    "lng": 21.6273
+  },
+  {
+    "name": "Timișoara, Romania",
+    "lat": 45.7489,
+    "lng": 21.2087
+  },
+  {
+    "name": "Iași, Romania",
+    "lat": 47.1585,
+    "lng": 27.6014
+  },
+  {
+    "name": "Plovdiv, Bulgaria",
+    "lat": 42.15,
+    "lng": 24.75
+  },
+  {
+    "name": "Varna, Bulgaria",
+    "lat": 43.2141,
+    "lng": 27.9147
+  },
+  {
+    "name": "Patras, Greece",
+    "lat": 38.2466,
+    "lng": 21.7346
+  },
+  {
+    "name": "Novi Sad, Serbia",
+    "lat": 45.2671,
+    "lng": 19.8335
+  },
+  {
+    "name": "Split, Croatia",
+    "lat": 43.5081,
+    "lng": 16.4402
+  },
+  {
+    "name": "Rijeka, Croatia",
+    "lat": 45.3271,
+    "lng": 14.4422
+  },
+  {
+    "name": "Mostar, Bosnia and Herzegovina",
+    "lat": 43.3438,
+    "lng": 17.8078
+  },
+  {
+    "name": "Durrës, Albania",
+    "lat": 41.3246,
+    "lng": 19.4565
+  },
+  {
+    "name": "Dnipro, Ukraine",
+    "lat": 48.4647,
+    "lng": 35.0462
+  },
+  {
+    "name": "Donetsk, Ukraine",
+    "lat": 48.0159,
+    "lng": 37.8029
+  },
+  {
+    "name": "Zaporizhzhia, Ukraine",
+    "lat": 47.8388,
+    "lng": 35.1396
+  },
+  {
+    "name": "Daugavpils, Latvia",
+    "lat": 55.8748,
+    "lng": 26.5366
+  },
+  {
+    "name": "Tartu, Estonia",
+    "lat": 58.3776,
+    "lng": 26.729
+  },
+  {
+    "name": "Kaunas, Lithuania",
+    "lat": 54.8985,
+    "lng": 23.9036
+  },
+  {
+    "name": "Braga, Portugal",
+    "lat": 41.5503,
+    "lng": -8.42
+  },
+  {
+    "name": "Coimbra, Portugal",
+    "lat": 40.2033,
+    "lng": -8.4103
+  },
+  {
+    "name": "Limassol, Cyprus",
+    "lat": 34.6823,
+    "lng": 33.0464
+  },
+  {
+    "name": "Adana, Turkey",
+    "lat": 37.0,
+    "lng": 35.3213
+  },
+  {
+    "name": "Gaziantep, Turkey",
+    "lat": 37.0662,
+    "lng": 37.3833
+  },
+  {
+    "name": "Konya, Turkey",
+    "lat": 37.8667,
+    "lng": 32.4833
+  },
+  {
+    "name": "Kayseri, Turkey",
+    "lat": 38.7312,
+    "lng": 35.4787
+  },
+  {
+    "name": "Diyarbakır, Turkey",
+    "lat": 37.9144,
+    "lng": 40.2306
+  },
+  {
+    "name": "Mersin, Turkey",
+    "lat": 36.8,
+    "lng": 34.6333
+  },
+  {
+    "name": "Beer Sheva, Israel",
+    "lat": 31.2589,
+    "lng": 34.7978
+  },
+  {
+    "name": "Zarqa, Jordan",
+    "lat": 32.0728,
+    "lng": 36.0878
+  },
+  {
+    "name": "Aqaba, Jordan",
+    "lat": 29.5269,
+    "lng": 35.0069
+  },
+  {
+    "name": "Tripoli, Lebanon",
+    "lat": 34.4367,
+    "lng": 35.8497
+  },
+  {
+    "name": "Aleppo, Syria",
+    "lat": 36.2021,
+    "lng": 37.1343
+  },
+  {
+    "name": "Mosul, Iraq",
+    "lat": 36.335,
+    "lng": 43.1189
+  },
+  {
+    "name": "Erbil, Iraq",
+    "lat": 36.1901,
+    "lng": 44.0091
+  },
+  {
+    "name": "Shiraz, Iran",
+    "lat": 29.5918,
+    "lng": 52.5837
+  },
+  {
+    "name": "Ahvaz, Iran",
+    "lat": 31.3183,
+    "lng": 48.6706
+  },
+  {
+    "name": "Karaj, Iran",
+    "lat": 35.84,
+    "lng": 50.9391
+  },
+  {
+    "name": "Qom, Iran",
+    "lat": 34.6416,
+    "lng": 50.8746
+  },
+  {
+    "name": "Aden, Yemen",
+    "lat": 12.7794,
+    "lng": 45.0367
+  },
+  {
+    "name": "Taif, Saudi Arabia",
+    "lat": 21.2625,
+    "lng": 40.375
+  },
+  {
+    "name": "Salalah, Oman",
+    "lat": 17.0151,
+    "lng": 54.0924
+  },
+  {
+    "name": "Ajman, United Arab Emirates",
+    "lat": 25.4052,
+    "lng": 55.5136
+  },
+  {
+    "name": "Longyearbyen, Svalbard",
+    "lat": 78.2232,
+    "lng": 15.6267
+  },
+  {
+    "name": "Kiruna, Sweden",
+    "lat": 67.8558,
+    "lng": 20.2253
+  },
+  {
+    "name": "Tromsø, Norway",
+    "lat": 69.6489,
+    "lng": 18.9551
+  },
+  {
+    "name": "Rovaniemi, Finland",
+    "lat": 66.5039,
+    "lng": 25.7294
+  },
+  {
+    "name": "Iqaluit, Canada",
+    "lat": 63.7467,
+    "lng": -68.517
+  },
+  {
+    "name": "Yellowknife, Canada",
+    "lat": 62.454,
+    "lng": -114.3718
+  },
+  {
+    "name": "Whitehorse, Canada",
+    "lat": 60.7212,
+    "lng": -135.0568
+  },
+  {
+    "name": "Fairbanks, United States",
+    "lat": 64.8378,
+    "lng": -147.7164
+  },
+  {
+    "name": "Nome, United States",
+    "lat": 64.5011,
+    "lng": -165.4064
+  },
+  {
+    "name": "Barrow, United States",
+    "lat": 71.2906,
+    "lng": -156.7886
+  },
+  {
+    "name": "Nadi, Fiji",
+    "lat": -17.7765,
+    "lng": 177.4356
+  },
+  {
+    "name": "Lautoka, Fiji",
+    "lat": -17.608,
+    "lng": 177.4536
+  },
+  {
+    "name": "Rarotonga, Cook Islands",
+    "lat": -21.2361,
+    "lng": -159.7777
+  },
+  {
+    "name": "Avarua, Cook Islands",
+    "lat": -21.2122,
+    "lng": -159.7738
+  },
+  {
+    "name": "Majuro, Marshall Islands",
+    "lat": 7.0897,
+    "lng": 171.3803
+  },
+  {
+    "name": "Palikir, Micronesia",
+    "lat": 6.9147,
+    "lng": 158.1611
+  },
+  {
+    "name": "Koror, Palau",
+    "lat": 7.3419,
+    "lng": 134.4797
+  },
+  {
+    "name": "Yaren, Nauru",
+    "lat": -0.5477,
+    "lng": 166.9209
+  },
+  {
+    "name": "Mata-Utu, Wallis and Futuna",
+    "lat": -13.2825,
+    "lng": -176.1762
+  },
+  {
+    "name": "Hagåtña, Guam",
+    "lat": 13.4745,
+    "lng": 144.7504
+  },
+  {
+    "name": "Saipan, Northern Mariana Islands",
+    "lat": 15.1853,
+    "lng": 145.7466
+  },
+  {
+    "name": "Pago Pago, American Samoa",
+    "lat": -14.271,
+    "lng": -170.1322
+  },
+  {
+    "name": "Midway Atoll, United States",
+    "lat": 28.2072,
+    "lng": -177.3735
+  },
+  {
+    "name": "Hilo, United States",
+    "lat": 19.7297,
+    "lng": -155.09
+  },
+  {
+    "name": "Kailua-Kona, United States",
+    "lat": 19.64,
+    "lng": -155.9969
+  },
+  {
+    "name": "Kahului, United States",
+    "lat": 20.8893,
+    "lng": -156.4729
+  },
+  {
+    "name": "Freeport, Bahamas",
+    "lat": 26.5285,
+    "lng": -78.6956
+  },
+  {
+    "name": "Camagüey, Cuba",
+    "lat": 21.3802,
+    "lng": -77.9178
+  },
+  {
+    "name": "Holguín, Cuba",
+    "lat": 20.8874,
+    "lng": -76.2624
+  },
+  {
+    "name": "Santa Clara, Cuba",
+    "lat": 22.407,
+    "lng": -79.9649
+  },
+  {
+    "name": "Santiago de los Caballeros, Dominican Republic",
+    "lat": 19.4517,
+    "lng": -70.697
+  },
+  {
+    "name": "Cap-Haïtien, Haiti",
+    "lat": 19.7575,
+    "lng": -72.2036
+  },
+  {
+    "name": "Ponce, Puerto Rico",
+    "lat": 18.0111,
+    "lng": -66.6141
+  },
+  {
+    "name": "Montego Bay, Jamaica",
+    "lat": 18.4762,
+    "lng": -77.8939
+  },
+  {
+    "name": "Scarborough, Trinidad and Tobago",
+    "lat": 11.1848,
+    "lng": -60.7429
+  },
+  {
+    "name": "Kingstown, Saint Vincent",
+    "lat": 13.16,
+    "lng": -61.2248
+  },
+  {
+    "name": "St. John's, Antigua",
+    "lat": 17.1274,
+    "lng": -61.8468
+  },
+  {
+    "name": "Charlotte Amalie, US Virgin Islands",
+    "lat": 18.342,
+    "lng": -64.9307
+  },
+  {
+    "name": "Gustavia, Saint Barthélemy",
+    "lat": 17.8957,
+    "lng": -62.8509
+  },
+  {
+    "name": "Marigot, Saint Martin",
+    "lat": 18.0667,
+    "lng": -63.0833
+  },
+  {
+    "name": "Quetzaltenango, Guatemala",
+    "lat": 14.8444,
+    "lng": -91.5177
+  },
+  {
+    "name": "Antigua, Guatemala",
+    "lat": 14.5586,
+    "lng": -90.7295
+  },
+  {
+    "name": "Santa Ana, El Salvador",
+    "lat": 13.9978,
+    "lng": -89.5597
+  },
+  {
+    "name": "San Pedro Sula, Honduras",
+    "lat": 15.5,
+    "lng": -88.0333
+  },
+  {
+    "name": "León, Nicaragua",
+    "lat": 12.4379,
+    "lng": -86.8781
+  },
+  {
+    "name": "Granada, Nicaragua",
+    "lat": 11.9347,
+    "lng": -85.956
+  },
+  {
+    "name": "Liberia, Costa Rica",
+    "lat": 10.6298,
+    "lng": -85.4401
+  },
+  {
+    "name": "Colón, Panama",
+    "lat": 9.3595,
+    "lng": -79.9003
+  },
+  {
+    "name": "David, Panama",
+    "lat": 8.427,
+    "lng": -82.428
+  },
+  {
+    "name": "Belize City, Belize",
+    "lat": 17.251,
+    "lng": -88.759
+  },
+  {
+    "name": "Lerwick, United Kingdom",
+    "lat": 60.1544,
+    "lng": -1.1461
+  },
+  {
+    "name": "Torshavn, Faroe Islands",
+    "lat": 62.0108,
+    "lng": -6.7741
+  },
+  {
+    "name": "Douglas, Isle of Man",
+    "lat": 54.1524,
+    "lng": -4.4862
+  },
+  {
+    "name": "St. Helier, Jersey",
+    "lat": 49.1858,
+    "lng": -2.11
+  },
+  {
+    "name": "St. Peter Port, Guernsey",
+    "lat": 49.456,
+    "lng": -2.536
+  },
+  {
+    "name": "Funchal, Madeira",
+    "lat": 32.6669,
+    "lng": -16.9241
+  },
+  {
+    "name": "Ponta Delgada, Azores",
+    "lat": 37.7412,
+    "lng": -25.6756
+  },
+  {
+    "name": "Las Palmas, Canary Islands",
+    "lat": 28.1235,
+    "lng": -15.4363
+  },
+  {
+    "name": "Santa Cruz de Tenerife, Canary Islands",
+    "lat": 28.4636,
+    "lng": -16.2518
+  },
+  {
+    "name": "Palma de Mallorca, Spain",
+    "lat": 39.5693,
+    "lng": 2.6502
+  },
+  {
+    "name": "Ibiza, Spain",
+    "lat": 38.9087,
+    "lng": 1.4328
+  },
+  {
+    "name": "Ceuta, Spain",
+    "lat": 35.8893,
+    "lng": -5.3213
+  },
+  {
+    "name": "Melilla, Spain",
+    "lat": 35.2923,
+    "lng": -2.9381
+  },
+  {
+    "name": "Gibraltar, Gibraltar",
+    "lat": 36.1408,
+    "lng": -5.3536
+  },
+  {
+    "name": "Nosy Be, Madagascar",
+    "lat": -13.3254,
+    "lng": 48.2686
+  },
+  {
+    "name": "Mahé, Seychelles",
+    "lat": -4.6796,
+    "lng": 55.492
+  },
+  {
+    "name": "Dzaoudzi, Mayotte",
+    "lat": -12.787,
+    "lng": 45.275
+  },
+  {
+    "name": "Mamoudzou, Mayotte",
+    "lat": -12.7806,
+    "lng": 45.2278
+  },
+  {
+    "name": "Jamestown, Saint Helena",
+    "lat": -15.9251,
+    "lng": -5.7179
+  },
+  {
+    "name": "Georgetown, Ascension Island",
+    "lat": -7.9147,
+    "lng": -14.4076
+  },
+  {
+    "name": "Edinburgh of the Seven Seas, Tristan da Cunha",
+    "lat": -37.0684,
+    "lng": -12.311
+  }
 ]

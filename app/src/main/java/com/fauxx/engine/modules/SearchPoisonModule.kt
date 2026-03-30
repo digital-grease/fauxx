@@ -8,6 +8,8 @@ import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.data.querybank.QueryBankManager
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.targeting.layer1.CustomInterestMapper
+import com.fauxx.targeting.layer1.DemographicProfileDao
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import javax.inject.Inject
@@ -33,11 +35,32 @@ class SearchPoisonModule @Inject constructor(
     private val queryBankManager: QueryBankManager,
     private val markovGenerator: MarkovQueryGenerator,
     private val profileRepo: PoisonProfileRepository,
-    private val httpClient: OkHttpClient
+    private val httpClient: OkHttpClient,
+    private val demographicDao: DemographicProfileDao,
+    private val customInterestMapper: CustomInterestMapper
 ) : Module {
 
     override suspend fun start() {
         Timber.d("SearchPoisonModule started")
+        injectCustomInterestSeeds()
+    }
+
+    /**
+     * Read custom interests from the demographic profile, map them to categories,
+     * and inject as seed phrases into the Markov generator.
+     */
+    private suspend fun injectCustomInterestSeeds() {
+        markovGenerator.clearSeedPhrases()
+        val profile = demographicDao.get() ?: return
+        val customInterests = profile.getCustomInterests()
+        if (customInterests.isEmpty()) return
+
+        val mappings = customInterestMapper.mapAll(customInterests)
+        for (mapping in mappings) {
+            val category = mapping.category ?: continue
+            markovGenerator.injectSeedPhrases(category, listOf(mapping.interest))
+        }
+        Timber.d("Injected ${mappings.count { it.category != null }} custom interest seed phrases")
     }
 
     override suspend fun stop() {

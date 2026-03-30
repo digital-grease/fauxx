@@ -1,5 +1,7 @@
 # Fauxx
 
+<a href="https://www.buymeacoffee.com/digitalgrease" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-red.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
 **Data poisoning for your everyday tracking.**
 
 Fauxx is an open-source Android privacy tool that poisons data broker and ad-tech profiles by generating continuous, plausible, off-demographic synthetic activity from your device. The goal is simple: make your real behavioral signal statistically indistinguishable from noise.

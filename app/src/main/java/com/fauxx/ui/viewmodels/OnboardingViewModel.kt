@@ -8,8 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.di.PreferenceKeys
 import com.fauxx.targeting.layer1.AgeRange
+import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer1.Gender
+import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.Profession
 import com.fauxx.targeting.layer1.Region
 import com.fauxx.targeting.layer1.UserDemographicProfile
@@ -24,6 +26,8 @@ data class OnboardingUiState(
     val ageRange: AgeRange? = null,
     val gender: Gender? = null,
     val interests: Set<CategoryPool> = emptySet(),
+    val customInterests: List<String> = emptyList(),
+    val customInterestMappings: List<InterestMapping> = emptyList(),
     val profession: Profession? = null,
     val region: Region? = null
 )
@@ -31,7 +35,8 @@ data class OnboardingUiState(
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val dao: DemographicProfileDao,
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
+    private val customInterestMapper: CustomInterestMapper
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
@@ -48,6 +53,31 @@ class OnboardingViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(interests = current)
     }
 
+    /** Add a custom free-text interest and compute its category mapping. */
+    fun addCustomInterest(interest: String) {
+        val trimmed = interest.trim()
+        if (trimmed.isBlank()) return
+        val current = _uiState.value.customInterests
+        if (current.any { it.equals(trimmed, ignoreCase = true) }) return
+
+        val updated = current + trimmed
+        _uiState.value = _uiState.value.copy(
+            customInterests = updated,
+            customInterestMappings = customInterestMapper.mapAll(updated)
+        )
+    }
+
+    /** Remove a custom interest by index. */
+    fun removeCustomInterest(index: Int) {
+        val current = _uiState.value.customInterests.toMutableList()
+        if (index !in current.indices) return
+        current.removeAt(index)
+        _uiState.value = _uiState.value.copy(
+            customInterests = current,
+            customInterestMappings = customInterestMapper.mapAll(current)
+        )
+    }
+
     fun next() { _uiState.value = _uiState.value.copy(step = _uiState.value.step + 1) }
 
     fun skip() { _uiState.value = _uiState.value.copy(step = _uiState.value.step + 1) }
@@ -55,9 +85,9 @@ class OnboardingViewModel @Inject constructor(
     fun saveAndFinish() {
         viewModelScope.launch {
             val state = _uiState.value
-            // Only save if at least one field was set
             val hasData = state.ageRange != null || state.gender != null ||
-                state.profession != null || state.region != null || state.interests.isNotEmpty()
+                state.profession != null || state.region != null ||
+                state.interests.isNotEmpty() || state.customInterests.isNotEmpty()
 
             if (hasData) {
                 dao.upsert(
@@ -66,7 +96,10 @@ class OnboardingViewModel @Inject constructor(
                         gender = state.gender,
                         profession = state.profession,
                         region = state.region,
-                        interestsJson = UserDemographicProfile.serializeInterests(state.interests)
+                        interestsJson = UserDemographicProfile.serializeInterests(state.interests),
+                        customInterestsJson = if (state.customInterests.isNotEmpty())
+                            UserDemographicProfile.serializeCustomInterests(state.customInterests)
+                        else null
                     )
                 )
             }

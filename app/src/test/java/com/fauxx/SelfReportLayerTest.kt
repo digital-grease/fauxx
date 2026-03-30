@@ -2,6 +2,7 @@ package com.fauxx
 
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.AgeRange
+import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicDistanceMap
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer1.Gender
@@ -19,6 +20,8 @@ import org.junit.Test
 
 class SelfReportLayerTest {
 
+    private val customInterestMapper: CustomInterestMapper = mockk(relaxed = true)
+
     @Test
     fun `null profile returns all neutral weights`() = runTest {
         val dao: DemographicProfileDao = mockk {
@@ -27,7 +30,7 @@ class SelfReportLayerTest {
         val distanceMap: DemographicDistanceMap = mockk {
             every { getWeights(null) } returns CategoryPool.values().associateWith { 1.0f }
         }
-        val layer = SelfReportLayer(dao, distanceMap)
+        val layer = SelfReportLayer(dao, distanceMap, customInterestMapper)
         val weights = layer.getWeights().first()
         weights.values.forEach { w ->
             assertEquals("All weights should be neutral (1.0)", 1.0f, w, 0.001f)
@@ -53,7 +56,7 @@ class SelfReportLayerTest {
         val distanceMap: DemographicDistanceMap = mockk {
             every { getWeights(profile) } returns expectedWeights
         }
-        val layer = SelfReportLayer(dao, distanceMap)
+        val layer = SelfReportLayer(dao, distanceMap, customInterestMapper)
         val weights = layer.getWeights().first()
 
         assertEquals(0.15f, weights[CategoryPool.ACADEMIC]!!, 0.001f)
@@ -79,7 +82,7 @@ class SelfReportLayerTest {
         val distanceMap: DemographicDistanceMap = mockk {
             every { getWeights(profile) } returns expectedWeights
         }
-        val layer = SelfReportLayer(dao, distanceMap)
+        val layer = SelfReportLayer(dao, distanceMap, customInterestMapper)
         val weights = layer.getWeights().first()
 
         assertEquals(0.15f, weights[CategoryPool.RETIREMENT]!!, 0.001f)

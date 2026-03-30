@@ -39,7 +39,13 @@ data class UserDemographicProfile(
     val profession: Profession? = null,
     val region: Region? = null,
     /** Serialized as comma-separated CategoryPool names. */
-    val interestsJson: String? = null
+    val interestsJson: String? = null,
+    /**
+     * User-entered free-text interests, serialized as comma-separated strings.
+     * These are mapped to [CategoryPool] values via [com.fauxx.targeting.layer1.CustomInterestMapper].
+     * PRIVACY: Same encryption and device-only guarantees as all other profile fields.
+     */
+    val customInterestsJson: String? = null
 ) {
     /** Deserialize interests from stored JSON string. */
     fun getInterests(): Set<CategoryPool> {
@@ -50,8 +56,17 @@ data class UserDemographicProfile(
             .toSet()
     }
 
+    /** Deserialize custom free-text interests. */
+    fun getCustomInterests(): List<String> {
+        val raw = customInterestsJson ?: return emptyList()
+        return raw.split(",").map { it.trim() }.filter { it.isNotBlank() }
+    }
+
     companion object {
         fun serializeInterests(interests: Set<CategoryPool>): String =
             interests.joinToString(",") { it.name }
+
+        fun serializeCustomInterests(interests: List<String>): String =
+            interests.joinToString(",") { it.trim() }
     }
 }
