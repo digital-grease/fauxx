@@ -56,8 +56,14 @@ class PhantomForegroundService : Service() {
             ACTION_START -> {
                 Log.i(TAG, "Starting Phantom service")
                 startForeground(NOTIFICATION_ID, buildNotification("Initializing…", 0))
-                poisonEngine.start()
-                startNotificationUpdates()
+                try {
+                    poisonEngine.start()
+                    startNotificationUpdates()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Engine failed to start, stopping service", e)
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
             }
             ACTION_STOP -> {
                 Log.i(TAG, "Stopping Phantom service")
@@ -69,7 +75,7 @@ class PhantomForegroundService : Service() {
             }
         }
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
