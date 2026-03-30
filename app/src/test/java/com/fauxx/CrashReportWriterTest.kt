@@ -26,9 +26,8 @@ class CrashReportWriterTest {
     @Before
     fun setup() {
         filesDir = tempFolder.newFolder("files")
-        context = mockk {
-            every { this@mockk.filesDir } returns filesDir
-        }
+        context = mockk(relaxed = true)
+        every { context.filesDir } returns filesDir
         encryptedFileTree = mockk {
             every { getRecentLines(any()) } returns listOf(
                 "2026-03-29 12:00:00 I/Engine: Action dispatched",
