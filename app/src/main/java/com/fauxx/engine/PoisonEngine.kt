@@ -185,7 +185,15 @@ class PoisonEngine @Inject constructor(
             )
             engineState = EngineState.ACTIVE
             Log.i(TAG, "PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled})")
-            allModules.filter { it.isEnabled() }.forEach { it.start() }
+            allModules.filter { it.isEnabled() }.forEach { module ->
+                try {
+                    module.start()
+                } catch (e: Exception) {
+                    val name = module::class.simpleName ?: "Unknown"
+                    Log.e(TAG, "Module $name failed to start, circuit-breaking", e)
+                    circuitBreakerUntil[name] = System.currentTimeMillis() + MAX_BACKOFF_MS
+                }
+            }
             runLoop()
         }
     }
@@ -308,7 +316,11 @@ class PoisonEngine @Inject constructor(
                 delay(FAILURE_RETRY_DELAY_MS)
                 continue
             }
-            actionLogDao.insert(logEntry)
+            try {
+                actionLogDao.insert(logEntry)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to insert action log entry", e)
+            }
             if (logEntry.success) {
                 todayActionCount.incrementAndGet()
                 recentActionTimestamps.add(System.currentTimeMillis())
