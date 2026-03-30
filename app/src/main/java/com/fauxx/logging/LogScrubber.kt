@@ -10,6 +10,11 @@ package com.fauxx.logging
 object LogScrubber {
 
     private val SCRUB_PATTERNS = listOf(
+        // Data class toString dumps (must run BEFORE field-level patterns so the
+        // closing paren isn't consumed by the greedy \S+ in field patterns)
+        Regex("""UserDemographicProfile\([^)]*\)"""),
+        Regex("""SyntheticPersona\([^)]*\)"""),
+        Regex("""PlatformProfileCache\([^)]*\)"""),
         // Demographic profile fields
         Regex("""(?i)(ageRange|gender|profession|region|interests)\s*[=:]\s*\S+"""),
         // Persona data
@@ -20,12 +25,6 @@ object LogScrubber {
         Regex("""[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"""),
         // Phone numbers (various formats)
         Regex("""\b(\+?1?[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"""),
-        // UserDemographicProfile toString / data class dumps
-        Regex("""UserDemographicProfile\([^)]*\)"""),
-        // SyntheticPersona toString / data class dumps
-        Regex("""SyntheticPersona\([^)]*\)"""),
-        // PlatformProfileCache toString / data class dumps
-        Regex("""PlatformProfileCache\([^)]*\)"""),
     )
 
     private const val REDACTED = "[REDACTED]"
