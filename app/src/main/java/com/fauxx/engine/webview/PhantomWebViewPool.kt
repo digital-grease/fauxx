@@ -3,7 +3,6 @@ package com.fauxx.engine.webview
 import android.content.Context
 import android.webkit.CookieManager
 import android.webkit.WebSettings
-import android.webkit.WebStorage
 import android.webkit.WebView
 import com.fauxx.data.crawllist.DomainBlocklist
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -65,23 +64,33 @@ class PhantomWebViewPool @Inject constructor(
 
     /**
      * Acquire a WebView from the pool for general use (not scraping).
-     * Blocks if all non-scraper instances are in use until one is released.
+     * Suspends if all non-scraper instances are in use until one is released.
      */
     suspend fun acquire(): WebView {
         poolSemaphore.acquire()
-        return withContext(Dispatchers.Main) {
-            pool.first { it.tag != SCRAPER_TAG && acquired.putIfAbsent(it.tag as String, true) == null }
+        return try {
+            withContext(Dispatchers.Main) {
+                pool.first { it.tag != SCRAPER_TAG && acquired.putIfAbsent(it.tag as String, true) == null }
+            }
+        } catch (e: Exception) {
+            poolSemaphore.release()
+            throw e
         }
     }
 
     /**
      * Acquire the scraper-reserved WebView instance (Layer 2 use only).
-     * Blocks if the scraper instance is in use.
+     * Suspends if the scraper instance is in use.
      */
     suspend fun acquireForScraper(): WebView {
         scraperSemaphore.acquire()
-        return withContext(Dispatchers.Main) {
-            pool.first { it.tag == SCRAPER_TAG }.also { acquired[SCRAPER_TAG] = true }
+        return try {
+            withContext(Dispatchers.Main) {
+                pool.first { it.tag == SCRAPER_TAG }.also { acquired[SCRAPER_TAG] = true }
+            }
+        } catch (e: Exception) {
+            scraperSemaphore.release()
+            throw e
         }
     }
 
@@ -96,8 +105,10 @@ class PhantomWebViewPool @Inject constructor(
         webView.clearCache(false)
         webView.evaluateJavascript("document.open();document.close();", null)
         webView.loadUrl("about:blank")
-        // Clear DOM storage for this WebView
-        WebStorage.getInstance().deleteAllData()
+        // Note: WebStorage.getInstance().deleteAllData() is intentionally NOT called here
+        // because it's a global singleton that wipes storage for ALL WebView instances.
+        // Per-WebView cleanup (stopLoading + clearHistory + clearCache + about:blank) is
+        // sufficient; accumulated DOM storage/cookies are desired for tracker accumulation.
         acquired.remove(tag)
         if (tag == SCRAPER_TAG) scraperSemaphore.release() else poolSemaphore.release()
     }
