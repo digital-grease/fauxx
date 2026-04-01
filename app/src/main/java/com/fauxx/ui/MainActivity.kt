@@ -45,8 +45,12 @@ class MainActivity : ComponentActivity() {
                 var crashReportContent by remember { mutableStateOf("") }
 
                 LaunchedEffect(Unit) {
-                    val prefs = fauxxDataStore.data.first()
-                    showOnboarding = !(prefs[PreferenceKeys.ONBOARDING_COMPLETED] ?: false)
+                    showOnboarding = try {
+                        val prefs = fauxxDataStore.data.first()
+                        !(prefs[PreferenceKeys.ONBOARDING_COMPLETED] ?: false)
+                    } catch (_: Exception) {
+                        true // Show onboarding as fallback if DataStore read fails
+                    }
                 }
 
                 if (showCrashDialog) {

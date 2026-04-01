@@ -42,7 +42,11 @@ class FauxxApp : Application(), Configuration.Provider {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
-        Timber.plant(encryptedFileTree)
+        try {
+            Timber.plant(encryptedFileTree)
+        } catch (e: Exception) {
+            Log.e("FauxxApp", "Failed to initialize encrypted file logging", e)
+        }
 
         // Install crash handler that writes stack trace + recent logs to a file.
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()

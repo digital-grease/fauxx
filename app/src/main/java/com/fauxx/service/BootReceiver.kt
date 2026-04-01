@@ -9,6 +9,7 @@ import com.fauxx.di.PreferenceKeys
 import com.fauxx.di.fauxxDataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Restarts the [PhantomForegroundService] after device reboot, if the engine was previously
@@ -22,19 +23,25 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 Timber.i("Boot/update received, checking if service should restart")
 
-                // Read the enabled flag from DataStore. runBlocking is acceptable here
-                // because BroadcastReceiver.onReceive() has a short-lived synchronous scope.
+                // Read the enabled flag from DataStore with a timeout to avoid
+                // exceeding the BroadcastReceiver's ~10s execution limit.
                 val wasEnabled = runBlocking {
-                    val prefs = context.fauxxDataStore.data.first()
-                    prefs[PreferenceKeys.ENABLED] ?: false
+                    withTimeoutOrNull(5_000L) {
+                        val prefs = context.fauxxDataStore.data.first()
+                        prefs[PreferenceKeys.ENABLED] ?: false
+                    } ?: false
                 }
 
                 if (wasEnabled) {
                     Timber.i("Restarting PhantomForegroundService after boot")
-                    ContextCompat.startForegroundService(
-                        context,
-                        PhantomForegroundService.startIntent(context)
-                    )
+                    try {
+                        ContextCompat.startForegroundService(
+                            context,
+                            PhantomForegroundService.startIntent(context)
+                        )
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to restart service after boot")
+                    }
                 }
             }
         }

@@ -21,6 +21,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -68,9 +69,14 @@ class PhantomForegroundService : Service() {
                 Timber.i("Stopping Phantom service")
                 notificationJob?.cancel()
                 notificationJob = null
-                poisonEngine.stop()
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf()
+                try {
+                    poisonEngine.stop()
+                } catch (e: Exception) {
+                    Timber.e(e, "Error stopping engine")
+                } finally {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
             }
         }
 
@@ -87,7 +93,7 @@ class PhantomForegroundService : Service() {
 
     private fun startNotificationUpdates() {
         notificationJob = scope.launch {
-            while (true) {
+            while (isActive) {
                 updateNotification()
                 delay(NOTIFICATION_UPDATE_INTERVAL_MS)
             }
