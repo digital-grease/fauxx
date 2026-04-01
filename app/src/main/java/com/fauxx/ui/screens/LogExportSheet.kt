@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.ActivityNotFoundException
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -85,8 +86,8 @@ fun LogExportSheet(
                 label = "File a GitHub Issue",
                 description = "Opens a new issue — requires a GitHub account",
                 onClick = {
-                    openGitHubIssue(context, fileName)
                     copyToClipboard(context, content, silent = true)
+                    openGitHubIssue(context, content, fileName)
                     onDismiss()
                 }
             )
@@ -151,13 +152,27 @@ private fun ExportOption(
     }
 }
 
-private fun openGitHubIssue(context: Context, fileName: String) {
+private const val MAX_URL_LOG_BYTES = 4096
+
+private fun openGitHubIssue(context: Context, content: String, fileName: String) {
     val label = if (fileName.contains("crash")) "crash report" else "debug logs"
-    val url = "$GITHUB_ISSUES_URL?labels=bug&title=Bug+report+with+$label&body=" +
-        Uri.encode("## Description\n\n[Describe what happened]\n\n## Logs\n\n" +
-            "Paste the $label below (copied to your clipboard):\n\n```\n\n```\n")
+    val truncated = content.length > MAX_URL_LOG_BYTES
+    val logSnippet = if (truncated) content.takeLast(MAX_URL_LOG_BYTES) else content
+    val clipboardNote = if (truncated) {
+        "\n\n> Logs were truncated. Full $label copied to your clipboard — paste below if needed.\n"
+    } else ""
+
+    val body = "## Description\n\n[Describe what happened]\n\n" +
+        "## Logs\n$clipboardNote\n```\n$logSnippet\n```\n"
+
+    val url = "$GITHUB_ISSUES_URL?labels=bug&title=Bug+report+with+$label&body=${Uri.encode(body)}"
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-    context.startActivity(intent)
+    try {
+        context.startActivity(intent)
+        Toast.makeText(context, "Full logs copied to clipboard", Toast.LENGTH_SHORT).show()
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "No browser found — logs copied to clipboard", Toast.LENGTH_LONG).show()
+    }
 }
 
 private fun shareViaIntent(context: Context, content: String, fileName: String, subject: String) {
@@ -177,7 +192,11 @@ private fun shareViaIntent(context: Context, content: String, fileName: String, 
         putExtra(Intent.EXTRA_TEXT, "Fauxx $subject — see attached file.")
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(intent, subject))
+    try {
+        context.startActivity(Intent.createChooser(intent, subject))
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "No sharing app found", Toast.LENGTH_LONG).show()
+    }
 }
 
 private fun saveToDownloads(context: Context, content: String, fileName: String) {

@@ -1,6 +1,7 @@
 package com.fauxx
 
 import android.app.Application
+import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.fauxx.logging.CrashReportWriter
@@ -30,7 +31,12 @@ class FauxxApp : Application(), Configuration.Provider {
         // Load SQLCipher native library early, before any Room database access.
         // Must happen at app startup — not lazily in a Hilt provider — to avoid
         // UnsatisfiedLinkError when a DAO is accessed before the DB singleton is created.
-        System.loadLibrary("sqlcipher")
+        try {
+            System.loadLibrary("sqlcipher")
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e("FauxxApp", "Failed to load SQLCipher native library", e)
+            throw e
+        }
 
         // Plant Timber trees: DebugTree for logcat in debug builds, EncryptedFileTree always.
         if (BuildConfig.DEBUG) {
