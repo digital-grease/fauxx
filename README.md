@@ -66,15 +66,15 @@ Uses Android's MockLocationProvider to feed fake GPS coordinates along plausible
 - Driving routes (30–100 km/h)
 - Stationary jitter around fake "home" locations
 
-Powered by a database of 500+ world city centers. Location selection is weighted by your demographics—if you report yourself as US Midwest, spoofing favors distant regions.
+Powered by a database of 800+ world city centers. Location selection is weighted by your demographics—if you report yourself as US Midwest, spoofing favors distant regions.
 
 ### 4. Fingerprint Rotation
 
-Continuously rotates User-Agent strings (from a pool of 200+ real-world UA strings), injects canvas fingerprint noise via JavaScript, randomizes Accept-Language and Accept-Encoding headers, and periodically resets the Android Advertising ID. This layer disrupts browser fingerprinting and device-level profiling.
+Continuously rotates User-Agent strings (from a pool of 275+ real-world UA strings), injects canvas fingerprint noise via JavaScript, randomizes Accept-Language and Accept-Encoding headers, and periodically resets the Android Advertising ID. This layer disrupts browser fingerprinting and device-level profiling.
 
 ### 5. Cookie Saturation
 
-Visits 10,000+ categorized URLs in isolated background WebViews, accumulating tracker cookies across diverse categories. Each URL load respects a per-domain rate limit (minimum 5 seconds between hits). WebViews are pooled and process-isolated to avoid contaminating your real browser cookies.
+Visits 2,400+ categorized URLs in isolated background WebViews, accumulating tracker cookies across diverse categories. Each URL load respects a per-domain rate limit (minimum 5 seconds between hits). WebViews are pooled and process-isolated to avoid contaminating your real browser cookies.
 
 **Category-aware:** URL selection weighted by your targeting engine.
 
@@ -100,7 +100,7 @@ Fauxx is built with privacy-first architecture:
 
 ## Tech Stack
 
-- **Language:** Kotlin (Android API 26+ minimum, API 34 target)
+- **Language:** Kotlin (Android API 26+ minimum, API 36 target)
 - **UI:** Jetpack Compose + Material 3 (dark-first theme)
 - **Database:** Room + SQLCipher (encrypted)
 - **Networking:** OkHttp 4.x with custom interceptors
@@ -113,15 +113,15 @@ Fauxx is built with privacy-first architecture:
 
 ### Prerequisites
 
-- Android SDK API 34 (build tools)
+- Android SDK API 36 (build tools)
 - Kotlin compiler (bundled with Gradle)
-- JDK 11+
+- JDK 25+
 
 ### Build from Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/fauxx.git
+git clone https://github.com/digital-grease/fauxx.git
 cd fauxx
 
 # Build debug APK
@@ -217,7 +217,7 @@ All configurable values are exposed in the app UI and backed by Room preferences
 
 ```
 app/src/main/
-├── java/com/Fauxx/
+├── java/com/fauxx/
 │   ├── FauxxApp.kt                      # Application entry point
 │   ├── di/                              # Hilt dependency injection
 │   ├── data/
@@ -251,9 +251,9 @@ app/src/main/
 │       └── theme/
 └── assets/
     ├── query_banks/                     # Query bank JSON per category
-    ├── crawl_urls.json                  # 10,000+ categorized URLs
-    ├── user_agents.json                 # 200+ real User-Agent strings
-    ├── city_coords.json                 # 500+ city coordinates
+    ├── crawl_urls.json                  # 2,400+ categorized URLs
+    ├── user_agents.json                 # 275+ real User-Agent strings
+    ├── city_coords.json                 # 800+ city coordinates
     ├── blocklist.json                   # Blocked domains
     ├── demographic_distance_rules.json  # Category weight rules by demographic
     ├── platform_category_map.json       # Platform string to CategoryPool mapping
