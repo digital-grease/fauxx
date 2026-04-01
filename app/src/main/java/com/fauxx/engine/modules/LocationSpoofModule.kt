@@ -74,10 +74,14 @@ class LocationSpoofModule @Inject constructor(
         val city = cityDatabase.randomCity()
         val route = routeGenerator.generateRoute(origin = city, mode = mode, count = 5)
 
+        var lastTime = route.firstOrNull()?.time ?: 0L
         for (point in route) {
             try {
                 locationManager.setTestProviderLocation(MOCK_PROVIDER, point.toLocation())
-                delay(point.time - (route.firstOrNull()?.time ?: 0L))
+                // Inter-point delay, clamped to [500ms, 30s] to avoid CPU burn or excessive blocking
+                val interDelay = (point.time - lastTime).coerceIn(500L, 30_000L)
+                lastTime = point.time
+                delay(interDelay)
             } catch (e: Exception) {
                 Timber.w("Failed to set mock location: ${e.message}")
             }

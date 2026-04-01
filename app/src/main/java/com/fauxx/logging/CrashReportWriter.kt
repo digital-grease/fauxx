@@ -52,8 +52,10 @@ class CrashReportWriter @Inject constructor(
                 writer.write(scrubbed)
                 writer.write("\n")
             }
-        } catch (_: Exception) {
-            // Best-effort — if we can't write the crash report, there's nothing else to do.
+        } catch (e: Exception) {
+            // Best-effort — fall back to logcat if file write fails
+            android.util.Log.e("CrashReportWriter", "Failed to write crash report: ${e.message}")
+            android.util.Log.e("CrashReportWriter", "Original crash:", throwable)
         }
     }
 }

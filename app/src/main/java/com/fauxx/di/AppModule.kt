@@ -24,6 +24,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import javax.inject.Singleton
 
@@ -121,7 +122,14 @@ object AppModule {
 
         try {
             // Only migrate if DataStore has no data yet (i.e. first launch after upgrade).
-            val currentPrefs = runBlocking { dataStore.data.first() }
+            // Timeout prevents ANR if DataStore is corrupted or slow.
+            val currentPrefs = runBlocking {
+                withTimeoutOrNull(3_000L) { dataStore.data.first() }
+            }
+            if (currentPrefs == null) {
+                Timber.w("DataStore read timed out during legacy migration check, skipping")
+                return
+            }
             if (currentPrefs.asMap().isNotEmpty()) return
 
             val legacy = EncryptedSharedPreferences.create(
@@ -133,32 +141,34 @@ object AppModule {
             )
 
             runBlocking {
-                dataStore.edit { prefs ->
-                    // Engine state
-                    prefs[PreferenceKeys.ENABLED] = legacy.getBoolean("enabled", false)
-                    legacy.getString("intensity", null)?.let { prefs[PreferenceKeys.INTENSITY] = it }
-                    prefs[PreferenceKeys.WIFI_ONLY] = legacy.getBoolean("wifi_only", true)
-                    prefs[PreferenceKeys.BATTERY_THRESHOLD] = legacy.getInt("battery_threshold", 20)
-                    prefs[PreferenceKeys.ALLOWED_HOURS_START] = legacy.getInt("allowed_hours_start", 7)
-                    prefs[PreferenceKeys.ALLOWED_HOURS_END] = legacy.getInt("allowed_hours_end", 23)
+                withTimeoutOrNull(5_000L) {
+                    dataStore.edit { prefs ->
+                        // Engine state
+                        prefs[PreferenceKeys.ENABLED] = legacy.getBoolean("enabled", false)
+                        legacy.getString("intensity", null)?.let { prefs[PreferenceKeys.INTENSITY] = it }
+                        prefs[PreferenceKeys.WIFI_ONLY] = legacy.getBoolean("wifi_only", true)
+                        prefs[PreferenceKeys.BATTERY_THRESHOLD] = legacy.getInt("battery_threshold", 20)
+                        prefs[PreferenceKeys.ALLOWED_HOURS_START] = legacy.getInt("allowed_hours_start", 7)
+                        prefs[PreferenceKeys.ALLOWED_HOURS_END] = legacy.getInt("allowed_hours_end", 23)
 
-                    // Module toggles
-                    prefs[PreferenceKeys.MODULE_SEARCH] = legacy.getBoolean("module_search", true)
-                    prefs[PreferenceKeys.MODULE_AD] = legacy.getBoolean("module_ad", true)
-                    prefs[PreferenceKeys.MODULE_LOCATION] = legacy.getBoolean("module_location", false)
-                    prefs[PreferenceKeys.MODULE_FINGERPRINT] = legacy.getBoolean("module_fingerprint", true)
-                    prefs[PreferenceKeys.MODULE_COOKIE] = legacy.getBoolean("module_cookie", true)
-                    prefs[PreferenceKeys.MODULE_APPSIGNAL] = legacy.getBoolean("module_appsignal", false)
-                    prefs[PreferenceKeys.MODULE_DNS] = legacy.getBoolean("module_dns", true)
+                        // Module toggles
+                        prefs[PreferenceKeys.MODULE_SEARCH] = legacy.getBoolean("module_search", true)
+                        prefs[PreferenceKeys.MODULE_AD] = legacy.getBoolean("module_ad", true)
+                        prefs[PreferenceKeys.MODULE_LOCATION] = legacy.getBoolean("module_location", false)
+                        prefs[PreferenceKeys.MODULE_FINGERPRINT] = legacy.getBoolean("module_fingerprint", true)
+                        prefs[PreferenceKeys.MODULE_COOKIE] = legacy.getBoolean("module_cookie", true)
+                        prefs[PreferenceKeys.MODULE_APPSIGNAL] = legacy.getBoolean("module_appsignal", false)
+                        prefs[PreferenceKeys.MODULE_DNS] = legacy.getBoolean("module_dns", true)
 
-                    // Layer toggles
-                    prefs[PreferenceKeys.LAYER1_ENABLED] = legacy.getBoolean("layer1_enabled", false)
-                    prefs[PreferenceKeys.LAYER2_ENABLED] = legacy.getBoolean("layer2_enabled", false)
-                    prefs[PreferenceKeys.LAYER3_ENABLED] = legacy.getBoolean("layer3_enabled", true)
+                        // Layer toggles
+                        prefs[PreferenceKeys.LAYER1_ENABLED] = legacy.getBoolean("layer1_enabled", false)
+                        prefs[PreferenceKeys.LAYER2_ENABLED] = legacy.getBoolean("layer2_enabled", false)
+                        prefs[PreferenceKeys.LAYER3_ENABLED] = legacy.getBoolean("layer3_enabled", true)
 
-                    // Onboarding
-                    prefs[PreferenceKeys.ONBOARDING_COMPLETED] = legacy.getBoolean("onboarding_completed", false)
-                }
+                        // Onboarding
+                        prefs[PreferenceKeys.ONBOARDING_COMPLETED] = legacy.getBoolean("onboarding_completed", false)
+                    }
+                } ?: Timber.w("DataStore write timed out during legacy migration")
             }
             Timber.i("Migrated app preferences from EncryptedSharedPreferences to DataStore")
         } catch (e: Exception) {

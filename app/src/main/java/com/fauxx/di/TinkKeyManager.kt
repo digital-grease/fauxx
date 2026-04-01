@@ -42,9 +42,17 @@ class TinkKeyManager @Inject constructor(
         val keysetHex = prefs.getString(KEYSET_PREF_KEY, null)
         val kekExists = AndroidKeystore.hasKey(KEK_ALIAS)
 
-        if (!kekExists && keysetHex == null) {
-            // First run: generate KEK in Android KeyStore, then generate and encrypt keyset
-            AndroidKeystore.generateNewAes256GcmKey(KEK_ALIAS)
+        // Handle all 4 state combinations of KEK and keyset existence:
+        // 1. Neither exists → first run, generate both
+        // 2. KEK exists but keyset missing → corrupted state, regenerate keyset
+        // 3. Keyset exists but KEK missing → KEK was wiped, must regenerate both
+        // 4. Both exist → normal path, decrypt stored keyset
+        if (!kekExists || keysetHex == null) {
+            // Cases 1, 2, 3: regenerate. If KEK is missing, create it. If keyset is
+            // missing or stale (KEK was rotated), generate a fresh keyset.
+            if (!kekExists) {
+                AndroidKeystore.generateNewAes256GcmKey(KEK_ALIAS)
+            }
             val handle = KeysetHandle.generateNew(PredefinedAeadParameters.AES256_GCM)
             val encrypted = TinkProtoKeysetFormat.serializeEncryptedKeyset(
                 handle,
@@ -57,13 +65,27 @@ class TinkKeyManager @Inject constructor(
             return handle
         }
 
-        // Subsequent runs: decrypt the stored keyset
-        val encrypted = android.util.Base64.decode(keysetHex!!, android.util.Base64.NO_WRAP)
-        return TinkProtoKeysetFormat.parseEncryptedKeyset(
-            encrypted,
-            AndroidKeystore.getAead(KEK_ALIAS),
-            KEYSET_ASSOCIATED_DATA
-        )
+        // Case 4: both exist — decrypt the stored keyset
+        return try {
+            val encrypted = android.util.Base64.decode(keysetHex, android.util.Base64.NO_WRAP)
+            TinkProtoKeysetFormat.parseEncryptedKeyset(
+                encrypted,
+                AndroidKeystore.getAead(KEK_ALIAS),
+                KEYSET_ASSOCIATED_DATA
+            )
+        } catch (e: java.security.GeneralSecurityException) {
+            // Keyset is corrupted or KEK was rotated — regenerate
+            val handle = KeysetHandle.generateNew(PredefinedAeadParameters.AES256_GCM)
+            val freshEncrypted = TinkProtoKeysetFormat.serializeEncryptedKeyset(
+                handle,
+                AndroidKeystore.getAead(KEK_ALIAS),
+                KEYSET_ASSOCIATED_DATA
+            )
+            prefs.edit()
+                .putString(KEYSET_PREF_KEY, android.util.Base64.encodeToString(freshEncrypted, android.util.Base64.NO_WRAP))
+                .commit()
+            handle
+        }
     }
 
     /**

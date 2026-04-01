@@ -167,6 +167,10 @@ class PoisonEngine @Inject constructor(
     /** Start the engine main loop. */
     fun start() {
         if (engineJob?.isActive == true) return
+        // Recreate the scope if it was previously cancelled by destroy()
+        if (!scope.isActive) {
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        }
         registerConstraintReceivers()
         engineJob = scope.launch {
             // Sync targeting layer enable flags from persisted profile
@@ -290,6 +294,9 @@ class PoisonEngine @Inject constructor(
             val module = availableModules.random()
             val moduleName = module::class.simpleName ?: "Unknown"
 
+            // Re-check enable state to avoid acting on a stale snapshot
+            if (!module.isEnabled()) continue
+
             // Write-ahead log — track execution time to subtract from scheduled delay
             val execStart = System.currentTimeMillis()
             val logEntry = try {
@@ -382,12 +389,8 @@ class PoisonProfileRepository @Inject constructor(
     private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
-        // Seed the cache with the first read (blocking) so getProfile() never returns
-        // un-initialised defaults on a warm start.
-        runBlocking {
-            dataStore.data.first().let { cached.set(prefsToProfile(it)) }
-        }
-        // Keep cache up-to-date in the background.
+        // Seed the cache from the first emission and keep it up-to-date.
+        // No runBlocking — getProfile() returns safe defaults until the first read completes.
         backgroundScope.launch {
             dataStore.data.collect { cached.set(prefsToProfile(it)) }
         }

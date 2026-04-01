@@ -18,8 +18,13 @@ import javax.inject.Singleton
 class DomainBlocklist @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val blockedDomains: Set<String> by lazy { loadBlocklist() }
-    private val blockedPatterns: List<Regex> by lazy { loadPatterns() }
+    private val parsedBlocklist: BlocklistJson by lazy { loadBlocklistJson() }
+    private val blockedDomains: Set<String> by lazy {
+        parsedBlocklist.domains.map { it.lowercase().trim() }.toSet()
+    }
+    private val blockedPatterns: List<Regex> by lazy {
+        parsedBlocklist.patterns.mapNotNull { runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull() }
+    }
 
     /**
      * Returns true if [host] matches any blocked domain or pattern.
@@ -45,28 +50,15 @@ class DomainBlocklist @Inject constructor(
         return isBlocked(host)
     }
 
-    private fun loadBlocklist(): Set<String> {
+    private fun loadBlocklistJson(): BlocklistJson {
         return try {
             val json = context.assets.open("blocklist.json")
                 .bufferedReader().readText()
             val type = object : TypeToken<BlocklistJson>() {}.type
-            val data: BlocklistJson = Gson().fromJson(json, type)
-            data.domains.map { it.lowercase().trim() }.toSet()
+            Gson().fromJson(json, type)
         } catch (e: Exception) {
-            Timber.e(e, "Failed to load blocklist.json — using empty list")
-            emptySet()
-        }
-    }
-
-    private fun loadPatterns(): List<Regex> {
-        return try {
-            val json = context.assets.open("blocklist.json")
-                .bufferedReader().readText()
-            val type = object : TypeToken<BlocklistJson>() {}.type
-            val data: BlocklistJson = Gson().fromJson(json, type)
-            data.patterns.mapNotNull { runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull() }
-        } catch (e: Exception) {
-            emptyList()
+            Timber.e(e, "Failed to load blocklist.json — using empty blocklist")
+            BlocklistJson()
         }
     }
 }

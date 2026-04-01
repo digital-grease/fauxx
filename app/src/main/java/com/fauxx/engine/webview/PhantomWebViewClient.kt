@@ -33,7 +33,11 @@ class PhantomWebViewClient(
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
         // Inject fingerprint noise scripts
-        view.evaluateJavascript(JSInjector.ALL_SCRIPTS, null)
+        view.evaluateJavascript(JSInjector.ALL_SCRIPTS) { result ->
+            if (result != null && result != "null" && result.contains("error", ignoreCase = true)) {
+                Timber.w("JS injection may have failed on $url: $result")
+            }
+        }
     }
 
     override fun onPageFinished(view: WebView, url: String) {

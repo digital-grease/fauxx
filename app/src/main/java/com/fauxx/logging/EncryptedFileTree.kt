@@ -38,7 +38,11 @@ class EncryptedFileTree(
 
     private val ringBuffer = ConcurrentLinkedDeque<String>()
     private val logDir: File by lazy {
-        File(context.filesDir, LOG_DIR).also { it.mkdirs() }
+        File(context.filesDir, LOG_DIR).also { dir ->
+            if (!dir.exists() && !dir.mkdirs()) {
+                Log.w("EncryptedFileTree", "Failed to create log directory: ${dir.absolutePath}")
+            }
+        }
     }
 
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
@@ -96,7 +100,8 @@ class EncryptedFileTree(
             hourFile.writeBytes(ciphertext)
 
             pruneOldFiles()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w("EncryptedFileTree", "Failed to flush logs to disk: ${e.message}")
             // Re-add lines to buffer on failure so they aren't lost
             lines.forEach { ringBuffer.addFirst(it) }
         }

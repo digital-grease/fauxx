@@ -37,6 +37,7 @@ class ActionDispatcher @Inject constructor(
      * All weights must be non-negative; [WeightNormalizer] guarantees this.
      */
     fun weightedSample(weights: Map<CategoryPool, Float>): CategoryPool {
+        if (weights.isEmpty()) return CategoryPool.values().random()
         val total = weights.values.sum()
         if (total <= 0f) return CategoryPool.values().random()
 
