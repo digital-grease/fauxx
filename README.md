@@ -1,5 +1,10 @@
 # Fauxx
 
+[![CI](https://img.shields.io/github/actions/workflow/status/digital-grease/fauxx/ci.yml?branch=main&logo=github&label=CI)](https://github.com/digital-grease/fauxx/actions/workflows/ci.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](https://github.com/digital-grease/fauxx/blob/main/LICENSE)
+[![Android API](https://img.shields.io/badge/API-26%2B-brightgreen?logo=android)](https://developer.android.com/about/versions/oreo)
+[![GitHub Issues](https://img.shields.io/github/issues/digital-grease/fauxx)](https://github.com/digital-grease/fauxx/issues)
+
 <a href="https://www.buymeacoffee.com/digitalgrease" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-red.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 **Data poisoning for your everyday tracking.**
