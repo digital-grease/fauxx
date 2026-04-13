@@ -36,10 +36,10 @@ class CookieSaturationModule @Inject constructor(
     override fun isEnabled(): Boolean = profileRepo.getProfile().cookieSaturationEnabled
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
-        val entry = crawlListManager.nextUrl(category)
-            ?: crawlListManager.nextUrl(null)
+        val pending = crawlListManager.nextUrlOrWait(category)
+            ?: crawlListManager.nextUrlOrWait(null)
 
-        if (entry == null) {
+        if (pending == null) {
             return ActionLogEntity(
                 actionType = ActionType.COOKIE_HARVEST,
                 category = category,
@@ -48,15 +48,24 @@ class CookieSaturationModule @Inject constructor(
             )
         }
 
+        if (pending.waitMs > 0) {
+            delay(pending.waitMs)
+            crawlListManager.markVisited(pending.entry.domain)
+        }
+
+        val entry = pending.entry
+
         val dwellMs = Random.nextLong(2_000L, 10_000L) // 2-10 second dwell
 
-        withContext(Dispatchers.Main) {
+        val success = withContext(Dispatchers.Main) {
             val webView = webViewPool.acquire()
             try {
                 webView.loadUrl(entry.url)
                 delay(dwellMs)
+                true
             } catch (e: Exception) {
                 Timber.w("Failed to load ${entry.url}: ${e.message}")
+                false
             } finally {
                 webViewPool.release(webView)
             }
@@ -65,7 +74,8 @@ class CookieSaturationModule @Inject constructor(
         return ActionLogEntity(
             actionType = ActionType.COOKIE_HARVEST,
             category = category,
-            detail = entry.url
+            detail = entry.url,
+            success = success
         )
     }
 }

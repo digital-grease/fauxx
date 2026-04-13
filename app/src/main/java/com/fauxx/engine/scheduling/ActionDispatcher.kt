@@ -1,5 +1,6 @@
 package com.fauxx.engine.scheduling
 
+import timber.log.Timber
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.TargetingEngine
@@ -37,9 +38,15 @@ class ActionDispatcher @Inject constructor(
      * All weights must be non-negative; [WeightNormalizer] guarantees this.
      */
     fun weightedSample(weights: Map<CategoryPool, Float>): CategoryPool {
-        if (weights.isEmpty()) return CategoryPool.values().random()
+        if (weights.isEmpty()) {
+            Timber.w("Weight map is empty — falling back to uniform random category selection")
+            return CategoryPool.values().random()
+        }
         val total = weights.values.sum()
-        if (total <= 0f) return CategoryPool.values().random()
+        if (total <= 0f) {
+            Timber.w("Weight map sums to zero — falling back to uniform random category selection")
+            return CategoryPool.values().random()
+        }
 
         var threshold = Random.nextFloat() * total
         for ((category, weight) in weights) {
