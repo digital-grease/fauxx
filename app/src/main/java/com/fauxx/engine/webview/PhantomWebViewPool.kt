@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -44,9 +45,23 @@ class PhantomWebViewPool @Inject constructor(
     /** Tracks which WebViews are currently acquired (tag -> true). */
     private val acquired = ConcurrentHashMap<String, Boolean>()
 
+    /**
+     * Current User-Agent string to apply to WebViews on acquire.
+     * Updated by [FingerprintModule] on each rotation action.
+     */
+    private val currentUserAgent = AtomicReference<String?>(null)
+
     /** Tag identifying the scraper-reserved WebView instance. */
     companion object {
         const val SCRAPER_TAG = "scraper"
+    }
+
+    /**
+     * Set the User-Agent string that will be applied to WebViews when they are acquired.
+     * Called by FingerprintModule when a UA rotation action fires.
+     */
+    fun setUserAgent(ua: String) {
+        currentUserAgent.set(ua)
     }
 
     /**
@@ -70,7 +85,9 @@ class PhantomWebViewPool @Inject constructor(
         poolSemaphore.acquire()
         return try {
             withContext(Dispatchers.Main) {
-                pool.first { it.tag != SCRAPER_TAG && acquired.putIfAbsent(it.tag as String, true) == null }
+                val wv = pool.first { it.tag != SCRAPER_TAG && acquired.putIfAbsent(it.tag as String, true) == null }
+                currentUserAgent.get()?.let { wv.settings.userAgentString = it }
+                wv
             }
         } catch (e: Exception) {
             poolSemaphore.release()

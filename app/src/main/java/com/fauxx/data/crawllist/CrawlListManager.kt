@@ -34,6 +34,9 @@ class CrawlListManager @Inject constructor(
     private val allUrls: List<CrawlEntry> by lazy { loadUrls() }
     private val lastVisitByDomain = mutableMapOf<String, Long>()
 
+    /** Number of URLs in the corpus (0 if load failed). */
+    fun corpusSize(): Int = allUrls.size
+
     /**
      * Get a URL to visit, optionally filtered to [category].
      * Respects per-domain rate limits and blocklist.

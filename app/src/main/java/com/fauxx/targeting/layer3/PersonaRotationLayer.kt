@@ -14,9 +14,14 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/** Interval between persona expiry checks. */
+private const val ROTATION_CHECK_INTERVAL_MS = 30 * 60 * 1000L // 30 minutes
 
 /** Weight for categories aligned with the current persona. */
 private const val ALIGNED_WEIGHT = 2.0f
@@ -67,6 +72,20 @@ class PersonaRotationLayer @Inject constructor(
         }
     }.stateIn(scope, SharingStarted.Eagerly, neutralWeights())
 
+    init {
+        // Single periodic check for persona expiry — replaces per-call scope.launch
+        // to avoid spawning unbounded coroutines on every getWeights() call.
+        scope.launch {
+            while (isActive) {
+                delay(ROTATION_CHECK_INTERVAL_MS)
+                val current = _currentPersona.value
+                if (current != null && System.currentTimeMillis() > current.activeUntil) {
+                    rotatePersona()
+                }
+            }
+        }
+    }
+
     /** Enable or disable this layer. */
     fun setEnabled(enabled: Boolean) {
         _enabled.value = enabled
@@ -84,18 +103,9 @@ class PersonaRotationLayer @Inject constructor(
 
     /**
      * Emits the current Layer 3 weight map based on the active persona.
-     * Returns the same stable [StateFlow] on every call — no coroutine leak.
+     * Returns the same stable [StateFlow] on every call.
      */
-    fun getWeights(): Flow<Map<CategoryPool, Float>> {
-        // Check if persona needs rotation (once per call is fine — idempotent)
-        scope.launch {
-            val current = _currentPersona.value
-            if (current != null && System.currentTimeMillis() > current.activeUntil) {
-                rotatePersona()
-            }
-        }
-        return _weights
-    }
+    fun getWeights(): Flow<Map<CategoryPool, Float>> = _weights
 
     private fun computeWeights(persona: SyntheticPersona): Map<CategoryPool, Float> {
         return CategoryPool.values().associateWith { category ->

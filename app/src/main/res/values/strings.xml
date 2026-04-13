@@ -77,6 +77,11 @@
     <string name="about_license_title">License</string>
     <string name="about_license_body">Fauxx is open-source software. Source code and license details are available in the project repository.</string>
 
+    <!-- Support -->
+    <string name="about_support_title">Support</string>
+    <string name="about_support_body">If you find Fauxx useful, consider buying me a coffee.</string>
+    <string name="about_support_button">Buy Me a Coffee</string>
+
     <!-- Dashboard -->
     <string name="dashboard_title">FAUXX</string>
     <string name="dashboard_active">ACTIVE</string>

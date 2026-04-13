@@ -1,10 +1,15 @@
 package com.fauxx
 
+import com.fauxx.data.crawllist.CrawlListManager
+import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.db.ActionLogEntity
+import com.fauxx.data.location.CityDatabase
+import com.fauxx.data.location.CityCoord
 import com.fauxx.data.model.IntensityLevel
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.data.querybank.QueryBankManager
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.modules.AppSignalModule
@@ -70,6 +75,21 @@ class PoisonEngineConstraintTest {
     private val cookieModule: CookieSaturationModule = mockk(relaxed = true)
     private val appSignalModule: AppSignalModule = mockk(relaxed = true)
     private val dnsModule: DnsNoiseModule = mockk(relaxed = true)
+    private val blocklist: DomainBlocklist = mockk {
+        every { loadFailed } returns false
+    }
+    private val queryBankManager: QueryBankManager = mockk {
+        every { getQueries(any()) } returns listOf("test query")
+    }
+    private val crawlListManager: CrawlListManager = mockk {
+        every { corpusSize() } returns 100
+    }
+    private val cityDatabase: CityDatabase = mockk {
+        every { cities } returns listOf(
+            CityCoord("Test City", 0.0, 0.0, "TEST"),
+            CityCoord("Test City 2", 1.0, 1.0, "TEST")
+        )
+    }
 
     private lateinit var engine: PoisonEngine
 
@@ -127,6 +147,7 @@ class PoisonEngineConstraintTest {
         }
         return PoisonEngine(
             context, profileRepo, targetingEngine, dispatcher, scheduler, actionLogDao,
+            blocklist, queryBankManager, crawlListManager, cityDatabase,
             searchModule, adModule, locationModule, fingerprintModule,
             cookieModule, appSignalModule, dnsModule
         )

@@ -1,5 +1,9 @@
 package com.fauxx.ui.screens
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -40,10 +44,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.EngineState
@@ -59,6 +65,17 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val showConsent by viewModel.showConsentDialog.collectAsState()
+    val context = LocalContext.current
+
+    // POST_NOTIFICATIONS permission (Android 13+)
+    var notificationDenied by remember { mutableStateOf(false) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        notificationDenied = !granted
+        // Proceed with engine activation regardless — service works without notification
+        viewModel.toggleEngine(true)
+    }
 
     if (showConsent) {
         ConsentDialog(
@@ -84,11 +101,58 @@ fun DashboardScreen(
             color = MaterialTheme.colorScheme.primary
         )
 
+        // Notification permission warning
+        if (notificationDenied) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Text(
+                    text = "Notification permission denied — background activity indicator is hidden. " +
+                        "Grant notification permission in Settings to see the status notification.",
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+
+        // Health warnings from asset loading
+        if (uiState.healthWarnings.isNotEmpty()) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    uiState.healthWarnings.forEach { warning ->
+                        Text(
+                            text = warning,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+        }
+
         // Protection toggle
         ProtectionCard(
             enabled = uiState.engineEnabled,
             engineState = uiState.engineState,
-            onToggle = { viewModel.toggleEngine(it) }
+            onToggle = { enabled ->
+                if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val hasPermission = ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.POST_NOTIFICATIONS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (!hasPermission) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        return@ProtectionCard
+                    }
+                }
+                viewModel.toggleEngine(enabled)
+            }
         )
 
         // Action counters

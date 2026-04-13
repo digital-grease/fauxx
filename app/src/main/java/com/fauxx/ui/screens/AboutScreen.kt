@@ -1,5 +1,7 @@
 package com.fauxx.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,10 +21,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +42,7 @@ import com.fauxx.R
  */
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -123,6 +128,24 @@ fun AboutScreen(onBack: () -> Unit) {
             SectionTitle(stringResource(R.string.about_license_title))
             Spacer(Modifier.height(8.dp))
             BodyText(stringResource(R.string.about_license_body))
+        }
+
+        // Support
+        AboutCard {
+            SectionTitle(stringResource(R.string.about_support_title))
+            Spacer(Modifier.height(8.dp))
+            BodyText(stringResource(R.string.about_support_body))
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(onClick = {
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse("https://www.buymeacoffee.com/digitalgrease"))
+                )
+            }) {
+                Text(
+                    stringResource(R.string.about_support_button),
+                    fontFamily = FontFamily.Monospace
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))
