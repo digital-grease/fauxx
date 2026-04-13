@@ -1,12 +1,16 @@
 package com.fauxx.ui.viewmodels
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.di.PreferenceKeys
 import com.fauxx.engine.EngineState
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
@@ -19,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -41,10 +46,15 @@ class DashboardViewModel @Inject constructor(
     private val profileRepo: PoisonProfileRepository,
     private val poisonEngine: PoisonEngine,
     private val targetingEngine: TargetingEngine,
-    private val personaLayer: PersonaRotationLayer
+    private val personaLayer: PersonaRotationLayer,
+    private val dataStore: DataStore<Preferences>
 ) : ViewModel() {
 
     private val _enabled = MutableStateFlow(profileRepo.getProfile().enabled)
+
+    /** Whether to show the consent dialog (first-time activation). */
+    private val _showConsentDialog = MutableStateFlow(false)
+    val showConsentDialog: StateFlow<Boolean> = _showConsentDialog
 
     val uiState: StateFlow<DashboardUiState> = combine(
         _enabled,
@@ -65,16 +75,50 @@ class DashboardViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
     fun toggleEngine(enabled: Boolean) {
-        viewModelScope.launch {
-            val profile = profileRepo.getProfile()
-            profileRepo.saveProfile(profile.copy(enabled = enabled))
-        }
-        _enabled.value = enabled
         if (enabled) {
-            context.startForegroundService(PhantomForegroundService.startIntent(context))
+            // Check if user has accepted consent before first activation
+            viewModelScope.launch {
+                val prefs = dataStore.data.first()
+                val consented = prefs[PreferenceKeys.CONSENT_ACCEPTED] ?: false
+                if (!consented) {
+                    _showConsentDialog.value = true
+                    return@launch
+                }
+                activateEngine()
+            }
         } else {
-            context.startService(PhantomForegroundService.stopIntent(context))
+            deactivateEngine()
         }
+    }
+
+    /** User accepted the consent dialog. */
+    fun acceptConsent() {
+        _showConsentDialog.value = false
+        viewModelScope.launch {
+            dataStore.edit { it[PreferenceKeys.CONSENT_ACCEPTED] = true }
+            activateEngine()
+        }
+    }
+
+    /** User dismissed the consent dialog. */
+    fun dismissConsent() {
+        _showConsentDialog.value = false
+    }
+
+    private fun activateEngine() {
+        viewModelScope.launch {
+            profileRepo.saveProfile(profileRepo.getProfile().copy(enabled = true))
+        }
+        _enabled.value = true
+        context.startForegroundService(PhantomForegroundService.startIntent(context))
+    }
+
+    private fun deactivateEngine() {
+        viewModelScope.launch {
+            profileRepo.saveProfile(profileRepo.getProfile().copy(enabled = false))
+        }
+        _enabled.value = false
+        context.startService(PhantomForegroundService.stopIntent(context))
     }
 
     private fun computeNoiseRatio(actionsToday: Int): Float {

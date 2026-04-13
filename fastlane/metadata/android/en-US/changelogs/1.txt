@@ -1,0 +1,8 @@
+Initial release of Fauxx — privacy through noise.
+
+• Diverse browsing engine with search, page visit, DNS, and fingerprint modules
+• Demographic distancing engine with 3 targeting layers
+• Synthetic persona rotation for temporal coherence
+• Full audit log with export
+• On-device encryption for all personal data
+• Configurable intensity, scheduling, and battery/WiFi constraints

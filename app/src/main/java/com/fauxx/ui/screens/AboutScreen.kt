@@ -23,11 +23,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.fauxx.BuildConfig
+import com.fauxx.R
 
 /**
  * About & Privacy Policy screen accessible from Settings.
@@ -56,7 +58,7 @@ fun AboutScreen(onBack: () -> Unit) {
                 )
             }
             Text(
-                text = "ABOUT & PRIVACY",
+                text = stringResource(R.string.about_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
@@ -81,9 +83,7 @@ fun AboutScreen(onBack: () -> Unit) {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "An open-source privacy tool that poisons data broker and ad-tech profiles " +
-                    "by generating continuous, plausible, off-demographic synthetic activity " +
-                    "from your device.",
+                stringResource(R.string.about_app_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -91,90 +91,38 @@ fun AboutScreen(onBack: () -> Unit) {
 
         // Privacy Policy
         AboutCard {
-            SectionTitle("Privacy Policy")
+            SectionTitle(stringResource(R.string.about_privacy_title))
             Spacer(Modifier.height(8.dp))
 
-            SectionSubtitle("Data that stays on your device")
-            Text(
-                "All personal data remains exclusively on your device and is encrypted at rest:\n" +
-                    "\u2022 Demographic profile (age, gender, interests, profession, region)\n" +
-                    "\u2022 Ad platform profile cache (scraped interest categories)\n" +
-                    "\u2022 Synthetic persona history\n" +
-                    "\u2022 Action audit logs\n\n" +
-                    "This data is stored in an encrypted database (SQLCipher) with a key " +
-                    "managed by Android Keystore. It never leaves your device in any form.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            SectionSubtitle(stringResource(R.string.about_data_on_device_title))
+            BodyText(stringResource(R.string.about_data_on_device_body))
 
             Spacer(Modifier.height(12.dp))
 
-            SectionSubtitle("Network requests the app makes")
-            Text(
-                "Fauxx generates synthetic browsing activity to confuse tracking profiles. " +
-                    "This means the app will:\n\n" +
-                    "\u2022 Perform web searches on Google, Bing, DuckDuckGo, and Yahoo\n" +
-                    "\u2022 Visit categorized URLs to accumulate diverse tracker cookies\n" +
-                    "\u2022 Load ad-heavy pages in background web views\n" +
-                    "\u2022 Resolve domain names to generate DNS query noise\n" +
-                    "\u2022 Open app store deep links for off-profile apps\n\n" +
-                    "All requests use randomized User-Agent headers and are rate-limited " +
-                    "to avoid disrupting target services. Blocked domains (private networks, " +
-                    "harmful content) are never contacted.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            SectionSubtitle(stringResource(R.string.about_network_title))
+            BodyText(stringResource(R.string.about_network_body))
 
             Spacer(Modifier.height(12.dp))
 
-            SectionSubtitle("What we do NOT collect")
-            Text(
-                "\u2022 No analytics or telemetry of any kind\n" +
-                    "\u2022 No crash reports sent to external services\n" +
-                    "\u2022 No advertising identifiers or tracking pixels\n" +
-                    "\u2022 No server-side accounts or cloud storage\n" +
-                    "\u2022 No data shared with third parties\n\n" +
-                    "Fauxx has no backend server. The app is entirely self-contained.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            SectionSubtitle(stringResource(R.string.about_not_collected_title))
+            BodyText(stringResource(R.string.about_not_collected_body))
 
             Spacer(Modifier.height(12.dp))
 
-            SectionSubtitle("Location spoofing")
-            Text(
-                "If enabled, the Location Spoofing module feeds fake GPS coordinates to " +
-                    "apps on your device using Android's mock location provider API. This " +
-                    "requires enabling Developer Options and selecting Fauxx as the mock " +
-                    "location app. Fake coordinates are generated along plausible routes " +
-                    "in regions different from your reported location.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            SectionSubtitle(stringResource(R.string.about_location_title))
+            BodyText(stringResource(R.string.about_location_body))
 
             Spacer(Modifier.height(12.dp))
 
-            SectionSubtitle("Data deletion")
-            Text(
-                "You can delete all stored data at any time via Settings > Clear All Data. " +
-                    "This permanently removes your demographic profile, platform caches, " +
-                    "persona history, action logs, and resets all settings to defaults. " +
-                    "Uninstalling the app also removes all data.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            SectionSubtitle(stringResource(R.string.about_deletion_title))
+            BodyText(stringResource(R.string.about_deletion_body))
         }
 
         // License
         AboutCard {
-            SectionTitle("License")
+            SectionTitle(stringResource(R.string.about_license_title))
             Spacer(Modifier.height(8.dp))
-            Text(
-                "Fauxx is open-source software. Source code and license details are " +
-                    "available in the project repository.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            BodyText(stringResource(R.string.about_license_body))
         }
 
         Spacer(Modifier.height(16.dp))
@@ -210,4 +158,13 @@ private fun SectionSubtitle(text: String) {
         color = MaterialTheme.colorScheme.secondary
     )
     Spacer(Modifier.height(4.dp))
+}
+
+@Composable
+private fun BodyText(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface
+    )
 }

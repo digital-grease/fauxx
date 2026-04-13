@@ -11,12 +11,12 @@ import android.os.Build
 import timber.log.Timber
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.PoisonProfile
-import com.fauxx.engine.modules.AdPollutionModule
+import com.fauxx.di.AdModuleImpl
+import com.fauxx.di.LocationModuleImpl
 import com.fauxx.engine.modules.AppSignalModule
 import com.fauxx.engine.modules.CookieSaturationModule
 import com.fauxx.engine.modules.DnsNoiseModule
 import com.fauxx.engine.modules.FingerprintModule
-import com.fauxx.engine.modules.LocationSpoofModule
 import com.fauxx.engine.modules.Module
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
@@ -98,8 +98,8 @@ class PoisonEngine @Inject constructor(
     private val scheduler: PoissonScheduler,
     private val actionLogDao: ActionLogDao,
     private val searchModule: SearchPoisonModule,
-    private val adModule: AdPollutionModule,
-    private val locationModule: LocationSpoofModule,
+    @AdModuleImpl private val adModule: Module,
+    @LocationModuleImpl private val locationModule: Module,
     private val fingerprintModule: FingerprintModule,
     private val cookieModule: CookieSaturationModule,
     private val appSignalModule: AppSignalModule,

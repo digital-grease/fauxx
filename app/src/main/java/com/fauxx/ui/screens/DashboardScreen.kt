@@ -21,11 +21,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,6 +58,14 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val showConsent by viewModel.showConsentDialog.collectAsState()
+
+    if (showConsent) {
+        ConsentDialog(
+            onAccept = { viewModel.acceptConsent() },
+            onDismiss = { viewModel.dismissConsent() }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -435,5 +445,64 @@ private fun NoiseRatioCard(ratio: Float) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ConsentDialog(onAccept: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Before you start",
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Fauxx will perform the following background activities:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                ConsentBullet("Search diverse topics on Google, Bing, DuckDuckGo, and Yahoo")
+                ConsentBullet("Visit a variety of websites to broaden your browsing profile")
+                ConsentBullet("Rotate browser fingerprints (User-Agent, language headers)")
+                ConsentBullet("Generate DNS lookups across varied domains")
+                ConsentBullet("Use battery and mobile data while running in the background")
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "All activity is synthetic and stays on your device. " +
+                        "No personal data is collected or transmitted.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onAccept) {
+                Text("I understand, start")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ConsentBullet(text: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "\u2022",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
