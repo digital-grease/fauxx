@@ -87,13 +87,16 @@ class ScrapeWorker @AssistedInject constructor(
             webViewPool.acquireForScraper()
         }
 
-        var anySuccess = false
+        val scrapers = listOf(googleScraper, facebookScraper)
+        val succeeded = mutableListOf<String>()
+        val failed = mutableListOf<String>()
 
-        for (scraper in listOf(googleScraper, facebookScraper)) {
+        for (scraper in scrapers) {
             try {
                 val rawCategories = scraper.scrape(scraperWebView)
                 if (rawCategories.isEmpty()) {
                     Timber.d("${scraper.platformId}: no categories found (may need auth)")
+                    failed.add(scraper.platformId)
                     continue
                 }
 
@@ -108,10 +111,11 @@ class ScrapeWorker @AssistedInject constructor(
                     )
                 )
                 Timber.i("${scraper.platformId}: scraped ${mapped.size} categories")
-                anySuccess = true
+                succeeded.add(scraper.platformId)
 
             } catch (e: Exception) {
                 Timber.e(e, "${scraper.platformId} scrape failed")
+                failed.add(scraper.platformId)
                 // Keep existing cache — do not clear on failure
             }
         }
@@ -120,9 +124,12 @@ class ScrapeWorker @AssistedInject constructor(
             webViewPool.release(scraperWebView)
         }
 
-        if (!anySuccess) {
-            Timber.w("All scrapers failed — scheduling retry")
+        if (succeeded.isEmpty()) {
+            Timber.w("All scrapers failed (${failed.joinToString()}) — scheduling retry")
             return Result.retry()
+        }
+        if (failed.isNotEmpty()) {
+            Timber.w("Partial scrape: succeeded=${succeeded.joinToString()}, failed=${failed.joinToString()}")
         }
         return Result.success()
     }

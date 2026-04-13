@@ -13,11 +13,23 @@ import javax.inject.Singleton
  * Loaded from assets/blocklist.json at startup. Checked before every URL load.
  *
  * This is a non-negotiable safety requirement — no URL may bypass this check.
+ * If the blocklist fails to load, [loadFailed] is set to `true` and [isBlocked]
+ * returns `true` for ALL hosts (fail-closed). Callers should check [loadFailed]
+ * to surface a health warning to the user.
  */
 @Singleton
 class DomainBlocklist @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    /**
+     * `true` if blocklist.json could not be loaded. When this is set, [isBlocked]
+     * returns `true` for every host (fail-closed) and all URL-loading modules
+     * should be disabled.
+     */
+    @Volatile
+    var loadFailed: Boolean = false
+        private set
+
     private val parsedBlocklist: BlocklistJson by lazy { loadBlocklistJson() }
     private val blockedDomains: Set<String> by lazy {
         parsedBlocklist.domains.map { it.lowercase().trim() }.toSet()
@@ -26,11 +38,20 @@ class DomainBlocklist @Inject constructor(
         parsedBlocklist.patterns.mapNotNull { runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull() }
     }
 
+    init {
+        // Eagerly trigger the lazy load so loadFailed is set at injection time,
+        // before any module tries to use the blocklist.
+        blockedDomains.size
+    }
+
     /**
      * Returns true if [host] matches any blocked domain or pattern.
      * Called before every URL load across all modules and WebViews.
+     *
+     * If the blocklist failed to load, returns `true` for ALL hosts (fail-closed).
      */
     fun isBlocked(host: String): Boolean {
+        if (loadFailed) return true
         val normalized = host.lowercase().trimStart('.')
         if (blockedDomains.contains(normalized)) return true
         if (blockedDomains.any { normalized.endsWith(".$it") }) return true
@@ -42,6 +63,7 @@ class DomainBlocklist @Inject constructor(
      * Returns true if the full [url] string should be blocked.
      */
     fun isUrlBlocked(url: String): Boolean {
+        if (loadFailed) return true
         val host = try {
             android.net.Uri.parse(url).host ?: return false
         } catch (e: Exception) {
@@ -55,9 +77,15 @@ class DomainBlocklist @Inject constructor(
             val json = context.assets.open("blocklist.json")
                 .bufferedReader().readText()
             val type = object : TypeToken<BlocklistJson>() {}.type
-            Gson().fromJson(json, type)
+            val result: BlocklistJson = Gson().fromJson(json, type)
+            if (result.domains.isEmpty() && result.patterns.isEmpty()) {
+                Timber.e("blocklist.json loaded but is empty — failing closed")
+                loadFailed = true
+            }
+            result
         } catch (e: Exception) {
-            Timber.e(e, "Failed to load blocklist.json — using empty blocklist")
+            Timber.e(e, "Failed to load blocklist.json — failing closed, all URLs will be blocked")
+            loadFailed = true
             BlocklistJson()
         }
     }

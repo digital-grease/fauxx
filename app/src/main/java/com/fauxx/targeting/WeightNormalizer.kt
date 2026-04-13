@@ -35,11 +35,12 @@ class WeightNormalizer @Inject constructor() {
             return clamped.mapValues { uniform }
         }
 
-        // Clamp after normalization: a value clamped to MIN_WEIGHT then divided by a
-        // larger sum can dip just below MIN_WEIGHT (e.g., 0.001 / 1.001 ≈ 0.000999).
-        // We clamp without re-normalizing to preserve the MIN_WEIGHT invariant; the
-        // resulting sum may exceed 1.0 by at most (N * MIN_WEIGHT) in degenerate cases.
-        return clamped.mapValues { (_, v) -> maxOf(v / sum, MIN_WEIGHT) }
+        // Two-pass normalization: first normalize, then clamp minimums and
+        // re-normalize so the final distribution sums to exactly 1.0 while
+        // preserving the MIN_WEIGHT floor.
+        val firstPass = clamped.mapValues { (_, v) -> maxOf(v / sum, MIN_WEIGHT) }
+        val secondSum = firstPass.values.sum()
+        return firstPass.mapValues { (_, v) -> maxOf(v / secondSum, MIN_WEIGHT) }
     }
 
     /**

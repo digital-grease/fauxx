@@ -36,7 +36,8 @@ data class DashboardUiState(
     val actionsThisWeek: Int = 0,
     val categoryDistribution: Map<CategoryPool, Float> = emptyMap(),
     val currentPersona: SyntheticPersona? = null,
-    val estimatedNoiseRatio: Float = 0f
+    val estimatedNoiseRatio: Float = 0f,
+    val healthWarnings: List<String> = emptyList()
 )
 
 @HiltViewModel
@@ -61,8 +62,18 @@ class DashboardViewModel @Inject constructor(
         actionLogDao.countSince(System.currentTimeMillis() - 24 * 60 * 60 * 1000L),
         actionLogDao.countSince(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L),
         targetingEngine.getWeights(),
-        personaLayer.currentPersona
-    ) { enabled, today, week, weights, persona ->
+        personaLayer.currentPersona,
+        poisonEngine.healthWarnings
+    ) { flows ->
+        @Suppress("UNCHECKED_CAST")
+        val enabled = flows[0] as Boolean
+        val today = flows[1] as Int
+        val week = flows[2] as Int
+        @Suppress("UNCHECKED_CAST")
+        val weights = flows[3] as Map<CategoryPool, Float>
+        val persona = flows[4] as SyntheticPersona?
+        @Suppress("UNCHECKED_CAST")
+        val warnings = flows[5] as List<String>
         DashboardUiState(
             engineEnabled = enabled,
             engineState = poisonEngine.engineState,
@@ -70,7 +81,8 @@ class DashboardViewModel @Inject constructor(
             actionsThisWeek = week,
             categoryDistribution = weights,
             currentPersona = persona,
-            estimatedNoiseRatio = computeNoiseRatio(today)
+            estimatedNoiseRatio = computeNoiseRatio(today),
+            healthWarnings = warnings
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
