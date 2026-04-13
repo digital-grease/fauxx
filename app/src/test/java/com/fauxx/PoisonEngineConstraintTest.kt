@@ -7,12 +7,11 @@ import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
-import com.fauxx.engine.modules.AdPollutionModule
 import com.fauxx.engine.modules.AppSignalModule
 import com.fauxx.engine.modules.CookieSaturationModule
 import com.fauxx.engine.modules.DnsNoiseModule
 import com.fauxx.engine.modules.FingerprintModule
-import com.fauxx.engine.modules.LocationSpoofModule
+import com.fauxx.engine.modules.Module
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.PoissonScheduler
@@ -65,8 +64,8 @@ class PoisonEngineConstraintTest {
     private val actionLogDao: ActionLogDao = mockk(relaxed = true)
 
     private val searchModule: SearchPoisonModule = mockk(relaxed = true)
-    private val adModule: AdPollutionModule = mockk(relaxed = true)
-    private val locationModule: LocationSpoofModule = mockk(relaxed = true)
+    private val adModule: Module = mockk(relaxed = true)
+    private val locationModule: Module = mockk(relaxed = true)
     private val fingerprintModule: FingerprintModule = mockk(relaxed = true)
     private val cookieModule: CookieSaturationModule = mockk(relaxed = true)
     private val appSignalModule: AppSignalModule = mockk(relaxed = true)

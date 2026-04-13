@@ -1,8 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Fauxx</string>
-    <string name="notification_channel_name">Phantom Engine</string>
-    <string name="notification_channel_desc">Background privacy protection activity</string>
-    <string name="notification_title">Fauxx Active</string>
-    <string name="notification_text">Generating synthetic activity…</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">Privacy Protection</string>
+    <string name="notification_channel_desc">Notifications for Fauxx background browsing diversification</string>
+    <string name="notification_title">Fauxx</string>
+    <string name="notification_active">Generating diverse browsing activity — %d actions today</string>
+    <string name="notification_paused_wifi">Paused — waiting for WiFi</string>
+    <string name="notification_paused_battery">Paused — battery low</string>
+    <string name="notification_paused_rate_limit">Paused — hourly limit reached</string>
+    <string name="notification_stopped">Stopped</string>
+    <string name="notification_initializing">Initializing…</string>
+    <string name="notification_action_open">Open</string>
+    <string name="notification_action_stop">Stop</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">FAUXX</string>
+    <string name="onboarding_subtitle">Privacy through noise</string>
+    <string name="onboarding_intro">Fauxx protects your privacy by generating synthetic browsing activity in the background. Here\'s what it does:</string>
+    <string name="onboarding_bullet_search">Performs web searches across Google, Bing, DuckDuckGo, and Yahoo on diverse topics</string>
+    <string name="onboarding_bullet_browse">Visits a wide variety of websites to diversify your browsing profile</string>
+    <string name="onboarding_bullet_fingerprint">Rotates browser fingerprints (User-Agent, language headers)</string>
+    <string name="onboarding_bullet_dns">Generates DNS lookups for varied domains</string>
+    <string name="onboarding_bullet_battery">All activity runs in the background and uses battery and data</string>
+    <string name="onboarding_optional_profile">Optionally, tell us about yourself on the next screens. This stays on your device and helps generate noise that\'s different from your real profile. Skip if you prefer uniform noise.</string>
+    <string name="onboarding_done_title">You\'re set!</string>
+    <string name="onboarding_done_body">Fauxx will generate diverse browsing activity that\'s maximally different from your real behavioral signal. Toggle protection on from the Dashboard to start.</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_skip_all">Skip All</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_done">Done</string>
+
+    <!-- Onboarding steps -->
+    <string name="onboarding_age_title">What\'s your age range?</string>
+    <string name="onboarding_age_subtitle">Helps us avoid generating activity that matches your demographic</string>
+    <string name="onboarding_gender_title">Gender</string>
+    <string name="onboarding_gender_subtitle">Optional — used only to bias noise away from your demographic</string>
+    <string name="onboarding_interests_title">Your main interests</string>
+    <string name="onboarding_interests_subtitle">We\'ll generate more noise in OTHER categories</string>
+    <string name="onboarding_custom_interests_title">Or add your own</string>
+    <string name="onboarding_custom_interests_subtitle">Type specific interests not covered above (e.g., \"woodworking\", \"cryptocurrency\")</string>
+    <string name="onboarding_profession_title">Profession</string>
+    <string name="onboarding_profession_subtitle">Used to compute demographic distance only</string>
+    <string name="onboarding_region_title">Where are you located?</string>
+    <string name="onboarding_region_subtitle">Used to generate searches and browsing activity suggesting other regions</string>
+
+    <!-- Consent dialog -->
+    <string name="consent_title">Before you start</string>
+    <string name="consent_intro">Fauxx will perform the following background activities:</string>
+    <string name="consent_bullet_search">Search diverse topics on Google, Bing, DuckDuckGo, and Yahoo</string>
+    <string name="consent_bullet_browse">Visit a variety of websites to broaden your browsing profile</string>
+    <string name="consent_bullet_fingerprint">Rotate browser fingerprints (User-Agent, language headers)</string>
+    <string name="consent_bullet_dns">Generate DNS lookups across varied domains</string>
+    <string name="consent_bullet_battery">Use battery and mobile data while running in the background</string>
+    <string name="consent_footer">All activity is synthetic and stays on your device. No personal data is collected or transmitted.</string>
+    <string name="consent_accept">I understand, start</string>
+    <string name="consent_cancel">Cancel</string>
+
+    <!-- About & Privacy -->
+    <string name="about_title">ABOUT &amp; PRIVACY</string>
+    <string name="about_app_description">An open-source privacy tool that poisons data broker and ad-tech profiles by generating continuous, plausible, off-demographic synthetic activity from your device.</string>
+    <string name="about_privacy_title">Privacy Policy</string>
+    <string name="about_data_on_device_title">Data that stays on your device</string>
+    <string name="about_data_on_device_body">All personal data remains exclusively on your device and is encrypted at rest:\n\n\u2022 Demographic profile (age, gender, interests, profession, region)\n\u2022 Ad platform profile cache (scraped interest categories)\n\u2022 Synthetic persona history\n\u2022 Action audit logs\n\nThis data is stored in an encrypted database (SQLCipher) with a key managed by Android Keystore. It never leaves your device in any form.</string>
+    <string name="about_network_title">Network requests the app makes</string>
+    <string name="about_network_body">Fauxx generates synthetic browsing activity to confuse tracking profiles. This means the app will:\n\n\u2022 Perform web searches on Google, Bing, DuckDuckGo, and Yahoo\n\u2022 Visit categorized URLs to accumulate diverse tracker cookies\n\u2022 Load diverse pages in background web views\n\u2022 Resolve domain names to generate DNS query noise\n\u2022 Open app store deep links for off-profile apps\n\nAll requests use randomized User-Agent headers and are rate-limited to avoid disrupting target services. Blocked domains (private networks, harmful content) are never contacted.</string>
+    <string name="about_not_collected_title">What we do NOT collect</string>
+    <string name="about_not_collected_body">\u2022 No analytics or telemetry of any kind\n\u2022 No crash reports sent to external services\n\u2022 No advertising identifiers or tracking pixels\n\u2022 No server-side accounts or cloud storage\n\u2022 No data shared with third parties\n\nFauxx has no backend server. The app is entirely self-contained.</string>
+    <string name="about_location_title">Location signal noise</string>
+    <string name="about_location_body">If enabled, the Location Signal module generates search queries and visits websites that suggest activity in regions different from your actual location, making it harder for data brokers to pinpoint where you live.</string>
+    <string name="about_deletion_title">Data deletion</string>
+    <string name="about_deletion_body">You can delete all stored data at any time via Settings > Clear All Data. This permanently removes your demographic profile, platform caches, persona history, action logs, and resets all settings to defaults. Uninstalling the app also removes all data.</string>
+    <string name="about_privacy_url">https://github.com/digital-grease/fauxx/blob/main/PRIVACY.md</string>
+    <string name="about_view_full_policy">View full privacy policy online</string>
+    <string name="about_license_title">License</string>
+    <string name="about_license_body">Fauxx is open-source software. Source code and license details are available in the project repository.</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">FAUXX</string>
+    <string name="dashboard_active">ACTIVE</string>
+    <string name="dashboard_paused">PAUSED</string>
+    <string name="dashboard_inactive">INACTIVE</string>
+    <string name="dashboard_today">TODAY</string>
+    <string name="dashboard_this_week">THIS WEEK</string>
 </resources>

@@ -45,6 +45,9 @@ object PreferenceKeys {
 
     // Onboarding
     val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+
+    // User consent for background activity
+    val CONSENT_ACCEPTED = booleanPreferencesKey("consent_accepted")
 }
 
 /**

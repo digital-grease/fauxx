@@ -103,7 +103,7 @@ class PhantomForegroundService : Service() {
     private fun updateNotification() {
         val count = poisonEngine.getTodayActionCount()
         val status = when (poisonEngine.engineState) {
-            EngineState.ACTIVE -> "Active — $count actions today"
+            EngineState.ACTIVE -> "Generating diverse browsing activity — $count actions today"
             EngineState.PAUSED_WIFI -> "Paused — waiting for WiFi"
             EngineState.PAUSED_BATTERY -> "Paused — battery low"
             EngineState.PAUSED_RATE_LIMIT -> "Paused — hourly limit reached"
@@ -148,10 +148,10 @@ class PhantomForegroundService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Phantom Engine",
+            "Privacy Protection",
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Background privacy protection activity"
+            description = "Notifications for Fauxx background browsing diversification"
             setShowBadge(false)
         }
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

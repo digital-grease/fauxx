@@ -159,17 +159,56 @@ private fun WelcomeStep() {
         )
         Spacer(Modifier.height(24.dp))
         Text(
-            text = "Optional: Tell us about yourself",
+            text = "Privacy through noise",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "This data stays on your device and helps us generate noise that's " +
-                "different from your real profile.\n\nSkip if you prefer uniform noise.",
+            text = "Fauxx protects your privacy by generating synthetic browsing " +
+                "activity in the background. Here's what it does:",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(16.dp))
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            DisclosureBullet("Performs web searches across Google, Bing, DuckDuckGo, and Yahoo on diverse topics")
+            DisclosureBullet("Visits a wide variety of websites to diversify your browsing profile")
+            DisclosureBullet("Rotates browser fingerprints (User-Agent, language headers)")
+            DisclosureBullet("Generates DNS lookups for varied domains")
+            DisclosureBullet("All activity runs in the background and uses battery and data")
+        }
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "Optionally, tell us about yourself on the next screens. " +
+                "This stays on your device and helps generate noise that's different " +
+                "from your real profile. Skip if you prefer uniform noise.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun DisclosureBullet(text: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "\u2022",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -348,7 +387,7 @@ private fun ProfessionStep(selected: Profession?, onSelect: (Profession) -> Unit
 private fun RegionStep(selected: Region?, onSelect: (Region) -> Unit) {
     StepContainer(
         title = "Where are you located?",
-        subtitle = "Used to spoof location in regions different from yours"
+        subtitle = "Used to generate searches and browsing activity suggesting other regions"
     ) {
         Region.values().forEach { region ->
             ElevatedFilterChip(
@@ -370,8 +409,9 @@ private fun DoneStep() {
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Fauxx will use your profile to generate noise that's maximally different " +
-                "from your real behavioral signal.",
+            text = "Fauxx will generate diverse browsing activity that's maximally different " +
+                "from your real behavioral signal. Toggle protection on from the Dashboard " +
+                "to start.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

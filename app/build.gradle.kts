@@ -38,6 +38,17 @@ android {
         }
     }
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("play") {
+            dimension = "distribution"
+        }
+        create("full") {
+            dimension = "distribution"
+            applicationIdSuffix = ".full"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
