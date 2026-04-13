@@ -78,6 +78,11 @@ android {
         }
     }
 
+    lint {
+        abortOnError = true
+        warningsAsErrors = false
+    }
+
     testOptions {
         unitTests {
             isReturnDefaultValues = true

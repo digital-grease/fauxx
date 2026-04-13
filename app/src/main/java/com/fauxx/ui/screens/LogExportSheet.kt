@@ -200,6 +200,10 @@ private fun shareViaIntent(context: Context, content: String, fileName: String, 
 }
 
 private fun saveToDownloads(context: Context, content: String, fileName: String) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        Toast.makeText(context, "Save to Downloads requires Android 10+", Toast.LENGTH_SHORT).show()
+        return
+    }
     val values = ContentValues().apply {
         put(MediaStore.Downloads.DISPLAY_NAME, fileName)
         put(MediaStore.Downloads.MIME_TYPE, "text/plain")

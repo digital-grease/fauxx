@@ -2,6 +2,8 @@ package com.fauxx.engine.webview
 
 import android.graphics.Bitmap
 import android.net.http.SslError
+import android.os.Build
+import androidx.annotation.RequiresApi
 import timber.log.Timber
 import android.webkit.SafeBrowsingResponse
 import android.webkit.SslErrorHandler
@@ -73,6 +75,7 @@ class PhantomWebViewClient(
         handler.cancel()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O_MR1)
     override fun onSafeBrowsingHit(
         view: WebView,
         request: WebResourceRequest,

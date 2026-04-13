@@ -32,7 +32,7 @@ class LocationSpoofModule @Inject constructor(
         context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     private var mockProviderAdded = false
 
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION", "WrongConstant")
     override suspend fun start() {
         try {
             locationManager.addTestProvider(

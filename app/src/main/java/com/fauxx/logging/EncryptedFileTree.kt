@@ -149,7 +149,7 @@ class EncryptedFileTree(
             ?: return
         var totalSize = remaining.sumOf { it.length() }
         while (totalSize > MAX_TOTAL_BYTES && remaining.size > 1) {
-            val oldest = remaining.removeFirst()
+            val oldest = remaining.removeAt(0)
             totalSize -= oldest.length()
             oldest.delete()
         }
