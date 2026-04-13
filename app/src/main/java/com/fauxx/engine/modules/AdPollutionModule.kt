@@ -47,21 +47,32 @@ class AdPollutionModule @Inject constructor(
         val url = if (Random.nextFloat() < 0.10f) {
             AD_DASHBOARD_URLS.random()
         } else {
-            crawlListManager.nextUrl(category)?.url ?: return ActionLogEntity(
-                actionType = ActionType.AD_CLICK,
-                category = category,
-                detail = "No eligible URL",
-                success = false
-            )
+            val pending = crawlListManager.nextUrlOrWait(category)
+                ?: crawlListManager.nextUrlOrWait(null)
+            if (pending == null) {
+                return ActionLogEntity(
+                    actionType = ActionType.AD_CLICK,
+                    category = category,
+                    detail = "No eligible URL",
+                    success = false
+                )
+            }
+            if (pending.waitMs > 0) {
+                delay(pending.waitMs)
+                crawlListManager.markVisited(pending.entry.domain)
+            }
+            pending.entry.url
         }
 
-        withContext(Dispatchers.Main) {
+        val success = withContext(Dispatchers.Main) {
             val webView = webViewPool.acquire()
             try {
                 webView.loadUrl(url)
                 delay(Random.nextLong(3_000L, 15_000L))
+                true
             } catch (e: Exception) {
                 Timber.w("Ad page load failed: ${e.message}")
+                false
             } finally {
                 webViewPool.release(webView)
             }
@@ -70,7 +81,8 @@ class AdPollutionModule @Inject constructor(
         return ActionLogEntity(
             actionType = ActionType.AD_CLICK,
             category = category,
-            detail = url
+            detail = url,
+            success = success
         )
     }
 }

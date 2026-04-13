@@ -87,6 +87,8 @@ class ScrapeWorker @AssistedInject constructor(
             webViewPool.acquireForScraper()
         }
 
+        var anySuccess = false
+
         for (scraper in listOf(googleScraper, facebookScraper)) {
             try {
                 val rawCategories = scraper.scrape(scraperWebView)
@@ -106,6 +108,7 @@ class ScrapeWorker @AssistedInject constructor(
                     )
                 )
                 Timber.i("${scraper.platformId}: scraped ${mapped.size} categories")
+                anySuccess = true
 
             } catch (e: Exception) {
                 Timber.e(e, "${scraper.platformId} scrape failed")
@@ -117,6 +120,10 @@ class ScrapeWorker @AssistedInject constructor(
             webViewPool.release(scraperWebView)
         }
 
+        if (!anySuccess) {
+            Timber.w("All scrapers failed — scheduling retry")
+            return Result.retry()
+        }
         return Result.success()
     }
 }

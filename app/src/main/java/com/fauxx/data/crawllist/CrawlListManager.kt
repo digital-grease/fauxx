@@ -62,6 +62,43 @@ class CrawlListManager @Inject constructor(
             }
     }
 
+    /**
+     * Like [nextUrl], but when all candidates are rate-limited, returns the entry
+     * with the shortest remaining cooldown instead of null.
+     *
+     * @return A [PendingCrawlEntry] containing the entry and the milliseconds to wait
+     *   before it becomes eligible (0 if immediately available), or null only if the
+     *   corpus itself is empty for the requested category.
+     */
+    fun nextUrlOrWait(category: CategoryPool? = null): PendingCrawlEntry? {
+        // Fast path: try the normal lookup first
+        val immediate = nextUrl(category)
+        if (immediate != null) return PendingCrawlEntry(immediate, 0L)
+
+        // All candidates are rate-limited — find the one with the shortest remaining wait
+        val now = System.currentTimeMillis()
+        val candidates = if (category != null) {
+            allUrls.filter { it.category == category }
+                .ifEmpty { allUrls }
+        } else {
+            allUrls
+        }
+
+        val eligible = candidates.filter { !blocklist.isUrlBlocked(it.url) }
+        if (eligible.isEmpty()) return null
+
+        // Find the entry whose domain's rate-limit expires soonest
+        val best = eligible.minByOrNull { entry ->
+            val lastVisit = lastVisitByDomain[entry.domain] ?: 0L
+            val remaining = (lastVisit + MIN_DOMAIN_INTERVAL_MS) - now
+            maxOf(0L, remaining)
+        } ?: return null
+
+        val lastVisit = lastVisitByDomain[best.domain] ?: 0L
+        val waitMs = maxOf(0L, (lastVisit + MIN_DOMAIN_INTERVAL_MS) - now)
+        return PendingCrawlEntry(best, waitMs)
+    }
+
     /** Mark a domain as visited at [timestamp]. */
     fun markVisited(domain: String, timestamp: Long = System.currentTimeMillis()) {
         lastVisitByDomain[domain] = timestamp
@@ -86,13 +123,30 @@ class CrawlListManager @Inject constructor(
                 .bufferedReader().readText()
             val type = object : TypeToken<List<CrawlEntryJson>>() {}.type
             val raw: List<CrawlEntryJson> = Gson().fromJson(json, type)
-            raw.mapNotNull { it.toCrawlEntry() }
+            val entries = raw.mapNotNull { it.toCrawlEntry() }
+            val dropped = raw.size - entries.size
+            if (dropped > 0) {
+                Timber.w("CrawlListManager: dropped $dropped of ${raw.size} entries (invalid URL or unknown category)")
+            }
+            if (entries.isEmpty()) {
+                Timber.e("CrawlListManager: crawl corpus is empty after parsing — all URL-dependent modules will be non-functional")
+            }
+            entries
         } catch (e: Exception) {
-            Timber.e(e, "Failed to load crawl_urls.json")
+            Timber.e(e, "Failed to load crawl_urls.json — all URL-dependent modules will be non-functional")
             emptyList()
         }
     }
 }
+
+/**
+ * A crawl entry paired with the milliseconds to wait before it becomes eligible.
+ * A [waitMs] of 0 means immediately available.
+ */
+data class PendingCrawlEntry(
+    val entry: CrawlEntry,
+    val waitMs: Long
+)
 
 /** A single URL entry in the crawl corpus. */
 data class CrawlEntry(

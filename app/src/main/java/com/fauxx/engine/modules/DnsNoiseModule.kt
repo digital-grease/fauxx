@@ -7,6 +7,7 @@ import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.net.InetAddress
 import javax.inject.Inject
@@ -28,10 +29,10 @@ class DnsNoiseModule @Inject constructor(
     override fun isEnabled(): Boolean = profileRepo.getProfile().dnsNoiseEnabled
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
-        val entry = crawlListManager.nextUrl(category)
-            ?: crawlListManager.nextUrl(null)
+        val pending = crawlListManager.nextUrlOrWait(category)
+            ?: crawlListManager.nextUrlOrWait(null)
 
-        if (entry == null) {
+        if (pending == null) {
             return ActionLogEntity(
                 actionType = ActionType.DNS_LOOKUP,
                 category = category,
@@ -39,6 +40,13 @@ class DnsNoiseModule @Inject constructor(
                 success = false
             )
         }
+
+        if (pending.waitMs > 0) {
+            delay(pending.waitMs)
+            crawlListManager.markVisited(pending.entry.domain)
+        }
+
+        val entry = pending.entry
 
         val success = withContext(Dispatchers.IO) {
             try {
