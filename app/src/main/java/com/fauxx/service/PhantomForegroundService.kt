@@ -13,6 +13,7 @@ import timber.log.Timber
 import com.fauxx.R
 import com.fauxx.engine.EngineState
 import com.fauxx.engine.PoisonEngine
+import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +41,7 @@ private const val NOTIFICATION_UPDATE_INTERVAL_MS = 60_000L
 class PhantomForegroundService : Service() {
 
     @Inject lateinit var poisonEngine: PoisonEngine
+    @Inject lateinit var webViewPool: PhantomWebViewPool
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var notificationJob: Job? = null
@@ -84,8 +86,11 @@ class PhantomForegroundService : Service() {
     }
 
     override fun onDestroy() {
-        scope.cancel()
         poisonEngine.destroy()
+        // Clean up WebView pool to release ~15-30MB of memory (3 WebView instances).
+        // Uses a new scope since `scope` is about to be cancelled.
+        kotlinx.coroutines.runBlocking { webViewPool.destroy() }
+        scope.cancel()
         super.onDestroy()
     }
 

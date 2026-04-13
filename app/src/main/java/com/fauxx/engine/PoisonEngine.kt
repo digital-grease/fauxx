@@ -9,8 +9,13 @@ import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.os.Build
 import timber.log.Timber
+import com.fauxx.data.crawllist.CrawlListManager
+import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.db.ActionLogDao
+import com.fauxx.data.location.CityDatabase
 import com.fauxx.data.model.PoisonProfile
+import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.data.querybank.QueryBankManager
 import com.fauxx.di.AdModuleImpl
 import com.fauxx.di.LocationModuleImpl
 import com.fauxx.engine.modules.AppSignalModule
@@ -30,6 +35,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -97,6 +105,10 @@ class PoisonEngine @Inject constructor(
     private val dispatcher: ActionDispatcher,
     private val scheduler: PoissonScheduler,
     private val actionLogDao: ActionLogDao,
+    private val blocklist: DomainBlocklist,
+    private val queryBankManager: QueryBankManager,
+    private val crawlListManager: CrawlListManager,
+    private val cityDatabase: CityDatabase,
     private val searchModule: SearchPoisonModule,
     @AdModuleImpl private val adModule: Module,
     @LocationModuleImpl private val locationModule: Module,
@@ -120,6 +132,7 @@ class PoisonEngine @Inject constructor(
 
     /** Today's successful action count, incremented on each action. Reset on day rollover. */
     private val todayActionCount = AtomicInteger(0)
+    @Volatile
     private var actionCountDayStart = System.currentTimeMillis() - (System.currentTimeMillis() % MS_PER_DAY)
 
     /**
@@ -132,6 +145,13 @@ class PoisonEngine @Inject constructor(
     @Volatile
     var engineState: EngineState = EngineState.STOPPED
         private set
+
+    /**
+     * Health warnings generated at startup when asset data failed to load.
+     * Observable by UI (e.g., DashboardScreen) to show degradation warnings.
+     */
+    private val _healthWarnings = MutableStateFlow<List<String>>(emptyList())
+    val healthWarnings: StateFlow<List<String>> = _healthWarnings.asStateFlow()
 
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context, intent: Intent) {
@@ -147,7 +167,8 @@ class PoisonEngine @Inject constructor(
         }
     }
 
-    /** Returns today's successful action count (non-blocking, cached). */
+    /** Returns today's successful action count (thread-safe, cached). */
+    @Synchronized
     fun getTodayActionCount(): Int {
         val now = System.currentTimeMillis()
         val dayStart = now - (now % MS_PER_DAY)
@@ -187,6 +208,21 @@ class PoisonEngine @Inject constructor(
             )
             engineState = EngineState.ACTIVE
             Timber.i("PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled})")
+            // Fail-closed: if blocklist couldn't load, permanently circuit-break all
+            // URL-loading modules. These modules load arbitrary URLs and MUST have a
+            // working blocklist to prevent navigation to harmful domains.
+            if (blocklist.loadFailed) {
+                val urlModules = listOf(searchModule, cookieModule, adModule, appSignalModule)
+                for (m in urlModules) {
+                    val name = m::class.simpleName ?: "Unknown"
+                    circuitBreakerUntil[name] = Long.MAX_VALUE
+                    Timber.e("Blocklist failed to load — permanently disabling $name")
+                }
+            }
+
+            // Startup asset health check — verify critical data loaded successfully.
+            _healthWarnings.value = checkAssetHealth()
+
             allModules.filter { it.isEnabled() }.forEach { module ->
                 try {
                     module.start()
@@ -364,6 +400,31 @@ class PoisonEngine @Inject constructor(
      *  HIGH (200/hr) → ~3.6s, MEDIUM (60/hr) → ~12s, LOW (12/hr) → 60s. */
     private fun constraintCheckMs(actionsPerHour: Int): Long =
         maxOf(CONSTRAINT_CHECK_MIN_MS, CONSTRAINT_CHECK_BASE_MS / maxOf(1, actionsPerHour / 12).toLong())
+
+    /**
+     * Verifies that critical asset data loaded successfully.
+     * Returns a list of human-readable warnings for any degraded subsystems.
+     */
+    private fun checkAssetHealth(): List<String> {
+        val warnings = mutableListOf<String>()
+        if (blocklist.loadFailed) {
+            warnings.add("Safety blocklist failed to load — URL-based modules disabled")
+        }
+        // Trigger a load of one category to check if query banks are accessible
+        if (queryBankManager.getQueries(CategoryPool.GAMING).isEmpty()) {
+            warnings.add("Query banks failed to load — search noise may be generic")
+        }
+        if (crawlListManager.corpusSize() == 0) {
+            warnings.add("URL corpus is empty — browsing modules will not function")
+        }
+        if (cityDatabase.cities.size <= 1) {
+            warnings.add("City database failed to load — location noise limited to one city")
+        }
+        if (warnings.isNotEmpty()) {
+            Timber.w("Asset health check: ${warnings.size} warning(s): $warnings")
+        }
+        return warnings
+    }
 
     /** One-shot WiFi check used to seed the cache. */
     private fun checkWifiNow(): Boolean {

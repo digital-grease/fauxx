@@ -13,7 +13,7 @@ Fauxx is an open-source Android privacy tool that poisons data broker and ad-tec
 
 ## The Problem
 
-Every search you make, every link you click, every location you visit is collected by data brokers, ad networks, and analytics platforms. Over time, they build a detailed profile of who you are, what you want, and what you're likely to do next. That profile is sold, traded, and used to target you—and to deny you opportunities.
+Every search you make, every link you click, every location you visit is collected by data brokers, ad networks, and analytics platforms. Over time, they build a detailed profile of who you are, what you want, and what you're likely to do next. That profile is sold, traded, and collated with other data and profiles to continue the process.
 
 Fauxx addresses this by injecting continuous, category-weighted synthetic activity that obscures your real interests under a statistical cloud. Your genuine signal becomes noise.
 
