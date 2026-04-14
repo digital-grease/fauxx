@@ -4,7 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import timber.log.Timber
-import androidx.core.content.ContextCompat
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
+import androidx.work.WorkManager
 import com.fauxx.di.PreferenceKeys
 import com.fauxx.di.fauxxDataStore
 import kotlinx.coroutines.flow.first
@@ -14,6 +16,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * Restarts the [PhantomForegroundService] after device reboot, if the engine was previously
  * active. Triggered by BOOT_COMPLETED and MY_PACKAGE_REPLACED broadcasts.
+ *
+ * Uses WorkManager expedited work instead of directly starting the foreground service,
+ * because Android 12+ disallows starting dataSync FGS from BOOT_COMPLETED receivers.
  */
 class BootReceiver : BroadcastReceiver() {
 
@@ -33,15 +38,11 @@ class BootReceiver : BroadcastReceiver() {
                 }
 
                 if (wasEnabled) {
-                    Timber.i("Restarting PhantomForegroundService after boot")
-                    try {
-                        ContextCompat.startForegroundService(
-                            context,
-                            PhantomForegroundService.startIntent(context)
-                        )
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to restart service after boot")
-                    }
+                    Timber.i("Scheduling service restart via WorkManager")
+                    val request = OneTimeWorkRequestBuilder<ServiceRestartWorker>()
+                        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                        .build()
+                    WorkManager.getInstance(context).enqueue(request)
                 }
             }
         }
