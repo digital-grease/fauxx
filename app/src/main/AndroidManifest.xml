@@ -12,9 +12,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- ACCESS_MOCK_LOCATION is declared in src/debug/AndroidManifest.xml only -->
 
-    <!-- Foreground service -->
+    <!-- Foreground service (flavor-specific FGS type permission lives in
+         src/play/AndroidManifest.xml and src/full/AndroidManifest.xml) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Boot receiver -->
@@ -50,17 +50,12 @@
             </intent-filter>
         </activity>
 
-        <!-- Foreground Service -->
+        <!-- Foreground Service. The foregroundServiceType attribute is set per-flavor:
+             - play flavor: specialUse + PROPERTY_SPECIAL_USE_FGS_SUBTYPE
+             - full flavor: dataSync -->
         <service
             android:name=".service.PhantomForegroundService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <!-- WorkManager foreground service declaration for lint compliance -->
-        <service
-            android:name="androidx.work.impl.foreground.SystemForegroundService"
-            android:foregroundServiceType="dataSync"
-            tools:node="merge" />
+            android:exported="false" />
 
         <!-- Boot receiver -->
         <receiver

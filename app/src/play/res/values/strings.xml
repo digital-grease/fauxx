@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Play-flavor string overrides. Only strings that need softer policy-safe wording
+    for the Google Play build are overridden here. All other strings (including the
+    F-Droid/GitHub-only full_version_notice family) are inherited from main.
+-->
+<resources>
+
+    <!--
+        Main build uses: "An open-source privacy tool that poisons data broker and
+        ad-tech profiles by generating continuous, plausible, off-demographic
+        synthetic activity from your device."
+
+        Play softens the attack framing ("poisons...profiles") to a neutral
+        privacy-positive description that still accurately describes the feature.
+    -->
+    <string name="about_app_description">An open-source privacy tool that broadens your browsing profile by generating continuous, varied synthetic activity across many topic categories, making narrow-interest targeting less effective.</string>
+
+</resources>

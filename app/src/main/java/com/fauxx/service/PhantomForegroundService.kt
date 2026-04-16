@@ -66,10 +66,11 @@ class PhantomForegroundService : Service() {
             ACTION_START -> {
                 Timber.i("Starting Phantom service")
                 // startForeground() throws ForegroundServiceStartNotAllowedException (a subclass of
-                // IllegalStateException, API 31+) when the FGS-start is blocked — e.g., a dataSync
-                // FGS started from a BOOT_COMPLETED context chain on Android 14+. We catch that
-                // here so a denial never kills the process; BootReceiver's tap-to-resume
-                // notification is the sanctioned recovery path.
+                // IllegalStateException, API 31+) when the FGS-start is blocked — e.g., from a
+                // BOOT_COMPLETED context chain on Android 14+, or when the flavor-declared FGS
+                // type is not permitted in the current launch context. We catch that here so a
+                // denial never kills the process; BootReceiver's tap-to-resume notification is
+                // the sanctioned recovery path.
                 try {
                     startForeground(NOTIFICATION_ID, buildNotification("Initializing…", 0))
                 } catch (e: IllegalStateException) {

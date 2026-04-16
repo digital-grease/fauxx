@@ -1,0 +1,113 @@
+# F-Droid metadata draft for Fauxx (full flavor).
+#
+# Copy this file into a `fdroiddata` fork at `metadata/com.fauxx.full.yml` and
+# open a merge request at https://gitlab.com/fdroid/fdroiddata. F-Droid's
+# UpdateCheckMode=Tags + AutoUpdateMode=Version config means new tags on
+# https://github.com/digital-grease/fauxx are picked up automatically for
+# subsequent releases; the MR is a one-time submission.
+#
+# This file is a draft — once the MR lands, fdroiddata's copy is canonical.
+# Keep this in-repo copy only as reference for future updates.
+
+Categories:
+  - Security
+  - System
+
+License: AGPL-3.0-only
+
+AuthorName: digital-grease
+AuthorEmail: m.flowersbusiness@gmail.com
+WebSite: https://github.com/digital-grease/fauxx
+SourceCode: https://github.com/digital-grease/fauxx
+IssueTracker: https://github.com/digital-grease/fauxx/issues
+Donate: https://www.buymeacoffee.com/digitalgrease
+
+AutoName: Fauxx
+Summary: Privacy through browsing noise
+
+Description: |-
+    Fauxx is an open-source privacy tool that protects you by generating diverse
+    synthetic browsing activity in the background. By flooding data brokers and
+    ad-tech platforms with plausible off-demographic noise, Fauxx makes your real
+    behavioral signal statistically indistinguishable from fake data.
+
+    This is the FULL version distributed via F-Droid. It includes all modules,
+    including location spoofing and ad profile pollution, which are not available
+    in the Play Store version due to Google's policies.
+
+    HOW IT WORKS
+
+    Fauxx runs quietly in the background and performs diverse browsing activities
+    across many topic categories — searches, page visits, DNS lookups, fingerprint
+    rotation, ad profile pollution, and GPS location spoofing. The goal is to bury
+    your real interests under a mountain of synthetic noise so that data brokers
+    can't build an accurate profile of you.
+
+    FEATURES
+
+    * Diverse search queries across Google, Bing, DuckDuckGo, and Yahoo on topics
+      far from your real interests
+    * Varied website visits across dozens of content categories
+    * Ad profile pollution — loads ad-heavy pages to inject off-demographic
+      ad signals
+    * GPS location spoofing — feeds fake coordinates via mock location provider
+      (requires developer options)
+    * Browser fingerprint rotation (User-Agent, canvas noise, language headers)
+    * DNS query diversification
+    * Smart targeting engine with 3 layers of demographic distancing
+    * Synthetic persona rotation — adopts a new fake identity every week
+    * Poisson-distributed timing that mimics natural human browsing patterns
+    * Full audit log with CSV/JSON export
+    * On-device encryption for all personal data (SQLCipher + Android Keystore)
+    * No accounts, no cloud storage, no analytics, no telemetry
+
+    OPTIONAL DEMOGRAPHIC TARGETING
+
+    Tell Fauxx about yourself (age, gender, interests, profession, region) and it
+    will generate noise that's maximally different from your real profile. All
+    demographic data stays encrypted on your device. Skip the setup entirely
+    for uniform random noise.
+
+    PRIVACY FIRST
+
+    * All data stays on your device
+    * No analytics, no crash reporting, no advertising identifiers
+    * Fully open-source — inspect the code yourself
+    * Clear All Data option to wipe everything instantly
+
+    Fauxx is free, open-source, and contains no ads.
+
+AntiFeatures:
+  NonFreeNet:
+    en-US: |-
+      Fauxx intentionally generates synthetic browsing activity against
+      third-party network services that are not themselves free/libre:
+      Google Search, Bing, Yahoo Search, and the user's opted-in ad-preference
+      pages (Google Ads Settings, Facebook Ad Preferences) when Layer 2
+      targeting is enabled. This traffic is the core feature — the app's
+      purpose is to generate noise visible to these non-free services.
+      No user credentials are sent except by the user's own opt-in interaction
+      with the ad-preference scrapers.
+
+RepoType: git
+Repo: https://github.com/digital-grease/fauxx.git
+
+Builds:
+  - versionName: 0.2.1
+    versionCode: 16
+    commit: v0.2.1
+    subdir: app
+    gradle:
+      - full
+    output: app/build/outputs/apk/full/release/app-full-release-unsigned.apk
+
+# UpdateCheckMode: Tags tells the fdroid bot to notify when a new git tag
+# appears. AutoUpdateMode is deliberately omitted — the project's versionCode
+# is derived from total tag count (not from tag name), so the auto-update bot
+# cannot infer the next versionCode from a new tag. Each new release should
+# land as a manual fdroiddata MR that adds a new Builds block.
+# When the versionCode scheme is changed to something tag-derivable, enable
+# AutoUpdateMode: Version + an appropriate VercodeOperation.
+UpdateCheckMode: Tags
+CurrentVersion: 0.2.1
+CurrentVersionCode: 16

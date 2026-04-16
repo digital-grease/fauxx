@@ -63,8 +63,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_25
-        targetCompatibility = JavaVersion.VERSION_25
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     buildFeatures {
@@ -91,15 +91,19 @@ android {
     }
 }
 
+// JDK 21 LTS. This matches F-Droid buildserver's `default-jdk-headless` on Debian
+// Trixie. Do not bump above 21 without first verifying F-Droid buildserver support
+// — a newer JDK here will fail reproducible-build verification during fdroiddata MR
+// review and block F-Droid inclusion.
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         // Opt in to future Kotlin default: annotations on constructor `val` params attach to
         // both the parameter and the backing field. Silences KT-73255 warnings for Hilt
         // qualifiers like @ApplicationContext. Semantically a no-op for Dagger-consumed
@@ -110,7 +114,7 @@ kotlin {
 
 tasks.withType<JavaCompile>().configureEach {
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(25)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
