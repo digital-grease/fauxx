@@ -3,6 +3,7 @@ package com.fauxx
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.data.querybank.QueryBankManager
+import com.fauxx.data.querybank.QueryBlocklist
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertFalse
@@ -12,7 +13,10 @@ import org.junit.Test
 class MarkovQueryGeneratorTest {
 
     private val queryBankManager: QueryBankManager = mockk()
-    private val generator = MarkovQueryGenerator(queryBankManager)
+    private val queryBlocklist: QueryBlocklist = mockk<QueryBlocklist>().also {
+        every { it.isBlocked(any()) } returns false
+    }
+    private val generator = MarkovQueryGenerator(queryBankManager, queryBlocklist)
 
     @Test
     fun `generate returns non-empty string`() {
@@ -65,6 +69,60 @@ class MarkovQueryGeneratorTest {
             val wordCount = result.trim().split(" ").size
             assertTrue("Query should have at least 1 word", wordCount >= 1)
             assertTrue("Query should not be excessively long", wordCount <= 15)
+        }
+    }
+
+    /**
+     * Regression: generate() previously picked ONE random seed word and aborted the
+     * Markov walk on the first missing bigram, producing 1-word queries like "dry".
+     * With full-phrase seeding + degeneracy fallback, output is never shorter than
+     * the seed phrase from the corpus (which is always >= 3 words in our banks).
+     */
+    @Test
+    fun `generate never produces single-word output when bank has multi-word queries`() {
+        val bank = listOf(
+            "dry mouth remedies",
+            "chronic cough treatment options",
+            "migraine relief home remedies"
+        )
+        every { queryBankManager.getQueries(any()) } returns bank
+        every { queryBankManager.randomQuery(any()) } returns bank.first()
+
+        repeat(200) {
+            val result = generator.generate(CategoryPool.MEDICAL)
+            val wordCount = result.trim().split(" ").filter { it.isNotBlank() }.size
+            assertTrue(
+                "Expected >= 3 words, got ${wordCount}: '$result'",
+                wordCount >= 3
+            )
+        }
+    }
+
+    /**
+     * Regression: the previous one-shot `trained` flag meant only the first-requested
+     * category's bigrams were learned. Asking for a second category then starved the
+     * Markov walk and emitted single seed words. With per-category incremental training,
+     * each category's vocabulary is learned on first use.
+     */
+    @Test
+    fun `generate trains incrementally per category`() {
+        val finance = listOf("how to invest retirement savings wisely")
+        val medical = listOf("symptoms of high blood pressure")
+        every { queryBankManager.getQueries(CategoryPool.FINANCE) } returns finance
+        every { queryBankManager.getQueries(CategoryPool.MEDICAL) } returns medical
+        every { queryBankManager.randomQuery(any()) } returns "fallback"
+
+        // Prime with FINANCE (trains the bigram map on finance vocabulary only)
+        generator.generate(CategoryPool.FINANCE)
+
+        // Now ask for MEDICAL — should still produce plausible output, not degenerate
+        repeat(50) {
+            val result = generator.generate(CategoryPool.MEDICAL)
+            val wordCount = result.trim().split(" ").filter { it.isNotBlank() }.size
+            assertTrue(
+                "MEDICAL output starved after FINANCE trained first: '$result'",
+                wordCount >= 3
+            )
         }
     }
 }

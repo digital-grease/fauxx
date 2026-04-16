@@ -1,5 +1,6 @@
 package com.fauxx.data.querybank
 
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -14,34 +15,63 @@ import kotlin.random.Random
  * Supports optional seed phrases injected from custom user interests. These are trained
  * into the bigram model and used as additional seed candidates for the mapped category,
  * producing queries that incorporate the user's interest terminology (to better suppress it).
+ *
+ * **Safety**: every generated query is checked through [QueryBlocklist] BEFORE being
+ * returned. Bigram chaining can assemble phrases from individually safe source queries
+ * ("how to" + "hang" + "yourself") that are dangerous as dispatched activity. On a
+ * blocked result, generation is resampled up to [MAX_RESAMPLE_ATTEMPTS] times; if every
+ * attempt produces a blocked output, a safe-category fallback query is returned instead.
  */
 @Singleton
 class MarkovQueryGenerator @Inject constructor(
-    private val queryBankManager: QueryBankManager
+    private val queryBankManager: QueryBankManager,
+    private val queryBlocklist: QueryBlocklist
 ) {
     /** bigram[word] = list of words that follow [word] in the training corpus. */
     private val bigramMap = mutableMapOf<String, MutableList<String>>()
-    private var trained = false
+
+    /** Categories whose banks have been folded into [bigramMap]. */
+    private val trainedCategories = mutableSetOf<CategoryPool>()
 
     /** Extra seed phrases per category, injected from custom user interests. */
     private val seedPhrases = mutableMapOf<CategoryPool, MutableList<String>>()
 
     /**
-     * Generate a compound search query for [category] by:
-     * 1. Selecting a seed query from the category bank (or injected seed phrases)
-     * 2. Using the Markov model to extend it with contextually plausible words
+     * Generate a compound search query for [category]. Guaranteed never to return a
+     * query that matches [QueryBlocklist] — if Markov chaining produces a blocked
+     * output, generation is resampled up to [MAX_RESAMPLE_ATTEMPTS] times and then
+     * falls back to a safe-category seed.
      *
      * @param category The target content category.
      * @param targetLength Target number of words in the output (3-8 words).
      */
     fun generate(category: CategoryPool, targetLength: Int = Random.nextInt(3, 9)): String {
+        repeat(MAX_RESAMPLE_ATTEMPTS) { attempt ->
+            val candidate = generateOnce(category, targetLength)
+            if (candidate.isNotEmpty() && !queryBlocklist.isBlocked(candidate)) {
+                return candidate
+            }
+            if (attempt == MAX_RESAMPLE_ATTEMPTS - 1) {
+                Timber.w(
+                    "Markov generator exhausted $MAX_RESAMPLE_ATTEMPTS attempts for " +
+                        "category=$category without producing a safe output — using fallback"
+                )
+            }
+        }
+        return safeFallback()
+    }
+
+    /** One generation pass. May return a blocked output; caller must check. */
+    private fun generateOnce(category: CategoryPool, targetLength: Int): String {
         val queries = queryBankManager.getQueries(category)
         if (queries.isEmpty()) return queryBankManager.randomQuery(category)
 
-        // Train on first call (lazy, across all categories loaded so far)
-        if (!trained) {
+        // Train incrementally per category. Earlier implementation trained one-shot on
+        // whichever category was requested first, leaving the bigram model starved of
+        // vocabulary for every other category — which produced seed words with no
+        // outgoing bigrams and caused single-word queries like "dry".
+        if (trainedCategories.add(category)) {
             train(queries)
-            trained = true
         }
 
         // Build seed pool: category queries + any injected seed phrases for this category
@@ -56,14 +86,33 @@ class MarkovQueryGenerator @Inject constructor(
         val seedWords = seedQuery.split(" ").filter { it.isNotBlank() }
         if (seedWords.isEmpty()) return seedQuery
 
-        val result = mutableListOf(seedWords.random())
-        for (i in 1 until targetLength) {
+        // Seed with the FULL phrase. Previously picked one random word, which threw away
+        // the phrase's structure and frequently produced 1-word outputs when that word
+        // had no outgoing bigram.
+        val result = seedWords.toMutableList()
+        while (result.size < targetLength) {
             val lastWord = result.last().lowercase()
             val next = bigramMap[lastWord]?.randomOrNull() ?: break
             result.add(next)
         }
 
+        // Degeneracy fallback: if we somehow ended up shorter than a plausible query
+        // (e.g. seed was a single word with no bigrams), return the original seed
+        // phrase verbatim — it's always a natural-sounding line from the corpus.
+        if (result.size < MIN_PLAUSIBLE_WORDS) return seedQuery
+
         return result.joinToString(" ").trim()
+    }
+
+    /**
+     * Safe fallback when resample limit is exhausted. Pulls a random query from a
+     * low-risk category (COOKING) whose bank is already post-filtered by
+     * [QueryBankManager]. Checked once more through the blocklist as belt-and-braces;
+     * empty string on failure will be suppressed by [com.fauxx.engine.modules.SearchPoisonModule].
+     */
+    private fun safeFallback(): String {
+        val fallback = queryBankManager.randomQuery(CategoryPool.COOKING)
+        return if (fallback.isNotEmpty() && !queryBlocklist.isBlocked(fallback)) fallback else ""
     }
 
     /**
@@ -78,22 +127,30 @@ class MarkovQueryGenerator @Inject constructor(
                 bigramMap.getOrPut(word) { mutableListOf() }.add(next)
             }
         }
-        trained = bigramMap.isNotEmpty()
     }
 
     /**
      * Inject seed phrases for a category from custom user interests.
-     * Phrases are sanitized (trimmed, lowercased, non-empty words only) and trained
-     * into the bigram model so their vocabulary becomes available for Markov extension.
+     * Phrases are sanitized (trimmed, lowercased, non-empty words only), checked
+     * against [QueryBlocklist], and then trained into the bigram model so their
+     * vocabulary becomes available for Markov extension.
      *
      * PRIVACY: Only call with sanitized interest strings — no raw PII, email addresses,
      * phone numbers, or other identifying information. The caller is responsible for
-     * scrubbing before injection.
+     * scrubbing before injection. User-supplied phrases that match the harmful-query
+     * guard are silently rejected (with a `Timber.w` log).
      */
     fun injectSeedPhrases(category: CategoryPool, phrases: List<String>) {
         val sanitized = phrases
             .map { sanitizeSeedPhrase(it) }
             .filter { it.isNotBlank() }
+            .filter { phrase ->
+                val blocked = queryBlocklist.isBlocked(phrase)
+                if (blocked) {
+                    Timber.w("Rejected user-supplied interest seed: matches harmful-query guard")
+                }
+                !blocked
+            }
         if (sanitized.isEmpty()) return
 
         seedPhrases.getOrPut(category) { mutableListOf() }.addAll(sanitized)
@@ -112,6 +169,14 @@ class MarkovQueryGenerator @Inject constructor(
 
         /** Max words allowed in a seed phrase to prevent abuse. */
         private const val MAX_SEED_WORDS = 6
+
+        /** Minimum words a generated query must have to be emitted; below this we fall
+         *  back to the raw seed phrase from the corpus. */
+        private const val MIN_PLAUSIBLE_WORDS = 3
+
+        /** Maximum number of resample attempts when a generated query is blocked by
+         *  the harmful-query guard. */
+        private const val MAX_RESAMPLE_ATTEMPTS = 5
 
         /**
          * Sanitize a seed phrase: lowercase, strip non-alphanumeric (keep spaces),
