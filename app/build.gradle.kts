@@ -100,6 +100,11 @@ java {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25)
+        // Opt in to future Kotlin default: annotations on constructor `val` params attach to
+        // both the parameter and the backing field. Silences KT-73255 warnings for Hilt
+        // qualifiers like @ApplicationContext. Semantically a no-op for Dagger-consumed
+        // annotations, which are read off the parameter either way.
+        freeCompilerArgs.addAll("-Xannotation-default-target=param-property")
     }
 }
 

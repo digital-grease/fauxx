@@ -123,6 +123,36 @@ fun AboutScreen(onBack: () -> Unit) {
             BodyText(stringResource(R.string.about_deletion_body))
         }
 
+        // Play Store flavor: full-version notice with F-Droid / GitHub links.
+        if (BuildConfig.FLAVOR == "play") {
+            val fdroidUrl = stringResource(R.string.full_version_fdroid_url)
+            val githubUrl = stringResource(R.string.full_version_github_url)
+            AboutCard {
+                SectionTitle(stringResource(R.string.full_version_notice_title))
+                Spacer(Modifier.height(8.dp))
+                BodyText(stringResource(R.string.full_version_notice_body))
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(fdroidUrl)))
+                    }) {
+                        Text(
+                            stringResource(R.string.full_version_notice_fdroid),
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                    OutlinedButton(onClick = {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(githubUrl)))
+                    }) {
+                        Text(
+                            stringResource(R.string.full_version_notice_github),
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                }
+            }
+        }
+
         // License
         AboutCard {
             SectionTitle(stringResource(R.string.about_license_title))
