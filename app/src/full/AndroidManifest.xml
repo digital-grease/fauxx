@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Full (F-Droid / GitHub) flavor manifest overlay.
+
+    F-Droid does not enforce Google's foreground-service-type policy. We keep
+    "dataSync" here because it is the closest runtime-accurate match for the
+    engine's long-running background-network role on Android 14+.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <application>
+        <service
+            android:name=".service.PhantomForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
+    </application>
+
+</manifest>

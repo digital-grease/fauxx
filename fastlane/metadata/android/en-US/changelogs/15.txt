@@ -1,0 +1,6 @@
+• Added a help button on the Dashboard
+• Fixed presentation of off-hours (quiet hours) state
+• Fixed log filter buttons and page-visit filtering
+• Safer Markov query generation (no longer crashes on edge-case corpus input)
+• Fixed a boot-time crash triggered by the foreground service starting from BOOT_COMPLETED
+• Resolved two lint warnings

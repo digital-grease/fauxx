@@ -1,0 +1,2 @@
+• CI/release pipeline now builds the Play (AAB) and Full (APK) flavors in parallel
+• Various build-pipeline fixes

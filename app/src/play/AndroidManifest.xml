@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Play Store flavor manifest overlay.
+
+    Google Play's foreground-service-type policy (effective 2024) requires every FGS
+    to declare a type that matches its actual runtime behavior. "dataSync" is defined
+    as user-initiated transfer of the user's own data to/from the cloud and does not
+    match Fauxx's use case (generating synthetic browsing traffic for privacy).
+    We use "specialUse" and declare the subtype via PROPERTY_SPECIAL_USE_FGS_SUBTYPE
+    so a Play reviewer has a direct plain-language rationale.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <application>
+        <service
+            android:name=".service.PhantomForegroundService"
+            android:foregroundServiceType="specialUse"
+            tools:node="merge">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Generates synthetic, off-profile browsing activity continuously in the background to dilute user-identifying signal available to third-party data brokers and ad-tech trackers. The service cannot be an instant-off/on worker because its privacy value depends on maintaining a stable, human-like traffic rhythm (Poisson-distributed cadence, 5-20 minute gaps, circadian quiet hours) that short-lived tasks cannot sustain." />
+        </service>
+    </application>
+
+</manifest>
