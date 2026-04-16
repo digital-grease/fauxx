@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.os.Build
@@ -164,9 +165,13 @@ class PoisonEngine @Inject constructor(
         }
     }
 
-    private val connectivityReceiver = object : BroadcastReceiver() {
-        override fun onReceive(ctx: Context, intent: Intent) {
-            cachedOnWifi.set(checkWifiNow())
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+            cachedOnWifi.set(caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI))
+        }
+
+        override fun onLost(network: Network) {
+            cachedOnWifi.set(false)
         }
     }
 
@@ -291,20 +296,25 @@ class PoisonEngine @Inject constructor(
         // Seed WiFi state
         cachedOnWifi.set(checkWifiNow())
 
-        // Register ongoing receivers
+        // Register ongoing receivers. Battery still uses a broadcast; connectivity uses
+        // NetworkCallback (CONNECTIVITY_ACTION was deprecated in API 28).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED), Context.RECEIVER_NOT_EXPORTED)
-            context.registerReceiver(connectivityReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION), Context.RECEIVER_NOT_EXPORTED)
         } else {
             context.registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-            @Suppress("DEPRECATION")
-            context.registerReceiver(connectivityReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
+        }
+        runCatching {
+            context.getSystemService(ConnectivityManager::class.java)
+                .registerDefaultNetworkCallback(networkCallback)
         }
     }
 
     private fun unregisterConstraintReceivers() {
         runCatching { context.unregisterReceiver(batteryReceiver) }
-        runCatching { context.unregisterReceiver(connectivityReceiver) }
+        runCatching {
+            context.getSystemService(ConnectivityManager::class.java)
+                .unregisterNetworkCallback(networkCallback)
+        }
     }
 
     private suspend fun runLoop() {
