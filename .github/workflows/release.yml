@@ -6,11 +6,25 @@ on:
       - 'v*'
 
 jobs:
-  build-and-release:
-    name: Build & Publish Release
+  build:
+    name: Build ${{ matrix.flavorName }} Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - flavor: play
+            flavorName: Play
+            gradleTask: bundlePlayRelease
+            artifactSrcDir: app/build/outputs/bundle/playRelease
+            artifactSrcName: app-play-release.aab
+            artifactExt: aab
+          - flavor: full
+            flavorName: Full
+            gradleTask: assembleFullRelease
+            artifactSrcDir: app/build/outputs/apk/full/release
+            artifactSrcName: app-full-release.apk
+            artifactExt: apk
 
     steps:
       - name: Checkout
@@ -34,37 +48,45 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: echo "$KEYSTORE_BASE64" | base64 --decode > app/release.keystore
 
-      - name: Build Play Store AAB
+      - name: Build ${{ matrix.flavorName }} artifact
         env:
           KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
-          ./gradlew bundlePlayRelease \
+          ./gradlew ${{ matrix.gradleTask }} \
             -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/app/release.keystore" \
             -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
-      - name: Build Full APK
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: |
-          ./gradlew assembleFullRelease \
-            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/app/release.keystore" \
-            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
-            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
-
-      - name: Rename artifacts
+      - name: Rename artifact
         run: |
           VERSION="${{ github.ref_name }}"
-          mv app/build/outputs/bundle/playRelease/app-play-release.aab \
-             app/build/outputs/bundle/playRelease/fauxx-play-${VERSION}.aab
-          mv app/build/outputs/apk/full/release/app-full-release.apk \
-             app/build/outputs/apk/full/release/fauxx-full-${VERSION}.apk
+          mv "${{ matrix.artifactSrcDir }}/${{ matrix.artifactSrcName }}" \
+             "${{ matrix.artifactSrcDir }}/fauxx-${{ matrix.flavor }}-${VERSION}.${{ matrix.artifactExt }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.flavor }}
+          path: ${{ matrix.artifactSrcDir }}/fauxx-${{ matrix.flavor }}-*.${{ matrix.artifactExt }}
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -74,5 +96,5 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: true
           files: |
-            app/build/outputs/bundle/playRelease/fauxx-play-${{ github.ref_name }}.aab
-            app/build/outputs/apk/full/release/fauxx-full-${{ github.ref_name }}.apk
+            artifacts/fauxx-play-*.aab
+            artifacts/fauxx-full-*.apk
