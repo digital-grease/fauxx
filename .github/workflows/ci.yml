@@ -8,8 +8,16 @@ on:
 
 jobs:
   build:
-    name: Build & Test
+    name: Build & Test (${{ matrix.flavor }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - flavor: play
+            flavorName: Play
+          - flavor: full
+            flavorName: Full
 
     steps:
       - name: Checkout
@@ -28,36 +36,32 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run unit tests (full flavor)
-        run: ./gradlew testFullDebugUnitTest
+      - name: Run unit tests
+        run: ./gradlew test${{ matrix.flavorName }}DebugUnitTest
 
-      - name: Run unit tests (play flavor)
-        run: ./gradlew testPlayDebugUnitTest
+      - name: Android Lint
+        if: matrix.flavor == 'play'
+        run: ./gradlew lint${{ matrix.flavorName }}Debug
 
-      - name: Android Lint (play flavor)
-        run: ./gradlew lintPlayDebug
-
-      - name: Build debug APKs
-        run: ./gradlew assemblePlayDebug assembleFullDebug
+      - name: Build debug APK
+        run: ./gradlew assemble${{ matrix.flavorName }}Debug
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-${{ matrix.flavor }}
           path: app/build/reports/tests/
 
       - name: Upload lint results
-        if: always()
+        if: always() && matrix.flavor == 'play'
         uses: actions/upload-artifact@v4
         with:
-          name: lint-results
+          name: lint-results-${{ matrix.flavor }}
           path: app/build/reports/lint-results-*.html
 
-      - name: Upload debug APKs
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apks
-          path: |
-            app/build/outputs/apk/play/debug/app-play-debug.apk
-            app/build/outputs/apk/full/debug/app-full-debug.apk
+          name: debug-apk-${{ matrix.flavor }}
+          path: app/build/outputs/apk/${{ matrix.flavor }}/debug/app-${{ matrix.flavor }}-debug.apk
