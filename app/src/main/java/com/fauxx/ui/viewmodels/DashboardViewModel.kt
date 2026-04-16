@@ -76,7 +76,8 @@ class DashboardViewModel @Inject constructor(
         actionLogDao.countSince(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L),
         targetingEngine.getWeights(),
         personaLayer.currentPersona,
-        poisonEngine.healthWarnings
+        poisonEngine.healthWarnings,
+        poisonEngine.engineState
     ) { flows ->
         @Suppress("UNCHECKED_CAST")
         val enabled = flows[0] as Boolean
@@ -87,9 +88,10 @@ class DashboardViewModel @Inject constructor(
         val persona = flows[4] as SyntheticPersona?
         @Suppress("UNCHECKED_CAST")
         val warnings = flows[5] as List<String>
+        val state = flows[6] as EngineState
         DashboardUiState(
             engineEnabled = enabled,
-            engineState = poisonEngine.engineState,
+            engineState = state,
             actionsToday = today,
             actionsThisWeek = week,
             categoryDistribution = weights,

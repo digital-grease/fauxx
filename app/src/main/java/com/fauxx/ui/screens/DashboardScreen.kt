@@ -288,6 +288,7 @@ private fun ProtectionCard(enabled: Boolean, engineState: EngineState, onToggle:
                         EngineState.PAUSED_WIFI -> "Waiting for WiFi connection"
                         EngineState.PAUSED_BATTERY -> "Battery below threshold"
                         EngineState.PAUSED_RATE_LIMIT -> "Hourly rate limit reached"
+                        EngineState.PAUSED_QUIET_HOURS -> "Outside active hours"
                         EngineState.STOPPED -> "Engine stopped"
                     },
                     style = MaterialTheme.typography.bodySmall,

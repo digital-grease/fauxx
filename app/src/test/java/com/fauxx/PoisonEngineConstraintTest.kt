@@ -29,6 +29,8 @@ import io.mockk.verify
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -106,6 +108,40 @@ class PoisonEngineConstraintTest {
         engine.start()
         engine.destroy()
         // No exception = pass. Verifies destroy cancels scope cleanly.
+    }
+
+    @Test
+    fun `isWithinAllowedHours accepts normal window`() {
+        engine = createEngine()
+        val p = profile.copy(allowedHoursStart = 7, allowedHoursEnd = 23)
+        assertTrue(engine.isWithinAllowedHours(p, nowHour = 7))
+        assertTrue(engine.isWithinAllowedHours(p, nowHour = 15))
+        assertTrue(engine.isWithinAllowedHours(p, nowHour = 22))
+        assertFalse(engine.isWithinAllowedHours(p, nowHour = 23))
+        assertFalse(engine.isWithinAllowedHours(p, nowHour = 3))
+        assertFalse(engine.isWithinAllowedHours(p, nowHour = 6))
+    }
+
+    @Test
+    fun `isWithinAllowedHours handles midnight wrap`() {
+        engine = createEngine()
+        val p = profile.copy(allowedHoursStart = 22, allowedHoursEnd = 6)
+        assertTrue(engine.isWithinAllowedHours(p, nowHour = 22))
+        assertTrue(engine.isWithinAllowedHours(p, nowHour = 23))
+        assertTrue(engine.isWithinAllowedHours(p, nowHour = 0))
+        assertTrue(engine.isWithinAllowedHours(p, nowHour = 5))
+        assertFalse(engine.isWithinAllowedHours(p, nowHour = 6))
+        assertFalse(engine.isWithinAllowedHours(p, nowHour = 12))
+        assertFalse(engine.isWithinAllowedHours(p, nowHour = 21))
+    }
+
+    @Test
+    fun `isWithinAllowedHours treats equal start and end as always allowed`() {
+        engine = createEngine()
+        val p = profile.copy(allowedHoursStart = 12, allowedHoursEnd = 12)
+        assertTrue(engine.isWithinAllowedHours(p, nowHour = 0))
+        assertTrue(engine.isWithinAllowedHours(p, nowHour = 12))
+        assertTrue(engine.isWithinAllowedHours(p, nowHour = 23))
     }
 
     @Test

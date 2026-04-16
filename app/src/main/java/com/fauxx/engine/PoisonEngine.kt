@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -59,6 +60,7 @@ enum class EngineState {
     PAUSED_WIFI,
     PAUSED_BATTERY,
     PAUSED_RATE_LIMIT,
+    PAUSED_QUIET_HOURS,
     /** Not started or stopped. */
     STOPPED
 }
@@ -146,9 +148,8 @@ class PoisonEngine @Inject constructor(
     private val recentActionTimestamps = java.util.concurrent.ConcurrentLinkedQueue<Long>()
 
     /** Current engine state for notification/UI display. */
-    @Volatile
-    var engineState: EngineState = EngineState.STOPPED
-        private set
+    private val _engineState = MutableStateFlow(EngineState.STOPPED)
+    val engineState: StateFlow<EngineState> = _engineState.asStateFlow()
 
     /**
      * Health warnings generated at startup when asset data failed to load.
@@ -214,7 +215,7 @@ class PoisonEngine @Inject constructor(
             todayActionCount.set(
                 try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
             )
-            engineState = EngineState.ACTIVE
+            _engineState.value = EngineState.ACTIVE
             Timber.i("PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled})")
             // Fail-closed: if blocklist couldn't load, permanently circuit-break all
             // URL-loading modules. These modules load arbitrary URLs and MUST have a
@@ -253,7 +254,7 @@ class PoisonEngine @Inject constructor(
     fun stop() {
         engineJob?.cancel()
         engineJob = null
-        engineState = EngineState.STOPPED
+        _engineState.value = EngineState.STOPPED
         unregisterConstraintReceivers()
         val modules = allModules
         scope.launch {
@@ -271,7 +272,7 @@ class PoisonEngine @Inject constructor(
     fun destroy() {
         engineJob?.cancel()
         engineJob = null
-        engineState = EngineState.STOPPED
+        _engineState.value = EngineState.STOPPED
         unregisterConstraintReceivers()
         val modules = allModules
         // Fire-and-forget teardown; scope is cancelled after a short grace period so the
@@ -326,7 +327,7 @@ class PoisonEngine @Inject constructor(
             // Constraint checks
             val constraintState = checkConstraints(currentProfile)
             if (constraintState != null) {
-                engineState = constraintState
+                _engineState.value = constraintState
                 delay(constraintRetryMs)
                 continue
             }
@@ -338,13 +339,13 @@ class PoisonEngine @Inject constructor(
                 recentActionTimestamps.poll()
             }
             if (recentActionTimestamps.size >= currentProfile.intensity.actionsPerHour) {
-                engineState = EngineState.PAUSED_RATE_LIMIT
+                _engineState.value = EngineState.PAUSED_RATE_LIMIT
                 Timber.d("Rate limit reached: ${recentActionTimestamps.size}/${currentProfile.intensity.actionsPerHour} actions/hour")
                 delay(RATE_LIMIT_PAUSE_MS)
                 continue
             }
 
-            engineState = EngineState.ACTIVE
+            _engineState.value = EngineState.ACTIVE
 
             // Pick next category
             val category = dispatcher.selectCategory()
@@ -426,7 +427,25 @@ class PoisonEngine @Inject constructor(
             Timber.d("Paused: battery below threshold")
             return EngineState.PAUSED_BATTERY
         }
+        if (!isWithinAllowedHours(currentProfile)) {
+            Timber.d("Paused: outside allowed hours (${currentProfile.allowedHoursStart}-${currentProfile.allowedHoursEnd})")
+            return EngineState.PAUSED_QUIET_HOURS
+        }
         return null
+    }
+
+    /** Returns true if the current local hour falls within the profile's allowed window.
+     *  Handles midnight-wrap (e.g., start=22, end=6 means 22:00 to 06:00). */
+    internal fun isWithinAllowedHours(profile: PoisonProfile, nowHour: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)): Boolean {
+        val start = profile.allowedHoursStart
+        val end = profile.allowedHoursEnd
+        return if (start == end) {
+            true // degenerate: treat as always allowed
+        } else if (start < end) {
+            nowHour in start until end
+        } else {
+            nowHour >= start || nowHour < end
+        }
     }
 
     /** Returns the constraint-check retry interval scaled by intensity.

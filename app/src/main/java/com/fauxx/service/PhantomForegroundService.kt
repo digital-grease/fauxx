@@ -136,11 +136,12 @@ class PhantomForegroundService : Service() {
 
     private fun updateNotification() {
         val count = poisonEngine.getTodayActionCount()
-        val status = when (poisonEngine.engineState) {
+        val status = when (poisonEngine.engineState.value) {
             EngineState.ACTIVE -> "Generating diverse browsing activity — $count actions today"
             EngineState.PAUSED_WIFI -> "Paused — waiting for WiFi"
             EngineState.PAUSED_BATTERY -> "Paused — battery low"
             EngineState.PAUSED_RATE_LIMIT -> "Paused — hourly limit reached"
+            EngineState.PAUSED_QUIET_HOURS -> "Paused — outside active hours"
             EngineState.STOPPED -> "Stopped"
         }
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
