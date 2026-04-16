@@ -1,7 +1,11 @@
 package com.fauxx.ui.screens
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -69,18 +73,61 @@ fun DashboardScreen(
 
     // POST_NOTIFICATIONS permission (Android 13+)
     var notificationDenied by remember { mutableStateOf(false) }
+
+    // Battery-optimization exemption state. Recomputed on every recomposition so that
+    // returning from the system settings screen refreshes the warning card.
+    val powerManager = remember { context.getSystemService(PowerManager::class.java) }
+    var batteryOptimized by remember {
+        mutableStateOf(
+            powerManager?.isIgnoringBatteryOptimizations(context.packageName) == false
+        )
+    }
+    var showBatteryExplainer by remember { mutableStateOf(false) }
+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         notificationDenied = !granted
         // Proceed with engine activation regardless — service works without notification
         viewModel.toggleEngine(true)
+        // After notification flow, prompt for battery-optimization exemption if needed.
+        if (powerManager?.isIgnoringBatteryOptimizations(context.packageName) == false) {
+            showBatteryExplainer = true
+        }
+    }
+
+    val batterySettingsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { _ ->
+        batteryOptimized =
+            powerManager?.isIgnoringBatteryOptimizations(context.packageName) == false
     }
 
     if (showConsent) {
         ConsentDialog(
             onAccept = { viewModel.acceptConsent() },
             onDismiss = { viewModel.dismissConsent() }
+        )
+    }
+
+    if (showBatteryExplainer) {
+        BatteryOptimizationDialog(
+            onAllow = {
+                showBatteryExplainer = false
+                // ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS shows the system dialog
+                // directly; falls back to the settings list if unavailable.
+                val intent = Intent(
+                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    Uri.parse("package:${context.packageName}")
+                )
+                runCatching { batterySettingsLauncher.launch(intent) }
+                    .onFailure {
+                        batterySettingsLauncher.launch(
+                            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                        )
+                    }
+            },
+            onDismiss = { showBatteryExplainer = false }
         )
     }
 
@@ -103,19 +150,29 @@ fun DashboardScreen(
 
         // Notification permission warning
         if (notificationDenied) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    text = "Notification permission denied — background activity indicator is hidden. " +
-                        "Grant notification permission in Settings to see the status notification.",
-                    modifier = Modifier.padding(12.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
+            WarningCard(
+                text = "Notification permission denied — background activity indicator is hidden. " +
+                    "Grant notification permission in Settings to see the status notification.",
+                actionLabel = "Open settings",
+                onAction = {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.fromParts("package", context.packageName, null)
+                    }
+                    runCatching { context.startActivity(intent) }
+                }
+            )
+        }
+
+        // Battery-optimization warning: the OS will doze Fauxx during screen-off if
+        // the app isn't on the unrestricted list. Shown until the user grants exemption.
+        if (batteryOptimized && uiState.engineEnabled) {
+            WarningCard(
+                text = "Android battery optimization is restricting Fauxx. " +
+                    "Background activity will pause when the screen is off. " +
+                    "Allow unrestricted background usage to keep the engine running.",
+                actionLabel = "Allow",
+                onAction = { showBatteryExplainer = true }
+            )
         }
 
         // Health warnings from asset loading
@@ -510,6 +567,73 @@ private fun NoiseRatioCard(ratio: Float) {
             }
         }
     }
+}
+
+@Composable
+private fun WarningCard(
+    text: String,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            if (actionLabel != null && onAction != null) {
+                TextButton(
+                    onClick = onAction,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text(actionLabel)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BatteryOptimizationDialog(onAllow: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Keep Fauxx running in the background",
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Android aggressively pauses background apps to save battery. " +
+                        "For continuous profile poisoning, Fauxx needs to be exempt from battery optimization.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "On the next screen, choose \"Allow\" so the engine can keep " +
+                        "generating synthetic activity while your screen is off.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onAllow) {
+                Text("Continue")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Not now")
+            }
+        }
+    )
 }
 
 @Composable
