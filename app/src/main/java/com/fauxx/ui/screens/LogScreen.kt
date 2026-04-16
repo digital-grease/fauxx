@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
@@ -44,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.model.ActionType
+import com.fauxx.ui.format.label
 import com.fauxx.ui.viewmodels.LogViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -113,20 +116,23 @@ fun LogScreen(
         }
 
         // Type filter chips
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp),
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FilterChip(
-                selected = uiState.filter == null,
-                onClick = { viewModel.setFilter(null) },
-                label = { Text("All") }
-            )
-            ActionType.values().take(4).forEach { type ->
+            item {
+                FilterChip(
+                    selected = uiState.filter == null,
+                    onClick = { viewModel.setFilter(null) },
+                    label = { Text("All") }
+                )
+            }
+            items(ActionType.values()) { type ->
                 FilterChip(
                     selected = uiState.filter == type,
                     onClick = { viewModel.setFilter(type) },
-                    label = { Text(type.name.take(6)) }
+                    label = { Text(type.label) }
                 )
             }
         }
