@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -56,6 +57,18 @@ class DashboardViewModel @Inject constructor(
     /** Whether to show the consent dialog (first-time activation). */
     private val _showConsentDialog = MutableStateFlow(false)
     val showConsentDialog: StateFlow<Boolean> = _showConsentDialog
+
+    /** Whether the "get full version" notice should be shown (Play flavor only, undismissed). */
+    val showFullVersionNotice: StateFlow<Boolean> = dataStore.data
+        .map { it[PreferenceKeys.FULL_VERSION_NOTICE_DISMISSED] != true }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    /** Persists the user's choice to dismiss the full-version notice. */
+    fun dismissFullVersionNotice() {
+        viewModelScope.launch {
+            dataStore.edit { it[PreferenceKeys.FULL_VERSION_NOTICE_DISMISSED] = true }
+        }
+    }
 
     val uiState: StateFlow<DashboardUiState> = combine(
         _enabled,
