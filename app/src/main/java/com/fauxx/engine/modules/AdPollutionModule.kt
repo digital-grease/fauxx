@@ -43,15 +43,19 @@ class AdPollutionModule @Inject constructor(
     override fun isEnabled(): Boolean = profileRepo.getProfile().adPollutionEnabled
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
-        // 10% chance: visit an ad dashboard
-        val url = if (Random.nextFloat() < 0.10f) {
+        // 10% chance: visit an ad dashboard (logged as AD_CLICK);
+        // otherwise: plain crawl-list page fetch (logged as PAGE_VISIT).
+        val isDashboardVisit = Random.nextFloat() < 0.10f
+        val actionType = if (isDashboardVisit) ActionType.AD_CLICK else ActionType.PAGE_VISIT
+
+        val url = if (isDashboardVisit) {
             AD_DASHBOARD_URLS.random()
         } else {
             val pending = crawlListManager.nextUrlOrWait(category)
                 ?: crawlListManager.nextUrlOrWait(null)
             if (pending == null) {
                 return ActionLogEntity(
-                    actionType = ActionType.AD_CLICK,
+                    actionType = actionType,
                     category = category,
                     detail = "No eligible URL",
                     success = false
@@ -79,7 +83,7 @@ class AdPollutionModule @Inject constructor(
         }
 
         return ActionLogEntity(
-            actionType = ActionType.AD_CLICK,
+            actionType = actionType,
             category = category,
             detail = url,
             success = success
