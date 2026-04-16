@@ -132,6 +132,12 @@ class PhantomWebViewPool @Inject constructor(
 
     /**
      * Destroy all WebView instances and release resources.
+     *
+     * WebView is thread-affine: [WebView.destroy] must be called on the thread that
+     * created the WebView (the main thread here; see [initialize]). This function
+     * dispatches to [Dispatchers.Main] internally — **never call it from `runBlocking`
+     * on the main thread**, which would self-deadlock. Invoke it from a coroutine on
+     * a background dispatcher or from a launched cleanup scope.
      */
     suspend fun destroy() = withContext(Dispatchers.Main) {
         pool.forEach { it.destroy() }

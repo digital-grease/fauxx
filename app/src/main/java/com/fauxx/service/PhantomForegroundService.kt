@@ -19,6 +19,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -44,6 +45,13 @@ class PhantomForegroundService : Service() {
     @Inject lateinit var webViewPool: PhantomWebViewPool
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /**
+     * Separate scope for teardown work. Outlives [scope] so cleanup coroutines keep
+     * running after the main engine scope is cancelled in onDestroy.
+     */
+    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private var notificationJob: Job? = null
 
     override fun onCreate() {
@@ -71,14 +79,12 @@ class PhantomForegroundService : Service() {
                 Timber.i("Stopping Phantom service")
                 notificationJob?.cancel()
                 notificationJob = null
-                try {
-                    poisonEngine.stop()
-                } catch (e: Exception) {
-                    Timber.e(e, "Error stopping engine")
-                } finally {
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                    stopSelf()
-                }
+                // poisonEngine.stop() is non-blocking (module teardown runs async on the
+                // engine's own scope). Tearing down here on the main thread is safe.
+                runCatching { poisonEngine.stop() }
+                    .onFailure { Timber.e(it, "Error stopping engine") }
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
             }
         }
 
@@ -86,10 +92,18 @@ class PhantomForegroundService : Service() {
     }
 
     override fun onDestroy() {
-        poisonEngine.destroy()
-        // Clean up WebView pool to release ~15-30MB of memory (3 WebView instances).
-        // Uses a new scope since `scope` is about to be cancelled.
-        kotlinx.coroutines.runBlocking { webViewPool.destroy() }
+        // Both teardown calls are now non-blocking:
+        // - poisonEngine.destroy() dispatches module stop() onto its own IO scope.
+        // - webViewPool.destroy() is a suspend fun that dispatches to Main; we launch it
+        //   on cleanupScope so the current (main) thread is never blocked waiting for it.
+        // Previous implementation used runBlocking { withContext(Dispatchers.Main) { ... } }
+        // on the main thread, which deadlocked and produced 5s input-dispatch ANRs.
+        runCatching { poisonEngine.destroy() }
+            .onFailure { Timber.e(it, "Error destroying engine") }
+        cleanupScope.launch(NonCancellable) {
+            runCatching { webViewPool.destroy() }
+                .onFailure { Timber.e(it, "Error destroying WebView pool") }
+        }
         scope.cancel()
         super.onDestroy()
     }

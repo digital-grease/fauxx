@@ -41,7 +41,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -88,6 +88,9 @@ private const val RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000L
 
 /** Delay when rate limit is hit before rechecking. */
 private const val RATE_LIMIT_PAUSE_MS = 15_000L
+
+/** Maximum time to wait for all modules to finish stop() before giving up. */
+private const val MODULE_STOP_TIMEOUT_MS = 2_000L
 
 /**
  * Core orchestrator for the Fauxx privacy poisoning engine.
@@ -236,16 +239,24 @@ class PoisonEngine @Inject constructor(
         }
     }
 
-    /** Stop the engine and release all module resources. */
+    /**
+     * Stop the engine and release all module resources.
+     *
+     * Safe to call from the main thread: module teardown runs asynchronously on the
+     * engine's IO scope with a bounded timeout. Never blocks the caller.
+     */
     fun stop() {
         engineJob?.cancel()
         engineJob = null
         engineState = EngineState.STOPPED
         unregisterConstraintReceivers()
-        runBlocking {
-            allModules.forEach { runCatching { it.stop() } }
+        val modules = allModules
+        scope.launch {
+            withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
+                modules.forEach { runCatching { it.stop() } }
+            } ?: Timber.w("Module stop timed out after ${MODULE_STOP_TIMEOUT_MS}ms")
+            Timber.i("PoisonEngine stopped")
         }
-        Timber.i("PoisonEngine stopped")
     }
 
     /**
@@ -253,8 +264,20 @@ class PoisonEngine @Inject constructor(
      * to ensure no leaked coroutines survive process cleanup.
      */
     fun destroy() {
-        stop()
-        scope.cancel()
+        engineJob?.cancel()
+        engineJob = null
+        engineState = EngineState.STOPPED
+        unregisterConstraintReceivers()
+        val modules = allModules
+        // Fire-and-forget teardown; scope is cancelled after a short grace period so the
+        // launched stop coroutine has a chance to run. Bounded by timeout to avoid leaks.
+        scope.launch {
+            withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
+                modules.forEach { runCatching { it.stop() } }
+            }
+            scope.cancel()
+            Timber.i("PoisonEngine destroyed")
+        }
     }
 
     private fun registerConstraintReceivers() {
