@@ -1,0 +1,38 @@
+Fauxx is an open-source privacy tool that protects you by generating diverse synthetic browsing activity in the background. By broadening your browsing profile across many interest categories, Fauxx makes your real interests harder to infer from behavioral data.
+
+HOW IT WORKS
+
+Fauxx runs quietly in the background and performs diverse browsing activities across many topic categories — searches, page visits, DNS lookups, and fingerprint rotation. The goal is to make your profile more diverse so that narrow-interest targeting becomes less effective.
+
+FEATURES
+
+• Diverse search queries across Google, Bing, DuckDuckGo, and Yahoo covering a wide range of topics
+• Varied website visits across dozens of content categories to broaden your browsing profile
+• Browser fingerprint rotation (User-Agent, language, and other headers)
+• DNS query diversification
+• Smart targeting engine that weights activity toward categories you don't already engage with
+• Synthetic persona rotation — the app adopts a new browsing pattern every week for temporal variety
+• Poisson-distributed timing that mimics natural human browsing patterns
+• Full audit log of all synthetic activity
+• On-device encryption for all personal data (SQLCipher + Android Keystore)
+• No accounts, no cloud storage, no analytics, no telemetry
+
+OPTIONAL DEMOGRAPHIC PREFERENCES
+
+Optionally tell Fauxx about yourself (age, gender, interests, profession, region) and it will generate activity that's maximally different from your existing profile. All preference data stays encrypted on your device and is never transmitted. Skip the setup entirely if you prefer uniform random activity.
+
+PRIVACY FIRST
+
+• All data stays on your device — nothing is ever sent to our servers (we don't have servers)
+• No analytics, no crash reporting, no advertising identifiers
+• Fully open-source — inspect the code yourself
+• Clear All Data option to wipe everything instantly
+
+BATTERY & DATA CONSCIOUS
+
+• WiFi-only mode to avoid mobile data usage
+• Configurable battery threshold — pauses automatically when battery is low
+• Adjustable intensity (Low / Medium / High)
+• Active hours scheduling — runs only when you want it to
+
+Fauxx is free, open-source, and contains no ads. Your privacy is not for sale.
