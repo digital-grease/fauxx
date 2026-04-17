@@ -23,59 +23,6 @@ IssueTracker: https://github.com/digital-grease/fauxx/issues
 Donate: https://www.buymeacoffee.com/digitalgrease
 
 AutoName: Fauxx
-Summary: Privacy through browsing noise
-
-Description: |-
-    Fauxx is an open-source privacy tool that protects you by generating diverse
-    synthetic browsing activity in the background. By flooding data brokers and
-    ad-tech platforms with plausible off-demographic noise, Fauxx makes your real
-    behavioral signal statistically indistinguishable from fake data.
-
-    This is the FULL version distributed via F-Droid. It includes all modules,
-    including location spoofing and ad profile pollution, which are not available
-    in the Play Store version due to Google's policies.
-
-    HOW IT WORKS
-
-    Fauxx runs quietly in the background and performs diverse browsing activities
-    across many topic categories — searches, page visits, DNS lookups, fingerprint
-    rotation, ad profile pollution, and GPS location spoofing. The goal is to bury
-    your real interests under a mountain of synthetic noise so that data brokers
-    can't build an accurate profile of you.
-
-    FEATURES
-
-    * Diverse search queries across Google, Bing, DuckDuckGo, and Yahoo on topics
-      far from your real interests
-    * Varied website visits across dozens of content categories
-    * Ad profile pollution — loads ad-heavy pages to inject off-demographic
-      ad signals
-    * GPS location spoofing — feeds fake coordinates via mock location provider
-      (requires developer options)
-    * Browser fingerprint rotation (User-Agent, canvas noise, language headers)
-    * DNS query diversification
-    * Smart targeting engine with 3 layers of demographic distancing
-    * Synthetic persona rotation — adopts a new fake identity every week
-    * Poisson-distributed timing that mimics natural human browsing patterns
-    * Full audit log with CSV/JSON export
-    * On-device encryption for all personal data (SQLCipher + Android Keystore)
-    * No accounts, no cloud storage, no analytics, no telemetry
-
-    OPTIONAL DEMOGRAPHIC TARGETING
-
-    Tell Fauxx about yourself (age, gender, interests, profession, region) and it
-    will generate noise that's maximally different from your real profile. All
-    demographic data stays encrypted on your device. Skip the setup entirely
-    for uniform random noise.
-
-    PRIVACY FIRST
-
-    * All data stays on your device
-    * No analytics, no crash reporting, no advertising identifiers
-    * Fully open-source — inspect the code yourself
-    * Clear All Data option to wipe everything instantly
-
-    Fauxx is free, open-source, and contains no ads.
 
 AntiFeatures:
   NonFreeNet:
@@ -93,9 +40,9 @@ RepoType: git
 Repo: https://github.com/digital-grease/fauxx.git
 
 Builds:
-  - versionName: 0.2.1
-    versionCode: 16
-    commit: v0.2.1
+  - versionName: 0.2.2
+    versionCode: 15
+    commit: 86d239be7ae7b42adb6cbd073f5cb66d2ab1259f
     subdir: app
     gradle:
       - full
@@ -109,5 +56,5 @@ Builds:
 # When the versionCode scheme is changed to something tag-derivable, enable
 # AutoUpdateMode: Version + an appropriate VercodeOperation.
 UpdateCheckMode: Tags
-CurrentVersion: 0.2.1
-CurrentVersionCode: 16
+CurrentVersion: 0.2.2
+CurrentVersionCode: 15

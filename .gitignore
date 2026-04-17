@@ -42,6 +42,7 @@ captures/
 *.keystore
 signing.properties
 keystore.properties
+adi-registration.properties
 
 # Google Services
 google-services.json
