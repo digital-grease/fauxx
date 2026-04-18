@@ -40,21 +40,19 @@ RepoType: git
 Repo: https://github.com/digital-grease/fauxx.git
 
 Builds:
-  - versionName: 0.2.2
-    versionCode: 15
-    commit: 86d239be7ae7b42adb6cbd073f5cb66d2ab1259f
+  - versionName: 0.2.4
+    versionCode: 204
+    commit: TBD-after-tag-push
     subdir: app
     gradle:
       - full
-    output: app/build/outputs/apk/full/release/app-full-release-unsigned.apk
 
-# UpdateCheckMode: Tags tells the fdroid bot to notify when a new git tag
-# appears. AutoUpdateMode is deliberately omitted — the project's versionCode
-# is derived from total tag count (not from tag name), so the auto-update bot
-# cannot infer the next versionCode from a new tag. Each new release should
-# land as a manual fdroiddata MR that adds a new Builds block.
-# When the versionCode scheme is changed to something tag-derivable, enable
-# AutoUpdateMode: Version + an appropriate VercodeOperation.
+# Version is single-sourced from app/version.properties so F-Droid's static parser
+# can read it via UpdateCheckData (the gradle file uses a runtime function call,
+# which the parser cannot resolve). AutoUpdateMode: Version + UpdateCheckMode: Tags
+# means new tags are auto-promoted as long as version.properties is bumped at the tag.
+AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 0.2.2
-CurrentVersionCode: 15
+UpdateCheckData: app/version.properties|versionCode=(\d+)|.|versionName=(\S+)
+CurrentVersion: 0.2.4
+CurrentVersionCode: 204

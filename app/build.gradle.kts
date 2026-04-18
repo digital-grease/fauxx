@@ -1,34 +1,11 @@
-fun gitVersionName(): String {
-    val result = providers.exec {
-        commandLine("git", "describe", "--tags", "--abbrev=0")
-        isIgnoreExitValue = true
-    }
-    return result.standardOutput.asText.get().trim().removePrefix("v").ifEmpty { "0.0.0" }
-}
+import java.util.Properties
 
-/**
- * Derive versionCode from the version name so it's stable across machines and
- * independent of local-vs-remote git tag drift. Scheme: major * 10000 + minor * 100 + patch.
- *
- *   0.2.3  → 203
- *   0.3.0  → 300
- *   1.0.0  → 10000
- *   2.3.4  → 20304
- *
- * Baseline on Play is versionCode 15 (from v0.2.2 under the prior tag-count scheme).
- * The new scheme produces ≥ 100 for any release ≥ 0.1.0, so Play's strict-monotonic
- * versionCode rule is preserved.
- *
- * Supports up to 99 minor / 99 patch releases per major. Pre-release suffixes
- * ("0.3.0-beta.1") are tolerated — the suffix is discarded and the base triple is used.
- */
-fun gitVersionCode(): Int {
-    val name = gitVersionName()
-    val parts = name.split(".", "-").mapNotNull { it.toIntOrNull() }
-    val major = parts.getOrNull(0) ?: 0
-    val minor = parts.getOrNull(1) ?: 0
-    val patch = parts.getOrNull(2) ?: 0
-    return (major * 10_000 + minor * 100 + patch).coerceAtLeast(1)
+// Version is single-sourced from app/version.properties. F-Droid's checkupdates bot
+// reads the same file via UpdateCheckData; bump both keys together when releasing.
+// Scheme: versionCode = major*10000 + minor*100 + patch (≥100 for any release ≥0.1.0,
+// keeping Play's strict-monotonic rule satisfied above the v0.2.2 baseline of 15).
+val versionProps = Properties().apply {
+    file("version.properties").reader().use { load(it) }
 }
 
 plugins {
@@ -46,8 +23,8 @@ android {
         applicationId = "com.fauxx"
         minSdk = 26
         targetSdk = 36
-        versionCode = gitVersionCode()
-        versionName = gitVersionName()
+        versionCode = versionProps.getProperty("versionCode").toInt()
+        versionName = versionProps.getProperty("versionName")
 
         testInstrumentationRunner = "com.fauxx.HiltTestRunner"
         vectorDrawables {
