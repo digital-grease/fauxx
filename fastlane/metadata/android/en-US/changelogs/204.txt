@@ -1,0 +1,1 @@
+• Build configuration fixes for F-Droid compatibility (version metadata in app/version.properties)
