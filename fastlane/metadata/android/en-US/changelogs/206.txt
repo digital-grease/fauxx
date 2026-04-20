@@ -1,0 +1,2 @@
+• Fix: Dashboard no longer reports blocklist/URL corpus failures on Play builds
+• Fix: "File a GitHub Issue" export no longer 500s on large logs

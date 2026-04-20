@@ -84,10 +84,10 @@ fun LogExportSheet(
             ExportOption(
                 icon = { Icon(Icons.Outlined.BugReport, contentDescription = null, modifier = Modifier.size(24.dp)) },
                 label = "File a GitHub Issue",
-                description = "Opens a new issue — requires a GitHub account",
+                description = "Logs are copied to your clipboard — paste into the issue body",
                 onClick = {
                     copyToClipboard(context, content, silent = true)
-                    openGitHubIssue(context, content, fileName)
+                    openGitHubIssue(context, fileName)
                     onDismiss()
                 }
             )
@@ -152,24 +152,21 @@ private fun ExportOption(
     }
 }
 
-private const val MAX_URL_LOG_BYTES = 4096
-
-private fun openGitHubIssue(context: Context, content: String, fileName: String) {
+private fun openGitHubIssue(context: Context, fileName: String) {
     val label = if (fileName.contains("crash")) "crash report" else "debug logs"
-    val truncated = content.length > MAX_URL_LOG_BYTES
-    val logSnippet = if (truncated) content.takeLast(MAX_URL_LOG_BYTES) else content
-    val clipboardNote = if (truncated) {
-        "\n\n> Logs were truncated. Full $label copied to your clipboard — paste below if needed.\n"
-    } else ""
 
-    val body = "## Description\n\n[Describe what happened]\n\n" +
-        "## Logs\n$clipboardNote\n```\n$logSnippet\n```\n"
+    // The body template scaffolds the issue; logs go in via clipboard paste by the
+    // user. Do NOT embed log content in the URL — GitHub returns 500 when the
+    // URL-encoded body parameter grows past its request-line limit, and log payloads
+    // inflate 2–3× under URL encoding.
+    val bodyTemplate = "## Description\n\n[Describe what happened]\n\n" +
+        "## Logs\n\nLogs were copied to your clipboard — paste them between the fences below.\n\n```\n\n```\n"
 
-    val url = "$GITHUB_ISSUES_URL?labels=bug&title=Bug+report+with+$label&body=${Uri.encode(body)}"
+    val url = "$GITHUB_ISSUES_URL?labels=bug&title=Bug+report+with+$label&body=${Uri.encode(bodyTemplate)}"
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
     try {
         context.startActivity(intent)
-        Toast.makeText(context, "Full logs copied to clipboard", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Full logs copied to clipboard — paste into the issue body", Toast.LENGTH_LONG).show()
     } catch (_: ActivityNotFoundException) {
         Toast.makeText(context, "No browser found — logs copied to clipboard", Toast.LENGTH_LONG).show()
     }

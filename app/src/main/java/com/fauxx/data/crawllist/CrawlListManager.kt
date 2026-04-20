@@ -1,6 +1,7 @@
 package com.fauxx.data.crawllist
 
 import android.content.Context
+import androidx.annotation.Keep
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import com.fauxx.data.querybank.CategoryPool
@@ -158,7 +159,14 @@ data class CrawlEntry(
     val category: CategoryPool
 )
 
-/** Raw JSON representation of a crawl entry. */
+/**
+ * Raw JSON representation of a crawl entry.
+ *
+ * @Keep: without this, R8 in release builds strips or renames the `url` / `category`
+ * fields, and Gson's reflection-based deserialization returns all-blank entries —
+ * every one then drops in [toCrawlEntry] and the corpus loads as empty.
+ */
+@Keep
 private data class CrawlEntryJson(
     val url: String = "",
     val category: String = ""

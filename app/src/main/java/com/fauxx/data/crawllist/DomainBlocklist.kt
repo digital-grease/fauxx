@@ -1,6 +1,7 @@
 package com.fauxx.data.crawllist
 
 import android.content.Context
+import androidx.annotation.Keep
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import com.google.gson.Gson
@@ -91,7 +92,14 @@ class DomainBlocklist @Inject constructor(
     }
 }
 
-/** JSON structure of blocklist.json. */
+/**
+ * JSON structure of blocklist.json.
+ *
+ * @Keep: without this, R8 in release builds strips or renames this type, and
+ * Gson's reflection-based deserialization returns an empty object — flipping
+ * [DomainBlocklist.loadFailed] to `true` and fail-closing every URL module.
+ */
+@Keep
 private data class BlocklistJson(
     val domains: List<String> = emptyList(),
     val patterns: List<String> = emptyList()

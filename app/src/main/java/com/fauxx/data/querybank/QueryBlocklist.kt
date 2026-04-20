@@ -1,6 +1,7 @@
 package com.fauxx.data.querybank
 
 import android.content.Context
+import androidx.annotation.Keep
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import com.google.gson.Gson
@@ -106,7 +107,14 @@ class QueryBlocklist @Inject constructor(
     }
 }
 
-/** JSON structure of `assets/harmful_queries.json`. */
+/**
+ * JSON structure of `assets/harmful_queries.json`.
+ *
+ * @Keep: without this, R8 in release builds strips or renames this type, and
+ * Gson's reflection-based deserialization returns an empty object — flipping
+ * [QueryBlocklist.loadFailed] to `true` and fail-closing every query chokepoint.
+ */
+@Keep
 private data class HarmfulQueriesJson(
     @com.google.gson.annotations.SerializedName("class_a_terms")
     val classATerms: List<String> = emptyList(),

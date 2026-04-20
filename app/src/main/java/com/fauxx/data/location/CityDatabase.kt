@@ -1,6 +1,7 @@
 package com.fauxx.data.location
 
 import android.content.Context
+import androidx.annotation.Keep
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import com.google.gson.Gson
@@ -42,7 +43,15 @@ class CityDatabase @Inject constructor(
     }
 }
 
-/** A single city entry with geographic coordinates. */
+/**
+ * A single city entry with geographic coordinates.
+ *
+ * @Keep: without this, R8 in release builds renames the `name` / `lat` / `lng` /
+ * `region` fields, and Gson's reflection-based deserialization produces blank
+ * entries — LocationSpoofModule would silently fall back to the single hardcoded
+ * "New York" default.
+ */
+@Keep
 data class CityCoord(
     val name: String,
     val lat: Double,
