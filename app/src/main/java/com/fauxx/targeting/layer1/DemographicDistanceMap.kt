@@ -1,6 +1,7 @@
 package com.fauxx.targeting.layer1
 
 import android.content.Context
+import androidx.annotation.Keep
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.fauxx.data.querybank.CategoryPool
 import com.google.gson.Gson
@@ -77,7 +78,14 @@ class DemographicDistanceMap @Inject constructor(
     }
 }
 
-/** Internal model matching the JSON structure of demographic_distance_rules.json. */
+/**
+ * Internal model matching the JSON structure of demographic_distance_rules.json.
+ *
+ * @Keep: without this, R8 in release builds strips or renames the field names,
+ * and Gson's reflection-based deserialization returns rules with all-null fields.
+ * L1 self-report layer then silently degrades to neutral weights.
+ */
+@Keep
 private data class RuleJson(
     val ageRange: String? = null,
     val gender: String? = null,
