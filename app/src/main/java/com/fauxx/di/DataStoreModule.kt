@@ -51,6 +51,9 @@ object PreferenceKeys {
 
     // Play Store flavor: user dismissed the "get full version" notice
     val FULL_VERSION_NOTICE_DISMISSED = booleanPreferencesKey("full_version_notice_dismissed")
+
+    // UI theme preference (SYSTEM / LIGHT / DARK)
+    val THEME_MODE = stringPreferencesKey("theme_mode")
 }
 
 /**

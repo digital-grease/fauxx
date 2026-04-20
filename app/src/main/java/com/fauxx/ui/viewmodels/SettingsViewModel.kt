@@ -11,6 +11,7 @@ import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer2.PlatformProfileDao
 import com.fauxx.targeting.layer3.PersonaHistoryDao
+import com.fauxx.ui.theme.ThemeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,8 @@ data class SettingsUiState(
     val wifiOnly: Boolean = true,
     val batteryThreshold: Int = 20,
     val allowedHoursStart: Int = 7,
-    val allowedHoursEnd: Int = 23
+    val allowedHoursEnd: Int = 23,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM
 )
 
 /**
@@ -48,6 +50,7 @@ class SettingsViewModel @Inject constructor(
     fun setBatteryThreshold(v: Int) { update { it.copy(batteryThreshold = v) } }
     fun setAllowedHoursStart(v: Int) { update { it.copy(allowedHoursStart = v) } }
     fun setAllowedHoursEnd(v: Int) { update { it.copy(allowedHoursEnd = v) } }
+    fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
 
     /** Delete all locally-stored data and reset settings to defaults. */
     fun resetToDefaults() {
@@ -84,7 +87,8 @@ class SettingsViewModel @Inject constructor(
                     wifiOnly = new.wifiOnly,
                     batteryThreshold = new.batteryThreshold,
                     allowedHoursStart = new.allowedHoursStart,
-                    allowedHoursEnd = new.allowedHoursEnd
+                    allowedHoursEnd = new.allowedHoursEnd,
+                    themeMode = new.themeMode
                 )
             }
         }
@@ -97,7 +101,8 @@ class SettingsViewModel @Inject constructor(
             wifiOnly = p.wifiOnly,
             batteryThreshold = p.batteryThreshold,
             allowedHoursStart = p.allowedHoursStart,
-            allowedHoursEnd = p.allowedHoursEnd
+            allowedHoursEnd = p.allowedHoursEnd,
+            themeMode = p.themeMode
         )
     }
 }
