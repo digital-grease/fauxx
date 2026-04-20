@@ -1,5 +1,7 @@
 package com.fauxx.data.model
 
+import com.fauxx.ui.theme.ThemeMode
+
 /**
  * Runtime configuration for the Fauxx poison engine. Persisted via Jetpack DataStore.
  *
@@ -19,6 +21,7 @@ package com.fauxx.data.model
  * @property layer1Enabled Whether Layer 1 (self-report targeting) is active.
  * @property layer2Enabled Whether Layer 2 (adversarial scraper) is active.
  * @property layer3Enabled Whether Layer 3 (persona rotation) is active.
+ * @property themeMode UI theme preference (system / light / dark).
  */
 data class PoisonProfile(
     val enabled: Boolean = false,
@@ -36,5 +39,6 @@ data class PoisonProfile(
     val dnsNoiseEnabled: Boolean = true,
     val layer1Enabled: Boolean = false,
     val layer2Enabled: Boolean = false,
-    val layer3Enabled: Boolean = true
+    val layer3Enabled: Boolean = true,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM
 )

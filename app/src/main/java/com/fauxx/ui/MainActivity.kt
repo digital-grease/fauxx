@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,8 +21,11 @@ import com.fauxx.ui.navigation.FauxxNavGraph
 import com.fauxx.ui.screens.CrashReportDialog
 import com.fauxx.ui.screens.LogExportSheet
 import com.fauxx.ui.theme.FauxxTheme
+import com.fauxx.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -43,8 +47,17 @@ class MainActivity : ComponentActivity() {
 
         reconcileEngineState(intent)
 
+        val themeFlow = fauxxDataStore.data
+            .map { prefs ->
+                runCatching {
+                    ThemeMode.valueOf(prefs[PreferenceKeys.THEME_MODE] ?: ThemeMode.SYSTEM.name)
+                }.getOrDefault(ThemeMode.SYSTEM)
+            }
+            .distinctUntilChanged()
+
         setContent {
-            FauxxTheme {
+            val themeMode by themeFlow.collectAsState(initial = ThemeMode.SYSTEM)
+            FauxxTheme(mode = themeMode) {
                 var showOnboarding by remember { mutableStateOf<Boolean?>(null) }
                 var showCrashDialog by remember {
                     mutableStateOf(crashDetector.hasCrashReport())

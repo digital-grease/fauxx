@@ -554,6 +554,7 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.LAYER1_ENABLED] = p.layer1Enabled
         prefs[com.fauxx.di.PreferenceKeys.LAYER2_ENABLED] = p.layer2Enabled
         prefs[com.fauxx.di.PreferenceKeys.LAYER3_ENABLED] = p.layer3Enabled
+        prefs[com.fauxx.di.PreferenceKeys.THEME_MODE] = p.themeMode.name
     }
 
     private fun prefsToProfile(prefs: androidx.datastore.preferences.core.Preferences): PoisonProfile =
@@ -576,6 +577,12 @@ class PoisonProfileRepository @Inject constructor(
             dnsNoiseEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_DNS] ?: true,
             layer1Enabled = prefs[com.fauxx.di.PreferenceKeys.LAYER1_ENABLED] ?: false,
             layer2Enabled = prefs[com.fauxx.di.PreferenceKeys.LAYER2_ENABLED] ?: false,
-            layer3Enabled = prefs[com.fauxx.di.PreferenceKeys.LAYER3_ENABLED] ?: true
+            layer3Enabled = prefs[com.fauxx.di.PreferenceKeys.LAYER3_ENABLED] ?: true,
+            themeMode = runCatching {
+                com.fauxx.ui.theme.ThemeMode.valueOf(
+                    prefs[com.fauxx.di.PreferenceKeys.THEME_MODE]
+                        ?: com.fauxx.ui.theme.ThemeMode.SYSTEM.name
+                )
+            }.getOrDefault(com.fauxx.ui.theme.ThemeMode.SYSTEM)
         )
 }

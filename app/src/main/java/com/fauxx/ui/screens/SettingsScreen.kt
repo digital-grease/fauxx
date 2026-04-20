@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.BuildConfig
 import com.fauxx.data.model.IntensityLevel
+import com.fauxx.ui.theme.ThemeMode
 import com.fauxx.ui.viewmodels.SettingsViewModel
 
 /**
@@ -90,12 +91,54 @@ fun SettingsScreen(
                         ),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(level.name, style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            text = level.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (uiState.intensity == level)
+                                MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             }
             Text(
                 text = "${uiState.intensity.actionsPerHour} actions/hour",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Theme
+        SettingsCard {
+            Text("Theme", style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ThemeMode.values().forEach { mode ->
+                    Button(
+                        onClick = { viewModel.setThemeMode(mode) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (uiState.themeMode == mode)
+                                MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = mode.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (uiState.themeMode == mode)
+                                MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+            Text(
+                text = when (uiState.themeMode) {
+                    ThemeMode.SYSTEM -> "Follows your device theme"
+                    ThemeMode.LIGHT -> "Always light"
+                    ThemeMode.DARK -> "Always dark"
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
