@@ -24,7 +24,8 @@ data class SettingsUiState(
     val batteryThreshold: Int = 20,
     val allowedHoursStart: Int = 7,
     val allowedHoursEnd: Int = 23,
-    val themeMode: ThemeMode = ThemeMode.SYSTEM
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val resumeOnBoot: Boolean = true
 )
 
 /**
@@ -51,6 +52,7 @@ class SettingsViewModel @Inject constructor(
     fun setAllowedHoursStart(v: Int) { update { it.copy(allowedHoursStart = v) } }
     fun setAllowedHoursEnd(v: Int) { update { it.copy(allowedHoursEnd = v) } }
     fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
+    fun setResumeOnBoot(v: Boolean) { update { it.copy(resumeOnBoot = v) } }
 
     /** Delete all locally-stored data and reset settings to defaults. */
     fun resetToDefaults() {
@@ -88,7 +90,8 @@ class SettingsViewModel @Inject constructor(
                     batteryThreshold = new.batteryThreshold,
                     allowedHoursStart = new.allowedHoursStart,
                     allowedHoursEnd = new.allowedHoursEnd,
-                    themeMode = new.themeMode
+                    themeMode = new.themeMode,
+                    resumeOnBoot = new.resumeOnBoot
                 )
             }
         }
@@ -102,7 +105,8 @@ class SettingsViewModel @Inject constructor(
             batteryThreshold = p.batteryThreshold,
             allowedHoursStart = p.allowedHoursStart,
             allowedHoursEnd = p.allowedHoursEnd,
-            themeMode = p.themeMode
+            themeMode = p.themeMode,
+            resumeOnBoot = p.resumeOnBoot
         )
     }
 }

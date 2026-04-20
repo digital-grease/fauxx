@@ -144,4 +144,14 @@ class SettingsScreenTest {
         // After selecting LOW, the actions/hour label should update
         composeRule.onNodeWithText("LOW").assertIsDisplayed()
     }
+
+    @Test
+    fun resumeAfterRebootToggle_isDisplayed() {
+        composeRule.setContent {
+            FauxxTheme {
+                SettingsScreen()
+            }
+        }
+        composeRule.onNodeWithText("Resume after reboot").assertIsDisplayed()
+    }
 }

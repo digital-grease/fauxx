@@ -167,6 +167,9 @@ object AppModule {
 
                         // Onboarding
                         prefs[PreferenceKeys.ONBOARDING_COMPLETED] = legacy.getBoolean("onboarding_completed", false)
+
+                        // Post-reboot resume (default on — preserves pre-toggle behavior)
+                        prefs[PreferenceKeys.RESUME_ON_BOOT] = legacy.getBoolean("resume_on_boot", true)
                     }
                 } ?: Timber.w("DataStore write timed out during legacy migration")
             }
