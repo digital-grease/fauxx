@@ -1,0 +1,2 @@
+• Settings: new "Resume after reboot" toggle controlling post-boot resume notification
+• Theme: added Light and System (follow device) modes alongside Dark

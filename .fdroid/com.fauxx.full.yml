@@ -42,7 +42,14 @@ Repo: https://github.com/digital-grease/fauxx.git
 Builds:
   - versionName: 0.2.4
     versionCode: 204
-    commit: TBD-after-tag-push
+    commit: 86b3810cbfd04e44b0d5e4dd38b9db6fc1c68d90
+    subdir: app
+    gradle:
+      - full
+
+  - versionName: 0.2.5
+    versionCode: 205
+    commit: fda3712ad75cda3e976d95c00f7370eb0bf24ace
     subdir: app
     gradle:
       - full
@@ -54,5 +61,5 @@ Builds:
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
 UpdateCheckData: app/version.properties|versionCode=(\d+)|.|versionName=(\S+)
-CurrentVersion: 0.2.4
-CurrentVersionCode: 204
+CurrentVersion: 0.2.5
+CurrentVersionCode: 205
