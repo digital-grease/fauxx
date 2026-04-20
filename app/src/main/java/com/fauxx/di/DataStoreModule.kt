@@ -54,6 +54,11 @@ object PreferenceKeys {
 
     // UI theme preference (SYSTEM / LIGHT / DARK)
     val THEME_MODE = stringPreferencesKey("theme_mode")
+
+    // Post-reboot behavior: when true, BootReceiver posts a "tap to resume" notification
+    // if the engine was enabled pre-reboot. Android 14+ blocks true FGS auto-start from
+    // BOOT_COMPLETED for our FGS types; this gates the notification path only.
+    val RESUME_ON_BOOT = booleanPreferencesKey("resume_on_boot")
 }
 
 /**

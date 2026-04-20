@@ -22,6 +22,9 @@ import com.fauxx.ui.theme.ThemeMode
  * @property layer2Enabled Whether Layer 2 (adversarial scraper) is active.
  * @property layer3Enabled Whether Layer 3 (persona rotation) is active.
  * @property themeMode UI theme preference (system / light / dark).
+ * @property resumeOnBoot When true, show a "tap to resume" notification after device
+ *   reboot if the engine was enabled pre-reboot. True FGS auto-start is blocked by
+ *   Android 14+ for our FGS types.
  */
 data class PoisonProfile(
     val enabled: Boolean = false,
@@ -40,5 +43,6 @@ data class PoisonProfile(
     val layer1Enabled: Boolean = false,
     val layer2Enabled: Boolean = false,
     val layer3Enabled: Boolean = true,
-    val themeMode: ThemeMode = ThemeMode.SYSTEM
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val resumeOnBoot: Boolean = true
 )

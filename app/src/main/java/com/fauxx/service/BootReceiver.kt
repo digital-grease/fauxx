@@ -30,7 +30,11 @@ private const val RESUME_NOTIFICATION_ID = 42
  * Tapping it opens [MainActivity] with [MainActivity.EXTRA_RESUME_ENGINE], and the engine
  * starts from user interaction — always an allowed FGS-start context.
  *
- * If the user stopped the engine before rebooting, this receiver does nothing.
+ * Posting the notification requires BOTH:
+ *  - [PreferenceKeys.ENABLED] was true pre-reboot, AND
+ *  - [PreferenceKeys.RESUME_ON_BOOT] is true (user-controlled toggle in Settings).
+ *
+ * If either is false, this receiver does nothing.
  */
 class BootReceiver : BroadcastReceiver() {
 
@@ -40,20 +44,23 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 Timber.i("Boot/update received, checking if engine should resume")
 
-                // Read the enabled flag from DataStore with a timeout to avoid
+                // Read both flags from DataStore in a single read with a timeout to avoid
                 // exceeding the BroadcastReceiver's ~10s execution limit.
-                val wasEnabled = runBlocking {
+                val (wasEnabled, resumeOnBoot) = runBlocking {
                     withTimeoutOrNull(5_000L) {
                         val prefs = context.fauxxDataStore.data.first()
-                        prefs[PreferenceKeys.ENABLED] ?: false
-                    } ?: false
+                        (prefs[PreferenceKeys.ENABLED] ?: false) to
+                            (prefs[PreferenceKeys.RESUME_ON_BOOT] ?: true)
+                    } ?: (false to true)
                 }
 
-                if (wasEnabled) {
-                    Timber.i("Engine was enabled pre-reboot; posting resume notification")
-                    postResumeNotification(context)
-                } else {
-                    Timber.i("Engine was disabled pre-reboot; no action")
+                when {
+                    !wasEnabled -> Timber.i("Engine was disabled pre-reboot; no action")
+                    !resumeOnBoot -> Timber.i("Resume-on-boot disabled by user; no action")
+                    else -> {
+                        Timber.i("Engine was enabled pre-reboot; posting resume notification")
+                        postResumeNotification(context)
+                    }
                 }
             }
         }

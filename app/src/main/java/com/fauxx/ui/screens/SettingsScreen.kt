@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -162,6 +163,31 @@ fun SettingsScreen(
                 Switch(
                     checked = uiState.wifiOnly,
                     onCheckedChange = { viewModel.setWifiOnly(it) }
+                )
+            }
+        }
+
+        // Resume after reboot
+        SettingsCard {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Resume after reboot", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "After a reboot, show a notification to resume protection. " +
+                            "Android blocks apps from silently starting themselves in the background, " +
+                            "so a tap is required.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = uiState.resumeOnBoot,
+                    onCheckedChange = { viewModel.setResumeOnBoot(it) }
                 )
             }
         }
