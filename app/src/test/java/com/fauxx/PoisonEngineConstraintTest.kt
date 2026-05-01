@@ -66,7 +66,7 @@ class PoisonEngineConstraintTest {
         coEvery { selectCategory() } returns CategoryPool.GAMING
     }
     private val scheduler: PoissonScheduler = mockk {
-        every { nextDelayMs(any(), any(), any()) } returns 100L
+        every { nextDelayMs(any(), any(), any(), any(), any()) } returns 100L
     }
     private val actionLogDao: ActionLogDao = mockk(relaxed = true)
 

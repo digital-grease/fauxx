@@ -213,6 +213,7 @@ All configurable values are exposed in the app UI and backed by Room preferences
 
 - **Per-domain rate limit:** 5 seconds (CrawlListManager)
 - **Action timing:** Poisson-distributed with human-like bursts (3–7 actions, then 5–20 min gaps)
+- **Cross-niche dwell:** Lognormal dwell-time multiplier on category transitions (e.g., Finance → Legal) with a 30s floor — defeats heuristic bot detection that flags sub-second niche switches
 - **Circadian pattern:** Near-zero activity 11pm–7am local time
 - **Layer 3 rotation:** Every 7 days ± [1, 3] days jitter
 - **Layer 2 scrape interval:** Every 7 days (configurable via WorkManager)

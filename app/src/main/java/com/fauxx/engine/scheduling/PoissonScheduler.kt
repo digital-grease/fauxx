@@ -1,9 +1,12 @@
 package com.fauxx.engine.scheduling
 
+import com.fauxx.data.querybank.CategoryPool
 import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.exp
 import kotlin.math.ln
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 /**
@@ -14,6 +17,14 @@ import kotlin.random.Random
  * - Produces bursts of 3-7 actions close together, then gaps of 5-20 minutes
  * - Near-zero activity between 11pm-7am
  * - Inter-arrival times follow exponential distribution (Poisson process property)
+ *
+ * Cross-niche dwell time:
+ * Heuristic bot-detection engines (e.g., Google GWS) flag sub-second transitions between
+ * disparate content niches (Finance → Legal in 4s) as a high-signal bot indicator. To
+ * avoid this, [nextDelayMs] accepts the previous and next category and applies a
+ * lognormal dwell-time multiplier whenever the categories differ. Within-topic activity
+ * (same category) still allows the original burst behavior, since real users fire
+ * multiple queries on the same subject in quick succession.
  */
 @Singleton
 class PoissonScheduler @Inject constructor() {
@@ -23,18 +34,34 @@ class PoissonScheduler @Inject constructor() {
         const val DEFAULT_QUIET_START = 23
         const val DEFAULT_QUIET_END = 7
 
+        /** Floor for cross-niche dwell — humans rarely switch topics in under 30 seconds. */
+        private const val CROSS_NICHE_FLOOR_MS = 30_000L
+
+        /**
+         * Lognormal parameters for the cross-niche dwell multiplier. Tuned so:
+         * - median multiplier ≈ 1.0 (i.e. multiplier = e^mu = 1)
+         * - p95 multiplier ≈ 4.5×
+         * The multiplier is applied on top of the Poisson exponential so per-hour rate
+         * targets degrade gracefully rather than being violated.
+         */
+        private const val DWELL_MU = 0.0
+        private const val DWELL_SIGMA = 0.9
     }
 
     /**
      * Compute the delay in milliseconds until the next action should fire.
      *
      * @param actionsPerHour Target action rate from [com.fauxx.data.model.IntensityLevel].
+     * @param prev Previously executed category, or null for the first action this run.
+     * @param next Category about to be executed.
      * @param allowedStart Hour of day (0-23) when activity may begin.
      * @param allowedEnd Hour of day (0-23) when activity must stop.
      * @return Delay in milliseconds. May be large if currently in quiet hours.
      */
     fun nextDelayMs(
         actionsPerHour: Int,
+        prev: CategoryPool? = null,
+        next: CategoryPool? = null,
         allowedStart: Int = DEFAULT_QUIET_END,
         allowedEnd: Int = DEFAULT_QUIET_START
     ): Long {
@@ -50,14 +77,34 @@ class PoissonScheduler @Inject constructor() {
         // rate during active hours, no need to scale by active fraction.
         val effectiveRate = actionsPerHour.toFloat()
 
-        // Burst-gap behavior: 30% chance of burst mode (short delay), 70% normal
-        return if (Random.nextFloat() < 0.30f) {
-            // Burst: 2-30 seconds
+        val sameTopic = prev == null || next == null || prev == next
+
+        // Burst-gap behavior: 30% chance of burst mode, but ONLY for same-topic transitions.
+        // Cross-niche bursts are the exact bot signal we are avoiding.
+        return if (sameTopic && Random.nextFloat() < 0.30f) {
+            // Burst: 2-30 seconds (intra-topic only)
             Random.nextLong(2_000L, 30_000L)
         } else {
-            // Normal: exponential inter-arrival time
-            poissonDelay(effectiveRate)
+            val baseDelay = poissonDelay(effectiveRate)
+            if (sameTopic) {
+                baseDelay
+            } else {
+                // Cross-niche: scale up by a lognormal dwell multiplier and enforce a floor.
+                val dwell = (baseDelay * lognormalMultiplier()).toLong()
+                maxOf(CROSS_NICHE_FLOOR_MS, dwell)
+            }
         }
+    }
+
+    /**
+     * Sample a lognormal-distributed multiplier for cross-niche dwell scaling.
+     * Uses Box-Muller to generate a standard normal, then exponentiates.
+     */
+    private fun lognormalMultiplier(): Double {
+        val u1 = Random.nextDouble().coerceAtLeast(1e-12)
+        val u2 = Random.nextDouble()
+        val z = sqrt(-2.0 * ln(u1)) * kotlin.math.cos(2.0 * Math.PI * u2)
+        return exp(DWELL_MU + DWELL_SIGMA * z)
     }
 
     /**

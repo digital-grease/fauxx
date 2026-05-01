@@ -319,6 +319,10 @@ class PoisonEngine @Inject constructor(
     }
 
     private suspend fun runLoop() {
+        // Tracks the last successfully-executed category so the scheduler can apply
+        // human-like dwell time on cross-niche transitions. In-memory only — a fresh
+        // engine run starts a fresh "browsing session," which is realistic.
+        var lastCategory: CategoryPool? = null
         while (scope.isActive) {
             val currentProfile = profile.getProfile()
 
@@ -406,9 +410,14 @@ class PoisonEngine @Inject constructor(
             val execElapsed = System.currentTimeMillis() - execStart
             val scheduledMs = scheduler.nextDelayMs(
                 actionsPerHour = currentProfile.intensity.actionsPerHour,
+                prev = lastCategory,
+                next = category,
                 allowedStart = currentProfile.allowedHoursStart,
                 allowedEnd = currentProfile.allowedHoursEnd
             )
+            // Update lastCategory only on success — failed actions shouldn't poison the
+            // dwell signal (a circuit-broken module isn't really "browsing" anything).
+            if (logEntry.success) lastCategory = category
             val effectiveDelay = maxOf(0L, scheduledMs - execElapsed)
             Timber.d("Action: $moduleName/$category exec=${execElapsed}ms scheduled=${scheduledMs}ms effective=${effectiveDelay}ms")
             delay(effectiveDelay)
