@@ -41,9 +41,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.BuildConfig
+import com.fauxx.R
 import com.fauxx.data.model.IntensityLevel
+import com.fauxx.locale.SupportedLocale
 import com.fauxx.ui.theme.ThemeMode
 import com.fauxx.ui.viewmodels.SettingsViewModel
 
@@ -56,6 +59,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val languageState by viewModel.languageState.collectAsState()
     var showClearDialog by remember { mutableStateOf(false) }
     var showIntensityMenu by remember { mutableStateOf(false) }
     var showLogExportSheet by remember { mutableStateOf(false) }
@@ -104,6 +108,40 @@ fun SettingsScreen(
             }
             Text(
                 text = "${uiState.intensity.actionsPerHour} actions/hour",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // App language
+        SettingsCard {
+            Text(
+                stringResource(R.string.settings_language_title),
+                style = MaterialTheme.typography.titleSmall
+            )
+            Spacer(Modifier.height(8.dp))
+            LanguagePickerOption(
+                label = stringResource(R.string.settings_language_system_default),
+                selected = languageState.userOverride == null,
+                enabled = true,
+                onClick = { viewModel.setLanguage(null) }
+            )
+            SupportedLocale.values().forEach { locale ->
+                val shipped = locale in languageState.shippedLocales
+                LanguagePickerOption(
+                    label = locale.displayName,
+                    selected = languageState.userOverride == locale,
+                    enabled = shipped,
+                    suffix = if (!shipped) stringResource(R.string.settings_language_coming_soon) else null,
+                    onClick = { viewModel.setLanguage(locale) }
+                )
+            }
+            Text(
+                text = if (languageState.userOverride == null) {
+                    stringResource(R.string.settings_language_subtitle_system)
+                } else {
+                    stringResource(R.string.settings_language_subtitle_explicit)
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -358,5 +396,48 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp), content = content)
+    }
+}
+
+@Composable
+private fun LanguagePickerOption(
+    label: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    suffix: String? = null
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.surface,
+            disabledContainerColor = MaterialTheme.colorScheme.surface
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = when {
+                    selected -> MaterialTheme.colorScheme.onPrimary
+                    !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
+            )
+            if (suffix != null) {
+                Text(
+                    text = suffix,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            }
+        }
     }
 }

@@ -4,6 +4,8 @@ import com.fauxx.data.crawllist.CrawlEntry
 import com.fauxx.data.crawllist.CrawlListManager
 import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.locale.LocaleManager
+import com.fauxx.locale.SupportedLocale
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -138,11 +140,11 @@ class CrawlListManagerTest {
 
     private fun createManagerWithUrls(urls: List<CrawlEntry>): CrawlListManager {
         val context: android.content.Context = mockk(relaxed = true)
-        val manager = CrawlListManager(context, blocklist)
-        // Use reflection to set the allUrls field since it's loaded from assets
-        val field = CrawlListManager::class.java.getDeclaredField("allUrls\$delegate")
-        field.isAccessible = true
-        field.set(manager, lazy { urls })
+        val localeManager: LocaleManager = mockk(relaxed = true) {
+            every { currentLocale } returns SupportedLocale.EN
+        }
+        val manager = CrawlListManager(context, blocklist, localeManager)
+        manager.replaceUrlsForTest(SupportedLocale.EN, urls)
         return manager
     }
 }

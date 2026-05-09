@@ -1,0 +1,198 @@
+[
+  {
+    "archetype": "paris_cadre_tech",
+    "ageRange": "AGE_25_34",
+    "interests": ["TECHNOLOGY", "TRAVEL", "FITNESS"],
+    "region": "FRANCE",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "paris_journaliste",
+    "ageRange": "AGE_35_44",
+    "interests": ["POLITICS", "HISTORY", "ENTERTAINMENT"],
+    "region": "FRANCE",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "paris_etudiante",
+    "ageRange": "AGE_18_24",
+    "interests": ["ACADEMIC", "MUSIC", "FASHION"],
+    "region": "FRANCE",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "lyon_chef_cuisinier",
+    "ageRange": "AGE_35_44",
+    "interests": ["COOKING", "FOOD", "ENTERTAINMENT"],
+    "region": "FRANCE",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "marseille_pecheur",
+    "ageRange": "AGE_55_64",
+    "interests": ["OUTDOOR_RECREATION", "FOOD", "AUTOMOTIVE"],
+    "region": "FRANCE",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "bordeaux_vigneron",
+    "ageRange": "AGE_45_54",
+    "interests": ["AGRICULTURE", "FOOD", "BUSINESS"],
+    "region": "FRANCE",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "toulouse_ingenieur_aerospatial",
+    "ageRange": "AGE_35_44",
+    "interests": ["SCIENCE", "TECHNOLOGY", "OUTDOOR_RECREATION"],
+    "region": "FRANCE",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "nice_retraite",
+    "ageRange": "AGE_65_PLUS",
+    "interests": ["RETIREMENT", "TRAVEL", "OUTDOOR_RECREATION"],
+    "region": "FRANCE",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "lille_enseignante",
+    "ageRange": "AGE_35_44",
+    "interests": ["ACADEMIC", "PARENTING", "HISTORY"],
+    "region": "FRANCE",
+    "profession": "TEACHER"
+  },
+  {
+    "archetype": "rennes_militante_eco",
+    "ageRange": "AGE_25_34",
+    "interests": ["ENVIRONMENT", "POLITICS", "OUTDOOR_RECREATION"],
+    "region": "FRANCE",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "strasbourg_avocate",
+    "ageRange": "AGE_35_44",
+    "interests": ["LEGAL", "POLITICS", "TRAVEL"],
+    "region": "FRANCE",
+    "profession": "LEGAL"
+  },
+  {
+    "archetype": "nantes_artisan",
+    "ageRange": "AGE_45_54",
+    "interests": ["CRAFTS", "HOME_IMPROVEMENT", "MUSIC"],
+    "region": "FRANCE",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "bretagne_agriculteur",
+    "ageRange": "AGE_55_64",
+    "interests": ["AGRICULTURE", "ENVIRONMENT", "FOOD"],
+    "region": "FRANCE",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "ile_de_france_infirmiere",
+    "ageRange": "AGE_25_34",
+    "interests": ["MEDICAL", "FITNESS", "PARENTING"],
+    "region": "FRANCE",
+    "profession": "HEALTHCARE"
+  },
+  {
+    "archetype": "montpellier_etudiant_medecine",
+    "ageRange": "AGE_18_24",
+    "interests": ["MEDICAL", "ACADEMIC", "GAMING"],
+    "region": "FRANCE",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "montreal_developpeuse",
+    "ageRange": "AGE_25_34",
+    "interests": ["TECHNOLOGY", "GAMING", "MUSIC"],
+    "region": "QUEBEC",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "montreal_journaliste",
+    "ageRange": "AGE_35_44",
+    "interests": ["POLITICS", "ENTERTAINMENT", "HISTORY"],
+    "region": "QUEBEC",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "quebec_city_fonctionnaire",
+    "ageRange": "AGE_45_54",
+    "interests": ["POLITICS", "HISTORY", "OUTDOOR_RECREATION"],
+    "region": "QUEBEC",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "gaspesie_pecheur",
+    "ageRange": "AGE_55_64",
+    "interests": ["OUTDOOR_RECREATION", "FOOD", "AUTOMOTIVE"],
+    "region": "QUEBEC",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "laurentides_motoneigiste",
+    "ageRange": "AGE_45_54",
+    "interests": ["OUTDOOR_RECREATION", "AUTOMOTIVE", "SPORTS"],
+    "region": "QUEBEC",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "bruxelles_eurocrate",
+    "ageRange": "AGE_35_44",
+    "interests": ["POLITICS", "TRAVEL", "FINANCE"],
+    "region": "BELGIUM",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "liege_brasseur",
+    "ageRange": "AGE_45_54",
+    "interests": ["FOOD", "BUSINESS", "CRAFTS"],
+    "region": "BELGIUM",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "wallonie_retraitee",
+    "ageRange": "AGE_65_PLUS",
+    "interests": ["RETIREMENT", "COOKING", "PETS"],
+    "region": "BELGIUM",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "geneve_banquier",
+    "ageRange": "AGE_45_54",
+    "interests": ["FINANCE", "BUSINESS", "REAL_ESTATE"],
+    "region": "SWITZERLAND",
+    "profession": "FINANCE_PROF"
+  },
+  {
+    "archetype": "lausanne_chercheuse",
+    "ageRange": "AGE_25_34",
+    "interests": ["SCIENCE", "ACADEMIC", "OUTDOOR_RECREATION"],
+    "region": "SWITZERLAND",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "valais_skieur",
+    "ageRange": "AGE_25_34",
+    "interests": ["OUTDOOR_RECREATION", "SPORTS", "TRAVEL"],
+    "region": "SWITZERLAND",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "afrique_francophone_diaspora",
+    "ageRange": "AGE_25_34",
+    "interests": ["MUSIC", "FOOD", "PARENTING"],
+    "region": "WESTERN_EUROPE",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "antilles_creole",
+    "ageRange": "AGE_35_44",
+    "interests": ["FOOD", "MUSIC", "TRAVEL"],
+    "region": "WESTERN_EUROPE",
+    "profession": "OTHER"
+  }
+]

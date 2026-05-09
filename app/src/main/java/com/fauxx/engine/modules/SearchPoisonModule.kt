@@ -8,6 +8,8 @@ import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.data.querybank.QueryBankManager
 import com.fauxx.data.querybank.QueryBlocklist
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.locale.LocaleManager
+import com.fauxx.locale.SupportedLocale
 import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import okhttp3.OkHttpClient
@@ -16,19 +18,46 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
 
-/** Search engines to rotate across. */
+/**
+ * One search-engine endpoint plus its locale-aware URL builder.
+ *
+ * Each engine localizes results via a different mechanism:
+ *  - Google: `hl=<lang>&gl=<REGION>` query parameters
+ *  - Bing: `setmkt=<lang>-<REGION>` query parameter
+ *  - DuckDuckGo: `kl=<lang>-<region>` query parameter (lowercase region)
+ *  - Yahoo: subdomain swap (`es.search.yahoo.com`, `fr.search.yahoo.com`)
+ *
+ * Returning a fully-built URL keeps engine-specific quirks isolated and makes locale
+ * changes a single point of update.
+ */
+private data class SearchEngine(
+    val name: String,
+    val build: (encodedQuery: String, locale: SupportedLocale) -> String
+)
+
 private val SEARCH_ENGINES = listOf(
-    "https://www.google.com/search?q=",
-    "https://www.bing.com/search?q=",
-    "https://duckduckgo.com/?q=",
-    "https://search.yahoo.com/search?p="
+    SearchEngine("google") { q, l ->
+        "https://www.google.com/search?q=$q&hl=${l.tag}&gl=${l.defaultRegion}"
+    },
+    SearchEngine("bing") { q, l ->
+        "https://www.bing.com/search?q=$q&setmkt=${l.tag}-${l.defaultRegion}"
+    },
+    SearchEngine("duckduckgo") { q, l ->
+        "https://duckduckgo.com/?q=$q&kl=${l.tag}-${l.defaultRegion.lowercase()}"
+    },
+    SearchEngine("yahoo") { q, l ->
+        "https://${l.yahooSubdomainPrefix}search.yahoo.com/search?p=$q"
+    }
 )
 
 /**
  * Executes synthetic search queries across multiple search engines.
  * Follows 1-3 result links with random dwell time (2-30 seconds).
  *
- * Query selection is category-weighted via the ActionDispatcher.
+ * Query selection is category-weighted via the ActionDispatcher. Search-engine URLs are
+ * locale-aware via [LocaleManager]: in Spanish or French mode the `hl=`/`setmkt`/`kl`
+ * parameters and the Yahoo subdomain switch so the dispatched query lands on the
+ * region-localized SERP rather than the English default.
  *
  * **Safety**: final dispatch gate. Every query is checked through [QueryBlocklist]
  * one last time before the HTTP request is built. If a query reaches this point
@@ -45,7 +74,8 @@ class SearchPoisonModule @Inject constructor(
     private val httpClient: OkHttpClient,
     private val demographicDao: DemographicProfileDao,
     private val customInterestMapper: CustomInterestMapper,
-    private val queryBlocklist: QueryBlocklist
+    private val queryBlocklist: QueryBlocklist,
+    private val localeManager: LocaleManager
 ) : Module {
 
     override suspend fun start() {
@@ -104,13 +134,13 @@ class SearchPoisonModule @Inject constructor(
 
         val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
         val engine = SEARCH_ENGINES.random()
-        val url = "$engine$encodedQuery"
+        val url = engine.build(encodedQuery, localeManager.currentLocale)
 
         try {
             val request = Request.Builder().url(url).get().build()
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    Timber.d("Search request to $engine returned ${response.code}")
+                    Timber.d("Search request to ${engine.name} returned ${response.code}")
                 }
             }
         } catch (e: Exception) {

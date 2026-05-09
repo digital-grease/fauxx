@@ -5,11 +5,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.locale.LocaleManager
+import com.fauxx.locale.SupportedLocale
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer1.UserDemographicProfile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,10 +35,17 @@ private val NINETY_DAYS_MS = TimeUnit.DAYS.toMillis(90)
 class PersonaGenerator @Inject constructor(
     @ApplicationContext private val context: Context,
     private val historyDao: PersonaHistoryDao,
-    private val demographicProfileDao: DemographicProfileDao
+    private val demographicProfileDao: DemographicProfileDao,
+    private val localeManager: LocaleManager
 ) {
     private val gson = Gson()
-    private val templates: List<PersonaTemplate> by lazy { loadTemplates() }
+    private val templatesByLocale = ConcurrentHashMap<SupportedLocale, List<PersonaTemplate>>()
+
+    /** Templates for the active locale. Resolved on each access so locale changes are picked up. */
+    private val templates: List<PersonaTemplate>
+        get() = templatesByLocale.getOrPut(localeManager.currentLocale) {
+            loadTemplates(localeManager.currentLocale)
+        }
 
     companion object {
         private const val MAX_ATTEMPTS = 10
@@ -227,14 +237,20 @@ class PersonaGenerator @Inject constructor(
         listOf("US_NORTHEAST", "US_SOUTHEAST", "US_MIDWEST", "US_SOUTHWEST", "US_WEST",
             "CANADA", "UK", "WESTERN_EUROPE").random()
 
-    private fun loadTemplates(): List<PersonaTemplate> {
+    private fun loadTemplates(locale: SupportedLocale): List<PersonaTemplate> {
+        val localePath = "persona_templates/${locale.tag}.json"
+        val legacyPath = "persona_templates.json"
         return try {
-            val json = context.assets.open("persona_templates.json")
-                .bufferedReader().readText()
+            val stream = runCatching { context.assets.open(localePath) }
+                .getOrElse {
+                    if (locale == SupportedLocale.EN) context.assets.open(legacyPath)
+                    else throw it
+                }
+            val json = stream.bufferedReader().readText()
             val type = object : TypeToken<List<PersonaTemplate>>() {}.type
             gson.fromJson(json, type)
         } catch (e: Exception) {
-            Timber.e(e, "Failed to load persona_templates.json")
+            Timber.e(e, "Failed to load persona_templates for locale=${locale.tag}")
             emptyList()
         }
     }

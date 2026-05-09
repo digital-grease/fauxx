@@ -3,6 +3,8 @@ package com.fauxx
 import android.content.Context
 import android.content.res.AssetManager
 import com.fauxx.data.querybank.QueryBlocklist
+import com.fauxx.locale.LocaleManager
+import com.fauxx.locale.SupportedLocale
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -16,24 +18,35 @@ import java.io.IOException
  * Unit tests for [QueryBlocklist] — the runtime content filter that sits between
  * the query corpus and the dispatch path. See `harmful_queries.json` for the
  * trigger list and `.devloop/spikes/harmful-query-guard.md` for the threat model.
+ *
+ * Tests configure the active locale to EN and stub only the legacy
+ * `harmful_queries.json` path; QueryBlocklist's EN-fallback to that path keeps
+ * pre-multilingual fixtures working.
  */
 class QueryBlocklistTest {
+
+    private fun mockLocaleManager(locale: SupportedLocale = SupportedLocale.EN): LocaleManager =
+        mockk(relaxed = true) {
+            every { currentLocale } returns locale
+        }
 
     private fun makeBlocklistWithJson(json: String): QueryBlocklist {
         val context: Context = mockk()
         val assetManager: AssetManager = mockk()
         every { context.assets } returns assetManager
+        every { assetManager.open("harmful_queries/en.json") } throws IOException("not present")
         every { assetManager.open("harmful_queries.json") } returns
             ByteArrayInputStream(json.toByteArray())
-        return QueryBlocklist(context)
+        return QueryBlocklist(context, mockLocaleManager())
     }
 
     private fun makeBlocklistWithMissingAsset(): QueryBlocklist {
         val context: Context = mockk()
         val assetManager: AssetManager = mockk()
         every { context.assets } returns assetManager
+        every { assetManager.open("harmful_queries/en.json") } throws IOException("missing")
         every { assetManager.open("harmful_queries.json") } throws IOException("missing")
-        return QueryBlocklist(context)
+        return QueryBlocklist(context, mockLocaleManager())
     }
 
     private val sampleJson = """

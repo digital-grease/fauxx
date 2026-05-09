@@ -91,6 +91,68 @@
     <string name="full_version_fdroid_url">https://f-droid.org/packages/com.fauxx.full/</string>
     <string name="full_version_github_url">https://github.com/digital-grease/fauxx/releases</string>
 
+    <!-- Settings: app language -->
+    <string name="settings_language_title">App language</string>
+    <string name="settings_language_subtitle_system">Follows your device language</string>
+    <string name="settings_language_subtitle_explicit">Synthetic activity will also use this language</string>
+    <string name="settings_language_system_default">System default</string>
+    <string name="settings_language_coming_soon">Coming soon</string>
+
+    <!-- Demographic enum labels (onboarding pickers) -->
+    <string name="age_18_24">18–24</string>
+    <string name="age_25_34">25–34</string>
+    <string name="age_35_44">35–44</string>
+    <string name="age_45_54">45–54</string>
+    <string name="age_55_64">55–64</string>
+    <string name="age_65_plus">65+</string>
+
+    <string name="gender_male">Male</string>
+    <string name="gender_female">Female</string>
+    <string name="gender_prefer_not_to_say">Prefer not to say</string>
+
+    <string name="profession_student">Student</string>
+    <string name="profession_teacher">Teacher</string>
+    <string name="profession_engineer">Engineer</string>
+    <string name="profession_healthcare">Healthcare worker</string>
+    <string name="profession_legal">Legal</string>
+    <string name="profession_finance_prof">Business / finance</string>
+    <string name="profession_retail">Retail worker</string>
+    <string name="profession_trades">Skilled trades</string>
+    <string name="profession_creative">Creative</string>
+    <string name="profession_retired">Retired</string>
+    <string name="profession_homemaker">Homemaker</string>
+    <string name="profession_other">Other</string>
+
+    <string name="region_us_northeast">US Northeast</string>
+    <string name="region_us_southeast">US Southeast</string>
+    <string name="region_us_midwest">US Midwest</string>
+    <string name="region_us_southwest">US Southwest</string>
+    <string name="region_us_west">US West</string>
+    <string name="region_canada">Canada</string>
+    <string name="region_uk">United Kingdom</string>
+    <string name="region_western_europe">Western Europe</string>
+    <string name="region_eastern_europe">Eastern Europe</string>
+    <string name="region_asia_pacific">Asia–Pacific</string>
+    <string name="region_latin_america">Latin America</string>
+    <string name="region_middle_east_africa">Middle East &amp; Africa</string>
+    <string name="region_spain">Spain</string>
+    <string name="region_mexico">Mexico</string>
+    <string name="region_argentina">Argentina</string>
+    <string name="region_colombia">Colombia</string>
+    <string name="region_chile">Chile</string>
+    <string name="region_peru">Peru</string>
+    <string name="region_france">France</string>
+    <string name="region_quebec">Quebec</string>
+    <string name="region_belgium">Belgium</string>
+    <string name="region_switzerland">Switzerland</string>
+    <string name="region_other">Other</string>
+
+    <!-- Onboarding misc -->
+    <string name="onboarding_add_interest_cd">Add interest</string>
+    <string name="onboarding_remove_cd">Remove</string>
+    <string name="onboarding_unmapped_suffix">unmapped</string>
+    <string name="onboarding_custom_interest_placeholder">e.g., woodworking</string>
+
     <!-- Dashboard -->
     <string name="dashboard_title">FAUXX</string>
     <string name="dashboard_active">ACTIVE</string>

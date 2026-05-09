@@ -16,11 +16,27 @@ enum class Profession {
     RETAIL, TRADES, CREATIVE, RETIRED, HOMEMAKER, OTHER
 }
 
-/** Broad geographic regions used for location-spoof targeting. */
+/**
+ * Broad geographic regions used for location-spoof targeting and demographic-distance
+ * weighting.
+ *
+ * NOTE on enum extensions: Room stores enums by `name`, so appending new values is
+ * non-breaking (existing rows still resolve). Removing or renaming values requires a
+ * Room migration. The Spanish- and French-locale entries below were added alongside
+ * the multilingual rollout (Phase 3) — see `.devloop/spikes/multilingual-support.md`.
+ */
 enum class Region {
+    // Pre-existing US/macro regions.
     US_NORTHEAST, US_SOUTHEAST, US_MIDWEST, US_SOUTHWEST, US_WEST,
     CANADA, UK, WESTERN_EUROPE, EASTERN_EUROPE, ASIA_PACIFIC,
-    LATIN_AMERICA, MIDDLE_EAST_AFRICA, OTHER
+    LATIN_AMERICA, MIDDLE_EAST_AFRICA,
+
+    // Spanish-locale country selections.
+    SPAIN, MEXICO, ARGENTINA, COLOMBIA, CHILE, PERU,
+    // French-locale country selections.
+    FRANCE, QUEBEC, BELGIUM, SWITZERLAND,
+
+    OTHER
 }
 
 /**

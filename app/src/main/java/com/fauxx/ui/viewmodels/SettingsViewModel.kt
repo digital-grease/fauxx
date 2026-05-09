@@ -1,10 +1,15 @@
 package com.fauxx.ui.viewmodels
 
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fauxx.BuildConfig
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.IntensityLevel
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.locale.LocaleManager
+import com.fauxx.locale.SupportedLocale
 import com.fauxx.logging.EncryptedFileTree
 import com.fauxx.logging.LogScrubber
 import com.fauxx.targeting.TargetingEngine
@@ -14,7 +19,10 @@ import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.ui.theme.ThemeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -29,6 +37,16 @@ data class SettingsUiState(
 )
 
 /**
+ * UI state for the app-language picker. `userOverride == null` means "follow system locale";
+ * any other value is an explicit user selection. `shippedLocales` enumerates locales that
+ * are actually selectable; the picker greys out unshipped entries.
+ */
+data class LanguageUiState(
+    val userOverride: SupportedLocale? = null,
+    val shippedLocales: Set<SupportedLocale> = emptySet()
+)
+
+/**
  * ViewModel for the Settings screen. Manages global engine configuration and
  * user-initiated data deletion (privacy control).
  */
@@ -40,11 +58,28 @@ class SettingsViewModel @Inject constructor(
     private val platformDao: PlatformProfileDao,
     private val personaHistoryDao: PersonaHistoryDao,
     private val targetingEngine: TargetingEngine,
-    private val encryptedFileTree: EncryptedFileTree
+    private val encryptedFileTree: EncryptedFileTree,
+    private val localeManager: LocaleManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(loadFromProfile())
     val uiState: StateFlow<SettingsUiState> = _uiState
+
+    private val shippedLocales: Set<SupportedLocale> = BuildConfig.SHIPPED_LOCALES
+        .mapNotNull { tag -> runCatching { SupportedLocale.fromTag(tag) }.getOrNull() }
+        .toSet()
+        .ifEmpty { setOf(SupportedLocale.EN) }
+
+    val languageState: StateFlow<LanguageUiState> = localeManager.userOverrideFlow
+        .map { override -> LanguageUiState(userOverride = override, shippedLocales = shippedLocales) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = LanguageUiState(
+                userOverride = null,
+                shippedLocales = shippedLocales
+            )
+        )
 
     fun setIntensity(level: IntensityLevel) { update { it.copy(intensity = level) } }
     fun setWifiOnly(v: Boolean) { update { it.copy(wifiOnly = v) } }
@@ -53,6 +88,22 @@ class SettingsViewModel @Inject constructor(
     fun setAllowedHoursEnd(v: Int) { update { it.copy(allowedHoursEnd = v) } }
     fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
     fun setResumeOnBoot(v: Boolean) { update { it.copy(resumeOnBoot = v) } }
+
+    /**
+     * Persist the user's app-language choice and trigger the activity recreate that
+     * re-resolves resource strings. Pass null to clear the override and follow the
+     * system locale. Selecting a non-shipped locale is a no-op.
+     */
+    fun setLanguage(locale: SupportedLocale?) {
+        if (locale != null && locale !in shippedLocales) return
+        viewModelScope.launch { localeManager.setUserOverride(locale) }
+        val appCompatLocales = if (locale == null) {
+            LocaleListCompat.getEmptyLocaleList()
+        } else {
+            LocaleListCompat.forLanguageTags(locale.tag)
+        }
+        AppCompatDelegate.setApplicationLocales(appCompatLocales)
+    }
 
     /** Delete all locally-stored data and reset settings to defaults. */
     fun resetToDefaults() {

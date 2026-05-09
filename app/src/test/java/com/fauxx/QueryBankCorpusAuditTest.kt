@@ -1,28 +1,36 @@
 package com.fauxx
 
-import android.content.Context
-import android.content.res.AssetManager
-import com.fauxx.data.querybank.QueryBlocklist
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
-import io.mockk.every
-import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.io.ByteArrayInputStream
 import java.io.File
 
 /**
- * CI regression guard: parses every JSON file under `query_banks` against the live
- * `harmful_queries.json` and fails the build if any corpus entry matches a harmful
- * trigger.
+ * CI regression guard: parses every JSON file under each locale's `query_banks`
+ * directory against that locale's harmful-queries blocklist, and fails the build
+ * if any corpus entry matches a harmful trigger.
  *
  * This is the enforcement point for the "Self-Signal Harm" safety requirement in
- * CLAUDE.md. Without this test, a contributor adding an innocent-looking query like
- * "988 mental health crisis line" to a query bank would silently ship the same
- * vulnerability we are closing here — runtime filtering would still catch it, but
- * the corpus should be clean at the source to prevent silent runtime drops and keep
- * the full query stream available for noise generation.
+ * CLAUDE.md and the multilingual rollout's safety gate (see
+ * `.devloop/spikes/multilingual-support.md`). Without this test, a contributor —
+ * or the LLM that drafts the bank translations — could ship a query like "988
+ * mental health" or "024 línea suicidio" or "3114 prévention suicide" embedded
+ * in an otherwise innocent corpus. Runtime filtering by [QueryBlocklist] would
+ * still catch it, but corpus drift means silent runtime drops and degraded query
+ * variety. We catch it here, at build time.
+ *
+ * Locale coverage:
+ *   - en: legacy `harmful_queries.json` audits the legacy `query_banks/<cat>.json`
+ *   - es: `harmful_queries/es.json` audits `query_banks/es/<cat>.json`
+ *   - fr: `harmful_queries/fr.json` audits `query_banks/fr/<cat>.json`
+ *
+ * The blocklist used for each locale is a standalone re-implementation rather
+ * than a real [com.fauxx.data.querybank.QueryBlocklist] — that class needs an
+ * Android Context and a [com.fauxx.locale.LocaleManager], neither of which we
+ * can spin up cleanly in a JVM test that has to switch locales mid-run. The
+ * matching logic mirrors `QueryBlocklist.isBlocked` exactly.
  *
  * Runs as a standard JVM unit test (not instrumentation). Asset files are read
  * directly from the module's `src/main/assets/` path rather than through Android's
@@ -31,36 +39,68 @@ import java.io.File
 class QueryBankCorpusAuditTest {
 
     private val assetsRoot = File("src/main/assets")
+    private val gson = Gson()
+    private val stringListType = object : TypeToken<List<String>>() {}.type
+
+    private data class HarmfulShape(
+        @SerializedName("class_a_terms") val classATerms: List<String> = emptyList(),
+        @SerializedName("self_signal_terms") val selfSignalTerms: List<String> = emptyList(),
+        @SerializedName("regex_patterns") val regexPatterns: List<String> = emptyList()
+    )
+
+    /** Locale audit target: harmful_queries file path + query_banks dir path. */
+    private data class AuditTarget(
+        val tag: String,
+        val harmfulPath: String,
+        val banksDir: String,
+    )
+
+    private val targets = listOf(
+        AuditTarget("en", "harmful_queries.json", "query_banks"),
+        AuditTarget("es", "harmful_queries/es.json", "query_banks/es"),
+        AuditTarget("fr", "harmful_queries/fr.json", "query_banks/fr"),
+    )
 
     @Test
-    fun `every query in every bank passes QueryBlocklist`() {
-        val harmfulJson = File(assetsRoot, "harmful_queries.json").readText()
-        val blocklist = makeBlocklistWithJson(harmfulJson)
-
-        val bankDir = File(assetsRoot, "query_banks")
-        assertBankDirExists(bankDir)
-
-        val stringListType = object : TypeToken<List<String>>() {}.type
-        val gson = Gson()
+    fun `every query in every locale bank passes its locale's blocklist`() {
         val allViolations = mutableListOf<String>()
+        var localesAudited = 0
 
-        bankDir.listFiles { f -> f.extension == "json" }
-            ?.sortedBy { it.name }
-            ?.forEach { file ->
-                val queries: List<String> = gson.fromJson(file.readText(), stringListType)
-                queries.forEachIndexed { idx, q ->
-                    if (blocklist.isBlocked(q)) {
-                        allViolations += "${file.name}[$idx]: \"$q\""
+        for (target in targets) {
+            val harmfulFile = File(assetsRoot, target.harmfulPath)
+            val banksDir = File(assetsRoot, target.banksDir)
+
+            // A locale that hasn't shipped its files yet is not a failure here —
+            // HarmfulQueriesLocaleAuditTest is what enforces the safety blocklist
+            // existence per locale. This test is about corpus drift.
+            if (!harmfulFile.exists() || !banksDir.isDirectory) continue
+            localesAudited++
+
+            val blocker = makeBlocker(harmfulFile.readText())
+            banksDir.listFiles { f -> f.extension == "json" }
+                ?.sortedBy { it.name }
+                ?.forEach { file ->
+                    val queries: List<String> = gson.fromJson(file.readText(), stringListType)
+                    queries.forEachIndexed { idx, q ->
+                        if (blocker(q)) {
+                            allViolations += "[${target.tag}] ${file.name}[$idx]: \"$q\""
+                        }
                     }
                 }
-            }
+        }
+
+        assert(localesAudited > 0) {
+            "No locales audited. Expected at least the EN bank at " +
+                "src/main/assets/harmful_queries.json (cwd=${File(".").absolutePath}). " +
+                "Run from the app module root."
+        }
 
         assertEquals(
             buildString {
-                append("Query bank entries match harmful-query guard. ")
-                append("Remove them from the JSON or re-word to avoid the trigger. ")
-                append("If the trigger itself is wrong, adjust harmful_queries.json. ")
-                append("See .devloop/spikes/harmful-query-guard.md for context.\n")
+                append("Query bank entries match the harmful-query guard for their ")
+                append("own locale. Remove them from the JSON or re-word to avoid the ")
+                append("trigger. If the trigger itself is wrong, adjust the locale's ")
+                append("harmful_queries blocklist. See .devloop/spikes/multilingual-support.md.\n")
                 allViolations.forEach { appendLine("  $it") }
             },
             0,
@@ -69,30 +109,41 @@ class QueryBankCorpusAuditTest {
     }
 
     @Test
-    fun `harmful_queries_json has non-empty lists`() {
-        val harmfulJson = File(assetsRoot, "harmful_queries.json").readText()
-        val parsed = Gson().fromJson(harmfulJson, Map::class.java)
-        val classA = parsed["class_a_terms"] as? List<*> ?: emptyList<Any>()
-        val selfSignal = parsed["self_signal_terms"] as? List<*> ?: emptyList<Any>()
-        val regexes = parsed["regex_patterns"] as? List<*> ?: emptyList<Any>()
-        assert(classA.isNotEmpty()) { "class_a_terms must not be empty" }
-        assert(selfSignal.isNotEmpty()) { "self_signal_terms must not be empty" }
-        assert(regexes.isNotEmpty()) { "regex_patterns must not be empty" }
+    fun `every shipped harmful_queries file has non-empty lists`() {
+        for (target in targets) {
+            val file = File(assetsRoot, target.harmfulPath)
+            if (!file.exists()) continue
+            val parsed = gson.fromJson(file.readText(), HarmfulShape::class.java)
+            assert(parsed.classATerms.isNotEmpty()) {
+                "[${target.tag}] class_a_terms must not be empty in ${target.harmfulPath}"
+            }
+            assert(parsed.selfSignalTerms.isNotEmpty()) {
+                "[${target.tag}] self_signal_terms must not be empty in ${target.harmfulPath}"
+            }
+            assert(parsed.regexPatterns.isNotEmpty()) {
+                "[${target.tag}] regex_patterns must not be empty in ${target.harmfulPath}"
+            }
+        }
     }
 
-    private fun makeBlocklistWithJson(json: String): QueryBlocklist {
-        val context: Context = mockk()
-        val assetManager: AssetManager = mockk()
-        every { context.assets } returns assetManager
-        every { assetManager.open("harmful_queries.json") } returns
-            ByteArrayInputStream(json.toByteArray())
-        return QueryBlocklist(context)
-    }
-
-    private fun assertBankDirExists(bankDir: File) {
-        require(bankDir.isDirectory) {
-            "Could not find $bankDir (cwd=${File(".").absolutePath}). " +
-                "Run from the app module root."
+    /**
+     * Build a `(query) -> Boolean` blocker from a harmful_queries JSON. Mirrors
+     * [com.fauxx.data.querybank.QueryBlocklist.isBlocked] semantics: case-insensitive
+     * substring match for phrase terms; case-insensitive containsMatchIn for regex
+     * patterns. Malformed regex patterns are dropped silently, same as production.
+     */
+    private fun makeBlocker(harmfulJson: String): (String) -> Boolean {
+        val parsed = gson.fromJson(harmfulJson, HarmfulShape::class.java)
+        val terms = (parsed.classATerms + parsed.selfSignalTerms)
+            .map { it.lowercase().trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+        val regexes = parsed.regexPatterns.mapNotNull {
+            runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull()
+        }
+        return { query ->
+            val n = query.lowercase()
+            terms.any { n.contains(it) } || regexes.any { it.containsMatchIn(n) }
         }
     }
 }

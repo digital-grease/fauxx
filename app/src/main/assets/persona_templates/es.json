@@ -1,0 +1,198 @@
+[
+  {
+    "archetype": "madrid_oficinista",
+    "ageRange": "AGE_25_34",
+    "interests": ["TECHNOLOGY", "FITNESS", "TRAVEL"],
+    "region": "SPAIN",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "barcelona_disenadora",
+    "ageRange": "AGE_25_34",
+    "interests": ["FASHION", "TRAVEL", "ENTERTAINMENT"],
+    "region": "SPAIN",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "valencia_estudiante",
+    "ageRange": "AGE_18_24",
+    "interests": ["ACADEMIC", "GAMING", "MUSIC"],
+    "region": "SPAIN",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "andalucia_jubilado",
+    "ageRange": "AGE_65_PLUS",
+    "interests": ["AGRICULTURE", "COOKING", "OUTDOOR_RECREATION"],
+    "region": "SPAIN",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "bilbao_padre_familia",
+    "ageRange": "AGE_35_44",
+    "interests": ["PARENTING", "HOME_IMPROVEMENT", "SPORTS"],
+    "region": "SPAIN",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "sevilla_profesora",
+    "ageRange": "AGE_35_44",
+    "interests": ["ACADEMIC", "HISTORY", "COOKING"],
+    "region": "SPAIN",
+    "profession": "TEACHER"
+  },
+  {
+    "archetype": "santiago_cooperante",
+    "ageRange": "AGE_25_34",
+    "interests": ["TRAVEL", "ENVIRONMENT", "POLITICS"],
+    "region": "SPAIN",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "cdmx_emprendedor",
+    "ageRange": "AGE_35_44",
+    "interests": ["BUSINESS", "FINANCE", "TECHNOLOGY"],
+    "region": "MEXICO",
+    "profession": "FINANCE_PROF"
+  },
+  {
+    "archetype": "guadalajara_chef",
+    "ageRange": "AGE_25_34",
+    "interests": ["COOKING", "FOOD", "ENTERTAINMENT"],
+    "region": "MEXICO",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "monterrey_mecanico",
+    "ageRange": "AGE_45_54",
+    "interests": ["AUTOMOTIVE", "SPORTS", "MUSIC"],
+    "region": "MEXICO",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "yucatan_arqueologo",
+    "ageRange": "AGE_45_54",
+    "interests": ["HISTORY", "ACADEMIC", "TRAVEL"],
+    "region": "MEXICO",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "tijuana_enfermera",
+    "ageRange": "AGE_35_44",
+    "interests": ["MEDICAL", "WELLNESS_ALTERNATIVE", "PARENTING"],
+    "region": "MEXICO",
+    "profession": "HEALTHCARE"
+  },
+  {
+    "archetype": "buenos_aires_futbolera",
+    "ageRange": "AGE_18_24",
+    "interests": ["SPORTS", "MUSIC", "ENTERTAINMENT"],
+    "region": "ARGENTINA",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "buenos_aires_psicologa",
+    "ageRange": "AGE_35_44",
+    "interests": ["WELLNESS_ALTERNATIVE", "ACADEMIC", "RELATIONSHIPS_DATING"],
+    "region": "ARGENTINA",
+    "profession": "HEALTHCARE"
+  },
+  {
+    "archetype": "rosario_agricultor",
+    "ageRange": "AGE_55_64",
+    "interests": ["AGRICULTURE", "AUTOMOTIVE", "FOOD"],
+    "region": "ARGENTINA",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "cordoba_arquitecto",
+    "ageRange": "AGE_25_34",
+    "interests": ["HOME_IMPROVEMENT", "CRAFTS", "TRAVEL"],
+    "region": "ARGENTINA",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "bogota_periodista",
+    "ageRange": "AGE_25_34",
+    "interests": ["POLITICS", "HISTORY", "ENTERTAINMENT"],
+    "region": "COLOMBIA",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "medellin_developer",
+    "ageRange": "AGE_25_34",
+    "interests": ["TECHNOLOGY", "GAMING", "FITNESS"],
+    "region": "COLOMBIA",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "cali_bailarina",
+    "ageRange": "AGE_18_24",
+    "interests": ["MUSIC", "FITNESS", "FASHION"],
+    "region": "COLOMBIA",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "cartagena_marinero",
+    "ageRange": "AGE_45_54",
+    "interests": ["OUTDOOR_RECREATION", "TRAVEL", "AUTOMOTIVE"],
+    "region": "COLOMBIA",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "santiago_finanzas",
+    "ageRange": "AGE_45_54",
+    "interests": ["FINANCE", "BUSINESS", "REAL_ESTATE"],
+    "region": "CHILE",
+    "profession": "FINANCE_PROF"
+  },
+  {
+    "archetype": "valparaiso_artesana",
+    "ageRange": "AGE_55_64",
+    "interests": ["CRAFTS", "ENVIRONMENT", "COOKING"],
+    "region": "CHILE",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "atacama_astronomo",
+    "ageRange": "AGE_35_44",
+    "interests": ["SCIENCE", "ACADEMIC", "OUTDOOR_RECREATION"],
+    "region": "CHILE",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "lima_comerciante",
+    "ageRange": "AGE_45_54",
+    "interests": ["BUSINESS", "FOOD", "TRAVEL"],
+    "region": "PERU",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "cusco_guia_turistico",
+    "ageRange": "AGE_25_34",
+    "interests": ["TRAVEL", "HISTORY", "OUTDOOR_RECREATION"],
+    "region": "PERU",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "miami_doctora_latina",
+    "ageRange": "AGE_45_54",
+    "interests": ["MEDICAL", "PARENTING", "TRAVEL"],
+    "region": "LATIN_AMERICA",
+    "profession": "HEALTHCARE"
+  },
+  {
+    "archetype": "los_angeles_actor_aspirante",
+    "ageRange": "AGE_18_24",
+    "interests": ["ENTERTAINMENT", "FASHION", "FITNESS"],
+    "region": "LATIN_AMERICA",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "puerto_rico_jubilada",
+    "ageRange": "AGE_65_PLUS",
+    "interests": ["RETIREMENT", "TRAVEL", "WELLNESS_ALTERNATIVE"],
+    "region": "LATIN_AMERICA",
+    "profession": "RETIRED"
+  }
+]

@@ -298,6 +298,24 @@ Contributions are welcome. Please ensure:
 - Code follows Kotlin conventions
 - Sensitive attributes are never added to DemographicDistanceMap
 
+## Localization
+
+Fauxx ships with English (`en`) UI and synthetic-activity content. Spanish (`es`) and French (`fr`) infrastructure is in place; their content (UI strings, query banks, harmful_queries blocklist, persona templates, crawl URLs, search-engine URL params, Accept-Language headers) is locale-aware end-to-end. Selecting a non-English locale flips all of those layers together — the synthetic activity tracks the UI language so a Spanish-mode profile emits `Accept-Language: es-ES` with `&hl=es&gl=ES` URL params, not a mismatched `en-US` that would itself be a fingerprintable signal.
+
+**Locale gate.** Production builds restrict the Settings language picker via `BuildConfig.SHIPPED_LOCALES`. A locale only joins the allowlist after its `assets/harmful_queries/<localeTag>.json` has signed-off native-speaker review. The blocklist contains the region's crisis-line, domestic-violence, and poison-control numbers; an English fallback would not catch the Spanish/French equivalents and would risk dispatching a synthetic query that data brokers interpret as a real first-person distress signal. Debug builds preview all three locales (`en`, `es`, `fr`) for development testing.
+
+**Adding a new locale.** Outline of the work, in order:
+1. Append the locale to the `SupportedLocale` enum (with `tag`, `displayName`, `defaultRegion`, `yahooSubdomainPrefix`).
+2. Translate `app/src/main/res/values/strings.xml` → `values-<localeTag>/`. Same for the play flavor under `app/src/play/res/values/`.
+3. Draft `assets/harmful_queries/<localeTag>.json`. Class A illegal terms can start as a translation of the English file; the self-signal section must include the region's crisis hotlines (e.g. ES 024, FR 3114, DE 0800-181-0721, etc.) and DV / poison-control numbers. **Native-speaker review is mandatory before this locale ships.** Add a sentinel-presence assertion in `HarmfulQueriesLocaleAuditTest` to lock the regression in.
+4. Curate `assets/persona_templates/<localeTag>.json` (region- and culture-plausible archetypes) and `assets/crawl_urls/<localeTag>.json` (region-appropriate domains across all CategoryPool values).
+5. Add ES/FR/etc. entries to `CATEGORY_APP_KEYWORDS` in `AppSignalModule` (Play Store keywords idiomatic to that storefront).
+6. Add a row to the `LANGUAGE_VARIANTS` map in `HeaderRandomizerInterceptor` (4–5 plausible primary/secondary Accept-Language strings).
+7. Run `ANTHROPIC_API_KEY=... python3 scripts/translate_query_banks.py <localeTag>` to populate the per-locale query banks (32 categories). Spot-check a few categories for idiomatic phrasing.
+8. After native-speaker review, bump `BuildConfig.SHIPPED_LOCALES` in `defaultConfig` to include the new tag.
+
+See `.devloop/spikes/multilingual-support.md` for the design and threat model.
+
 ## License
 
 Fauxx is licensed under the GNU Affero General Public License v3 (AGPLv3). See [LICENSE](LICENSE) for details.

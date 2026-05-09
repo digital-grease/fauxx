@@ -2,11 +2,15 @@ package com.fauxx.data.crawllist
 
 import android.content.Context
 import androidx.annotation.Keep
+import androidx.annotation.VisibleForTesting
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.locale.LocaleManager
+import com.fauxx.locale.SupportedLocale
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,23 +24,30 @@ private const val STALE_ENTRY_THRESHOLD_MS = 24 * 60 * 60 * 1000L
 private const val CLEANUP_THRESHOLD = 500
 
 /**
- * Manages the 10,000+ URL corpus used for cookie saturation and page visits.
+ * Manages the URL corpus used for cookie saturation and page visits.
  *
- * - Loads URLs from assets/crawl_urls.json at startup
- * - Tracks last-visit timestamp per domain to enforce the 5-second per-domain rate limit
- * - Filters out blocked domains before returning URLs
- * - Supports category-weighted URL selection
+ * - Loads URLs from `assets/crawl_urls/<localeTag>.json` (with fallback to legacy
+ *   `assets/crawl_urls.json` for English) at first access per locale.
+ * - Tracks last-visit timestamp per domain to enforce the 5-second per-domain rate limit.
+ * - Filters out blocked domains before returning URLs.
+ * - Supports category-weighted URL selection.
+ *
+ * The crawl list is locale-keyed because data brokers fingerprint domain mix as a
+ * region indicator: a Spanish-mode profile should hit elmundo.es and mercadolibre,
+ * not exclusively webmd.com and espn.com. The rate-limit map is shared across locales
+ * (a domain visited in one locale stays cooldown'd if the locale changes mid-session).
  */
 @Singleton
 class CrawlListManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val blocklist: DomainBlocklist
+    private val blocklist: DomainBlocklist,
+    private val localeManager: LocaleManager
 ) {
-    private val allUrls: List<CrawlEntry> by lazy { loadUrls() }
+    private val urlsByLocale = ConcurrentHashMap<SupportedLocale, List<CrawlEntry>>()
     private val lastVisitByDomain = mutableMapOf<String, Long>()
 
-    /** Number of URLs in the corpus (0 if load failed). */
-    fun corpusSize(): Int = allUrls.size
+    /** Number of URLs in the active locale's corpus (0 if load failed). */
+    fun corpusSize(): Int = currentUrls().size
 
     /**
      * Get a URL to visit, optionally filtered to [category].
@@ -48,11 +59,12 @@ class CrawlListManager @Inject constructor(
     fun nextUrl(category: CategoryPool? = null): CrawlEntry? {
         val now = System.currentTimeMillis()
         cleanupStaleEntries(now)
+        val urls = currentUrls()
         val candidates = if (category != null) {
-            allUrls.filter { it.category == category }
-                .ifEmpty { allUrls } // Fall back to any category
+            urls.filter { it.category == category }
+                .ifEmpty { urls } // Fall back to any category
         } else {
-            allUrls
+            urls
         }
 
         return candidates
@@ -81,11 +93,12 @@ class CrawlListManager @Inject constructor(
 
         // All candidates are rate-limited — find the one with the shortest remaining wait
         val now = System.currentTimeMillis()
+        val urls = currentUrls()
         val candidates = if (category != null) {
-            allUrls.filter { it.category == category }
-                .ifEmpty { allUrls }
+            urls.filter { it.category == category }
+                .ifEmpty { urls }
         } else {
-            allUrls
+            urls
         }
 
         val eligible = candidates.filter { !blocklist.isUrlBlocked(it.url) }
@@ -114,6 +127,11 @@ class CrawlListManager @Inject constructor(
         return (now - last) >= MIN_DOMAIN_INTERVAL_MS
     }
 
+    private fun currentUrls(): List<CrawlEntry> {
+        val locale = localeManager.currentLocale
+        return urlsByLocale.getOrPut(locale) { loadUrls(locale) }
+    }
+
     /** Evicts entries older than 24h to prevent unbounded map growth. */
     private fun cleanupStaleEntries(now: Long) {
         if (lastVisitByDomain.size < CLEANUP_THRESHOLD) return
@@ -121,25 +139,41 @@ class CrawlListManager @Inject constructor(
         lastVisitByDomain.entries.removeAll { it.value < cutoff }
     }
 
-    private fun loadUrls(): List<CrawlEntry> {
+    private fun loadUrls(locale: SupportedLocale): List<CrawlEntry> {
+        val localePath = "crawl_urls/${locale.tag}.json"
+        val legacyPath = "crawl_urls.json"
         return try {
-            val json = context.assets.open("crawl_urls.json")
-                .bufferedReader().readText()
+            val stream = runCatching { context.assets.open(localePath) }
+                .getOrElse {
+                    if (locale == SupportedLocale.EN) context.assets.open(legacyPath)
+                    else throw it
+                }
+            val json = stream.bufferedReader().readText()
             val type = object : TypeToken<List<CrawlEntryJson>>() {}.type
             val raw: List<CrawlEntryJson> = Gson().fromJson(json, type)
             val entries = raw.mapNotNull { it.toCrawlEntry() }
             val dropped = raw.size - entries.size
             if (dropped > 0) {
-                Timber.w("CrawlListManager: dropped $dropped of ${raw.size} entries (invalid URL or unknown category)")
+                Timber.w("CrawlListManager[${locale.tag}]: dropped $dropped of ${raw.size} entries (invalid URL or unknown category)")
             }
             if (entries.isEmpty()) {
-                Timber.e("CrawlListManager: crawl corpus is empty after parsing — all URL-dependent modules will be non-functional")
+                Timber.e("CrawlListManager[${locale.tag}]: crawl corpus is empty after parsing — all URL-dependent modules will be non-functional")
             }
             entries
         } catch (e: Exception) {
-            Timber.e(e, "Failed to load crawl_urls.json — all URL-dependent modules will be non-functional")
+            Timber.e(e, "Failed to load crawl_urls for locale=${locale.tag} — all URL-dependent modules will be non-functional")
             emptyList()
         }
+    }
+
+    /**
+     * Test-only seam: directly install a URL list for the given locale, bypassing
+     * the asset-load path. Used by unit tests to feed deterministic corpora without
+     * relying on reflection or filesystem assets.
+     */
+    @VisibleForTesting
+    internal fun replaceUrlsForTest(locale: SupportedLocale, urls: List<CrawlEntry>) {
+        urlsByLocale[locale] = urls
     }
 }
 

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    French (fr) Play-flavor override. Mirrors the en/play softening of about_app_description
+    for Play Store policy compliance. Drafted by LLM, pending native-speaker review.
+-->
+<resources>
+    <string name="about_app_description">Un outil de confidentialité open source qui élargit votre profil de navigation en générant une activité synthétique continue et variée sur de nombreuses catégories de sujets, rendant moins efficace le ciblage par centres d\'intérêt restreints.</string>
+</resources>

@@ -11,6 +11,7 @@ import com.fauxx.targeting.layer1.SelfReportLayer
 import com.fauxx.targeting.layer2.AdversarialScraperLayer
 import com.fauxx.targeting.layer2.CategoryMapper
 import com.fauxx.targeting.layer2.PlatformProfileDao
+import com.fauxx.locale.LocaleManager
 import com.fauxx.targeting.layer3.PersonaGenerator
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaRotationLayer
@@ -64,8 +65,9 @@ object TargetingModule {
     fun providePersonaGenerator(
         @ApplicationContext context: Context,
         historyDao: PersonaHistoryDao,
-        demographicProfileDao: DemographicProfileDao
-    ): PersonaGenerator = PersonaGenerator(context, historyDao, demographicProfileDao)
+        demographicProfileDao: DemographicProfileDao,
+        localeManager: LocaleManager
+    ): PersonaGenerator = PersonaGenerator(context, historyDao, demographicProfileDao, localeManager)
 
     @Provides
     @Singleton

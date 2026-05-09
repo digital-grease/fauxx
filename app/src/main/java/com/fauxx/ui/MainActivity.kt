@@ -1,10 +1,14 @@
 package com.fauxx.ui
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
+import android.os.LocaleList
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,6 +32,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -40,6 +45,32 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var crashDetector: CrashDetector
+
+    /**
+     * Apply the per-app language stored by `AppCompatDelegate.setApplicationLocales()`
+     * to this Activity's base context before resources are inflated.
+     *
+     * On API 33+ Android propagates the locale automatically; this override is harmless
+     * because the system has already updated the configuration. On API 26–32 the AppCompat
+     * backport stores the choice but only auto-applies it when the host activity extends
+     * `AppCompatActivity`. fauxx is pure Compose on `ComponentActivity`, so we do the
+     * application manually here. `AppCompatDelegate.getApplicationLocales()` is a sync
+     * read backed by AppCompat's own SharedPreferences (populated at process start by
+     * `AppLocalesMetadataHolderService` with `autoStoreLocales=true`).
+     */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(applyAppLocale(newBase))
+    }
+
+    private fun applyAppLocale(base: Context): Context {
+        val locales = AppCompatDelegate.getApplicationLocales()
+        if (locales.isEmpty) return base
+        val first = locales[0] ?: return base
+        Locale.setDefault(first)
+        val config = Configuration(base.resources.configuration)
+        config.setLocales(LocaleList(first))
+        return base.createConfigurationContext(config)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()

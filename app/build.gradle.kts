@@ -30,6 +30,18 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Locales whose UI strings, query banks, harmful_queries blocklists, persona
+        // templates, and crawl URL sets have shipped to production. The Settings language
+        // picker enables only entries in this list; selecting a non-shipped locale is
+        // blocked. Bump only after that locale's `harmful_queries/<tag>.json` has signed-off
+        // native-speaker review — see .devloop/spikes/multilingual-support.md and
+        // user-memory `project_multilingual_safety_gate.md`.
+        buildConfigField(
+            "String[]",
+            "SHIPPED_LOCALES",
+            "new String[]{\"en\"}"
+        )
     }
 
     flavorDimensions += "distribution"
@@ -53,6 +65,15 @@ android {
         }
         debug {
             isDebuggable = true
+            // Allow developers to exercise the Settings language picker for ES/FR in
+            // debug builds before native-speaker review of `harmful_queries/<locale>.json`
+            // has signed off the locale for production. Release builds inherit the
+            // defaultConfig allowlist (`["en"]`) so the safety gate remains intact.
+            buildConfigField(
+                "String[]",
+                "SHIPPED_LOCALES",
+                "new String[]{\"en\", \"es\", \"fr\"}"
+            )
         }
     }
 
@@ -164,6 +185,11 @@ dependencies {
 
     // Logging
     implementation(libs.timber)
+
+    // AppCompat — needed only for AppCompatDelegate.setApplicationLocales(), which
+    // backports the per-app language API (Android 13+) down to minSdk 26. The app is
+    // pure Compose; no AppCompat themes or AppCompatActivity are used.
+    implementation(libs.appcompat)
 
     // Testing
     testImplementation(libs.junit)

@@ -39,10 +39,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.AgeRange
 import com.fauxx.targeting.layer1.Gender
@@ -50,6 +52,7 @@ import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.MappingConfidence
 import com.fauxx.targeting.layer1.Profession
 import com.fauxx.targeting.layer1.Region
+import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.viewmodels.OnboardingViewModel
 
 /**
@@ -127,7 +130,7 @@ fun OnboardingScreen(
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text(if (isLastStep) "Skip All" else "Skip")
+                Text(stringResource(if (isLastStep) R.string.onboarding_skip_all else R.string.onboarding_skip))
             }
 
             Button(
@@ -141,7 +144,7 @@ fun OnboardingScreen(
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text(if (isLastStep) "Done" else "Next")
+                Text(stringResource(if (isLastStep) R.string.onboarding_done else R.string.onboarding_next))
             }
         }
     }
@@ -151,7 +154,7 @@ fun OnboardingScreen(
 private fun WelcomeStep() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "FAUXX",
+            text = stringResource(R.string.onboarding_title),
             style = MaterialTheme.typography.headlineLarge,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -159,14 +162,13 @@ private fun WelcomeStep() {
         )
         Spacer(Modifier.height(24.dp))
         Text(
-            text = "Privacy through noise",
+            text = stringResource(R.string.onboarding_subtitle),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Fauxx protects your privacy by generating synthetic browsing " +
-                "activity in the background. Here's what it does:",
+            text = stringResource(R.string.onboarding_intro),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -176,17 +178,15 @@ private fun WelcomeStep() {
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            DisclosureBullet("Performs web searches across Google, Bing, DuckDuckGo, and Yahoo on diverse topics")
-            DisclosureBullet("Visits a wide variety of websites to diversify your browsing profile")
-            DisclosureBullet("Rotates browser fingerprints (User-Agent, language headers)")
-            DisclosureBullet("Generates DNS lookups for varied domains")
-            DisclosureBullet("All activity runs in the background and uses battery and data")
+            DisclosureBullet(stringResource(R.string.onboarding_bullet_search))
+            DisclosureBullet(stringResource(R.string.onboarding_bullet_browse))
+            DisclosureBullet(stringResource(R.string.onboarding_bullet_fingerprint))
+            DisclosureBullet(stringResource(R.string.onboarding_bullet_dns))
+            DisclosureBullet(stringResource(R.string.onboarding_bullet_battery))
         }
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Optionally, tell us about yourself on the next screens. " +
-                "This stays on your device and helps generate noise that's different " +
-                "from your real profile. Skip if you prefer uniform noise.",
+            text = stringResource(R.string.onboarding_optional_profile),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -216,14 +216,14 @@ private fun DisclosureBullet(text: String) {
 @Composable
 private fun AgeRangeStep(selected: AgeRange?, onSelect: (AgeRange) -> Unit) {
     StepContainer(
-        title = "What's your age range?",
-        subtitle = "Helps us avoid generating activity that matches your demographic"
+        title = stringResource(R.string.onboarding_age_title),
+        subtitle = stringResource(R.string.onboarding_age_subtitle)
     ) {
         AgeRange.values().forEach { age ->
             ElevatedFilterChip(
                 selected = selected == age,
                 onClick = { onSelect(age) },
-                label = { Text(age.name.replace("AGE_", "").replace("_", "–")) }
+                label = { Text(stringResource(age.displayNameRes())) }
             )
         }
     }
@@ -232,20 +232,14 @@ private fun AgeRangeStep(selected: AgeRange?, onSelect: (AgeRange) -> Unit) {
 @Composable
 private fun GenderStep(selected: Gender?, onSelect: (Gender) -> Unit) {
     StepContainer(
-        title = "Gender",
-        subtitle = "Optional — used only to bias noise away from your demographic"
+        title = stringResource(R.string.onboarding_gender_title),
+        subtitle = stringResource(R.string.onboarding_gender_subtitle)
     ) {
         Gender.values().forEach { gender ->
             ElevatedFilterChip(
                 selected = selected == gender,
                 onClick = { onSelect(gender) },
-                label = {
-                    Text(when (gender) {
-                        Gender.MALE -> "Male"
-                        Gender.FEMALE -> "Female"
-                        Gender.PREFER_NOT_TO_SAY -> "Prefer not to say"
-                    })
-                }
+                label = { Text(stringResource(gender.displayNameRes())) }
             )
         }
     }
@@ -262,12 +256,12 @@ private fun InterestsStep(
 ) {
     Column {
         Text(
-            text = "Your main interests",
+            text = stringResource(R.string.onboarding_interests_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
         Text(
-            text = "We'll generate more noise in OTHER categories",
+            text = stringResource(R.string.onboarding_interests_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -284,12 +278,12 @@ private fun InterestsStep(
 
         Spacer(Modifier.height(20.dp))
         Text(
-            text = "Or add your own",
+            text = stringResource(R.string.onboarding_custom_interests_title),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground
         )
         Text(
-            text = "Type specific interests not covered above (e.g., \"woodworking\", \"cryptocurrency\")",
+            text = stringResource(R.string.onboarding_custom_interests_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -305,7 +299,7 @@ private fun InterestsStep(
                 value = textFieldValue,
                 onValueChange = { textFieldValue = it },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("e.g., woodworking") },
+                placeholder = { Text(stringResource(R.string.onboarding_custom_interest_placeholder)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = {
@@ -321,7 +315,7 @@ private fun InterestsStep(
                     textFieldValue = ""
                 }
             }) {
-                Icon(Icons.Default.Add, contentDescription = "Add interest")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.onboarding_add_interest_cd))
             }
         }
 
@@ -345,7 +339,7 @@ private fun CustomInterestChip(mapping: InterestMapping, onRemove: () -> Unit) {
     val label = if (categoryLabel != null) {
         "${mapping.interest} → $categoryLabel"
     } else {
-        "${mapping.interest} (unmapped)"
+        "${mapping.interest} (${stringResource(R.string.onboarding_unmapped_suffix)})"
     }
     val containerColor = when (mapping.confidence) {
         MappingConfidence.HIGH -> MaterialTheme.colorScheme.primaryContainer
@@ -360,7 +354,7 @@ private fun CustomInterestChip(mapping: InterestMapping, onRemove: () -> Unit) {
         trailingIcon = {
             Icon(
                 Icons.Default.Close,
-                contentDescription = "Remove",
+                contentDescription = stringResource(R.string.onboarding_remove_cd),
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -370,14 +364,14 @@ private fun CustomInterestChip(mapping: InterestMapping, onRemove: () -> Unit) {
 @Composable
 private fun ProfessionStep(selected: Profession?, onSelect: (Profession) -> Unit) {
     StepContainer(
-        title = "Profession",
-        subtitle = "Used to compute demographic distance only"
+        title = stringResource(R.string.onboarding_profession_title),
+        subtitle = stringResource(R.string.onboarding_profession_subtitle)
     ) {
         Profession.values().forEach { prof ->
             ElevatedFilterChip(
                 selected = selected == prof,
                 onClick = { onSelect(prof) },
-                label = { Text(prof.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }) }
+                label = { Text(stringResource(prof.displayNameRes())) }
             )
         }
     }
@@ -386,14 +380,14 @@ private fun ProfessionStep(selected: Profession?, onSelect: (Profession) -> Unit
 @Composable
 private fun RegionStep(selected: Region?, onSelect: (Region) -> Unit) {
     StepContainer(
-        title = "Where are you located?",
-        subtitle = "Used to generate searches and browsing activity suggesting other regions"
+        title = stringResource(R.string.onboarding_region_title),
+        subtitle = stringResource(R.string.onboarding_region_subtitle)
     ) {
         Region.values().forEach { region ->
             ElevatedFilterChip(
                 selected = selected == region,
                 onClick = { onSelect(region) },
-                label = { Text(region.name.replace("_", " ")) }
+                label = { Text(stringResource(region.displayNameRes())) }
             )
         }
     }
@@ -403,15 +397,13 @@ private fun RegionStep(selected: Region?, onSelect: (Region) -> Unit) {
 private fun DoneStep() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "You're set!",
+            text = stringResource(R.string.onboarding_done_title),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Fauxx will generate diverse browsing activity that's maximally different " +
-                "from your real behavioral signal. Toggle protection on from the Dashboard " +
-                "to start.",
+            text = stringResource(R.string.onboarding_done_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

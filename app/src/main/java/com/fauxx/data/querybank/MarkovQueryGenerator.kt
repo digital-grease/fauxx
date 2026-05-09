@@ -1,5 +1,12 @@
 package com.fauxx.data.querybank
 
+import com.fauxx.locale.LocaleManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,7 +32,8 @@ import kotlin.random.Random
 @Singleton
 class MarkovQueryGenerator @Inject constructor(
     private val queryBankManager: QueryBankManager,
-    private val queryBlocklist: QueryBlocklist
+    private val queryBlocklist: QueryBlocklist,
+    private val localeManager: LocaleManager
 ) {
     /** bigram[word] = list of words that follow [word] in the training corpus. */
     private val bigramMap = mutableMapOf<String, MutableList<String>>()
@@ -36,6 +44,30 @@ class MarkovQueryGenerator @Inject constructor(
     /** Extra seed phrases per category, injected from custom user interests. */
     private val seedPhrases = mutableMapOf<CategoryPool, MutableList<String>>()
 
+    private val watcherScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    init {
+        // Reset the bigram model whenever the active locale changes. The model is a
+        // language-specific n-gram chain trained on whichever locale's banks were
+        // requested first; mixing English and Spanish bigrams produces gibberish output
+        // ("how to cocinar pasta"). Drop the initial replay so we don't reset on app
+        // start. Seed phrases are intentionally preserved — they're user-provided and
+        // attached to the demographic profile, not the locale.
+        watcherScope.launch {
+            localeManager.currentLocaleFlow
+                .drop(1)
+                .distinctUntilChanged()
+                .collect { resetBigramModel() }
+        }
+    }
+
+    @Synchronized
+    private fun resetBigramModel() {
+        Timber.d("Locale changed; resetting MarkovQueryGenerator bigram model")
+        bigramMap.clear()
+        trainedCategories.clear()
+    }
+
     /**
      * Generate a compound search query for [category]. Guaranteed never to return a
      * query that matches [QueryBlocklist] — if Markov chaining produces a blocked
@@ -45,6 +77,7 @@ class MarkovQueryGenerator @Inject constructor(
      * @param category The target content category.
      * @param targetLength Target number of words in the output (3-8 words).
      */
+    @Synchronized
     fun generate(category: CategoryPool, targetLength: Int = Random.nextInt(3, 9)): String {
         repeat(MAX_RESAMPLE_ATTEMPTS) { attempt ->
             val candidate = generateOnce(category, targetLength)
@@ -118,6 +151,7 @@ class MarkovQueryGenerator @Inject constructor(
     /**
      * Train the bigram model on a list of [queries].
      */
+    @Synchronized
     fun train(queries: List<String>) {
         for (query in queries) {
             val words = query.split(" ").filter { it.isNotBlank() }
@@ -140,6 +174,7 @@ class MarkovQueryGenerator @Inject constructor(
      * scrubbing before injection. User-supplied phrases that match the harmful-query
      * guard are silently rejected (with a `Timber.w` log).
      */
+    @Synchronized
     fun injectSeedPhrases(category: CategoryPool, phrases: List<String>) {
         val sanitized = phrases
             .map { sanitizeSeedPhrase(it) }
@@ -159,6 +194,7 @@ class MarkovQueryGenerator @Inject constructor(
     }
 
     /** Clear all injected seed phrases (e.g., when user clears profile). */
+    @Synchronized
     fun clearSeedPhrases() {
         seedPhrases.clear()
     }

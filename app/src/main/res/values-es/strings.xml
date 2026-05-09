@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Spanish (es) translation. Drafted by LLM during Phase 3 of the multilingual rollout
+    and pending native-speaker review. See `.devloop/spikes/multilingual-support.md`.
+-->
+<resources>
+    <string name="app_name">Fauxx</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">Protección de privacidad</string>
+    <string name="notification_channel_desc">Notificaciones de la diversificación de navegación en segundo plano de Fauxx</string>
+    <string name="notification_title">Fauxx</string>
+    <string name="notification_active">Generando actividad de navegación variada — %d acciones hoy</string>
+    <string name="notification_paused_wifi">En pausa — esperando WiFi</string>
+    <string name="notification_paused_battery">En pausa — batería baja</string>
+    <string name="notification_paused_rate_limit">En pausa — límite por hora alcanzado</string>
+    <string name="notification_stopped">Detenido</string>
+    <string name="notification_initializing">Inicializando…</string>
+    <string name="notification_action_open">Abrir</string>
+    <string name="notification_action_stop">Detener</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">FAUXX</string>
+    <string name="onboarding_subtitle">Privacidad mediante ruido</string>
+    <string name="onboarding_intro">Fauxx protege tu privacidad generando actividad de navegación sintética en segundo plano. Esto es lo que hace:</string>
+    <string name="onboarding_bullet_search">Realiza búsquedas web en Google, Bing, DuckDuckGo y Yahoo sobre temas variados</string>
+    <string name="onboarding_bullet_browse">Visita una amplia variedad de sitios web para diversificar tu perfil de navegación</string>
+    <string name="onboarding_bullet_fingerprint">Rota las huellas del navegador (User-Agent, cabeceras de idioma)</string>
+    <string name="onboarding_bullet_dns">Genera consultas DNS hacia distintos dominios</string>
+    <string name="onboarding_bullet_battery">Toda la actividad se ejecuta en segundo plano y consume batería y datos</string>
+    <string name="onboarding_optional_profile">Si quieres, cuéntanos algo sobre ti en las pantallas siguientes. Esta información se queda en tu dispositivo y nos ayuda a generar ruido distinto al de tu perfil real. Sáltatelo si prefieres ruido uniforme.</string>
+    <string name="onboarding_done_title">¡Listo!</string>
+    <string name="onboarding_done_body">Fauxx generará actividad de navegación lo más diferente posible de tu señal real. Activa la protección desde el panel para empezar.</string>
+    <string name="onboarding_skip">Saltar</string>
+    <string name="onboarding_skip_all">Saltar todo</string>
+    <string name="onboarding_next">Siguiente</string>
+    <string name="onboarding_done">Hecho</string>
+
+    <!-- Onboarding steps -->
+    <string name="onboarding_age_title">¿Cuál es tu rango de edad?</string>
+    <string name="onboarding_age_subtitle">Nos ayuda a evitar generar actividad que coincida con tu demografía</string>
+    <string name="onboarding_gender_title">Género</string>
+    <string name="onboarding_gender_subtitle">Opcional — solo se usa para alejar el ruido de tu demografía</string>
+    <string name="onboarding_interests_title">Tus principales intereses</string>
+    <string name="onboarding_interests_subtitle">Generaremos más ruido en OTRAS categorías</string>
+    <string name="onboarding_custom_interests_title">O añade los tuyos</string>
+    <string name="onboarding_custom_interests_subtitle">Escribe intereses concretos que no aparezcan arriba (por ejemplo, \"carpintería\", \"criptomonedas\")</string>
+    <string name="onboarding_profession_title">Profesión</string>
+    <string name="onboarding_profession_subtitle">Solo se usa para calcular la distancia demográfica</string>
+    <string name="onboarding_region_title">¿Dónde te encuentras?</string>
+    <string name="onboarding_region_subtitle">Se usa para generar búsquedas y navegación que sugieran otras regiones</string>
+
+    <!-- Consent dialog -->
+    <string name="consent_title">Antes de empezar</string>
+    <string name="consent_intro">Fauxx realizará las siguientes actividades en segundo plano:</string>
+    <string name="consent_bullet_search">Buscar temas variados en Google, Bing, DuckDuckGo y Yahoo</string>
+    <string name="consent_bullet_browse">Visitar una variedad de sitios web para ampliar tu perfil de navegación</string>
+    <string name="consent_bullet_fingerprint">Rotar huellas del navegador (User-Agent, cabeceras de idioma)</string>
+    <string name="consent_bullet_dns">Generar consultas DNS hacia dominios variados</string>
+    <string name="consent_bullet_battery">Usar batería y datos móviles mientras se ejecuta en segundo plano</string>
+    <string name="consent_footer">Toda la actividad es sintética y permanece en tu dispositivo. No se recopila ni se transmite ningún dato personal.</string>
+    <string name="consent_accept">Lo entiendo, empezar</string>
+    <string name="consent_cancel">Cancelar</string>
+
+    <!-- About & Privacy -->
+    <string name="about_title">ACERCA DE Y PRIVACIDAD</string>
+    <string name="about_app_description">Una herramienta de privacidad de código abierto que envenena los perfiles de los intermediarios de datos y de la publicidad generando, desde tu dispositivo, actividad sintética continua, plausible y fuera de tu demografía.</string>
+    <string name="about_privacy_title">Política de privacidad</string>
+    <string name="about_data_on_device_title">Datos que permanecen en tu dispositivo</string>
+    <string name="about_data_on_device_body">Todos los datos personales se quedan exclusivamente en tu dispositivo y se cifran en reposo:\n\n• Perfil demográfico (edad, género, intereses, profesión, región)\n• Caché del perfil de plataformas publicitarias (categorías de interés extraídas)\n• Historial de personajes sintéticos\n• Registros de auditoría de acciones\n\nEstos datos se almacenan en una base de datos cifrada (SQLCipher) con una clave gestionada por Android Keystore. Nunca salen de tu dispositivo en ninguna forma.</string>
+    <string name="about_network_title">Solicitudes de red que realiza la app</string>
+    <string name="about_network_body">Fauxx genera actividad de navegación sintética para confundir los perfiles de seguimiento. Esto significa que la app:\n\n• Realizará búsquedas web en Google, Bing, DuckDuckGo y Yahoo\n• Visitará URL categorizadas para acumular cookies de seguimiento variadas\n• Cargará páginas variadas en webviews en segundo plano\n• Resolverá nombres de dominio para generar ruido en consultas DNS\n• Abrirá deep links de la tienda de apps para apps fuera de tu perfil\n\nTodas las solicitudes usan cabeceras User-Agent aleatorizadas y tienen un límite de frecuencia para no sobrecargar los servicios. Los dominios bloqueados (redes privadas, contenido dañino) nunca se contactan.</string>
+    <string name="about_not_collected_title">Lo que NO recopilamos</string>
+    <string name="about_not_collected_body">• Sin analíticas ni telemetría de ningún tipo\n• Sin envío de informes de fallos a servicios externos\n• Sin identificadores publicitarios ni píxeles de seguimiento\n• Sin cuentas en servidor ni almacenamiento en la nube\n• Sin compartir datos con terceros\n\nFauxx no tiene servidor backend. La app es completamente autónoma.</string>
+    <string name="about_location_title">Ruido de señal de ubicación</string>
+    <string name="about_location_body">Si está activado, el módulo de Señal de Ubicación genera consultas de búsqueda y visita sitios web que sugieren actividad en regiones distintas a tu ubicación real, dificultando que los intermediarios de datos sepan dónde vives.</string>
+    <string name="about_deletion_title">Eliminación de datos</string>
+    <string name="about_deletion_body">Puedes eliminar todos los datos almacenados en cualquier momento desde Ajustes > Borrar todos los datos. Esto eliminará permanentemente tu perfil demográfico, la caché de plataformas, el historial de personajes, los registros de acciones y restablecerá todos los ajustes a sus valores por defecto. Desinstalar la app también borra todos los datos.</string>
+    <string name="about_privacy_url">https://github.com/digital-grease/fauxx/blob/main/PRIVACY.md</string>
+    <string name="about_view_full_policy">Ver la política de privacidad completa en línea</string>
+    <string name="about_license_title">Licencia</string>
+    <string name="about_license_body">Fauxx es software de código abierto. El código fuente y los detalles de la licencia están disponibles en el repositorio del proyecto.</string>
+
+    <!-- Support -->
+    <string name="about_support_title">Apoyo</string>
+    <string name="about_support_body">Si Fauxx te resulta útil, considera invitarme a un café.</string>
+    <string name="about_support_button">Invítame a un café</string>
+
+    <!-- Play Store flavor: full-version notice -->
+    <string name="full_version_notice_title">Compilación limitada de Play Store</string>
+    <string name="full_version_notice_body">Para cumplir con las políticas de Play Store, esta compilación desactiva el envenenamiento del perfil publicitario y la suplantación de ubicación GPS. Para la versión completa y sin restricciones de Fauxx, instálala desde F-Droid o GitHub.</string>
+    <string name="full_version_notice_fdroid">F-Droid</string>
+    <string name="full_version_notice_github">GitHub</string>
+    <string name="full_version_notice_dismiss">No volver a mostrar</string>
+    <string name="full_version_fdroid_url">https://f-droid.org/packages/com.fauxx.full/</string>
+    <string name="full_version_github_url">https://github.com/digital-grease/fauxx/releases</string>
+
+    <!-- Settings: app language -->
+    <string name="settings_language_title">Idioma de la app</string>
+    <string name="settings_language_subtitle_system">Sigue el idioma de tu dispositivo</string>
+    <string name="settings_language_subtitle_explicit">La actividad sintética también usará este idioma</string>
+    <string name="settings_language_system_default">Predeterminado del sistema</string>
+    <string name="settings_language_coming_soon">Próximamente</string>
+
+    <!-- Demographic enum labels (onboarding pickers) -->
+    <string name="age_18_24">18–24</string>
+    <string name="age_25_34">25–34</string>
+    <string name="age_35_44">35–44</string>
+    <string name="age_45_54">45–54</string>
+    <string name="age_55_64">55–64</string>
+    <string name="age_65_plus">65+</string>
+
+    <string name="gender_male">Hombre</string>
+    <string name="gender_female">Mujer</string>
+    <string name="gender_prefer_not_to_say">Prefiero no decirlo</string>
+
+    <string name="profession_student">Estudiante</string>
+    <string name="profession_teacher">Docente</string>
+    <string name="profession_engineer">Ingeniería</string>
+    <string name="profession_healthcare">Personal sanitario</string>
+    <string name="profession_legal">Sector legal</string>
+    <string name="profession_finance_prof">Empresa / finanzas</string>
+    <string name="profession_retail">Comercio minorista</string>
+    <string name="profession_trades">Oficios cualificados</string>
+    <string name="profession_creative">Sector creativo</string>
+    <string name="profession_retired">Jubilado/a</string>
+    <string name="profession_homemaker">Trabajo del hogar</string>
+    <string name="profession_other">Otro</string>
+
+    <string name="region_us_northeast">Noreste de EE. UU.</string>
+    <string name="region_us_southeast">Sudeste de EE. UU.</string>
+    <string name="region_us_midwest">Medio Oeste de EE. UU.</string>
+    <string name="region_us_southwest">Sudoeste de EE. UU.</string>
+    <string name="region_us_west">Oeste de EE. UU.</string>
+    <string name="region_canada">Canadá</string>
+    <string name="region_uk">Reino Unido</string>
+    <string name="region_western_europe">Europa occidental</string>
+    <string name="region_eastern_europe">Europa oriental</string>
+    <string name="region_asia_pacific">Asia–Pacífico</string>
+    <string name="region_latin_america">América Latina</string>
+    <string name="region_middle_east_africa">Oriente Medio y África</string>
+    <string name="region_spain">España</string>
+    <string name="region_mexico">México</string>
+    <string name="region_argentina">Argentina</string>
+    <string name="region_colombia">Colombia</string>
+    <string name="region_chile">Chile</string>
+    <string name="region_peru">Perú</string>
+    <string name="region_france">Francia</string>
+    <string name="region_quebec">Quebec</string>
+    <string name="region_belgium">Bélgica</string>
+    <string name="region_switzerland">Suiza</string>
+    <string name="region_other">Otra</string>
+
+    <!-- Onboarding misc -->
+    <string name="onboarding_add_interest_cd">Añadir interés</string>
+    <string name="onboarding_remove_cd">Quitar</string>
+    <string name="onboarding_unmapped_suffix">sin asignar</string>
+    <string name="onboarding_custom_interest_placeholder">por ejemplo, carpintería</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">FAUXX</string>
+    <string name="dashboard_active">ACTIVO</string>
+    <string name="dashboard_paused">EN PAUSA</string>
+    <string name="dashboard_inactive">INACTIVO</string>
+    <string name="dashboard_today">HOY</string>
+    <string name="dashboard_this_week">ESTA SEMANA</string>
+</resources>

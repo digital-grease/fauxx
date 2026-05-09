@@ -3,6 +3,8 @@ package com.fauxx
 import android.content.Context
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.locale.LocaleManager
+import com.fauxx.locale.SupportedLocale
 import com.fauxx.targeting.layer1.AgeRange
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer1.Gender
@@ -28,8 +30,16 @@ class PersonaGeneratorDemographicTest {
 
     private val context: Context = mockk(relaxed = true) {
         every { assets } returns mockk {
+            // Both the locale-keyed path and the legacy fallback are missing — the
+            // generator falls back to its built-in random pickers, which is what
+            // these tests want to exercise.
+            every { open("persona_templates/en.json") } throws java.io.FileNotFoundException()
             every { open("persona_templates.json") } throws java.io.FileNotFoundException()
         }
+    }
+
+    private val localeManager: LocaleManager = mockk(relaxed = true) {
+        every { currentLocale } returns SupportedLocale.EN
     }
 
     @Test
@@ -43,7 +53,7 @@ class PersonaGeneratorDemographicTest {
             coEvery { get() } returns userProfile
         }
 
-        val generator = PersonaGenerator(context, historyDao, demographicDao)
+        val generator = PersonaGenerator(context, historyDao, demographicDao, localeManager)
 
         // Generate many personas and verify none match user on 2+ traits
         repeat(20) {
@@ -68,7 +78,7 @@ class PersonaGeneratorDemographicTest {
             coEvery { get() } returns userProfile
         }
 
-        val generator = PersonaGenerator(context, historyDao, demographicDao)
+        val generator = PersonaGenerator(context, historyDao, demographicDao, localeManager)
         val persona = generator.generate()
         assertNotNull(persona)
         assertTrue(persona.name.isNotBlank())
@@ -80,7 +90,7 @@ class PersonaGeneratorDemographicTest {
             coEvery { get() } returns null
         }
 
-        val generator = PersonaGenerator(context, historyDao, demographicDao)
+        val generator = PersonaGenerator(context, historyDao, demographicDao, localeManager)
         val persona = generator.generate()
         assertNotNull(persona)
         assertTrue(persona.name.isNotBlank())

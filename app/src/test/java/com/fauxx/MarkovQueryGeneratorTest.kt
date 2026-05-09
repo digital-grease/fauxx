@@ -4,8 +4,11 @@ import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.data.querybank.QueryBankManager
 import com.fauxx.data.querybank.QueryBlocklist
+import com.fauxx.locale.LocaleManager
+import com.fauxx.locale.SupportedLocale
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,7 +19,11 @@ class MarkovQueryGeneratorTest {
     private val queryBlocklist: QueryBlocklist = mockk<QueryBlocklist>().also {
         every { it.isBlocked(any()) } returns false
     }
-    private val generator = MarkovQueryGenerator(queryBankManager, queryBlocklist)
+    private val localeManager: LocaleManager = mockk(relaxed = true) {
+        every { currentLocale } returns SupportedLocale.EN
+        every { currentLocaleFlow } returns MutableStateFlow(SupportedLocale.EN)
+    }
+    private val generator = MarkovQueryGenerator(queryBankManager, queryBlocklist, localeManager)
 
     @Test
     fun `generate returns non-empty string`() {

@@ -4,8 +4,11 @@ import android.content.Context
 import androidx.annotation.Keep
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
+import com.fauxx.locale.LocaleManager
+import com.fauxx.locale.SupportedLocale
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,86 +32,130 @@ import javax.inject.Singleton
  *  4. [com.fauxx.engine.modules.SearchPoisonModule.onAction] — final dispatch gate;
  *     skips the action cycle rather than dispatching
  *
- * **Fail-closed**: if `harmful_queries.json` fails to load, [loadFailed] is set to
- * `true` and [isBlocked] returns `true` for every input. A missing safety list must
- * NEVER silently downgrade to "allow everything".
+ * **Locale-aware**: the active locale (via [LocaleManager]) selects which
+ * `harmful_queries/<localeTag>.json` to load. English (the legacy ship language) also
+ * accepts a fallback to the legacy single-file `harmful_queries.json` path so existing
+ * tests and old asset layouts continue to work. Non-English locales have no legacy
+ * fallback — if their locale-specific file is missing, [loadFailed] is set and every
+ * query is blocked. This is by design: an English blocklist would not catch the
+ * Spanish/French equivalents of crisis-line numbers, DV hotlines, or self-signal
+ * phrases, and silently substituting it would degrade the safety guarantee. See
+ * `.devloop/spikes/multilingual-support.md` and the user-memory file
+ * `project_multilingual_safety_gate.md` for the rationale.
+ *
+ * **Fail-closed**: if the active locale's harmful-queries file fails to load,
+ * [loadFailed] returns `true` for that locale and [isBlocked] returns `true` for
+ * every input until either a different locale is selected (whose file does load)
+ * or the asset is fixed and the process restarts.
  */
 @Singleton
 class QueryBlocklist @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val localeManager: LocaleManager
 ) {
-    /**
-     * `true` if `harmful_queries.json` could not be loaded. When this is set,
-     * [isBlocked] returns `true` for every query (fail-closed). Callers may expose
-     * this as a health warning.
-     */
-    @Volatile
-    var loadFailed: Boolean = false
-        private set
+    private data class BlocklistData(
+        val phraseTerms: Set<String>,
+        val regexes: List<Regex>,
+        val loadFailed: Boolean
+    )
 
-    private val parsed: HarmfulQueriesJson by lazy { loadJson() }
-
-    /** All substring terms from both harm classes, lowercased. */
-    private val phraseTerms: Set<String> by lazy {
-        (parsed.classATerms + parsed.selfSignalTerms)
-            .map { it.lowercase().trim() }
-            .filter { it.isNotEmpty() }
-            .toSet()
-    }
-
-    private val regexes: List<Regex> by lazy {
-        parsed.regexPatterns.mapNotNull {
-            runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull()
-        }
-    }
+    private val perLocale = ConcurrentHashMap<SupportedLocale, BlocklistData>()
 
     init {
-        // Eagerly resolve the lazy load so [loadFailed] is set at injection time
+        // Eagerly resolve for the active locale so [loadFailed] is set at injection time
         // before any module tries to filter a query.
-        phraseTerms.size
+        dataForCurrentLocale()
     }
 
     /**
-     * Returns `true` if [query] matches any harmful phrase or regex pattern.
+     * `true` if the active locale's harmful-queries file could not be loaded. When
+     * this is set, [isBlocked] returns `true` for every query in this locale.
+     * Callers may expose this as a health warning. Recomputed on each access; switching
+     * locales to one that loads cleanly will flip this back to false.
+     */
+    val loadFailed: Boolean
+        get() = dataForCurrentLocale().loadFailed
+
+    /**
+     * Returns `true` if [query] matches any harmful phrase or regex pattern in the
+     * active locale's blocklist.
      *
-     * Checked at every query chokepoint. Comparison is case-insensitive and uses
-     * substring match for phrase terms (multi-word anchors prevent false positives
-     * on common single words — see `harmful_queries.json` contributor rules).
+     * Comparison is case-insensitive and uses substring match for phrase terms (multi-word
+     * anchors prevent false positives on common single words — see contributor rules in
+     * each `harmful_queries/<localeTag>.json`).
      *
-     * If [loadFailed] is set, returns `true` for every input (fail-closed).
+     * If [loadFailed] is set for the active locale, returns `true` for every input.
      */
     fun isBlocked(query: String): Boolean {
-        if (loadFailed) return true
+        val data = dataForCurrentLocale()
+        if (data.loadFailed) return true
         val normalized = query.lowercase()
-        if (phraseTerms.any { normalized.contains(it) }) return true
-        if (regexes.any { it.containsMatchIn(normalized) }) return true
+        if (data.phraseTerms.any { normalized.contains(it) }) return true
+        if (data.regexes.any { it.containsMatchIn(normalized) }) return true
         return false
     }
 
-    private fun loadJson(): HarmfulQueriesJson {
-        return try {
-            val json = context.assets.open("harmful_queries.json")
-                .bufferedReader().readText()
-            val type = object : TypeToken<HarmfulQueriesJson>() {}.type
-            val result: HarmfulQueriesJson = Gson().fromJson(json, type)
-            if (result.classATerms.isEmpty() &&
-                result.selfSignalTerms.isEmpty() &&
-                result.regexPatterns.isEmpty()
-            ) {
-                Timber.e("harmful_queries.json loaded but all lists empty — failing closed")
-                loadFailed = true
-            }
-            result
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load harmful_queries.json — failing closed, all queries will be blocked")
-            loadFailed = true
-            HarmfulQueriesJson()
+    private fun dataForCurrentLocale(): BlocklistData {
+        val locale = localeManager.currentLocale
+        return perLocale.computeIfAbsent(locale) { loadFor(it) }
+    }
+
+    private fun loadFor(locale: SupportedLocale): BlocklistData {
+        val localePath = "harmful_queries/${locale.tag}.json"
+        val parsed = tryLoadFile(localePath)
+            ?: if (locale == SupportedLocale.EN) tryLoadFile(LEGACY_PATH) else null
+
+        if (parsed == null) {
+            Timber.e(
+                "Failed to load harmful_queries for locale=%s — failing closed, all " +
+                    "queries will be blocked while this locale is active",
+                locale.tag
+            )
+            return BlocklistData(emptySet(), emptyList(), loadFailed = true)
         }
+
+        if (parsed.classATerms.isEmpty() &&
+            parsed.selfSignalTerms.isEmpty() &&
+            parsed.regexPatterns.isEmpty()
+        ) {
+            Timber.e(
+                "harmful_queries for locale=%s loaded but all lists empty — failing closed",
+                locale.tag
+            )
+            return BlocklistData(emptySet(), emptyList(), loadFailed = true)
+        }
+
+        val phraseTerms = (parsed.classATerms + parsed.selfSignalTerms)
+            .map { it.lowercase().trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+        val regexes = parsed.regexPatterns.mapNotNull {
+            runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull()
+        }
+        return BlocklistData(phraseTerms, regexes, loadFailed = false)
+    }
+
+    private fun tryLoadFile(path: String): HarmfulQueriesJson? = try {
+        val json = context.assets.open(path).bufferedReader().readText()
+        val type = object : TypeToken<HarmfulQueriesJson>() {}.type
+        Gson().fromJson<HarmfulQueriesJson>(json, type)
+    } catch (e: Exception) {
+        null
+    }
+
+    companion object {
+        /**
+         * Pre-multilingual asset layout. Treated as the English blocklist when no
+         * `harmful_queries/en.json` is present. Kept for backwards compatibility with
+         * existing tests and as a transitional shim during the locale split.
+         */
+        private const val LEGACY_PATH = "harmful_queries.json"
     }
 }
 
 /**
- * JSON structure of `assets/harmful_queries.json`.
+ * JSON structure of `assets/harmful_queries/<localeTag>.json` (and the legacy
+ * `assets/harmful_queries.json`).
  *
  * @Keep: without this, R8 in release builds strips or renames this type, and
  * Gson's reflection-based deserialization returns an empty object — flipping

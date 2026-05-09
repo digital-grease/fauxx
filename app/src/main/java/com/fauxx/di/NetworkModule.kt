@@ -1,6 +1,7 @@
 package com.fauxx.di
 
 import android.content.Context
+import com.fauxx.locale.LocaleManager
 import com.fauxx.network.HeaderRandomizerInterceptor
 import com.fauxx.network.UserAgentPool
 import dagger.Module
@@ -28,8 +29,10 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideHeaderRandomizerInterceptor(uaPool: UserAgentPool): HeaderRandomizerInterceptor =
-        HeaderRandomizerInterceptor(uaPool)
+    fun provideHeaderRandomizerInterceptor(
+        uaPool: UserAgentPool,
+        localeManager: LocaleManager
+    ): HeaderRandomizerInterceptor = HeaderRandomizerInterceptor(uaPool, localeManager)
 
     @Provides
     @Singleton
