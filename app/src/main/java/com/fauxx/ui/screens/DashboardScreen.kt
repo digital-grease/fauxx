@@ -49,14 +49,18 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.EngineState
+import com.fauxx.ui.format.displayNameRes
+import com.fauxx.ui.format.statusRes
 import com.fauxx.ui.viewmodels.DashboardViewModel
 
 /**
@@ -142,7 +146,7 @@ fun DashboardScreen(
     ) {
         // Title
         Text(
-            text = "FAUXX",
+            text = stringResource(R.string.dashboard_title),
             style = MaterialTheme.typography.headlineLarge,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -158,9 +162,8 @@ fun DashboardScreen(
         // Notification permission warning
         if (notificationDenied) {
             WarningCard(
-                text = "Notification permission denied — background activity indicator is hidden. " +
-                    "Grant notification permission in Settings to see the status notification.",
-                actionLabel = "Open settings",
+                text = stringResource(R.string.dashboard_notification_denied),
+                actionLabel = stringResource(R.string.common_open_settings),
                 onAction = {
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                         data = Uri.fromParts("package", context.packageName, null)
@@ -174,10 +177,8 @@ fun DashboardScreen(
         // the app isn't on the unrestricted list. Shown until the user grants exemption.
         if (batteryOptimized && uiState.engineEnabled) {
             WarningCard(
-                text = "Android battery optimization is restricting Fauxx. " +
-                    "Background activity will pause when the screen is off. " +
-                    "Allow unrestricted background usage to keep the engine running.",
-                actionLabel = "Allow",
+                text = stringResource(R.string.dashboard_battery_optimization_warning),
+                actionLabel = stringResource(R.string.common_allow),
                 onAction = { showBatteryExplainer = true }
             )
         }
@@ -232,13 +233,15 @@ fun DashboardScreen(
 
         // Current persona card
         uiState.currentPersona?.let { persona ->
+            val interestLabels = mutableListOf<String>()
+            for (interest in persona.interests.take(3)) {
+                interestLabels += stringResource(interest.displayNameRes())
+            }
             PersonaCard(
                 name = persona.name,
-                ageRange = persona.ageRange,
-                profession = persona.profession,
-                interests = persona.interests.take(3).joinToString(", ") {
-                    it.name.lowercase().replace("_", " ")
-                }
+                ageRange = personaAgeRangeLabel(persona.ageRange),
+                profession = personaProfessionLabel(persona.profession),
+                interests = interestLabels.joinToString(", ")
             )
         }
 
@@ -270,9 +273,9 @@ private fun ProtectionCard(enabled: Boolean, engineState: EngineState, onToggle:
             Column {
                 Text(
                     text = when {
-                        isPaused -> "PAUSED"
-                        enabled -> "ACTIVE"
-                        else -> "INACTIVE"
+                        isPaused -> stringResource(R.string.dashboard_paused)
+                        enabled -> stringResource(R.string.dashboard_active)
+                        else -> stringResource(R.string.dashboard_inactive)
                     },
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -283,14 +286,7 @@ private fun ProtectionCard(enabled: Boolean, engineState: EngineState, onToggle:
                     }
                 )
                 Text(
-                    text = when (engineState) {
-                        EngineState.ACTIVE -> "Generating synthetic activity"
-                        EngineState.PAUSED_WIFI -> "Waiting for WiFi connection"
-                        EngineState.PAUSED_BATTERY -> "Battery below threshold"
-                        EngineState.PAUSED_RATE_LIMIT -> "Hourly rate limit reached"
-                        EngineState.PAUSED_QUIET_HOURS -> "Outside active hours"
-                        EngineState.STOPPED -> "Engine stopped"
-                    },
+                    text = stringResource(engineState.statusRes()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -306,8 +302,8 @@ private fun CounterRow(actionsToday: Int, actionsThisWeek: Int) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        StatCard(label = "TODAY", value = actionsToday.toString(), modifier = Modifier.weight(1f))
-        StatCard(label = "THIS WEEK", value = actionsThisWeek.toString(), modifier = Modifier.weight(1f))
+        StatCard(label = stringResource(R.string.dashboard_today), value = actionsToday.toString(), modifier = Modifier.weight(1f))
+        StatCard(label = stringResource(R.string.dashboard_this_week), value = actionsThisWeek.toString(), modifier = Modifier.weight(1f))
     }
 }
 
@@ -337,6 +333,34 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
     }
 }
 
+@Composable
+private fun personaAgeRangeLabel(ageRange: String): String = when (ageRange) {
+    "AGE_18_24", "18-24" -> stringResource(R.string.age_18_24)
+    "AGE_25_34", "25-34" -> stringResource(R.string.age_25_34)
+    "AGE_35_44", "35-44" -> stringResource(R.string.age_35_44)
+    "AGE_45_54", "45-54" -> stringResource(R.string.age_45_54)
+    "AGE_55_64", "55-64" -> stringResource(R.string.age_55_64)
+    "AGE_65_PLUS", "65+" -> stringResource(R.string.age_65_plus)
+    else -> ageRange
+}
+
+@Composable
+private fun personaProfessionLabel(profession: String): String = when (profession) {
+    "STUDENT" -> stringResource(R.string.profession_student)
+    "TEACHER" -> stringResource(R.string.profession_teacher)
+    "ENGINEER" -> stringResource(R.string.profession_engineer)
+    "HEALTHCARE" -> stringResource(R.string.profession_healthcare)
+    "LEGAL" -> stringResource(R.string.profession_legal)
+    "FINANCE_PROF" -> stringResource(R.string.profession_finance_prof)
+    "RETAIL" -> stringResource(R.string.profession_retail)
+    "TRADES" -> stringResource(R.string.profession_trades)
+    "CREATIVE" -> stringResource(R.string.profession_creative)
+    "RETIRED" -> stringResource(R.string.profession_retired)
+    "HOMEMAKER" -> stringResource(R.string.profession_homemaker)
+    "OTHER" -> stringResource(R.string.profession_other)
+    else -> profession
+}
+
 private const val MAX_CHART_SLICES = 8
 
 private val chartColors = listOf(
@@ -351,16 +375,16 @@ private val chartColors = listOf(
  */
 private fun buildChartSlices(
     distribution: Map<CategoryPool, Float>
-): List<Pair<String, Float>> {
+): List<Pair<CategoryPool?, Float>> {
     val total = distribution.values.sum()
     if (total <= 0f) return emptyList()
 
     val sorted = distribution.entries.sortedByDescending { it.value }
     val top = sorted.take(MAX_CHART_SLICES).map { (cat, w) ->
-        cat.name.lowercase().replace("_", " ") to w
+        cat to w
     }
     val otherWeight = sorted.drop(MAX_CHART_SLICES).sumOf { it.value.toDouble() }.toFloat()
-    return if (otherWeight > 0f) top + ("other" to otherWeight) else top
+    return if (otherWeight > 0f) top + (null to otherWeight) else top
 }
 
 @Composable
@@ -373,10 +397,8 @@ private fun CategoryDonutCard(distribution: Map<CategoryPool, Float>) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             SectionHeaderWithHelp(
-                title = "CATEGORY DISTRIBUTION",
-                help = "Shows how your synthetic noise is spread across topic categories. " +
-                    "A wider spread means trackers see a more confused profile. " +
-                    "Categories are weighted by the targeting engine to maximize distance from your real interests."
+                title = stringResource(R.string.dashboard_category_distribution),
+                help = stringResource(R.string.dashboard_category_distribution_help)
             )
             Spacer(Modifier.height(12.dp))
 
@@ -397,7 +419,7 @@ private fun CategoryDonutCard(distribution: Map<CategoryPool, Float>) {
 }
 
 @Composable
-private fun DonutChart(slices: List<Pair<String, Float>>, total: Float) {
+private fun DonutChart(slices: List<Pair<CategoryPool?, Float>>, total: Float) {
     Canvas(modifier = Modifier.size(140.dp)) {
         if (total <= 0f) return@Canvas
 
@@ -420,7 +442,7 @@ private fun DonutChart(slices: List<Pair<String, Float>>, total: Float) {
 
 @Composable
 private fun ChartLegend(
-    slices: List<Pair<String, Float>>,
+    slices: List<Pair<CategoryPool?, Float>>,
     total: Float,
     modifier: Modifier = Modifier
 ) {
@@ -428,7 +450,9 @@ private fun ChartLegend(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        slices.forEachIndexed { index, (label, weight) ->
+        slices.forEachIndexed { index, (category, weight) ->
+            val label = category?.let { stringResource(it.displayNameRes()) }
+                ?: stringResource(R.string.category_other)
             val pct = if (total > 0f) (weight / total * 100f).toInt() else 0
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -459,12 +483,9 @@ private fun PersonaCard(name: String, ageRange: String, profession: String, inte
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             SectionHeaderWithHelp(
-                title = "ACTIVE PERSONA",
+                title = stringResource(R.string.dashboard_active_persona),
                 titleColor = MaterialTheme.colorScheme.secondary,
-                help = "A synthetic identity the engine adopts for about a week. " +
-                    "Activity is weighted toward this persona's interests to create " +
-                    "temporally coherent noise — making it harder for trackers to " +
-                    "filter out the fake signal. Personas rotate automatically."
+                help = stringResource(R.string.dashboard_active_persona_help)
             )
             Spacer(Modifier.height(8.dp))
             Text(
@@ -474,7 +495,7 @@ private fun PersonaCard(name: String, ageRange: String, profession: String, inte
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "$ageRange · $profession",
+                text = stringResource(R.string.dashboard_persona_meta, ageRange, profession),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -545,10 +566,8 @@ private fun NoiseRatioCard(ratio: Float) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 SectionHeaderWithHelp(
-                    title = "NOISE RATIO",
-                    help = "Estimates how much of your visible browsing profile is synthetic noise " +
-                        "vs real activity. Higher is better — at 80%+, a data broker would need " +
-                        "to correctly identify 4 out of 5 signals as fake to build an accurate profile."
+                    title = stringResource(R.string.dashboard_noise_ratio),
+                    help = stringResource(R.string.dashboard_noise_ratio_help)
                 )
                 Text(
                     text = "${(animated * 100).toInt()}%",
@@ -612,20 +631,18 @@ private fun BatteryOptimizationDialog(onAllow: () -> Unit, onDismiss: () -> Unit
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Keep Fauxx running in the background",
+                text = stringResource(R.string.dashboard_battery_dialog_title),
                 style = MaterialTheme.typography.titleLarge
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Android aggressively pauses background apps to save battery. " +
-                        "For continuous profile poisoning, Fauxx needs to be exempt from battery optimization.",
+                    text = stringResource(R.string.dashboard_battery_dialog_body),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "On the next screen, choose \"Allow\" so the engine can keep " +
-                        "generating synthetic activity while your screen is off.",
+                    text = stringResource(R.string.dashboard_battery_dialog_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -633,12 +650,12 @@ private fun BatteryOptimizationDialog(onAllow: () -> Unit, onDismiss: () -> Unit
         },
         confirmButton = {
             TextButton(onClick = onAllow) {
-                Text("Continue")
+                Text(stringResource(R.string.common_continue))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Not now")
+                Text(stringResource(R.string.common_not_now))
             }
         }
     )
@@ -650,25 +667,24 @@ private fun ConsentDialog(onAccept: () -> Unit, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Before you start",
+                text = stringResource(R.string.consent_title),
                 style = MaterialTheme.typography.titleLarge
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Fauxx will perform the following background activities:",
+                    text = stringResource(R.string.consent_intro),
                     style = MaterialTheme.typography.bodyMedium
                 )
-                ConsentBullet("Search diverse topics on Google, Bing, DuckDuckGo, and Yahoo")
-                ConsentBullet("Visit a variety of websites to broaden your browsing profile")
-                ConsentBullet("Rotate browser fingerprints (User-Agent, language headers)")
-                ConsentBullet("Generate DNS lookups across varied domains")
-                ConsentBullet("Use battery and mobile data while running in the background")
+                ConsentBullet(stringResource(R.string.consent_bullet_search))
+                ConsentBullet(stringResource(R.string.consent_bullet_browse))
+                ConsentBullet(stringResource(R.string.consent_bullet_fingerprint))
+                ConsentBullet(stringResource(R.string.consent_bullet_dns))
+                ConsentBullet(stringResource(R.string.consent_bullet_battery))
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "All activity is synthetic and stays on your device. " +
-                        "No personal data is collected or transmitted.",
+                    text = stringResource(R.string.consent_footer),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -676,12 +692,12 @@ private fun ConsentDialog(onAccept: () -> Unit, onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = onAccept) {
-                Text("I understand, start")
+                Text(stringResource(R.string.consent_accept))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.consent_cancel))
             }
         }
     )

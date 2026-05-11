@@ -58,7 +58,7 @@ fun AboutScreen(onBack: () -> Unit) {
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.common_back),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
@@ -81,7 +81,11 @@ fun AboutScreen(onBack: () -> Unit) {
                 fontFamily = FontFamily.Monospace
             )
             Text(
-                "v${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
+                stringResource(
+                    R.string.settings_version_format,
+                    BuildConfig.VERSION_NAME,
+                    BuildConfig.VERSION_CODE
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontFamily = FontFamily.Monospace

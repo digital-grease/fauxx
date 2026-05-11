@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -38,6 +39,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.fauxx.R
 import com.fauxx.ui.screens.DashboardScreen
 import com.fauxx.ui.screens.LogScreen
 import com.fauxx.ui.screens.ModulesScreen
@@ -49,14 +51,14 @@ private const val README_URL = "https://github.com/digital-grease/fauxx#readme"
 private const val ISSUES_URL = "https://github.com/digital-grease/fauxx/issues/new"
 
 /** Navigation destinations. */
-sealed class Screen(val route: String, val label: String) {
-    object Dashboard : Screen("dashboard", "Dashboard")
-    object Targeting : Screen("targeting", "Targeting")
-    object Modules : Screen("modules", "Modules")
-    object Log : Screen("log", "Log")
-    object Settings : Screen("settings", "Settings")
-    object Onboarding : Screen("onboarding", "Onboarding")
-    object About : Screen("about", "About & Privacy")
+sealed class Screen(val route: String, val labelRes: Int) {
+    object Dashboard : Screen("dashboard", R.string.nav_dashboard)
+    object Targeting : Screen("targeting", R.string.nav_targeting)
+    object Modules : Screen("modules", R.string.nav_modules)
+    object Log : Screen("log", R.string.nav_log)
+    object Settings : Screen("settings", R.string.nav_settings)
+    object Onboarding : Screen("onboarding", R.string.onboarding_title)
+    object About : Screen("about", R.string.nav_about_privacy)
 }
 
 private val bottomNavItems = listOf(
@@ -80,9 +82,10 @@ fun FauxxNavGraph(showOnboarding: Boolean) {
             if (showNav) {
                 NavigationBar {
                     bottomNavItems.forEach { (screen, icon) ->
+                        val label = stringResource(screen.labelRes)
                         NavigationBarItem(
-                            icon = { Icon(icon, contentDescription = screen.label) },
-                            label = { Text(screen.label) },
+                            icon = { Icon(icon, contentDescription = label) },
+                            label = { Text(label) },
                             selected = currentDest?.hierarchy?.any { it.route == screen.route } == true,
                             onClick = {
                                 navController.navigate(screen.route) {
@@ -149,7 +152,7 @@ private fun HelpMenuButton(modifier: Modifier = Modifier) {
         IconButton(onClick = { expanded = true }) {
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                contentDescription = "Help",
+                contentDescription = stringResource(R.string.nav_help_cd),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -158,7 +161,7 @@ private fun HelpMenuButton(modifier: Modifier = Modifier) {
             onDismissRequest = { expanded = false }
         ) {
             DropdownMenuItem(
-                text = { Text("Help") },
+                text = { Text(stringResource(R.string.nav_help)) },
                 leadingIcon = { Icon(Icons.AutoMirrored.Outlined.MenuBook, contentDescription = null) },
                 onClick = {
                     expanded = false
@@ -166,7 +169,7 @@ private fun HelpMenuButton(modifier: Modifier = Modifier) {
                 }
             )
             DropdownMenuItem(
-                text = { Text("Contact us") },
+                text = { Text(stringResource(R.string.nav_contact_us)) },
                 leadingIcon = { Icon(Icons.Outlined.BugReport, contentDescription = null) },
                 onClick = {
                     expanded = false

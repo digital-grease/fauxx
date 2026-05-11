@@ -35,6 +35,8 @@ enum class Region {
     SPAIN, MEXICO, ARGENTINA, COLOMBIA, CHILE, PERU,
     // French-locale country selections.
     FRANCE, QUEBEC, BELGIUM, SWITZERLAND,
+    // Russian-locale country selection.
+    RUSSIA,
 
     OTHER
 }

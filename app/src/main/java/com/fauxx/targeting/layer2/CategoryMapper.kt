@@ -60,38 +60,41 @@ class CategoryMapper @Inject constructor(
         platformStrings.mapNotNull { map(it) }.toSet()
 
     private fun applyHeuristics(lower: String): CategoryPool? = when {
-        lower.contains("game") || lower.contains("gaming") -> CategoryPool.GAMING
-        lower.contains("health") || lower.contains("medical") || lower.contains("doctor") -> CategoryPool.MEDICAL
-        lower.contains("sport") || lower.contains("fitness") || lower.contains("exercise") -> CategoryPool.SPORTS
-        lower.contains("travel") || lower.contains("vacation") || lower.contains("hotel") -> CategoryPool.TRAVEL
-        lower.contains("food") || lower.contains("recipe") || lower.contains("restaurant") -> CategoryPool.FOOD
-        lower.contains("tech") || lower.contains("software") || lower.contains("computer") -> CategoryPool.TECHNOLOGY
-        lower.contains("fashion") || lower.contains("clothing") || lower.contains("apparel") -> CategoryPool.FASHION
-        lower.contains("finance") || lower.contains("invest") || lower.contains("stock") -> CategoryPool.FINANCE
-        lower.contains("parent") || lower.contains("baby") || lower.contains("child") -> CategoryPool.PARENTING
-        lower.contains("auto") || lower.contains("car") || lower.contains("vehicle") -> CategoryPool.AUTOMOTIVE
-        lower.contains("home") || lower.contains("garden") || lower.contains("house") -> CategoryPool.HOME_IMPROVEMENT
-        lower.contains("music") || lower.contains("concert") || lower.contains("album") -> CategoryPool.MUSIC
-        lower.contains("beauty") || lower.contains("cosmetic") || lower.contains("makeup") -> CategoryPool.BEAUTY
-        lower.contains("cook") || lower.contains("baking") || lower.contains("kitchen") -> CategoryPool.COOKING
-        lower.contains("real estate") || lower.contains("property") || lower.contains("mortgage") -> CategoryPool.REAL_ESTATE
-        lower.contains("retire") || lower.contains("pension") || lower.contains("senior") -> CategoryPool.RETIREMENT
-        lower.contains("legal") || lower.contains("lawyer") || lower.contains("attorney") -> CategoryPool.LEGAL
-        lower.contains("farm") || lower.contains("agriculture") || lower.contains("crop") -> CategoryPool.AGRICULTURE
-        lower.contains("educat") || lower.contains("academic") || lower.contains("college") -> CategoryPool.ACADEMIC
-        lower.contains("pet") || lower.contains("dog") || lower.contains("cat") -> CategoryPool.PETS
-        lower.contains("entertain") || lower.contains("movie") || lower.contains("film") -> CategoryPool.ENTERTAINMENT
-        lower.contains("science") || lower.contains("research") || lower.contains("lab") -> CategoryPool.SCIENCE
-        lower.contains("business") || lower.contains("entrepreneur") || lower.contains("startup") -> CategoryPool.BUSINESS
-        lower.contains("hiking") || lower.contains("camping") || lower.contains("fishing") || lower.contains("outdoor") || lower.contains("hunting") -> CategoryPool.OUTDOOR_RECREATION
-        lower.contains("craft") || lower.contains("knitting") || lower.contains("pottery") || lower.contains("quilt") || lower.contains("scrapbook") -> CategoryPool.CRAFTS
-        lower.contains("history") || lower.contains("museum") || lower.contains("genealogy") || lower.contains("antique") || lower.contains("historical") -> CategoryPool.HISTORY
-        lower.contains("climate") || lower.contains("sustainability") || lower.contains("conservation") || lower.contains("renewable") || lower.contains("environment") -> CategoryPool.ENVIRONMENT
-        lower.contains("military") || lower.contains("veteran") || lower.contains("defense") || lower.contains("army") || lower.contains("navy") -> CategoryPool.MILITARY_DEFENSE
-        lower.contains("meditation") || lower.contains("astrology") || lower.contains("crystal") || lower.contains("holistic") || lower.contains("essential oil") -> CategoryPool.WELLNESS_ALTERNATIVE
-        lower.contains("dating") || lower.contains("relationship") || lower.contains("wedding") || lower.contains("marriage") || lower.contains("breakup") -> CategoryPool.RELATIONSHIPS_DATING
+        containsAny(lower, "game", "gaming", "игр", "гейм") -> CategoryPool.GAMING
+        containsAny(lower, "health", "medical", "doctor", "здоров", "медицин", "врач", "клиник") -> CategoryPool.MEDICAL
+        containsAny(lower, "sport", "fitness", "exercise", "спорт", "фитнес", "трениров") -> CategoryPool.SPORTS
+        containsAny(lower, "travel", "vacation", "hotel", "путешеств", "отпуск", "отель", "гостиниц") -> CategoryPool.TRAVEL
+        containsAny(lower, "food", "recipe", "restaurant", "еда", "рецепт", "ресторан", "кафе", "продукт") -> CategoryPool.FOOD
+        containsAny(lower, "tech", "software", "computer", "технолог", "софт", "программ", "компьютер", "смартфон") -> CategoryPool.TECHNOLOGY
+        containsAny(lower, "fashion", "clothing", "apparel", "мода", "одежд", "гардероб", "стиль") -> CategoryPool.FASHION
+        containsAny(lower, "finance", "invest", "stock", "финанс", "инвест", "акци", "облигац", "бюджет") -> CategoryPool.FINANCE
+        containsAny(lower, "parent", "baby", "child", "родител", "ребен", "детск", "малыш") -> CategoryPool.PARENTING
+        containsAny(lower, "auto", "car", "vehicle", "авто", "машин", "транспорт") -> CategoryPool.AUTOMOTIVE
+        containsAny(lower, "pet", "dog", "cat", "питом", "собак", "кош", "животн") -> CategoryPool.PETS
+        containsAny(lower, "home", "house", "ремонт", "квартир", "дом", "интерьер", "мебел") -> CategoryPool.HOME_IMPROVEMENT
+        containsAny(lower, "music", "concert", "album", "музык", "концерт", "альбом") -> CategoryPool.MUSIC
+        containsAny(lower, "beauty", "cosmetic", "makeup", "красот", "космет", "макияж", "уход") -> CategoryPool.BEAUTY
+        containsAny(lower, "cook", "baking", "kitchen", "кулинар", "готов", "выпеч", "кухн") -> CategoryPool.COOKING
+        containsAny(lower, "real estate", "property", "mortgage", "недвиж", "ипотек", "застройщик") -> CategoryPool.REAL_ESTATE
+        containsAny(lower, "retire", "pension", "senior", "пенси", "пожил") -> CategoryPool.RETIREMENT
+        containsAny(lower, "legal", "lawyer", "attorney", "юрид", "адвокат", "нотари", "договор") -> CategoryPool.LEGAL
+        containsAny(lower, "farm", "agriculture", "crop", "ферм", "сельск", "садовод", "урожай", "теплиц") -> CategoryPool.AGRICULTURE
+        containsAny(lower, "educat", "academic", "college", "учеб", "образован", "университет", "школ", "курс") -> CategoryPool.ACADEMIC
+        containsAny(lower, "entertain", "movie", "film", "развлеч", "кино", "фильм", "сериал", "театр") -> CategoryPool.ENTERTAINMENT
+        containsAny(lower, "science", "research", "lab", "наук", "исследован", "лаборатор", "космос") -> CategoryPool.SCIENCE
+        containsAny(lower, "business", "entrepreneur", "startup", "бизнес", "предприним", "стартап", "маркетинг") -> CategoryPool.BUSINESS
+        containsAny(lower, "hiking", "camping", "fishing", "outdoor", "hunting", "поход", "кемпинг", "рыбал", "палатк", "трекинг") -> CategoryPool.OUTDOOR_RECREATION
+        containsAny(lower, "craft", "knitting", "pottery", "quilt", "scrapbook", "рукодел", "вяза", "вышив", "гончар", "поделк") -> CategoryPool.CRAFTS
+        containsAny(lower, "history", "museum", "genealogy", "antique", "historical", "истори", "музей", "генеалог", "антиквар") -> CategoryPool.HISTORY
+        containsAny(lower, "climate", "sustainability", "conservation", "renewable", "environment", "эколог", "климат", "переработ", "заповедник") -> CategoryPool.ENVIRONMENT
+        containsAny(lower, "military", "veteran", "defense", "army", "navy", "военн", "армия", "флот", "оборона") -> CategoryPool.MILITARY_DEFENSE
+        containsAny(lower, "meditation", "astrology", "crystal", "holistic", "essential oil", "медитац", "астролог", "кристалл", "ароматерап") -> CategoryPool.WELLNESS_ALTERNATIVE
+        containsAny(lower, "dating", "relationship", "wedding", "marriage", "breakup", "знакомств", "отношен", "свидан", "свадьб") -> CategoryPool.RELATIONSHIPS_DATING
         else -> null
     }
+
+    private fun containsAny(input: String, vararg needles: String): Boolean =
+        needles.any { input.contains(it) }
 
     private fun loadExactMap(): Map<String, String> {
         return try {

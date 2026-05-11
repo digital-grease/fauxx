@@ -35,7 +35,7 @@ private data class SearchEngine(
     val build: (encodedQuery: String, locale: SupportedLocale) -> String
 )
 
-private val SEARCH_ENGINES = listOf(
+private val BASE_SEARCH_ENGINES = listOf(
     SearchEngine("google") { q, l ->
         "https://www.google.com/search?q=$q&hl=${l.tag}&gl=${l.defaultRegion}"
     },
@@ -49,6 +49,18 @@ private val SEARCH_ENGINES = listOf(
         "https://${l.yahooSubdomainPrefix}search.yahoo.com/search?p=$q"
     }
 )
+
+private val RU_SEARCH_ENGINES = BASE_SEARCH_ENGINES + listOf(
+    SearchEngine("yandex") { q, _ ->
+        "https://yandex.ru/search/?text=$q&lr=213"
+    },
+    SearchEngine("mailru") { q, _ ->
+        "https://go.mail.ru/search?q=$q"
+    }
+)
+
+private fun searchEnginesFor(locale: SupportedLocale): List<SearchEngine> =
+    if (locale == SupportedLocale.RU) RU_SEARCH_ENGINES else BASE_SEARCH_ENGINES
 
 /**
  * Executes synthetic search queries across multiple search engines.
@@ -133,8 +145,9 @@ class SearchPoisonModule @Inject constructor(
         }
 
         val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
-        val engine = SEARCH_ENGINES.random()
-        val url = engine.build(encodedQuery, localeManager.currentLocale)
+        val locale = localeManager.currentLocale
+        val engine = searchEnginesFor(locale).random()
+        val url = engine.build(encodedQuery, locale)
 
         try {
             val request = Request.Builder().url(url).get().build()

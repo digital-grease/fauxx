@@ -10,10 +10,25 @@
     <string name="notification_paused_wifi">Paused — waiting for WiFi</string>
     <string name="notification_paused_battery">Paused — battery low</string>
     <string name="notification_paused_rate_limit">Paused — hourly limit reached</string>
+    <string name="notification_paused_quiet_hours">Paused — outside active hours</string>
     <string name="notification_stopped">Stopped</string>
     <string name="notification_initializing">Initializing…</string>
     <string name="notification_action_open">Open</string>
     <string name="notification_action_stop">Stop</string>
+    <string name="resume_channel_name">Resume protection</string>
+    <string name="resume_channel_desc">Prompts you to resume Fauxx after device reboot</string>
+    <string name="resume_notification_text">Tap to resume protection</string>
+
+    <!-- Common actions -->
+    <string name="common_cancel">Cancel</string>
+    <string name="common_clear">Clear</string>
+    <string name="common_continue">Continue</string>
+    <string name="common_not_now">Not now</string>
+    <string name="common_allow">Allow</string>
+    <string name="common_open_settings">Open settings</string>
+    <string name="common_back">Back</string>
+    <string name="common_success">Success</string>
+    <string name="common_failed">Failed</string>
 
     <!-- Onboarding -->
     <string name="onboarding_title">FAUXX</string>
@@ -98,6 +113,212 @@
     <string name="settings_language_system_default">System default</string>
     <string name="settings_language_coming_soon">Coming soon</string>
 
+    <!-- Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_targeting">Targeting</string>
+    <string name="nav_modules">Modules</string>
+    <string name="nav_log">Log</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_about_privacy">About &amp; Privacy</string>
+    <string name="nav_help_cd">Help</string>
+    <string name="nav_help">Help</string>
+    <string name="nav_contact_us">Contact us</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">SETTINGS</string>
+    <string name="settings_intensity_title">Intensity</string>
+    <string name="settings_actions_per_hour">%1$d actions/hour</string>
+    <string name="settings_theme_title">Theme</string>
+    <string name="settings_theme_system_desc">Follows your device theme</string>
+    <string name="settings_theme_light_desc">Always light</string>
+    <string name="settings_theme_dark_desc">Always dark</string>
+    <string name="settings_wifi_only_title">Wi-Fi Only</string>
+    <string name="settings_wifi_only_desc">Pause when on mobile data</string>
+    <string name="settings_resume_reboot_title">Resume after reboot</string>
+    <string name="settings_resume_reboot_desc">After a reboot, show a notification to resume protection. Android blocks apps from silently starting themselves in the background, so a tap is required.</string>
+    <string name="settings_pause_below_title">Pause below</string>
+    <string name="settings_active_hours_title">Active Hours</string>
+    <string name="settings_active_hours_value">%1$d:00 – %2$d:00</string>
+    <string name="settings_active_hours_start">Start</string>
+    <string name="settings_active_hours_end">End</string>
+    <string name="settings_active_hours_desc">Activity is paused outside these hours</string>
+    <string name="settings_active_hours_narrow_warning">A narrow activity window (%1$dh) can itself be a trackable signal. Wider windows (12h+) are harder for trackers to distinguish from real usage.</string>
+    <string name="settings_clear_all_data">Clear All Data</string>
+    <string name="settings_export_debug_logs">Export Debug Logs</string>
+    <string name="settings_about_privacy_policy">About &amp; Privacy Policy</string>
+    <string name="settings_version_format">Fauxx v%1$s (build %2$d)</string>
+    <string name="settings_clear_dialog_title">Clear All Data?</string>
+    <string name="settings_clear_dialog_body">This will permanently delete:\n• All action logs\n• Your demographic profile\n• Ad platform profile cache\n• Persona generation history\n\nAll settings will be reset to defaults. The engine will stop and return to Layer 0 (uniform noise).\n\nThis cannot be undone.</string>
+    <string name="settings_clear_dialog_confirm">Clear Everything</string>
+
+    <!-- Intensity and theme labels -->
+    <string name="intensity_low">LOW</string>
+    <string name="intensity_medium">MEDIUM</string>
+    <string name="intensity_high">HIGH</string>
+    <string name="theme_system">SYSTEM</string>
+    <string name="theme_light">LIGHT</string>
+    <string name="theme_dark">DARK</string>
+
+    <!-- Dashboard screen -->
+    <string name="dashboard_notification_denied">Notification permission denied — background activity indicator is hidden. Grant notification permission in Settings to see the status notification.</string>
+    <string name="dashboard_battery_optimization_warning">Android battery optimization is restricting Fauxx. Background activity will pause when the screen is off. Allow unrestricted background usage to keep the engine running.</string>
+    <string name="dashboard_engine_generating">Generating synthetic activity</string>
+    <string name="dashboard_engine_waiting_wifi">Waiting for WiFi connection</string>
+    <string name="dashboard_engine_battery_low">Battery below threshold</string>
+    <string name="dashboard_engine_rate_limit">Hourly rate limit reached</string>
+    <string name="dashboard_engine_outside_hours">Outside active hours</string>
+    <string name="dashboard_engine_stopped">Engine stopped</string>
+    <string name="dashboard_category_distribution">CATEGORY DISTRIBUTION</string>
+    <string name="dashboard_category_distribution_help">Shows how your synthetic noise is spread across topic categories. A wider spread means trackers see a more confused profile. Categories are weighted by the targeting engine to maximize distance from your real interests.</string>
+    <string name="dashboard_active_persona">ACTIVE PERSONA</string>
+    <string name="dashboard_active_persona_help">A synthetic identity the engine adopts for about a week. Activity is weighted toward this persona\'s interests to create temporally coherent noise, making it harder for trackers to filter out the fake signal. Personas rotate automatically.</string>
+    <string name="dashboard_persona_meta">%1$s · %2$s</string>
+    <string name="dashboard_noise_ratio">NOISE RATIO</string>
+    <string name="dashboard_noise_ratio_help">Estimates how much of your visible browsing profile is synthetic noise vs real activity. Higher is better — at 80%%+, a data broker would need to correctly identify 4 out of 5 signals as fake to build an accurate profile.</string>
+    <string name="dashboard_battery_dialog_title">Keep Fauxx running in the background</string>
+    <string name="dashboard_battery_dialog_body">Android aggressively pauses background apps to save battery. For continuous profile poisoning, Fauxx needs to be exempt from battery optimization.</string>
+    <string name="dashboard_battery_dialog_note">On the next screen, choose &quot;Allow&quot; so the engine can keep generating synthetic activity while your screen is off.</string>
+
+    <!-- Targeting screen -->
+    <string name="targeting_title">TARGETING ENGINE</string>
+    <string name="targeting_layer1_name">Layer 1 — Self Report</string>
+    <string name="targeting_layer1_desc">Boosts noise away from your declared demographics</string>
+    <string name="targeting_profile_set">Profile set</string>
+    <string name="targeting_no_profile">No profile</string>
+    <string name="targeting_layer2_name">Layer 2 — Adversarial Scraper</string>
+    <string name="targeting_layer2_desc">Reads ad-platform profiles to find confirmed interests</string>
+    <string name="targeting_last_scraped">Last scraped: %1$s</string>
+    <string name="targeting_scrape_now">Scrape Now</string>
+    <string name="targeting_layer3_name">Layer 3 — Persona Rotation</string>
+    <string name="targeting_layer3_desc">Maintains coherent synthetic personas (rotates weekly)</string>
+    <string name="targeting_persona_status">Persona: %1$s</string>
+    <string name="targeting_no_persona">No persona yet</string>
+    <string name="targeting_rotate_now">Rotate Now</string>
+    <string name="targeting_category_weights">CATEGORY WEIGHTS</string>
+    <string name="targeting_custom_interests_title">Custom Interests</string>
+    <string name="targeting_custom_interests_desc">Add specific interests to suppress (mapped to nearest category)</string>
+    <string name="targeting_custom_interest_placeholder">e.g., woodworking</string>
+    <string name="targeting_add_interest_cd">Add interest</string>
+    <string name="targeting_remove_cd">Remove</string>
+    <string name="targeting_unmapped_suffix">unmapped</string>
+    <string name="targeting_interest_mapping">%1$s → %2$s</string>
+    <string name="targeting_interest_unmapped">%1$s (%2$s)</string>
+    <string name="targeting_clear_profile">Clear My Profile</string>
+    <string name="targeting_clear_dialog_title">Clear Profile?</string>
+    <string name="targeting_clear_dialog_body">This will delete your demographic profile, all platform data, and persona history. The engine will revert to uniform random targeting.</string>
+
+    <!-- Modules screen -->
+    <string name="modules_title">MODULES</string>
+    <string name="module_search_name">Search Poisoning</string>
+    <string name="module_search_desc">Executes search queries across Google, Bing, DuckDuckGo, Yahoo, Yandex, and Mail.ru when Russian is active</string>
+    <string name="module_cookie_name">Cookie Saturation</string>
+    <string name="module_cookie_desc">Visits 10,000+ URLs in background to accumulate diverse tracker cookies</string>
+    <string name="module_dns_name">DNS Noise</string>
+    <string name="module_dns_desc">Resolves diverse domains to generate ISP-visible DNS query noise</string>
+    <string name="module_fingerprint_name">Fingerprint Rotation</string>
+    <string name="module_fingerprint_desc">Rotates User-Agent, canvas noise, and navigator properties</string>
+    <string name="module_ad_name">Ad Pollution</string>
+    <string name="module_ad_desc">Loads ad-heavy pages and visits ad preference dashboards</string>
+    <string name="module_location_name">Location Spoofing</string>
+    <string name="module_location_desc">Feeds synthetic GPS routes via MockLocationProvider</string>
+    <string name="module_location_warning">Requires Developer Options enabled and Fauxx selected as mock location app</string>
+    <string name="module_app_signal_name">App Signals</string>
+    <string name="module_app_signal_desc">Opens app store pages for off-profile apps to trigger attribution pixels</string>
+
+    <!-- Log screen -->
+    <string name="log_title">ACTION LOG</string>
+    <string name="log_export_cd">Export</string>
+    <string name="log_export_csv">Export CSV</string>
+    <string name="log_export_json">Export JSON</string>
+    <string name="log_filter_all">All</string>
+    <string name="log_detail_type">Type</string>
+    <string name="log_detail_category">Category</string>
+    <string name="log_detail_detail">Detail</string>
+    <string name="log_detail_time">Time</string>
+    <string name="log_detail_status">Status</string>
+    <string name="log_export_chooser_title">Export Log</string>
+
+    <!-- Log export sheet -->
+    <string name="log_export_logs_scrubbed">All personal data has been scrubbed from the logs.</string>
+    <string name="log_export_file_issue">File a GitHub Issue</string>
+    <string name="log_export_file_issue_desc">Logs are copied to your clipboard — paste into the issue body</string>
+    <string name="log_export_share">Share via...</string>
+    <string name="log_export_share_desc">Send to email, Slack, or another app</string>
+    <string name="log_export_save">Save to device</string>
+    <string name="log_export_save_desc">Saves to Downloads folder</string>
+    <string name="log_export_copy">Copy to clipboard</string>
+    <string name="log_export_copy_desc">Copy the full log text</string>
+    <string name="log_export_issue_label_crash">crash report</string>
+    <string name="log_export_issue_label_debug">debug logs</string>
+    <string name="log_export_issue_body">## Description\n\n[Describe what happened]\n\n## Logs\n\nLogs were copied to your clipboard — paste them between the fences below.\n\n```\n\n```\n</string>
+    <string name="log_export_toast_issue_copied">Full logs copied to clipboard — paste into the issue body</string>
+    <string name="log_export_toast_no_browser">No browser found — logs copied to clipboard</string>
+    <string name="log_export_share_message">Fauxx %1$s — see attached file.</string>
+    <string name="log_export_toast_no_share_app">No sharing app found</string>
+    <string name="log_export_toast_downloads_requires_q">Save to Downloads requires Android 10+</string>
+    <string name="log_export_toast_saved">Saved to Downloads/%1$s</string>
+    <string name="log_export_toast_failed_save">Failed to save file</string>
+    <string name="log_export_clipboard_label">Fauxx Logs</string>
+    <string name="log_export_toast_copied">Copied to clipboard</string>
+
+    <!-- Crash report -->
+    <string name="crash_report_title">Fauxx Crashed</string>
+    <string name="crash_report_body">Fauxx crashed during the last session. You can share the crash report to help diagnose the issue. The report has been scrubbed of personal data.</string>
+    <string name="crash_report_share">Share Report</string>
+    <string name="crash_report_dismiss">Dismiss</string>
+    <string name="crash_report_sheet_title">Crash Report</string>
+
+    <!-- Asset health warnings -->
+    <string name="health_warning_blocklist">Safety blocklist failed to load — URL-based modules disabled</string>
+    <string name="health_warning_query_banks">Query banks failed to load — search noise may be generic</string>
+    <string name="health_warning_url_corpus">URL corpus is empty — browsing modules will not function</string>
+    <string name="health_warning_city_database">City database failed to load — location noise limited to one city</string>
+
+    <!-- Action type labels -->
+    <string name="action_type_search_query">SEARCH</string>
+    <string name="action_type_ad_click">AD CLICK</string>
+    <string name="action_type_page_visit">PAGE VISIT</string>
+    <string name="action_type_location_spoof">LOCATION</string>
+    <string name="action_type_dns_lookup">DNS</string>
+    <string name="action_type_cookie_harvest">COOKIES</string>
+    <string name="action_type_deep_link_visit">DEEP LINK</string>
+    <string name="action_type_fingerprint_rotate">FINGERPRINT</string>
+
+    <!-- Category labels -->
+    <string name="category_medical">medical</string>
+    <string name="category_legal">legal</string>
+    <string name="category_automotive">automotive</string>
+    <string name="category_parenting">parenting</string>
+    <string name="category_retirement">retirement</string>
+    <string name="category_gaming">gaming</string>
+    <string name="category_agriculture">agriculture</string>
+    <string name="category_fashion">fashion</string>
+    <string name="category_academic">academic</string>
+    <string name="category_real_estate">real estate</string>
+    <string name="category_cooking">cooking</string>
+    <string name="category_sports">sports</string>
+    <string name="category_finance">finance</string>
+    <string name="category_travel">travel</string>
+    <string name="category_technology">technology</string>
+    <string name="category_pets">pets</string>
+    <string name="category_home_improvement">home improvement</string>
+    <string name="category_beauty">beauty</string>
+    <string name="category_music">music</string>
+    <string name="category_fitness">fitness</string>
+    <string name="category_entertainment">entertainment</string>
+    <string name="category_food">food</string>
+    <string name="category_politics">politics</string>
+    <string name="category_science">science</string>
+    <string name="category_business">business</string>
+    <string name="category_outdoor_recreation">outdoor recreation</string>
+    <string name="category_crafts">crafts</string>
+    <string name="category_history">history</string>
+    <string name="category_environment">environment</string>
+    <string name="category_military_defense">military defense</string>
+    <string name="category_wellness_alternative">alternative wellness</string>
+    <string name="category_relationships_dating">relationships and dating</string>
+    <string name="category_other">other</string>
+
     <!-- Demographic enum labels (onboarding pickers) -->
     <string name="age_18_24">18–24</string>
     <string name="age_25_34">25–34</string>
@@ -145,6 +366,7 @@
     <string name="region_quebec">Quebec</string>
     <string name="region_belgium">Belgium</string>
     <string name="region_switzerland">Switzerland</string>
+    <string name="region_russia">Russia</string>
     <string name="region_other">Other</string>
 
     <!-- Onboarding misc -->

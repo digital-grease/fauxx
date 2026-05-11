@@ -70,10 +70,10 @@ class BootReceiver : BroadcastReceiver() {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channel = NotificationChannel(
             RESUME_CHANNEL_ID,
-            "Resume protection",
+            context.getString(R.string.resume_channel_name),
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = "Prompts you to resume Fauxx after device reboot"
+            description = context.getString(R.string.resume_channel_desc)
             setShowBadge(true)
         }
         nm.createNotificationChannel(channel)
@@ -88,8 +88,8 @@ class BootReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, RESUME_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Fauxx")
-            .setContentText("Tap to resume protection")
+            .setContentTitle(context.getString(R.string.notification_title))
+            .setContentText(context.getString(R.string.resume_notification_text))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)

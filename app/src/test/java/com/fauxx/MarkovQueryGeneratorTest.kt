@@ -9,6 +9,7 @@ import com.fauxx.locale.SupportedLocale
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -131,5 +132,12 @@ class MarkovQueryGeneratorTest {
                 wordCount >= 3
             )
         }
+    }
+
+    @Test
+    fun `sanitize seed phrase preserves russian custom interests`() {
+        val result = MarkovQueryGenerator.sanitizeSeedPhrase("Настольные игры и кооперативы!")
+
+        assertEquals("настольные игры и кооперативы", result)
     }
 }

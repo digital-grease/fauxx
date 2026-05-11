@@ -149,6 +149,7 @@
     <string name="region_quebec">Québec</string>
     <string name="region_belgium">Belgique</string>
     <string name="region_switzerland">Suisse</string>
+    <string name="region_russia">Russie</string>
     <string name="region_other">Autre</string>
 
     <!-- Onboarding misc -->

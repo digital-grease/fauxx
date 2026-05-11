@@ -82,6 +82,13 @@ class HeaderRandomizerInterceptor @Inject constructor(
                 "fr-FR,fr;q=0.9",
                 "fr-FR,fr;q=0.9,en-US;q=0.7,en;q=0.5",
                 "fr-BE,fr;q=0.9,en;q=0.6"
+            ),
+            SupportedLocale.RU to listOf(
+                "ru-RU,ru;q=0.9,en;q=0.5",
+                "ru-RU,ru;q=0.9",
+                "ru-RU,ru;q=0.9,en-US;q=0.6,en;q=0.4",
+                "ru-KZ,ru;q=0.9,en;q=0.5",
+                "ru-BY,ru;q=0.9,ru-RU;q=0.8,en;q=0.4"
             )
         )
     }

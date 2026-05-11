@@ -86,6 +86,23 @@ class LocaleIntegrationTest {
     }
 
     @Test
+    fun `header randomizer emits Russian primary when locale is ru`() {
+        val captured = mutableListOf<Request>()
+        val interceptor = HeaderRandomizerInterceptor(ua(), localeManager(SupportedLocale.RU))
+        repeat(20) { interceptor.intercept(fakeChain(captured)) }
+
+        val acceptLanguages = captured.map { it.header("Accept-Language") ?: "" }
+        assertTrue(
+            "All emissions must have a Russian primary tag — got $acceptLanguages",
+            acceptLanguages.all { it.startsWith("ru-") || it.startsWith("ru,") }
+        )
+        assertTrue(
+            "Should never emit en as primary in Russian locale",
+            acceptLanguages.none { it.startsWith("en-") || it.startsWith("en,") }
+        )
+    }
+
+    @Test
     fun `header randomizer emits English primary when locale is en`() {
         val captured = mutableListOf<Request>()
         val interceptor = HeaderRandomizerInterceptor(ua(), localeManager(SupportedLocale.EN))
@@ -104,10 +121,12 @@ class LocaleIntegrationTest {
         assertEquals("US", SupportedLocale.EN.defaultRegion)
         assertEquals("ES", SupportedLocale.ES.defaultRegion)
         assertEquals("FR", SupportedLocale.FR.defaultRegion)
+        assertEquals("RU", SupportedLocale.RU.defaultRegion)
 
         assertEquals("", SupportedLocale.EN.yahooSubdomainPrefix)
         assertEquals("es.", SupportedLocale.ES.yahooSubdomainPrefix)
         assertEquals("fr.", SupportedLocale.FR.yahooSubdomainPrefix)
+        assertEquals("ru.", SupportedLocale.RU.yahooSubdomainPrefix)
     }
 
     @Test
@@ -118,6 +137,7 @@ class LocaleIntegrationTest {
         assertEquals(SupportedLocale.EN, SupportedLocale.fromTag(""))
         assertEquals(SupportedLocale.ES, SupportedLocale.fromTag("es-MX"))
         assertEquals(SupportedLocale.FR, SupportedLocale.fromTag("fr-CA"))
+        assertEquals(SupportedLocale.RU, SupportedLocale.fromTag("ru-RU"))
     }
 
     @Test
@@ -125,5 +145,6 @@ class LocaleIntegrationTest {
         val shipped = com.fauxx.BuildConfig.SHIPPED_LOCALES
         assertNotNull(shipped)
         assertTrue("SHIPPED_LOCALES must include at least 'en'", "en" in shipped)
+        assertTrue("Debug SHIPPED_LOCALES must include 'ru'", "ru" in shipped)
     }
 }

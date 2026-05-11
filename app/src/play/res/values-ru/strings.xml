@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Play-flavor Russian wording keeps the neutral Play Store description. -->
+<resources>
+    <string name="about_app_description">Открытый инструмент приватности, который расширяет ваш браузерный профиль, создавая непрерывную разнообразную синтетическую активность по множеству тематических категорий, делая таргетинг по узким интересам менее эффективным.</string>
+</resources>

@@ -61,7 +61,7 @@ object PreferenceKeys {
     val RESUME_ON_BOOT = booleanPreferencesKey("resume_on_boot")
 
     // App language override. Null/missing = follow system locale (filtered to a
-    // SupportedLocale, fallback EN). Otherwise a SupportedLocale.tag value: "en", "es", "fr".
+    // SupportedLocale, fallback EN). Otherwise a SupportedLocale.tag value: "en", "es", "fr", "ru".
     // Read by com.fauxx.locale.LocaleManager.
     val LANGUAGE_OVERRIDE = stringPreferencesKey("language_override")
 }

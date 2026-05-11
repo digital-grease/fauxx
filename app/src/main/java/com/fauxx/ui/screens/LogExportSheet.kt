@@ -35,9 +35,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.fauxx.R
 import java.io.File
 
 private const val GITHUB_ISSUES_URL = "https://github.com/digital-grease/fauxx/issues/new"
@@ -75,7 +77,7 @@ fun LogExportSheet(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "All personal data has been scrubbed from the logs.",
+                text = stringResource(R.string.log_export_logs_scrubbed),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -83,8 +85,8 @@ fun LogExportSheet(
 
             ExportOption(
                 icon = { Icon(Icons.Outlined.BugReport, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                label = "File a GitHub Issue",
-                description = "Logs are copied to your clipboard — paste into the issue body",
+                label = stringResource(R.string.log_export_file_issue),
+                description = stringResource(R.string.log_export_file_issue_desc),
                 onClick = {
                     copyToClipboard(context, content, silent = true)
                     openGitHubIssue(context, fileName)
@@ -94,8 +96,8 @@ fun LogExportSheet(
 
             ExportOption(
                 icon = { Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                label = "Share via...",
-                description = "Send to email, Slack, or another app",
+                label = stringResource(R.string.log_export_share),
+                description = stringResource(R.string.log_export_share_desc),
                 onClick = {
                     shareViaIntent(context, content, fileName, title)
                     onDismiss()
@@ -104,8 +106,8 @@ fun LogExportSheet(
 
             ExportOption(
                 icon = { Icon(Icons.Outlined.Save, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                label = "Save to device",
-                description = "Saves to Downloads folder",
+                label = stringResource(R.string.log_export_save),
+                description = stringResource(R.string.log_export_save_desc),
                 onClick = {
                     saveToDownloads(context, content, fileName)
                     onDismiss()
@@ -114,8 +116,8 @@ fun LogExportSheet(
 
             ExportOption(
                 icon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                label = "Copy to clipboard",
-                description = "Copy the full log text",
+                label = stringResource(R.string.log_export_copy),
+                description = stringResource(R.string.log_export_copy_desc),
                 onClick = {
                     copyToClipboard(context, content)
                     onDismiss()
@@ -153,22 +155,25 @@ private fun ExportOption(
 }
 
 private fun openGitHubIssue(context: Context, fileName: String) {
-    val label = if (fileName.contains("crash")) "crash report" else "debug logs"
+    val label = if (fileName.contains("crash")) {
+        context.getString(R.string.log_export_issue_label_crash)
+    } else {
+        context.getString(R.string.log_export_issue_label_debug)
+    }
 
     // The body template scaffolds the issue; logs go in via clipboard paste by the
     // user. Do NOT embed log content in the URL — GitHub returns 500 when the
     // URL-encoded body parameter grows past its request-line limit, and log payloads
     // inflate 2–3× under URL encoding.
-    val bodyTemplate = "## Description\n\n[Describe what happened]\n\n" +
-        "## Logs\n\nLogs were copied to your clipboard — paste them between the fences below.\n\n```\n\n```\n"
+    val bodyTemplate = context.getString(R.string.log_export_issue_body)
 
     val url = "$GITHUB_ISSUES_URL?labels=bug&title=Bug+report+with+$label&body=${Uri.encode(bodyTemplate)}"
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
     try {
         context.startActivity(intent)
-        Toast.makeText(context, "Full logs copied to clipboard — paste into the issue body", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, R.string.log_export_toast_issue_copied, Toast.LENGTH_LONG).show()
     } catch (_: ActivityNotFoundException) {
-        Toast.makeText(context, "No browser found — logs copied to clipboard", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, R.string.log_export_toast_no_browser, Toast.LENGTH_LONG).show()
     }
 }
 
@@ -186,19 +191,19 @@ private fun shareViaIntent(context: Context, content: String, fileName: String, 
         type = "text/plain"
         putExtra(Intent.EXTRA_STREAM, uri)
         putExtra(Intent.EXTRA_SUBJECT, subject)
-        putExtra(Intent.EXTRA_TEXT, "Fauxx $subject — see attached file.")
+        putExtra(Intent.EXTRA_TEXT, context.getString(R.string.log_export_share_message, subject))
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     try {
         context.startActivity(Intent.createChooser(intent, subject))
     } catch (_: ActivityNotFoundException) {
-        Toast.makeText(context, "No sharing app found", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, R.string.log_export_toast_no_share_app, Toast.LENGTH_LONG).show()
     }
 }
 
 private fun saveToDownloads(context: Context, content: String, fileName: String) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-        Toast.makeText(context, "Save to Downloads requires Android 10+", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, R.string.log_export_toast_downloads_requires_q, Toast.LENGTH_SHORT).show()
         return
     }
     val values = ContentValues().apply {
@@ -209,16 +214,20 @@ private fun saveToDownloads(context: Context, content: String, fileName: String)
     val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
     if (uri != null) {
         context.contentResolver.openOutputStream(uri)?.use { it.write(content.toByteArray()) }
-        Toast.makeText(context, "Saved to Downloads/$fileName", Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            context,
+            context.getString(R.string.log_export_toast_saved, fileName),
+            Toast.LENGTH_SHORT
+        ).show()
     } else {
-        Toast.makeText(context, "Failed to save file", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, R.string.log_export_toast_failed_save, Toast.LENGTH_SHORT).show()
     }
 }
 
 private fun copyToClipboard(context: Context, content: String, silent: Boolean = false) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("Fauxx Logs", content))
+    clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.log_export_clipboard_label), content))
     if (!silent) {
-        Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, R.string.log_export_toast_copied, Toast.LENGTH_SHORT).show()
     }
 }

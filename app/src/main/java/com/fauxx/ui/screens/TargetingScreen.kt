@@ -45,14 +45,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.MappingConfidence
+import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.viewmodels.TargetingViewModel
 
 /**
@@ -75,7 +78,7 @@ fun TargetingScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "TARGETING ENGINE",
+            text = stringResource(R.string.targeting_title),
             style = MaterialTheme.typography.titleLarge,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -84,11 +87,15 @@ fun TargetingScreen(
 
         // Layer 1 toggle
         LayerToggleCard(
-            layerName = "Layer 1 — Self Report",
-            description = "Boosts noise away from your declared demographics",
+            layerName = stringResource(R.string.targeting_layer1_name),
+            description = stringResource(R.string.targeting_layer1_desc),
             enabled = uiState.layer1Enabled,
             onToggle = { viewModel.setLayer1Enabled(it) },
-            statusText = if (uiState.hasProfile) "Profile set" else "No profile"
+            statusText = if (uiState.hasProfile) {
+                stringResource(R.string.targeting_profile_set)
+            } else {
+                stringResource(R.string.targeting_no_profile)
+            }
         )
 
         // Custom interests (part of Layer 1)
@@ -102,23 +109,25 @@ fun TargetingScreen(
 
         // Layer 2 toggle
         LayerToggleCard(
-            layerName = "Layer 2 — Adversarial Scraper",
-            description = "Reads ad-platform profiles to find confirmed interests",
+            layerName = stringResource(R.string.targeting_layer2_name),
+            description = stringResource(R.string.targeting_layer2_desc),
             enabled = uiState.layer2Enabled,
             onToggle = { viewModel.setLayer2Enabled(it) },
-            statusText = "Last scraped: ${uiState.lastScrapeDate}",
-            actionLabel = "Scrape Now",
+            statusText = stringResource(R.string.targeting_last_scraped, uiState.lastScrapeDate),
+            actionLabel = stringResource(R.string.targeting_scrape_now),
             onAction = { viewModel.scrapeNow() }
         )
 
         // Layer 3 toggle
         LayerToggleCard(
-            layerName = "Layer 3 — Persona Rotation",
-            description = "Maintains coherent synthetic personas (rotates weekly)",
+            layerName = stringResource(R.string.targeting_layer3_name),
+            description = stringResource(R.string.targeting_layer3_desc),
             enabled = uiState.layer3Enabled,
             onToggle = { viewModel.setLayer3Enabled(it) },
-            statusText = uiState.currentPersonaName?.let { "Persona: $it" } ?: "No persona yet",
-            actionLabel = "Rotate Now",
+            statusText = uiState.currentPersonaName?.let {
+                stringResource(R.string.targeting_persona_status, it)
+            } ?: stringResource(R.string.targeting_no_persona),
+            actionLabel = stringResource(R.string.targeting_rotate_now),
             onAction = { viewModel.rotatePersona() }
         )
 
@@ -137,28 +146,25 @@ fun TargetingScreen(
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Clear My Profile")
+            Text(stringResource(R.string.targeting_clear_profile))
         }
     }
 
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Clear Profile?") },
+            title = { Text(stringResource(R.string.targeting_clear_dialog_title)) },
             text = {
-                Text(
-                    "This will delete your demographic profile, all platform data, and persona history. " +
-                    "The engine will revert to uniform random targeting."
-                )
+                Text(stringResource(R.string.targeting_clear_dialog_body))
             },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.clearProfile()
                     showClearDialog = false
-                }) { Text("Clear", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.common_clear), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showClearDialog = false }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -221,7 +227,7 @@ private fun WeightChart(weights: Map<CategoryPool, Float>) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "CATEGORY WEIGHTS",
+                text = stringResource(R.string.targeting_category_weights),
                 style = MaterialTheme.typography.labelMedium,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -241,7 +247,7 @@ private fun WeightChart(weights: Map<CategoryPool, Float>) {
                         else -> MaterialTheme.colorScheme.secondary                       // Neutral
                     }
                     WeightBar(
-                        label = category.name.lowercase().replace("_", " "),
+                        label = stringResource(category.displayNameRes()),
                         value = weight / maxWeight,
                         color = barColor
                     )
@@ -263,13 +269,13 @@ private fun CustomInterestsCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Custom Interests",
+                text = stringResource(R.string.targeting_custom_interests_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Add specific interests to suppress (mapped to nearest category)",
+                text = stringResource(R.string.targeting_custom_interests_desc),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -285,7 +291,7 @@ private fun CustomInterestsCard(
                     value = textFieldValue,
                     onValueChange = { textFieldValue = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("e.g., woodworking") },
+                    placeholder = { Text(stringResource(R.string.targeting_custom_interest_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
@@ -301,7 +307,7 @@ private fun CustomInterestsCard(
                         textFieldValue = ""
                     }
                 }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add interest")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.targeting_add_interest_cd))
                 }
             }
 
@@ -312,12 +318,16 @@ private fun CustomInterestsCard(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     mappings.forEachIndexed { index, mapping ->
-                        val categoryLabel = mapping.category?.name?.lowercase()?.replace("_", " ")
-                        val label = if (categoryLabel != null) {
-                            "${mapping.interest} → $categoryLabel"
-                        } else {
-                            "${mapping.interest} (unmapped)"
-                        }
+        val categoryLabel = mapping.category?.let { stringResource(it.displayNameRes()) }
+        val label = if (categoryLabel != null) {
+            stringResource(R.string.targeting_interest_mapping, mapping.interest, categoryLabel)
+        } else {
+            stringResource(
+                R.string.targeting_interest_unmapped,
+                mapping.interest,
+                stringResource(R.string.targeting_unmapped_suffix)
+            )
+        }
                         InputChip(
                             selected = true,
                             onClick = { onRemove(index) },
@@ -325,7 +335,7 @@ private fun CustomInterestsCard(
                             trailingIcon = {
                                 Icon(
                                     Icons.Default.Close,
-                                    contentDescription = "Remove",
+                                    contentDescription = stringResource(R.string.targeting_remove_cd),
                                     modifier = Modifier.size(16.dp)
                                 )
                             }

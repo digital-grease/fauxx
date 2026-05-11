@@ -71,6 +71,22 @@ private val CATEGORY_APP_KEYWORDS: Map<SupportedLocale, Map<CategoryPool, String
         CategoryPool.MILITARY_DEFENSE to "anciens+combattants+militaire",
         CategoryPool.WELLNESS_ALTERNATIVE to "méditation+astrologie+bien-être",
         CategoryPool.RELATIONSHIPS_DATING to "rencontres+couple"
+    ),
+    SupportedLocale.RU to mapOf(
+        CategoryPool.GAMING to "стратегические+игры",
+        CategoryPool.FITNESS to "фитнес+трекер",
+        CategoryPool.COOKING to "рецепты+кулинария",
+        CategoryPool.TRAVEL to "планирование+путешествий",
+        CategoryPool.FINANCE to "учет+расходов+финансы",
+        CategoryPool.MEDICAL to "здоровье+медицина",
+        CategoryPool.SPORTS to "спортивные+результаты",
+        CategoryPool.OUTDOOR_RECREATION to "походы+маршруты+природа",
+        CategoryPool.CRAFTS to "рукоделие+идеи+DIY",
+        CategoryPool.HISTORY to "история+музеи+викторины",
+        CategoryPool.ENVIRONMENT to "экология+устойчивость",
+        CategoryPool.MILITARY_DEFENSE to "военная+история+ветераны",
+        CategoryPool.WELLNESS_ALTERNATIVE to "медитация+астрология+самочувствие",
+        CategoryPool.RELATIONSHIPS_DATING to "знакомства+отношения"
     )
 )
 

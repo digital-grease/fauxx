@@ -72,7 +72,10 @@ class PhantomForegroundService : Service() {
                 // denial never kills the process; BootReceiver's tap-to-resume notification is
                 // the sanctioned recovery path.
                 try {
-                    startForeground(NOTIFICATION_ID, buildNotification("Initializing…", 0))
+                    startForeground(
+                        NOTIFICATION_ID,
+                        buildNotification(getString(R.string.notification_initializing), 0)
+                    )
                 } catch (e: IllegalStateException) {
                     Timber.e(e, "startForeground denied (${e.javaClass.simpleName}); stopping service")
                     stopSelf()
@@ -138,12 +141,12 @@ class PhantomForegroundService : Service() {
     private fun updateNotification() {
         val count = poisonEngine.getTodayActionCount()
         val status = when (poisonEngine.engineState.value) {
-            EngineState.ACTIVE -> "Generating diverse browsing activity — $count actions today"
-            EngineState.PAUSED_WIFI -> "Paused — waiting for WiFi"
-            EngineState.PAUSED_BATTERY -> "Paused — battery low"
-            EngineState.PAUSED_RATE_LIMIT -> "Paused — hourly limit reached"
-            EngineState.PAUSED_QUIET_HOURS -> "Paused — outside active hours"
-            EngineState.STOPPED -> "Stopped"
+            EngineState.ACTIVE -> getString(R.string.notification_active, count)
+            EngineState.PAUSED_WIFI -> getString(R.string.notification_paused_wifi)
+            EngineState.PAUSED_BATTERY -> getString(R.string.notification_paused_battery)
+            EngineState.PAUSED_RATE_LIMIT -> getString(R.string.notification_paused_rate_limit)
+            EngineState.PAUSED_QUIET_HOURS -> getString(R.string.notification_paused_quiet_hours)
+            EngineState.STOPPED -> getString(R.string.notification_stopped)
         }
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(NOTIFICATION_ID, buildNotification(status, count))
@@ -170,12 +173,12 @@ class PhantomForegroundService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Fauxx")
+            .setContentTitle(getString(R.string.notification_title))
             .setContentText(status)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(tapIntent)
-            .addAction(R.drawable.ic_notification, "Open", openIntent)
-            .addAction(android.R.drawable.ic_media_pause, "Stop", stopIntent)
+            .addAction(R.drawable.ic_notification, getString(R.string.notification_action_open), openIntent)
+            .addAction(android.R.drawable.ic_media_pause, getString(R.string.notification_action_stop), stopIntent)
             .setOngoing(true)
             .setSilent(true)
             .build()
@@ -184,10 +187,10 @@ class PhantomForegroundService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Privacy Protection",
+            getString(R.string.notification_channel_name),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Notifications for Fauxx background browsing diversification"
+            description = getString(R.string.notification_channel_desc)
             setShowBadge(false)
         }
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

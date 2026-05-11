@@ -34,13 +34,12 @@ android {
         // Locales whose UI strings, query banks, harmful_queries blocklists, persona
         // templates, and crawl URL sets have shipped to production. The Settings language
         // picker enables only entries in this list; selecting a non-shipped locale is
-        // blocked. Bump only after that locale's `harmful_queries/<tag>.json` has signed-off
-        // native-speaker review — see .devloop/spikes/multilingual-support.md and
-        // user-memory `project_multilingual_safety_gate.md`.
+        // blocked. Bump only after that locale's assets have passed the production
+        // safety checks.
         buildConfigField(
             "String[]",
             "SHIPPED_LOCALES",
-            "new String[]{\"en\"}"
+            "new String[]{\"en\", \"ru\"}"
         )
     }
 
@@ -65,14 +64,13 @@ android {
         }
         debug {
             isDebuggable = true
-            // Allow developers to exercise the Settings language picker for ES/FR in
-            // debug builds before native-speaker review of `harmful_queries/<locale>.json`
-            // has signed off the locale for production. Release builds inherit the
-            // defaultConfig allowlist (`["en"]`) so the safety gate remains intact.
+            // Allow developers to exercise non-shipped locales in debug builds.
+            // Release builds inherit the defaultConfig allowlist, so shipped locales
+            // remain explicit.
             buildConfigField(
                 "String[]",
                 "SHIPPED_LOCALES",
-                "new String[]{\"en\", \"es\", \"fr\"}"
+                "new String[]{\"en\", \"es\", \"fr\", \"ru\"}"
             )
         }
     }

@@ -1,5 +1,6 @@
 package com.fauxx
 
+import com.fauxx.data.querybank.CategoryPool
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
@@ -25,6 +26,7 @@ import java.io.File
  *   - en: legacy `harmful_queries.json` audits the legacy `query_banks/<cat>.json`
  *   - es: `harmful_queries/es.json` audits `query_banks/es/<cat>.json`
  *   - fr: `harmful_queries/fr.json` audits `query_banks/fr/<cat>.json`
+ *   - ru: `harmful_queries/ru.json` audits `query_banks/ru/<cat>.json`
  *
  * The blocklist used for each locale is a standalone re-implementation rather
  * than a real [com.fauxx.data.querybank.QueryBlocklist] — that class needs an
@@ -59,6 +61,7 @@ class QueryBankCorpusAuditTest {
         AuditTarget("en", "harmful_queries.json", "query_banks"),
         AuditTarget("es", "harmful_queries/es.json", "query_banks/es"),
         AuditTarget("fr", "harmful_queries/fr.json", "query_banks/fr"),
+        AuditTarget("ru", "harmful_queries/ru.json", "query_banks/ru"),
     )
 
     @Test
@@ -106,6 +109,28 @@ class QueryBankCorpusAuditTest {
             0,
             allViolations.size
         )
+    }
+
+    @Test
+    fun `every shipped locale bank has every category file`() {
+        val expected = CategoryPool.values()
+            .map { "${it.name.lowercase()}.json" }
+            .toSet()
+
+        for (target in targets) {
+            val banksDir = File(assetsRoot, target.banksDir)
+            if (!banksDir.isDirectory) continue
+
+            val actual = banksDir.listFiles { f -> f.extension == "json" }
+                ?.map { it.name }
+                ?.toSet()
+                .orEmpty()
+            assertEquals(
+                "[${target.tag}] query bank file set must match CategoryPool exactly",
+                expected,
+                actual
+            )
+        }
     }
 
     @Test

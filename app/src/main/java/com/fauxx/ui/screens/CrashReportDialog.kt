@@ -5,7 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import com.fauxx.R
 
 /**
  * Dialog shown on app launch after a crash. Offers to share the crash report
@@ -20,26 +22,22 @@ fun CrashReportDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "Fauxx Crashed",
+                stringResource(R.string.crash_report_title),
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.error
             )
         },
         text = {
-            Text(
-                "Fauxx crashed during the last session. " +
-                    "You can share the crash report to help diagnose the issue. " +
-                    "The report has been scrubbed of personal data."
-            )
+            Text(stringResource(R.string.crash_report_body))
         },
         confirmButton = {
             TextButton(onClick = onShare) {
-                Text("Share Report")
+                Text(stringResource(R.string.crash_report_share))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Dismiss")
+                Text(stringResource(R.string.crash_report_dismiss))
             }
         }
     )

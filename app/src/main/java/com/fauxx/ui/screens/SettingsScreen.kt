@@ -47,6 +47,7 @@ import com.fauxx.BuildConfig
 import com.fauxx.R
 import com.fauxx.data.model.IntensityLevel
 import com.fauxx.locale.SupportedLocale
+import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.theme.ThemeMode
 import com.fauxx.ui.viewmodels.SettingsViewModel
 
@@ -74,7 +75,7 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "SETTINGS",
+            text = stringResource(R.string.settings_title),
             style = MaterialTheme.typography.titleLarge,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -83,7 +84,7 @@ fun SettingsScreen(
 
         // Intensity
         SettingsCard {
-            Text("Intensity", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_intensity_title), style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 IntensityLevel.values().forEach { level ->
@@ -97,7 +98,7 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = level.name,
+                            text = stringResource(level.displayNameRes()),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (uiState.intensity == level)
                                 MaterialTheme.colorScheme.onPrimary
@@ -107,7 +108,7 @@ fun SettingsScreen(
                 }
             }
             Text(
-                text = "${uiState.intensity.actionsPerHour} actions/hour",
+                text = stringResource(R.string.settings_actions_per_hour, uiState.intensity.actionsPerHour),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -149,7 +150,7 @@ fun SettingsScreen(
 
         // Theme
         SettingsCard {
-            Text("Theme", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_theme_title), style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ThemeMode.values().forEach { mode ->
@@ -163,7 +164,7 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = mode.name,
+                            text = stringResource(mode.displayNameRes()),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (uiState.themeMode == mode)
                                 MaterialTheme.colorScheme.onPrimary
@@ -174,9 +175,9 @@ fun SettingsScreen(
             }
             Text(
                 text = when (uiState.themeMode) {
-                    ThemeMode.SYSTEM -> "Follows your device theme"
-                    ThemeMode.LIGHT -> "Always light"
-                    ThemeMode.DARK -> "Always dark"
+                    ThemeMode.SYSTEM -> stringResource(R.string.settings_theme_system_desc)
+                    ThemeMode.LIGHT -> stringResource(R.string.settings_theme_light_desc)
+                    ThemeMode.DARK -> stringResource(R.string.settings_theme_dark_desc)
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -191,9 +192,9 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Wi-Fi Only", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.settings_wifi_only_title), style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Pause when on mobile data",
+                        stringResource(R.string.settings_wifi_only_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -213,11 +214,9 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Resume after reboot", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.settings_resume_reboot_title), style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "After a reboot, show a notification to resume protection. " +
-                            "Android blocks apps from silently starting themselves in the background, " +
-                            "so a tap is required.",
+                        stringResource(R.string.settings_resume_reboot_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -236,7 +235,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Pause below", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.settings_pause_below_title), style = MaterialTheme.typography.titleSmall)
                 Text(
                     "${uiState.batteryThreshold}%",
                     color = MaterialTheme.colorScheme.primary,
@@ -253,15 +252,19 @@ fun SettingsScreen(
 
         // Active hours
         SettingsCard {
-            Text("Active Hours", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_active_hours_title), style = MaterialTheme.typography.titleSmall)
             Text(
-                "${uiState.allowedHoursStart}:00 – ${uiState.allowedHoursEnd}:00",
+                stringResource(
+                    R.string.settings_active_hours_value,
+                    uiState.allowedHoursStart,
+                    uiState.allowedHoursEnd
+                ),
                 color = MaterialTheme.colorScheme.primary,
                 fontFamily = FontFamily.Monospace
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "Start",
+                stringResource(R.string.settings_active_hours_start),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -272,7 +275,7 @@ fun SettingsScreen(
                 steps = 22
             )
             Text(
-                "End",
+                stringResource(R.string.settings_active_hours_end),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -283,7 +286,7 @@ fun SettingsScreen(
                 steps = 22
             )
             Text(
-                "Activity is paused outside these hours",
+                stringResource(R.string.settings_active_hours_desc),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -292,8 +295,7 @@ fun SettingsScreen(
             }
             if (windowHours in 1..8) {
                 Text(
-                    "A narrow activity window (${windowHours}h) can itself be a trackable signal. " +
-                        "Wider windows (12h+) are harder for trackers to distinguish from real usage.",
+                    stringResource(R.string.settings_active_hours_narrow_warning, windowHours),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -308,7 +310,7 @@ fun SettingsScreen(
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Clear All Data")
+            Text(stringResource(R.string.settings_clear_all_data))
         }
 
         // Export debug logs
@@ -325,7 +327,7 @@ fun SettingsScreen(
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Export Debug Logs", color = MaterialTheme.colorScheme.onSurface)
+            Text(stringResource(R.string.settings_export_debug_logs), color = MaterialTheme.colorScheme.onSurface)
         }
 
         // About & Privacy
@@ -336,14 +338,18 @@ fun SettingsScreen(
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("About & Privacy Policy", color = MaterialTheme.colorScheme.onSurface)
+            Text(stringResource(R.string.settings_about_privacy_policy), color = MaterialTheme.colorScheme.onSurface)
         }
 
         Spacer(Modifier.height(16.dp))
 
         // Version info
         Text(
-            text = "Fauxx v${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
+            text = stringResource(
+                R.string.settings_version_format,
+                BuildConfig.VERSION_NAME,
+                BuildConfig.VERSION_CODE
+            ),
             style = MaterialTheme.typography.bodySmall,
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
@@ -355,34 +361,25 @@ fun SettingsScreen(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Clear All Data?") },
+            title = { Text(stringResource(R.string.settings_clear_dialog_title)) },
             text = {
-                Text(
-                    "This will permanently delete:\n" +
-                    "\u2022 All action logs\n" +
-                    "\u2022 Your demographic profile\n" +
-                    "\u2022 Ad platform profile cache\n" +
-                    "\u2022 Persona generation history\n\n" +
-                    "All settings will be reset to defaults. " +
-                    "The engine will stop and return to Layer 0 (uniform noise).\n\n" +
-                    "This cannot be undone."
-                )
+                Text(stringResource(R.string.settings_clear_dialog_body))
             },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.resetToDefaults()
                     showClearDialog = false
-                }) { Text("Clear Everything", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.settings_clear_dialog_confirm), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showClearDialog = false }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
 
     if (showLogExportSheet) {
         LogExportSheet(
-            title = "Export Debug Logs",
+            title = stringResource(R.string.settings_export_debug_logs),
             content = exportedLogs,
             fileName = "fauxx_debug_logs.txt",
             onDismiss = { showLogExportSheet = false }

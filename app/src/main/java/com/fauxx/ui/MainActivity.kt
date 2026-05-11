@@ -15,8 +15,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.fauxx.R
 import com.fauxx.di.PreferenceKeys
 import com.fauxx.di.fauxxDataStore
 import com.fauxx.logging.CrashDetector
@@ -125,7 +127,7 @@ class MainActivity : ComponentActivity() {
 
                 if (showCrashExportSheet) {
                     LogExportSheet(
-                        title = "Crash Report",
+                        title = stringResource(R.string.crash_report_sheet_title),
                         content = crashReportContent,
                         fileName = "fauxx_crash_report.txt",
                         onDismiss = { showCrashExportSheet = false }

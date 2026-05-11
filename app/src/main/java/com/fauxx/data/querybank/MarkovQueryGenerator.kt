@@ -215,12 +215,13 @@ class MarkovQueryGenerator @Inject constructor(
         private const val MAX_RESAMPLE_ATTEMPTS = 5
 
         /**
-         * Sanitize a seed phrase: lowercase, strip non-alphanumeric (keep spaces),
-         * cap word count, trim.
+         * Sanitize a seed phrase: lowercase, strip punctuation (keep Unicode
+         * letters/numbers and spaces), cap word count, trim.
          */
         internal fun sanitizeSeedPhrase(phrase: String): String =
             phrase.lowercase()
-                .replace(Regex("[^a-z0-9 ]"), "")
+                .replace(Regex("[^\\p{L}\\p{N} ]+"), " ")
+                .replace(Regex("\\s+"), " ")
                 .split(" ")
                 .filter { it.isNotBlank() }
                 .take(MAX_SEED_WORDS)

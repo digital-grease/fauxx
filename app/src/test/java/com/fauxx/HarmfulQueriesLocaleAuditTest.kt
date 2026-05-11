@@ -15,7 +15,8 @@ import java.io.File
  *   2. None of the term lists are empty (an empty list trips QueryBlocklist's fail-closed
  *      path at runtime, but it's better to catch the regression at build time).
  *   3. The blocklist contains at least one entry referencing the locale's national
- *      suicide hotline (US 988, ES 024, FR 3114). A blocklist that omits its region's
+ *      suicide hotline (US 988, ES 024, FR 3114, RU 112 / 8-800-2000-122).
+ *      A blocklist that omits its region's
  *      crisis line is the exact failure mode the spike memo
  *      `.devloop/spikes/multilingual-support.md` flags as critical.
  *
@@ -91,6 +92,24 @@ class HarmfulQueriesLocaleAuditTest {
             parsed,
             listOf("3919"),
             "the French domestic-violence helpline (3919)"
+        )
+    }
+
+    @Test
+    fun `russian blocklist contains emergency and trust-line sentinels`() {
+        val parsed = load("harmful_queries/ru.json")
+        assertNonEmpty("ru", parsed)
+        assertContainsAny(
+            "ru",
+            parsed,
+            listOf("112"),
+            "the Russian emergency number (112)"
+        )
+        assertContainsAny(
+            "ru",
+            parsed,
+            listOf("8-800-2000-122", "8 800 2000 122"),
+            "the Russian children's trust line (8-800-2000-122)"
         )
     }
 

@@ -26,10 +26,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.R
 import com.fauxx.ui.viewmodels.ModulesViewModel
 
 /**
@@ -50,7 +52,7 @@ fun ModulesScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "MODULES",
+            text = stringResource(R.string.modules_title),
             style = MaterialTheme.typography.titleLarge,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -58,45 +60,45 @@ fun ModulesScreen(
         )
 
         ModuleToggleCard(
-            name = "Search Poisoning",
-            description = "Executes search queries across Google, Bing, DuckDuckGo, Yahoo",
+            name = stringResource(R.string.module_search_name),
+            description = stringResource(R.string.module_search_desc),
             enabled = uiState.searchEnabled,
             onToggle = { viewModel.setSearchEnabled(it) }
         )
         ModuleToggleCard(
-            name = "Cookie Saturation",
-            description = "Visits 10,000+ URLs in background to accumulate diverse tracker cookies",
+            name = stringResource(R.string.module_cookie_name),
+            description = stringResource(R.string.module_cookie_desc),
             enabled = uiState.cookieEnabled,
             onToggle = { viewModel.setCookieEnabled(it) }
         )
         ModuleToggleCard(
-            name = "DNS Noise",
-            description = "Resolves diverse domains to generate ISP-visible DNS query noise",
+            name = stringResource(R.string.module_dns_name),
+            description = stringResource(R.string.module_dns_desc),
             enabled = uiState.dnsEnabled,
             onToggle = { viewModel.setDnsEnabled(it) }
         )
         ModuleToggleCard(
-            name = "Fingerprint Rotation",
-            description = "Rotates User-Agent, canvas noise, and navigator properties",
+            name = stringResource(R.string.module_fingerprint_name),
+            description = stringResource(R.string.module_fingerprint_desc),
             enabled = uiState.fingerprintEnabled,
             onToggle = { viewModel.setFingerprintEnabled(it) }
         )
         ModuleToggleCard(
-            name = "Ad Pollution",
-            description = "Loads ad-heavy pages and visits ad preference dashboards",
+            name = stringResource(R.string.module_ad_name),
+            description = stringResource(R.string.module_ad_desc),
             enabled = uiState.adEnabled,
             onToggle = { viewModel.setAdEnabled(it) }
         )
         ModuleToggleCard(
-            name = "Location Spoofing",
-            description = "Feeds synthetic GPS routes via MockLocationProvider",
+            name = stringResource(R.string.module_location_name),
+            description = stringResource(R.string.module_location_desc),
             enabled = uiState.locationEnabled,
             onToggle = { viewModel.setLocationEnabled(it) },
-            warning = "Requires Developer Options enabled and Fauxx selected as mock location app"
+            warning = stringResource(R.string.module_location_warning)
         )
         ModuleToggleCard(
-            name = "App Signals",
-            description = "Opens app store pages for off-profile apps to trigger attribution pixels",
+            name = stringResource(R.string.module_app_signal_name),
+            description = stringResource(R.string.module_app_signal_desc),
             enabled = uiState.appSignalEnabled,
             onToggle = { viewModel.setAppSignalEnabled(it) }
         )

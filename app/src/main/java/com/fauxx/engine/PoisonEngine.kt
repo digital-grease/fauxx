@@ -30,6 +30,7 @@ import com.fauxx.engine.scheduling.PoissonScheduler
 import com.fauxx.targeting.TargetingEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
 import androidx.datastore.preferences.core.edit
+import com.fauxx.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -469,17 +470,17 @@ class PoisonEngine @Inject constructor(
     private fun checkAssetHealth(): List<String> {
         val warnings = mutableListOf<String>()
         if (blocklist.loadFailed) {
-            warnings.add("Safety blocklist failed to load — URL-based modules disabled")
+            warnings.add(context.getString(R.string.health_warning_blocklist))
         }
         // Trigger a load of one category to check if query banks are accessible
         if (queryBankManager.getQueries(CategoryPool.GAMING).isEmpty()) {
-            warnings.add("Query banks failed to load — search noise may be generic")
+            warnings.add(context.getString(R.string.health_warning_query_banks))
         }
         if (crawlListManager.corpusSize() == 0) {
-            warnings.add("URL corpus is empty — browsing modules will not function")
+            warnings.add(context.getString(R.string.health_warning_url_corpus))
         }
         if (cityDatabase.cities.size <= 1) {
-            warnings.add("City database failed to load — location noise limited to one city")
+            warnings.add(context.getString(R.string.health_warning_city_database))
         }
         if (warnings.isNotEmpty()) {
             Timber.w("Asset health check: ${warnings.size} warning(s): $warnings")

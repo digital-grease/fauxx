@@ -56,6 +56,15 @@ class CategoryMapperTest {
     }
 
     @Test
+    fun `heuristic matching supports russian custom interests`() {
+        val mapper = createMapper()
+        assertEquals(CategoryPool.GAMING, mapper.map("компьютерные игры"))
+        assertEquals(CategoryPool.TRAVEL, mapper.map("путешествия по России"))
+        assertEquals(CategoryPool.HOME_IMPROVEMENT, mapper.map("ремонт квартиры"))
+        assertEquals(CategoryPool.COOKING, mapper.map("кулинария и выпечка"))
+    }
+
+    @Test
     fun `mapAll returns correct set and skips unknowns`() {
         val json = """{"Sports": "SPORTS"}"""
         val mapper = createMapper(json)

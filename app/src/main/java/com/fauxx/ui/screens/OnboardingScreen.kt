@@ -271,7 +271,7 @@ private fun InterestsStep(
                 ElevatedFilterChip(
                     selected = cat in selected,
                     onClick = { onToggle(cat) },
-                    label = { Text(cat.name.lowercase().replace("_", " ")) }
+                    label = { Text(stringResource(cat.displayNameRes())) }
                 )
             }
         }
@@ -335,7 +335,7 @@ private fun InterestsStep(
 
 @Composable
 private fun CustomInterestChip(mapping: InterestMapping, onRemove: () -> Unit) {
-    val categoryLabel = mapping.category?.name?.lowercase()?.replace("_", " ")
+    val categoryLabel = mapping.category?.let { stringResource(it.displayNameRes()) }
     val label = if (categoryLabel != null) {
         "${mapping.interest} → $categoryLabel"
     } else {

@@ -80,5 +80,6 @@ fun Region.displayNameRes(): Int = when (this) {
     Region.QUEBEC -> R.string.region_quebec
     Region.BELGIUM -> R.string.region_belgium
     Region.SWITZERLAND -> R.string.region_switzerland
+    Region.RUSSIA -> R.string.region_russia
     Region.OTHER -> R.string.region_other
 }
