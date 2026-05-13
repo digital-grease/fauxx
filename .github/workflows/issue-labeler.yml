@@ -41,9 +41,27 @@ jobs:
             labels_to_add+=("crash" "area:engine")
           fi
 
-          # --- Flavor detection ---
-          # `com.fauxx.full` always indicates the full build; bare `com.fauxx` (when
-          # not followed by `.full`) is the play build. Order matters here.
+          # --- Flavor detection (form dropdown) ---
+          # Crash/bug forms write the user's "Build flavor" choice as a
+          # "### Build flavor\n\nFull" section. Parse that first — it's the most
+          # reliable signal and works even when the body has no crash trace.
+          flavor_value=$(printf '%s\n' "$BODY" \
+            | awk '/^### Build flavor$/{flag=1; next} flag && NF{print; flag=0}' \
+            | tr '[:upper:]' '[:lower:]' \
+            | tr -d '[:space:]' \
+            | head -c 32 || true)
+          case "$flavor_value" in
+            full) labels_to_add+=("flavor:full") ;;
+            play) labels_to_add+=("flavor:play") ;;
+            # "Not sure" or anything else: don't guess, fall through to content check.
+          esac
+
+          # --- Flavor detection (content-based fallback) ---
+          # For "Other" template or API-filed issues without the form dropdown:
+          # `com.fauxx.full` always indicates the full build; bare `com.fauxx`
+          # (when not followed by `.full`) is the play build. Order matters.
+          # Safe to run even if the dropdown already labeled — gh issue edit
+          # --add-label is idempotent and dedup happens in the apply step.
           if echo "$BODY" | grep -q 'com\.fauxx\.full'; then
             labels_to_add+=("flavor:full")
           elif echo "$BODY" | grep -qE 'com\.fauxx([^.]|$)'; then
