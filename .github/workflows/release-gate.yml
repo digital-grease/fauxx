@@ -1,0 +1,124 @@
+name: Release Gate
+
+# Fails when app/version.properties or fastlane changelogs are modified without
+# an explicit "release:"-prefixed commit subject in the push/PR range. Also
+# enforces that version bumps and matching fastlane changelog files land together.
+#
+# Rationale: app/version.properties is what F-Droid's checkupdates bot reads to
+# detect a new release, and fastlane/metadata/.../changelogs/<code>.txt is what
+# F-Droid surfaces as release notes. Accidentally bumping either (e.g. a stale
+# staged change carried into a code-only push) ships a half-baked release. This
+# job is the audit-trail alarm so the desync is loud, not silent.
+#
+# To intentionally release: make the version-bump commit subject start with
+#   release: v<X.Y.Z> — <short note>
+# or "release(scope):" if a scope is useful (conventional-commits style).
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  release-gate:
+    name: Release Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine compare range
+        id: range
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+            echo "head=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            base="${{ github.event.before }}"
+            # First push to a new branch reports all-zero SHA; fall back to parent.
+            if [ "$base" = "0000000000000000000000000000000000000000" ]; then
+              base="${{ github.sha }}^"
+            fi
+            echo "base=$base" >> "$GITHUB_OUTPUT"
+            echo "head=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect release-related file changes
+        id: detect
+        run: |
+          base="${{ steps.range.outputs.base }}"
+          head="${{ steps.range.outputs.head }}"
+          changed=$(git diff --name-only "$base" "$head")
+          echo "Changed files in $base..$head:"
+          echo "$changed"
+
+          version_touched=false
+          changelog_touched=false
+          if echo "$changed" | grep -qx "app/version.properties"; then
+            version_touched=true
+          fi
+          if echo "$changed" | grep -qE "^fastlane/metadata/android/[^/]+/changelogs/[0-9]+\.txt$"; then
+            changelog_touched=true
+          fi
+          echo "version_touched=$version_touched" >> "$GITHUB_OUTPUT"
+          echo "changelog_touched=$changelog_touched" >> "$GITHUB_OUTPUT"
+
+      - name: Require release-prefixed commit
+        if: steps.detect.outputs.version_touched == 'true' || steps.detect.outputs.changelog_touched == 'true'
+        run: |
+          base="${{ steps.range.outputs.base }}"
+          head="${{ steps.range.outputs.head }}"
+          subjects=$(git log --format=%s "$base..$head")
+          echo "Commit subjects in range:"
+          echo "$subjects"
+
+          if echo "$subjects" | grep -qiE '^release(\([^)]+\))?:'; then
+            echo "Found release-prefixed commit — gate satisfied."
+            exit 0
+          fi
+
+          echo "::error::Release-related files were modified, but no commit subject in this range starts with 'release:'."
+          echo "::error::"
+          if [ "${{ steps.detect.outputs.version_touched }}" = "true" ]; then
+            echo "::error::  - app/version.properties was touched"
+          fi
+          if [ "${{ steps.detect.outputs.changelog_touched }}" = "true" ]; then
+            echo "::error::  - a fastlane/metadata/.../changelogs/<code>.txt file was touched"
+          fi
+          echo "::error::"
+          echo "::error::If this is intentional, retitle the version-bump commit (git commit --amend, or"
+          echo "::error::interactive rebase) so the subject starts with 'release:'. Example:"
+          echo "::error::  release: v0.2.7 — fix FGS crash, scrape now button"
+          echo "::error::"
+          echo "::error::If this was accidental (a stale staged change), revert the file(s) with"
+          echo "::error::  git checkout HEAD~1 -- app/version.properties"
+          echo "::error::and push the revert."
+          exit 1
+
+      - name: Ensure version bump and changelog stay in sync
+        if: steps.detect.outputs.version_touched == 'true' || steps.detect.outputs.changelog_touched == 'true'
+        run: |
+          base="${{ steps.range.outputs.base }}"
+          head="${{ steps.range.outputs.head }}"
+          version_touched="${{ steps.detect.outputs.version_touched }}"
+          changelog_touched="${{ steps.detect.outputs.changelog_touched }}"
+
+          if [ "$version_touched" = "true" ] && [ "$changelog_touched" = "false" ]; then
+            new_code=$(git show "$head:app/version.properties" | sed -n 's/^versionCode=\(.*\)$/\1/p')
+            echo "::error::app/version.properties was bumped (versionCode=$new_code) but no fastlane changelog was added in this range."
+            echo "::error::Add fastlane/metadata/android/en-US/changelogs/$new_code.txt with the release notes,"
+            echo "::error::then amend/push again. F-Droid surfaces this file as the release notes blurb."
+            exit 1
+          fi
+
+          if [ "$version_touched" = "false" ] && [ "$changelog_touched" = "true" ]; then
+            echo "::error::A fastlane changelog was added/modified, but app/version.properties was not bumped."
+            echo "::error::Changelogs without a corresponding version bump won't surface anywhere."
+            echo "::error::Either bump app/version.properties to the matching versionCode, or revert the changelog."
+            exit 1
+          fi
+
+          echo "Version + changelog in sync."

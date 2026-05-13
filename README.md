@@ -316,6 +316,34 @@ Fauxx ships with English (`en`) UI and synthetic-activity content. Spanish (`es`
 
 See `.devloop/spikes/multilingual-support.md` for the design and threat model.
 
+## FAQ
+
+### Why does the F-Droid build sometimes stop and show a "Tap to resume protection" notification?
+
+Short answer: Android 14 and newer cap the kind of background service Fauxx uses to **6 cumulative hours per 24 hours** while the app is in the background. To stay under that ceiling, Fauxx voluntarily stops itself a bit before the cap and posts a one-tap notification so you can resume when you next pick up your phone.
+
+You'll typically see this notification:
+
+- **In the morning,** if you have quiet hours configured (default 7am–11pm). Rather than burn the 6-hour budget idling overnight, Fauxx stops at 11pm and reappears at 7am as a tap-to-resume.
+- **After ~5 hours** of continuous backgrounded run-time. Fauxx self-stops at 5h with a 1h safety margin under the OS limit.
+- **After a long no-WiFi pause** if you have "WiFi only" enabled. Sustained pauses past 30 minutes release the slot rather than spinning idle.
+
+Tapping the notification opens Fauxx and restarts protection. Nothing is lost — your settings, profile, persona, and action log are persistent.
+
+This affects the **F-Droid / sideload (full) build** specifically. The Play Store build uses a different foreground-service type (`specialUse`, with a Play-reviewed justification) that doesn't have the 6-hour cap. The behavior is otherwise identical.
+
+### Sometimes I enable protection and it stops almost immediately — why?
+
+Fauxx tracks how much foreground-service time you've used in the past 24 hours, persisted across app restarts. If you've already used most of the daily budget (e.g., a 4-hour session earlier today), a new session has less room before the cap resets. Fauxx will start, see that there's no headroom left, and post the tap-to-resume notification scheduled for when the budget window expires.
+
+You can wait for the notification to fire later, or check **Settings → Active hours** and **WiFi only** to confirm your constraint settings aren't pausing the engine.
+
+### Why did Fauxx crash overnight on older versions?
+
+Versions before this release didn't proactively stop the foreground service during long pauses, so it could accumulate the full 6 hours of cumulative runtime while idle (e.g., during configured quiet hours). When Android 14+ enforced the limit, the system force-stopped the process with a `ForegroundServiceDidNotStopInTimeException`. This release adds the budget tracker and the tap-to-resume flow described above, so the crash should no longer occur.
+
+If you're still seeing crashes, please file an issue and include the in-app crash report (Settings → "File a GitHub issue").
+
 ## License
 
 Fauxx is licensed under the GNU Affero General Public License v3 (AGPLv3). See [LICENSE](LICENSE) for details.
