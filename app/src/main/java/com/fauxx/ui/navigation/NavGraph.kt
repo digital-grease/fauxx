@@ -31,14 +31,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.fauxx.R
 import com.fauxx.ui.screens.DashboardScreen
+import com.fauxx.ui.screens.FaqScreen
 import com.fauxx.ui.screens.LogScreen
 import com.fauxx.ui.screens.ModulesScreen
 import com.fauxx.ui.screens.AboutScreen
@@ -57,6 +61,7 @@ sealed class Screen(val route: String, val label: String) {
     object Settings : Screen("settings", "Settings")
     object Onboarding : Screen("onboarding", "Onboarding")
     object About : Screen("about", "About & Privacy")
+    object Faq : Screen("faq", "FAQ")
 }
 
 private val bottomNavItems = listOf(
@@ -129,10 +134,14 @@ fun FauxxNavGraph(showOnboarding: Boolean) {
                 composable(Screen.About.route) {
                     AboutScreen(onBack = { navController.popBackStack() })
                 }
+                composable(Screen.Faq.route) {
+                    FaqScreen(onBack = { navController.popBackStack() })
+                }
             }
 
             if (showHelp) {
                 HelpMenuButton(
+                    navController = navController,
                     modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
                 )
             }
@@ -141,7 +150,10 @@ fun FauxxNavGraph(showOnboarding: Boolean) {
 }
 
 @Composable
-private fun HelpMenuButton(modifier: Modifier = Modifier) {
+private fun HelpMenuButton(
+    navController: NavController,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
 
@@ -157,6 +169,16 @@ private fun HelpMenuButton(modifier: Modifier = Modifier) {
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.help_menu_faq)) },
+                leadingIcon = { Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    // launchSingleTop prevents stacking duplicates if the user taps FAQ
+                    // repeatedly from different screens.
+                    navController.navigate(Screen.Faq.route) { launchSingleTop = true }
+                }
+            )
             DropdownMenuItem(
                 text = { Text("Help") },
                 leadingIcon = { Icon(Icons.AutoMirrored.Outlined.MenuBook, contentDescription = null) },
