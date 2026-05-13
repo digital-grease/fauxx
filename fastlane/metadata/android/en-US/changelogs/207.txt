@@ -1,0 +1,3 @@
+• Fix: crash after long background pauses (Android 14+ dataSync limit)
+• Fix: Scrape Now button now runs an immediate scrape
+• New: in-app FAQ explaining the new tap-to-resume notification
