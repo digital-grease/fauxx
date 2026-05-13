@@ -132,6 +132,18 @@ class DashboardViewModel @Inject constructor(
         _showConsentDialog.value = false
     }
 
+    /**
+     * Toggle the wifi-only constraint. Exposed on the Dashboard so a user who sees
+     * the engine paused on "Wi-Fi only mode" can opt into mobile data with one tap
+     * — the Settings toggle is the same action, but discoverability there is poor
+     * (see issue #38).
+     */
+    fun setWifiOnly(value: Boolean) {
+        viewModelScope.launch {
+            profileRepo.saveProfile(profileRepo.getProfile().copy(wifiOnly = value))
+        }
+    }
+
     private fun activateEngine() {
         viewModelScope.launch {
             profileRepo.saveProfile(profileRepo.getProfile().copy(enabled = true))

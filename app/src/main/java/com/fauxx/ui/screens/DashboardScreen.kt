@@ -33,6 +33,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -216,7 +217,8 @@ fun DashboardScreen(
                     }
                 }
                 viewModel.toggleEngine(enabled)
-            }
+            },
+            onUseMobileData = { viewModel.setWifiOnly(false) }
         )
 
         // Action counters
@@ -248,7 +250,12 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun ProtectionCard(enabled: Boolean, engineState: EngineState, onToggle: (Boolean) -> Unit) {
+private fun ProtectionCard(
+    enabled: Boolean,
+    engineState: EngineState,
+    onToggle: (Boolean) -> Unit,
+    onUseMobileData: () -> Unit
+) {
     val isPaused = enabled && engineState != EngineState.ACTIVE && engineState != EngineState.STOPPED
 
     Card(
@@ -260,42 +267,53 @@ private fun ProtectionCard(enabled: Boolean, engineState: EngineState, onToggle:
             }
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = when {
-                        isPaused -> "PAUSED"
-                        enabled -> "ACTIVE"
-                        else -> "INACTIVE"
-                    },
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    color = when {
-                        isPaused -> MaterialTheme.colorScheme.tertiary
-                        enabled -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-                Text(
-                    text = when (engineState) {
-                        EngineState.ACTIVE -> "Generating synthetic activity"
-                        EngineState.PAUSED_WIFI -> "Waiting for WiFi connection"
-                        EngineState.PAUSED_BATTERY -> "Battery below threshold"
-                        EngineState.PAUSED_RATE_LIMIT -> "Hourly rate limit reached"
-                        EngineState.PAUSED_QUIET_HOURS -> "Outside active hours"
-                        EngineState.STOPPED -> "Engine stopped"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = when {
+                            isPaused -> "PAUSED"
+                            enabled -> "ACTIVE"
+                            else -> "INACTIVE"
+                        },
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        color = when {
+                            isPaused -> MaterialTheme.colorScheme.tertiary
+                            enabled -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                    Text(
+                        text = when (engineState) {
+                            EngineState.ACTIVE -> "Generating synthetic activity"
+                            EngineState.PAUSED_WIFI -> "Wi-Fi only mode — waiting for Wi-Fi"
+                            EngineState.PAUSED_BATTERY -> "Battery below threshold"
+                            EngineState.PAUSED_RATE_LIMIT -> "Hourly rate limit reached"
+                            EngineState.PAUSED_QUIET_HOURS -> "Outside active hours"
+                            EngineState.STOPPED -> "Engine stopped"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(checked = enabled, onCheckedChange = onToggle)
             }
-            Switch(checked = enabled, onCheckedChange = onToggle)
+            // One-tap "opt into mobile data" for users who didn't realise Wi-Fi-only
+            // was a setting they could toggle (issue #38).
+            if (engineState == EngineState.PAUSED_WIFI) {
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onUseMobileData,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Use mobile data")
+                }
+            }
         }
     }
 }
