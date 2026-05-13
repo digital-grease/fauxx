@@ -38,6 +38,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.fauxx.BuildConfig
+import com.fauxx.util.CrashReportUrlBuilder
 import java.io.File
 
 private const val GITHUB_ISSUES_URL = "https://github.com/digital-grease/fauxx/issues/new"
@@ -84,10 +86,10 @@ fun LogExportSheet(
             ExportOption(
                 icon = { Icon(Icons.Outlined.BugReport, contentDescription = null, modifier = Modifier.size(24.dp)) },
                 label = "File a GitHub Issue",
-                description = "Logs are copied to your clipboard — paste into the issue body",
+                description = "Opens a pre-filled issue form. Logs are embedded directly when they fit, " +
+                    "otherwise copied to your clipboard for pasting below.",
                 onClick = {
-                    copyToClipboard(context, content, silent = true)
-                    openGitHubIssue(context, fileName)
+                    openGitHubIssue(context, fileName, content)
                     onDismiss()
                 }
             )
@@ -152,23 +154,58 @@ private fun ExportOption(
     }
 }
 
-private fun openGitHubIssue(context: Context, fileName: String) {
-    val label = if (fileName.contains("crash")) "crash report" else "debug logs"
+private fun openGitHubIssue(context: Context, fileName: String, content: String) {
+    // Crash reports use the structured form with pre-filled fields. Debug-log exports
+    // (non-crash) fall through to the bug report form's deep-link; user fills it out.
+    val isCrash = fileName.contains("crash")
+    if (!isCrash) {
+        openBugReportForm(context)
+        return
+    }
 
-    // The body template scaffolds the issue; logs go in via clipboard paste by the
-    // user. Do NOT embed log content in the URL — GitHub returns 500 when the
-    // URL-encoded body parameter grows past its request-line limit, and log payloads
-    // inflate 2–3× under URL encoding.
-    val bodyTemplate = "## Description\n\n[Describe what happened]\n\n" +
-        "## Logs\n\nLogs were copied to your clipboard — paste them between the fences below.\n\n```\n\n```\n"
+    val result = CrashReportUrlBuilder.build(
+        device = CrashReportUrlBuilder.formatDevice(Build.MANUFACTURER, Build.MODEL),
+        androidVersion = Build.VERSION.RELEASE ?: Build.VERSION.SDK_INT.toString(),
+        appVersion = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+        flavor = CrashReportUrlBuilder.mapFlavor(BuildConfig.FLAVOR),
+        trace = content
+    )
 
-    val url = "$GITHUB_ISSUES_URL?labels=bug&title=Bug+report+with+$label&body=${Uri.encode(bodyTemplate)}"
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(result.url))
+    try {
+        context.startActivity(intent)
+        when (result) {
+            is CrashReportUrlBuilder.Result.Embedded -> {
+                Toast.makeText(
+                    context,
+                    "Crash report ready — review and submit",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+            is CrashReportUrlBuilder.Result.Truncated -> {
+                // Trace too long to fit in the URL — keep clipboard as the secondary
+                // channel so the user can paste the full content below the embedded head.
+                copyToClipboard(context, result.fullTrace, silent = true)
+                Toast.makeText(
+                    context,
+                    "Truncated trace embedded; full trace on clipboard — paste below if you want the full context",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    } catch (_: ActivityNotFoundException) {
+        copyToClipboard(context, content, silent = true)
+        Toast.makeText(context, "No browser found — logs copied to clipboard", Toast.LENGTH_LONG).show()
+    }
+}
+
+private fun openBugReportForm(context: Context) {
+    val url = "$GITHUB_ISSUES_URL?template=bug_report.yml"
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
     try {
         context.startActivity(intent)
-        Toast.makeText(context, "Full logs copied to clipboard — paste into the issue body", Toast.LENGTH_LONG).show()
     } catch (_: ActivityNotFoundException) {
-        Toast.makeText(context, "No browser found — logs copied to clipboard", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, "No browser found to open issue tracker", Toast.LENGTH_LONG).show()
     }
 }
 

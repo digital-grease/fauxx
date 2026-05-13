@@ -50,7 +50,10 @@ import com.fauxx.ui.screens.SettingsScreen
 import com.fauxx.ui.screens.TargetingScreen
 
 private const val README_URL = "https://github.com/digital-grease/fauxx#readme"
-private const val ISSUES_URL = "https://github.com/digital-grease/fauxx/issues/new"
+// Opens the issue form picker (crash / bug / feature / question / other). Lands users
+// on the structured forms rather than a blank-issue editor — also enabled because
+// .github/ISSUE_TEMPLATE/config.yml sets blank_issues_enabled: false.
+private const val ISSUES_URL = "https://github.com/digital-grease/fauxx/issues/new/choose"
 
 /** Navigation destinations. */
 sealed class Screen(val route: String, val label: String) {
