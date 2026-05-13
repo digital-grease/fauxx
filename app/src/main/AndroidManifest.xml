@@ -10,7 +10,9 @@
     <!-- Location spoofing -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- ACCESS_MOCK_LOCATION is declared in src/debug/AndroidManifest.xml only -->
+    <!-- ACCESS_MOCK_LOCATION is declared in src/full/AndroidManifest.xml so the
+         F-Droid build appears in Developer Options → "Select mock location app".
+         Play flavor intentionally omits it (Play Store policy). -->
 
     <!-- Foreground service (flavor-specific FGS type permission lives in
          src/play/AndroidManifest.xml and src/full/AndroidManifest.xml) -->

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<!--
+    Debug-build manifest overlay. Currently empty after ACCESS_MOCK_LOCATION moved
+    to src/full/AndroidManifest.xml (issue #4 — full release builds also need it so
+    Fauxx appears in Developer Options → Select mock location app).
 
-    <!-- Mock location permission is only valid in debug builds.
-         Android lint (MockLocation) requires this be in a debug-only manifest. -->
-    <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION"
-        tools:ignore="MockLocation" />
-
+    Kept as a placeholder so future debug-only entries have an obvious home.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 </manifest>

@@ -11,6 +11,20 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!--
+        Mock-location permission for the Location Spoof module. Android's "Select
+        mock location app" Developer Options selector lists apps that declare this
+        permission. Without it, Fauxx never appears (issue #4). Lint flags this
+        with MockLocation because it expects mock-location to be debug-only; we
+        ship it in the full/F-Droid flavor deliberately and suppress the warning.
+
+        The play flavor does NOT declare this — Play Store policy is stricter
+        around mock location, and the play flavor's specialUse FGS subtype already
+        carries reviewer scrutiny that mock location would compound.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION"
+        tools:ignore="MockLocation" />
+
     <application>
         <service
             android:name=".service.PhantomForegroundService"

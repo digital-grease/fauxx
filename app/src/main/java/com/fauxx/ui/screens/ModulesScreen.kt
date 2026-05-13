@@ -1,5 +1,7 @@
 package com.fauxx.ui.screens
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,18 +16,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,6 +48,11 @@ fun ModulesScreen(
     viewModel: ModulesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showLocationSetupHint by remember { mutableStateOf(false) }
+
+    if (showLocationSetupHint) {
+        LocationSetupHintDialog(onDismiss = { showLocationSetupHint = false })
+    }
 
     Column(
         modifier = Modifier
@@ -91,7 +104,13 @@ fun ModulesScreen(
             name = "Location Spoofing",
             description = "Feeds synthetic GPS routes via MockLocationProvider",
             enabled = uiState.locationEnabled,
-            onToggle = { viewModel.setLocationEnabled(it) },
+            onToggle = { enabled ->
+                viewModel.setLocationEnabled(enabled)
+                // Surface setup instructions whenever the user turns this on, since
+                // Android requires a separate Dev Options designation (issue #4 —
+                // users were toggling this and seeing no effect).
+                if (enabled) showLocationSetupHint = true
+            },
             warning = "Requires Developer Options enabled and Fauxx selected as mock location app"
         )
         ModuleToggleCard(
@@ -159,4 +178,42 @@ private fun ModuleToggleCard(
             Switch(checked = enabled, onCheckedChange = onToggle)
         }
     }
+}
+
+/**
+ * Shown when the user enables Location Spoofing. Tells them the *additional*
+ * Android-side setup they need to do — declaring `ACCESS_MOCK_LOCATION` (issue #4
+ * fix) is necessary but not sufficient; the user must also designate Fauxx as the
+ * mock location app in Developer Options. Without this dialog, the toggle just
+ * silently fails inside `LocationSpoofModule.start()`.
+ */
+@Composable
+private fun LocationSetupHintDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("One more step") },
+        text = {
+            Text(
+                "Android requires you to designate Fauxx as the mock location app:\n\n" +
+                    "1. Enable Developer Options if you haven't yet: Settings → About phone → tap Build Number 7 times.\n\n" +
+                    "2. Open Developer Options → \"Select mock location app\" and choose Fauxx.\n\n" +
+                    "Without this step, Location Spoofing will silently do nothing."
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                runCatching {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                }
+                onDismiss()
+            }) { Text("Open Developer Options") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Got it") }
+        }
+    )
 }
