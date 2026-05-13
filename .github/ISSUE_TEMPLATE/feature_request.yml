@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest a new feature, setting, or behavior
+title: "Feature: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Quick checks first:
+        - Has someone else already requested this? Browse open `enhancement` issues.
+        - Is this actually a bug? Use the **Bug report** form instead.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like to see?
+      placeholder: A short description of the feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why? What problem does it solve?
+      description: Use case, motivation, or the workaround you're currently doing.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional. Any other approaches you thought about?
+    validations:
+      required: false

@@ -1,0 +1,12 @@
+# Disable the empty "Open a blank issue" link so users land on a structured form.
+# An "Other" Markdown fallback is still available for genuinely unusual issues.
+blank_issues_enabled: false
+
+# Links shown alongside the issue forms. Helps users self-resolve before filing.
+contact_links:
+  - name: FAQ (README)
+    url: https://github.com/digital-grease/fauxx#faq
+    about: Common questions and known issues (tap-to-resume notification, Wi-Fi-only mode, mock location setup, etc.)
+  - name: Latest release & changelog
+    url: https://github.com/digital-grease/fauxx/releases/latest
+    about: If the bug you hit was already fixed in a newer version, that'll save us both a round trip.

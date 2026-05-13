@@ -1,0 +1,91 @@
+name: Bug report
+description: Something works incorrectly but the app didn't crash (broken button, wrong number, UI glitch, etc.)
+title: "Bug: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. For app crashes (with a stack trace), please use the **Crash report** form instead — it has the right fields and dedup hints.
+
+        Quick checks:
+        - Is this already fixed in the latest version? See the [releases page](https://github.com/digital-grease/fauxx/releases).
+        - Is your question answered by the [FAQ](https://github.com/digital-grease/fauxx#faq)?
+
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: Google Pixel 7 Pro
+    validations:
+      required: true
+
+  - type: input
+    id: android_version
+    attributes:
+      label: Android version
+      placeholder: "14"
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: Fauxx version
+      placeholder: 0.2.7 (207)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: flavor
+    attributes:
+      label: Build flavor
+      options:
+        - Full
+        - Play
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Best guess of what part of the app this affects. The auto-labeler reads this to tag the issue.
+      options:
+        - engine
+        - ui
+        - location
+        - targeting
+        - network
+        - other
+    validations:
+      required: false
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      placeholder: Describe what you saw.
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_expected
+    attributes:
+      label: What did you expect to happen?
+      placeholder: Describe what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can someone else reproduce this? Numbered steps are great.
+      placeholder: |
+        1. Open Fauxx
+        2. Tap …
+        3. …
+    validations:
+      required: false

@@ -1,0 +1,78 @@
+name: Crash report
+description: Fauxx crashed (e.g. an unexpected stop, a "Fauxx has stopped" dialog, or a notification gone red)
+title: "Crash: "
+labels: ["bug", "crash", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a crash. Before you file:
+
+        - **Have you checked the [FAQ](https://github.com/digital-grease/fauxx#faq)?** It explains the most common crash scenario (Android 14+ `dataSync` foreground-service timeout) — fixed in v0.2.7+.
+        - **Are you running v0.2.7 or later?** If you're on an older version, please update first; the most common overnight crash is already fixed.
+        - **Filing from the app's "File a GitHub Issue" button?** Most of these fields will be pre-filled for you. You only need to paste the stack trace and (optionally) say what you were doing.
+
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Manufacturer + model (the in-app reporter fills this from `Build.MANUFACTURER` + `Build.MODEL`)
+      placeholder: Google Pixel 7 Pro
+    validations:
+      required: true
+
+  - type: input
+    id: android_version
+    attributes:
+      label: Android version
+      description: Major OS version. API level is fine if that's what you know.
+      placeholder: "14"
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: Fauxx version
+      description: From Settings → About, or pre-filled by the in-app reporter
+      placeholder: 0.2.7 (207)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: flavor
+    attributes:
+      label: Build flavor
+      description: Where did you install Fauxx from? (F-Droid / sideload = "Full", Play Store = "Play")
+      options:
+        - Full
+        - Play
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: stack_trace
+    attributes:
+      label: Stack trace / crash log
+      description: |
+        Paste the crash report here. The in-app reporter will pre-fill this section if it fits;
+        if the trace is too long for a URL, the in-app reporter copies the full log to your
+        clipboard for you to paste.
+      placeholder: |
+        === Fauxx Crash Report ===
+        Time: 2026-05-13 ...
+        Thread: main
+        ...
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What were you doing when it crashed?
+      description: Optional. Anything that helps reproduce, or "I just opened the app and saw the crash notification" is fine.
+      placeholder: I opened the app this morning and got the crash dialog. Engine was running overnight.
+    validations:
+      required: false
