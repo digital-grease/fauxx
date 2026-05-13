@@ -9,6 +9,12 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.os.Build
+import androidx.annotation.VisibleForTesting
+import androidx.work.NetworkType
+import com.fauxx.di.IoDispatcher
+import com.fauxx.service.ResumeSpec
+import com.fauxx.util.Clock
+import kotlinx.coroutines.CoroutineDispatcher
 import timber.log.Timber
 import com.fauxx.data.crawllist.CrawlListManager
 import com.fauxx.data.crawllist.DomainBlocklist
@@ -96,6 +102,31 @@ private const val RATE_LIMIT_PAUSE_MS = 15_000L
 private const val MODULE_STOP_TIMEOUT_MS = 2_000L
 
 /**
+ * Threshold for a "long pause" — wifi/battery pauses past this duration trigger the
+ * engine to resign and switch to a WorkManager-constraint-driven resume notification,
+ * freeing the foreground-service runtime budget.
+ */
+private const val LONG_PAUSE_THRESHOLD_MS = 30L * 60 * 1000
+
+/**
+ * Hard runtime safety net. Android 14+ kills `dataSync` foreground services at 6h of
+ * cumulative background runtime per 24h. We resign at 5h to keep a 1h margin and avoid
+ * the [android.app.RemoteServiceException.ForegroundServiceDidNotStopInTimeException]
+ * crashes reported by F-Droid users.
+ */
+private const val FGS_HARD_LIMIT_MS = 5L * 60 * 60 * 1000
+
+/**
+ * Decision returned by [PoisonEngine.decidePauseAction]: either keep the current
+ * delay-loop ([Continue]) or [Resign] from the foreground service and schedule a
+ * resume notification when the constraint clears.
+ */
+sealed class PauseDecision {
+    object Continue : PauseDecision()
+    data class Resign(val resumeSpec: ResumeSpec) : PauseDecision()
+}
+
+/**
  * Core orchestrator for the Fauxx privacy poisoning engine.
  *
  * Reads [PoisonProfile], dispatches work to enabled module executors, manages scheduling via
@@ -121,10 +152,47 @@ class PoisonEngine @Inject constructor(
     private val fingerprintModule: FingerprintModule,
     private val cookieModule: CookieSaturationModule,
     private val appSignalModule: AppSignalModule,
-    private val dnsModule: DnsNoiseModule
+    private val dnsModule: DnsNoiseModule,
+    private val clock: Clock,
+    private val budgetTracker: FgsBudgetTracker,
+    /**
+     * Dispatcher the engine's main loop runs on. Provided by [com.fauxx.di.DispatchersModule]
+     * as [Dispatchers.IO] in production; tests substitute a `TestDispatcher` so `runLoop`
+     * runs under the scheduler that controls virtual time.
+     */
+    @IoDispatcher private val loopDispatcher: CoroutineDispatcher
 ) {
-    private var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var scope = CoroutineScope(SupervisorJob() + loopDispatcher)
     private var engineJob: Job? = null
+
+    /**
+     * Set by [PhantomForegroundService] before starting the engine. When [runLoop]
+     * decides to resign during a long pause (see [decidePauseAction]), it invokes this
+     * callback with the resume spec; the service is expected to schedule a
+     * [com.fauxx.service.ResumeWorker] and then stop the foreground service.
+     */
+    @Volatile
+    private var onLongPause: ((ResumeSpec) -> Unit)? = null
+
+    /** Engine start time on [Clock.elapsedRealtime] for FGS runtime tracking. */
+    private var engineStartElapsedMs: Long = 0L
+
+    /** [Clock.elapsedRealtime] timestamp at the moment the current pause began. */
+    private var pauseEnteredAtElapsedMs: Long = 0L
+
+    /** State that triggered the current pause; used to detect state transitions. */
+    private var lastPauseState: EngineState = EngineState.ACTIVE
+
+    /** Set true once [runLoop] has invoked [onLongPause] for the current run, to avoid double-firing. */
+    private var hasResigned: Boolean = false
+
+    /**
+     * Effective FGS-runtime limit for the *current* engine session, computed from
+     * the persisted 24h budget on each [start]. Falls back to [FGS_HARD_LIMIT_MS]
+     * if the budget tracker hasn't been initialised (cold cache). Treated as
+     * "session cap" — when elapsed since start exceeds this, the engine resigns.
+     */
+    private var sessionBudgetMs: Long = FGS_HARD_LIMIT_MS
 
     /** Tracks consecutive failure count per module class name. */
     private val failureCounts = ConcurrentHashMap<String, Int>()
@@ -139,7 +207,7 @@ class PoisonEngine @Inject constructor(
     /** Today's successful action count, incremented on each action. Reset on day rollover. */
     private val todayActionCount = AtomicInteger(0)
     @Volatile
-    private var actionCountDayStart = System.currentTimeMillis() - (System.currentTimeMillis() % MS_PER_DAY)
+    private var actionCountDayStart = clock.currentTimeMillis().let { it - (it % MS_PER_DAY) }
 
     /**
      * Sliding window of action timestamps (epoch ms) for per-hour rate limiting.
@@ -179,7 +247,7 @@ class PoisonEngine @Inject constructor(
     /** Returns today's successful action count (thread-safe, cached). */
     @Synchronized
     fun getTodayActionCount(): Int {
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         val dayStart = now - (now % MS_PER_DAY)
         if (dayStart != actionCountDayStart) {
             actionCountDayStart = dayStart
@@ -194,13 +262,32 @@ class PoisonEngine @Inject constructor(
         fingerprintModule, locationModule, adModule, appSignalModule
     )
 
+    /**
+     * Register a handler invoked when [runLoop] decides the engine should resign
+     * during a long constraint pause. The handler is responsible for scheduling
+     * the resume notification (via [com.fauxx.service.ResumeScheduler]) and stopping
+     * the foreground service. Safe to call before or after [start].
+     */
+    fun setOnLongPause(handler: ((ResumeSpec) -> Unit)?) {
+        onLongPause = handler
+    }
+
     /** Start the engine main loop. */
     fun start() {
         if (engineJob?.isActive == true) return
         // Recreate the scope if it was previously cancelled by destroy()
         if (!scope.isActive) {
-            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            scope = CoroutineScope(SupervisorJob() + loopDispatcher)
         }
+        engineStartElapsedMs = clock.elapsedRealtime()
+        pauseEnteredAtElapsedMs = 0L
+        lastPauseState = EngineState.ACTIVE
+        hasResigned = false
+        // Cap this session's effective limit by what the cross-session 24h budget
+        // has left. min() because we never want to exceed FGS_HARD_LIMIT_MS even
+        // with a fresh budget — that's our intra-session safety net.
+        sessionBudgetMs = minOf(FGS_HARD_LIMIT_MS, budgetTracker.remainingBudgetMs())
+        Timber.i("Engine session budget = ${sessionBudgetMs}ms (${sessionBudgetMs / 60_000}min)")
         registerConstraintReceivers()
         engineJob = scope.launch {
             // Sync targeting layer enable flags from persisted profile
@@ -210,7 +297,7 @@ class PoisonEngine @Inject constructor(
             targetingEngine.setLayer3Enabled(savedProfile.layer3Enabled)
 
             // Seed today's action count from DB once on start
-            val dayStart = System.currentTimeMillis() - (System.currentTimeMillis() % MS_PER_DAY)
+            val dayStart = clock.currentTimeMillis().let { it - (it % MS_PER_DAY) }
             actionCountDayStart = dayStart
             todayActionCount.set(
                 try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
@@ -238,7 +325,7 @@ class PoisonEngine @Inject constructor(
                 } catch (e: Exception) {
                     val name = module::class.simpleName ?: "Unknown"
                     Timber.e(e, "Module $name failed to start, circuit-breaking")
-                    circuitBreakerUntil[name] = System.currentTimeMillis() + MAX_BACKOFF_MS
+                    circuitBreakerUntil[name] = clock.currentTimeMillis() + MAX_BACKOFF_MS
                 }
             }
             runLoop()
@@ -252,12 +339,22 @@ class PoisonEngine @Inject constructor(
      * engine's IO scope with a bounded timeout. Never blocks the caller.
      */
     fun stop() {
+        val sessionDurationMs = if (engineStartElapsedMs != 0L && !hasResigned) {
+            clock.elapsedRealtime() - engineStartElapsedMs
+        } else 0L
         engineJob?.cancel()
         engineJob = null
         _engineState.value = EngineState.STOPPED
+        onLongPause = null
         unregisterConstraintReceivers()
         val modules = allModules
         scope.launch {
+            // Credit this user-initiated stop's session to the budget tracker if
+            // we haven't already (resign paths record their own).
+            if (sessionDurationMs > 0) {
+                runCatching { budgetTracker.recordSession(sessionDurationMs) }
+                    .onFailure { Timber.e(it, "Failed to record FGS session duration on stop") }
+            }
             withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
                 modules.forEach { runCatching { it.stop() } }
             } ?: Timber.w("Module stop timed out after ${MODULE_STOP_TIMEOUT_MS}ms")
@@ -270,14 +367,22 @@ class PoisonEngine @Inject constructor(
      * to ensure no leaked coroutines survive process cleanup.
      */
     fun destroy() {
+        val sessionDurationMs = if (engineStartElapsedMs != 0L && !hasResigned) {
+            clock.elapsedRealtime() - engineStartElapsedMs
+        } else 0L
         engineJob?.cancel()
         engineJob = null
         _engineState.value = EngineState.STOPPED
+        onLongPause = null
         unregisterConstraintReceivers()
         val modules = allModules
         // Fire-and-forget teardown; scope is cancelled after a short grace period so the
         // launched stop coroutine has a chance to run. Bounded by timeout to avoid leaks.
         scope.launch {
+            if (sessionDurationMs > 0) {
+                runCatching { budgetTracker.recordSession(sessionDurationMs) }
+                    .onFailure { Timber.e(it, "Failed to record FGS session duration on destroy") }
+            }
             withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
                 modules.forEach { runCatching { it.stop() } }
             }
@@ -331,13 +436,43 @@ class PoisonEngine @Inject constructor(
             // Constraint checks
             val constraintState = checkConstraints(currentProfile)
             if (constraintState != null) {
+                // Track pause-entry time on state transition so [decidePauseAction] can
+                // measure how long we've been stuck on the same constraint.
+                if (lastPauseState != constraintState) {
+                    pauseEnteredAtElapsedMs = clock.elapsedRealtime()
+                    lastPauseState = constraintState
+                }
                 _engineState.value = constraintState
+
+                if (!hasResigned) {
+                    val pauseElapsedMs = clock.elapsedRealtime() - pauseEnteredAtElapsedMs
+                    val totalRuntimeMs = clock.elapsedRealtime() - engineStartElapsedMs
+                    val decision = decidePauseAction(constraintState, currentProfile, pauseElapsedMs, totalRuntimeMs)
+                    if (decision is PauseDecision.Resign) {
+                        resignAndRecord(constraintState, decision.resumeSpec)
+                        return
+                    }
+                }
+
                 delay(constraintRetryMs)
                 continue
             }
 
+            // Reset pause tracking on a successful constraint check
+            lastPauseState = EngineState.ACTIVE
+            pauseEnteredAtElapsedMs = 0L
+
+            // Hard safety net even when constraints pass — protect the FGS budget so a
+            // user who keeps the app active without ever pausing still doesn't crash.
+            // sessionBudgetMs accounts for cross-session 24h cumulative usage.
+            if (!hasResigned && clock.elapsedRealtime() - engineStartElapsedMs >= sessionBudgetMs) {
+                val spec = ResumeSpec.AtTime(budgetTracker.nextWindowResetMs())
+                resignAndRecord(state = null, spec = spec, reason = "FGS budget exhausted")
+                return
+            }
+
             // Per-hour rate limit: prune stale timestamps and check cap
-            val rateLimitNow = System.currentTimeMillis()
+            val rateLimitNow = clock.currentTimeMillis()
             val cutoff = rateLimitNow - RATE_LIMIT_WINDOW_MS
             while (recentActionTimestamps.peek()?.let { it < cutoff } == true) {
                 recentActionTimestamps.poll()
@@ -355,7 +490,7 @@ class PoisonEngine @Inject constructor(
             val category = dispatcher.selectCategory()
 
             // Pick an enabled module that isn't circuit-broken
-            val now = System.currentTimeMillis()
+            val now = clock.currentTimeMillis()
             val availableModules = allModules.filter { module ->
                 val name = module::class.simpleName ?: return@filter false
                 module.isEnabled() && (circuitBreakerUntil[name] ?: 0L) <= now
@@ -372,7 +507,7 @@ class PoisonEngine @Inject constructor(
             if (!module.isEnabled()) continue
 
             // Write-ahead log — track execution time to subtract from scheduled delay
-            val execStart = System.currentTimeMillis()
+            val execStart = clock.currentTimeMillis()
             val logEntry = try {
                 module.onAction(category).also {
                     // Success — reset failure counter
@@ -387,7 +522,7 @@ class PoisonEngine @Inject constructor(
                     // Add 0-25% random jitter to prevent thundering herd on recovery
                     val jitter = (baseBackoff * Random.nextFloat() * 0.25f).toLong()
                     val backoff = baseBackoff + jitter
-                    circuitBreakerUntil[moduleName] = System.currentTimeMillis() + backoff
+                    circuitBreakerUntil[moduleName] = clock.currentTimeMillis() + backoff
                     Timber.w(e, "Circuit breaker: $moduleName disabled for ${backoff / 1000}s after $count failures")
                 } else {
                     Timber.e(e, "Module $moduleName failed for $category ($count/$MAX_CONSECUTIVE_FAILURES)")
@@ -402,12 +537,12 @@ class PoisonEngine @Inject constructor(
             }
             if (logEntry.success) {
                 todayActionCount.incrementAndGet()
-                recentActionTimestamps.add(System.currentTimeMillis())
+                recentActionTimestamps.add(clock.currentTimeMillis())
             }
 
             // Schedule next action, subtracting module execution time so the
             // inter-action interval (not post-action gap) matches the target rate.
-            val execElapsed = System.currentTimeMillis() - execStart
+            val execElapsed = clock.currentTimeMillis() - execStart
             val scheduledMs = scheduler.nextDelayMs(
                 actionsPerHour = currentProfile.intensity.actionsPerHour,
                 prev = lastCategory,
@@ -445,7 +580,7 @@ class PoisonEngine @Inject constructor(
 
     /** Returns true if the current local hour falls within the profile's allowed window.
      *  Handles midnight-wrap (e.g., start=22, end=6 means 22:00 to 06:00). */
-    internal fun isWithinAllowedHours(profile: PoisonProfile, nowHour: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)): Boolean {
+    internal fun isWithinAllowedHours(profile: PoisonProfile, nowHour: Int = currentHourOfDay()): Boolean {
         val start = profile.allowedHoursStart
         val end = profile.allowedHoursEnd
         return if (start == end) {
@@ -461,6 +596,100 @@ class PoisonEngine @Inject constructor(
      *  HIGH (200/hr) → ~3.6s, MEDIUM (60/hr) → ~12s, LOW (12/hr) → 60s. */
     private fun constraintCheckMs(actionsPerHour: Int): Long =
         maxOf(CONSTRAINT_CHECK_MIN_MS, CONSTRAINT_CHECK_BASE_MS / maxOf(1, actionsPerHour / 12).toLong())
+
+    /** Current wall-clock hour-of-day (0-23), read from the injected [Clock]. */
+    private fun currentHourOfDay(): Int =
+        Calendar.getInstance().apply { timeInMillis = clock.currentTimeMillis() }.get(Calendar.HOUR_OF_DAY)
+
+    /**
+     * Mark the engine resigned, credit this session's runtime to the cross-session
+     * budget tracker, and invoke the [onLongPause] callback. Centralised so every
+     * resign path (pause-triggered, hard-limit-triggered, budget-exhausted) records
+     * the session — the original cumulative-budget gap came from forgetting one path.
+     */
+    private suspend fun resignAndRecord(
+        state: EngineState?,
+        spec: ResumeSpec,
+        reason: String? = null
+    ) {
+        hasResigned = true
+        val sessionDurationMs = clock.elapsedRealtime() - engineStartElapsedMs
+        runCatching { budgetTracker.recordSession(sessionDurationMs) }
+            .onFailure { Timber.e(it, "Failed to record FGS session duration") }
+        val ctx = reason ?: state?.toString() ?: "unknown"
+        Timber.i("Engine resigning ($ctx) after ${sessionDurationMs}ms; resume spec: $spec")
+        onLongPause?.invoke(spec)
+    }
+
+    /**
+     * Decide whether the engine should keep delay-looping in the FGS or resign
+     * (stop the FGS and schedule a resume notification).
+     *
+     * Rules:
+     * - [EngineState.PAUSED_QUIET_HOURS]: always resign — quiet hours can be 8+ hours long,
+     *   far exceeding the 6h Android-14+ `dataSync` FGS budget.
+     * - [EngineState.PAUSED_WIFI] / [EngineState.PAUSED_BATTERY]: resign once the pause has
+     *   lasted [LONG_PAUSE_THRESHOLD_MS]. Short blips (commute, brief WiFi drop) keep the
+     *   FGS up, but sustained pauses release the budget.
+     * - Cumulative FGS runtime ≥ [FGS_HARD_LIMIT_MS]: always resign, regardless of state.
+     *   This catches edge cases where the user is on cellular all day with wifiOnly off, or
+     *   active hours span >5h continuously.
+     */
+    @VisibleForTesting
+    internal fun decidePauseAction(
+        state: EngineState,
+        currentProfile: PoisonProfile,
+        pauseElapsedMs: Long,
+        totalRuntimeMs: Long,
+        nowMs: Long = clock.currentTimeMillis()
+    ): PauseDecision {
+        if (totalRuntimeMs >= FGS_HARD_LIMIT_MS) {
+            val spec: ResumeSpec = when (state) {
+                EngineState.PAUSED_QUIET_HOURS ->
+                    ResumeSpec.AtTime(nextAllowedHoursStartMs(currentProfile, nowMs))
+                EngineState.PAUSED_WIFI ->
+                    ResumeSpec.WhenConstraintMet(network = NetworkType.UNMETERED)
+                EngineState.PAUSED_BATTERY ->
+                    ResumeSpec.WhenConstraintMet(batteryNotLow = true)
+                else -> ResumeSpec.AtTime(nowMs + 60 * 60 * 1000L)
+            }
+            return PauseDecision.Resign(spec)
+        }
+
+        return when (state) {
+            EngineState.PAUSED_QUIET_HOURS ->
+                PauseDecision.Resign(ResumeSpec.AtTime(nextAllowedHoursStartMs(currentProfile, nowMs)))
+            EngineState.PAUSED_WIFI ->
+                if (pauseElapsedMs >= LONG_PAUSE_THRESHOLD_MS)
+                    PauseDecision.Resign(ResumeSpec.WhenConstraintMet(network = NetworkType.UNMETERED))
+                else PauseDecision.Continue
+            EngineState.PAUSED_BATTERY ->
+                if (pauseElapsedMs >= LONG_PAUSE_THRESHOLD_MS)
+                    PauseDecision.Resign(ResumeSpec.WhenConstraintMet(batteryNotLow = true))
+                else PauseDecision.Continue
+            else -> PauseDecision.Continue
+        }
+    }
+
+    /**
+     * Returns the epoch-ms timestamp of the next `allowedHoursStart` hour boundary
+     * strictly after [nowMs]. Used to schedule the resume notification at the start of
+     * the next active window after a quiet-hours pause.
+     */
+    @VisibleForTesting
+    internal fun nextAllowedHoursStartMs(currentProfile: PoisonProfile, nowMs: Long): Long {
+        val target = Calendar.getInstance().apply {
+            timeInMillis = nowMs
+            set(Calendar.HOUR_OF_DAY, currentProfile.allowedHoursStart)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        if (target.timeInMillis <= nowMs) {
+            target.add(Calendar.DAY_OF_MONTH, 1)
+        }
+        return target.timeInMillis
+    }
 
     /**
      * Verifies that critical asset data loaded successfully.

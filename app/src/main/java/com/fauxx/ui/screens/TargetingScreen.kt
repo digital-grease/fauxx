@@ -53,6 +53,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.MappingConfidence
+import com.fauxx.ui.viewmodels.ScrapeState
 import com.fauxx.ui.viewmodels.TargetingViewModel
 
 /**
@@ -101,13 +102,21 @@ fun TargetingScreen(
         }
 
         // Layer 2 toggle
+        val (scrapeLabel, scrapeEnabled) = when (uiState.scrapeState) {
+            ScrapeState.IDLE -> "Scrape Now" to true
+            ScrapeState.RUNNING -> "Scraping…" to false
+            ScrapeState.SUCCESS -> "Done" to false
+            ScrapeState.FAILED -> "Failed — Retry" to true
+        }
         LayerToggleCard(
             layerName = "Layer 2 — Adversarial Scraper",
             description = "Reads ad-platform profiles to find confirmed interests",
             enabled = uiState.layer2Enabled,
             onToggle = { viewModel.setLayer2Enabled(it) },
             statusText = "Last scraped: ${uiState.lastScrapeDate}",
-            actionLabel = "Scrape Now",
+            actionLabel = scrapeLabel,
+            actionEnabled = scrapeEnabled,
+            actionEmphasizeError = uiState.scrapeState == ScrapeState.FAILED,
             onAction = { viewModel.scrapeNow() }
         )
 
@@ -172,7 +181,9 @@ private fun LayerToggleCard(
     onToggle: (Boolean) -> Unit,
     statusText: String,
     actionLabel: String? = null,
-    onAction: (() -> Unit)? = null
+    onAction: (() -> Unit)? = null,
+    actionEnabled: Boolean = true,
+    actionEmphasizeError: Boolean = false
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -206,8 +217,16 @@ private fun LayerToggleCard(
             }
             if (actionLabel != null && onAction != null && enabled) {
                 Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = onAction, modifier = Modifier.fillMaxWidth()) {
-                    Text(actionLabel)
+                OutlinedButton(
+                    onClick = onAction,
+                    enabled = actionEnabled,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        actionLabel,
+                        color = if (actionEmphasizeError) MaterialTheme.colorScheme.error
+                        else Color.Unspecified
+                    )
                 }
             }
         }

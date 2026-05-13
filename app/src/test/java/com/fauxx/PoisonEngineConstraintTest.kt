@@ -10,8 +10,13 @@ import com.fauxx.data.model.IntensityLevel
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.QueryBankManager
+import androidx.work.NetworkType
+import com.fauxx.engine.EngineState
+import com.fauxx.engine.FgsBudgetTracker
+import com.fauxx.engine.PauseDecision
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.service.ResumeSpec
 import com.fauxx.engine.modules.AppSignalModule
 import com.fauxx.engine.modules.CookieSaturationModule
 import com.fauxx.engine.modules.DnsNoiseModule
@@ -21,6 +26,7 @@ import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.PoissonScheduler
 import com.fauxx.targeting.TargetingEngine
+import com.fauxx.util.Clock
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,6 +35,7 @@ import io.mockk.verify
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -144,6 +151,168 @@ class PoisonEngineConstraintTest {
         assertTrue(engine.isWithinAllowedHours(p, nowHour = 23))
     }
 
+    // --- decidePauseAction tests (FGS-budget-protection logic) ---
+
+    private val ms5Hours = 5L * 60 * 60 * 1000
+    private val ms30Min = 30L * 60 * 1000
+    private val ms1Hour = 60L * 60 * 1000
+    private val nowMs = 1_700_000_000_000L // arbitrary fixed epoch
+
+    @Test
+    fun `decidePauseAction resigns immediately on quiet hours`() {
+        engine = createEngine()
+        val p = profile.copy(allowedHoursStart = 7, allowedHoursEnd = 23)
+        val decision = engine.decidePauseAction(
+            state = EngineState.PAUSED_QUIET_HOURS,
+            currentProfile = p,
+            pauseElapsedMs = 0,
+            totalRuntimeMs = 1_000,
+            nowMs = nowMs
+        )
+        assertTrue("Expected Resign, got $decision", decision is PauseDecision.Resign)
+        assertTrue((decision as PauseDecision.Resign).resumeSpec is ResumeSpec.AtTime)
+    }
+
+    @Test
+    fun `decidePauseAction continues looping during short wifi pause`() {
+        engine = createEngine()
+        val decision = engine.decidePauseAction(
+            state = EngineState.PAUSED_WIFI,
+            currentProfile = profile,
+            pauseElapsedMs = 5 * 60 * 1000, // 5 min
+            totalRuntimeMs = 10 * 60 * 1000, // 10 min total
+            nowMs = nowMs
+        )
+        assertEquals(PauseDecision.Continue, decision)
+    }
+
+    @Test
+    fun `decidePauseAction resigns on prolonged wifi pause`() {
+        engine = createEngine()
+        val decision = engine.decidePauseAction(
+            state = EngineState.PAUSED_WIFI,
+            currentProfile = profile,
+            pauseElapsedMs = ms30Min + 1000,
+            totalRuntimeMs = 45 * 60 * 1000,
+            nowMs = nowMs
+        )
+        assertTrue(decision is PauseDecision.Resign)
+        val spec = (decision as PauseDecision.Resign).resumeSpec
+        assertTrue(spec is ResumeSpec.WhenConstraintMet)
+        assertEquals(NetworkType.UNMETERED, (spec as ResumeSpec.WhenConstraintMet).network)
+        assertFalse(spec.batteryNotLow)
+    }
+
+    @Test
+    fun `decidePauseAction resigns on prolonged battery pause with batteryNotLow constraint`() {
+        engine = createEngine()
+        val decision = engine.decidePauseAction(
+            state = EngineState.PAUSED_BATTERY,
+            currentProfile = profile,
+            pauseElapsedMs = ms30Min + 1000,
+            totalRuntimeMs = 45 * 60 * 1000,
+            nowMs = nowMs
+        )
+        assertTrue(decision is PauseDecision.Resign)
+        val spec = (decision as PauseDecision.Resign).resumeSpec
+        assertTrue(spec is ResumeSpec.WhenConstraintMet)
+        assertTrue((spec as ResumeSpec.WhenConstraintMet).batteryNotLow)
+    }
+
+    @Test
+    fun `decidePauseAction continues looping during short battery pause`() {
+        engine = createEngine()
+        val decision = engine.decidePauseAction(
+            state = EngineState.PAUSED_BATTERY,
+            currentProfile = profile,
+            pauseElapsedMs = 60_000, // 1 min
+            totalRuntimeMs = 10 * 60 * 1000,
+            nowMs = nowMs
+        )
+        assertEquals(PauseDecision.Continue, decision)
+    }
+
+    @Test
+    fun `decidePauseAction continues looping on rate limit pause`() {
+        engine = createEngine()
+        val decision = engine.decidePauseAction(
+            state = EngineState.PAUSED_RATE_LIMIT,
+            currentProfile = profile,
+            pauseElapsedMs = 5 * 60 * 1000,
+            totalRuntimeMs = 30 * 60 * 1000,
+            nowMs = nowMs
+        )
+        assertEquals(PauseDecision.Continue, decision)
+    }
+
+    @Test
+    fun `decidePauseAction hard-resigns at FGS 5h limit even when active`() {
+        engine = createEngine()
+        val decision = engine.decidePauseAction(
+            state = EngineState.ACTIVE,
+            currentProfile = profile,
+            pauseElapsedMs = 0,
+            totalRuntimeMs = ms5Hours,
+            nowMs = nowMs
+        )
+        assertTrue(decision is PauseDecision.Resign)
+        val spec = (decision as PauseDecision.Resign).resumeSpec
+        assertTrue(spec is ResumeSpec.AtTime)
+        // Default fallback: 1 hour from now
+        assertEquals(nowMs + ms1Hour, (spec as ResumeSpec.AtTime).epochMs)
+    }
+
+    @Test
+    fun `decidePauseAction hard-resigns at 5h with wifi constraint when state is paused_wifi`() {
+        engine = createEngine()
+        val decision = engine.decidePauseAction(
+            state = EngineState.PAUSED_WIFI,
+            currentProfile = profile,
+            pauseElapsedMs = 1000,
+            totalRuntimeMs = ms5Hours + 1000,
+            nowMs = nowMs
+        )
+        assertTrue(decision is PauseDecision.Resign)
+        val spec = (decision as PauseDecision.Resign).resumeSpec
+        assertTrue(spec is ResumeSpec.WhenConstraintMet)
+        assertEquals(NetworkType.UNMETERED, (spec as ResumeSpec.WhenConstraintMet).network)
+    }
+
+    @Test
+    fun `nextAllowedHoursStartMs returns same-day boundary when start hour is later`() {
+        engine = createEngine()
+        // Construct nowMs that is at 03:00 local time (use Calendar to build it)
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 3)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        val now = cal.timeInMillis
+        val p = profile.copy(allowedHoursStart = 7)
+        val result = engine.nextAllowedHoursStartMs(p, now)
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 7)
+        assertEquals(cal.timeInMillis, result)
+    }
+
+    @Test
+    fun `nextAllowedHoursStartMs returns next-day boundary when start hour has passed`() {
+        engine = createEngine()
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 23)
+            set(java.util.Calendar.MINUTE, 30)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        val now = cal.timeInMillis
+        val p = profile.copy(allowedHoursStart = 7)
+        val result = engine.nextAllowedHoursStartMs(p, now)
+        cal.add(java.util.Calendar.DAY_OF_MONTH, 1)
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 7)
+        cal.set(java.util.Calendar.MINUTE, 0)
+        assertEquals(cal.timeInMillis, result)
+    }
+
     @Test
     fun `engine stops gracefully when no modules enabled`() = runTest {
         // Disable all modules
@@ -181,11 +350,21 @@ class PoisonEngineConstraintTest {
             every { setLayer2Enabled(any()) } answers { }
             every { setLayer3Enabled(any()) } answers { }
         }
+        val clock: Clock = mockk {
+            every { currentTimeMillis() } returns System.currentTimeMillis()
+            every { elapsedRealtime() } returns 0L
+        }
+        val budgetTracker: FgsBudgetTracker = mockk(relaxed = true) {
+            every { remainingBudgetMs() } returns FgsBudgetTracker.BUDGET_MS
+            every { nextWindowResetMs() } returns System.currentTimeMillis() + 60 * 60 * 1000L
+        }
         return PoisonEngine(
             context, profileRepo, targetingEngine, dispatcher, scheduler, actionLogDao,
             blocklist, queryBankManager, crawlListManager, cityDatabase,
             searchModule, adModule, locationModule, fingerprintModule,
-            cookieModule, appSignalModule, dnsModule
+            cookieModule, appSignalModule, dnsModule, clock,
+            budgetTracker = budgetTracker,
+            loopDispatcher = kotlinx.coroutines.Dispatchers.Unconfined
         )
     }
 }

@@ -6,7 +6,9 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -19,11 +21,13 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val WORK_NAME = "fauxx_scrape"
+private const val ONE_SHOT_WORK_NAME = "fauxx_scrape_now"
 
 /**
  * Schedules periodic ad-profile scraping via WorkManager.
@@ -59,6 +63,31 @@ class ScrapeScheduler @Inject constructor(
     /** Cancel the scheduled scrape job. */
     fun cancel() {
         WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+    }
+
+    /**
+     * Enqueue a one-time immediate scrape, independent of the periodic schedule. Uses
+     * [NetworkType.CONNECTED] (not [NetworkType.UNMETERED]) so a user on cellular can
+     * still kick a manual refresh — the periodic job is the appropriate place to be
+     * WiFi-strict, but the manual button is a user-initiated explicit action.
+     *
+     * Returns the work request UUID so callers can observe state via
+     * [WorkManager.getWorkInfoByIdFlow].
+     */
+    fun scrapeNow(): UUID {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val request = OneTimeWorkRequestBuilder<ScrapeWorker>()
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            ONE_SHOT_WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            request
+        )
+        Timber.d("One-shot scrape enqueued (id=${request.id})")
+        return request.id
     }
 }
 

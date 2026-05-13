@@ -64,6 +64,16 @@ object PreferenceKeys {
     // SupportedLocale, fallback EN). Otherwise a SupportedLocale.tag value: "en", "es", "fr".
     // Read by com.fauxx.locale.LocaleManager.
     val LANGUAGE_OVERRIDE = stringPreferencesKey("language_override")
+
+    // Foreground-service runtime budget tracker. Android 14+ enforces a 6h cumulative
+    // dataSync FGS runtime per rolling 24h while backgrounded; if our in-process timer
+    // missed past-session contributions, the next session could still hit the OS limit.
+    // FGS_BUDGET_WINDOW_START = wall-clock epoch ms when the current 24h budget window
+    // began (set to "now" on first session after a reset); FGS_BUDGET_USED_MS = total
+    // FGS runtime credited to that window so far. Reset by FgsBudgetTracker when the
+    // window age exceeds 24h.
+    val FGS_BUDGET_WINDOW_START = androidx.datastore.preferences.core.longPreferencesKey("fgs_budget_window_start")
+    val FGS_BUDGET_USED_MS = androidx.datastore.preferences.core.longPreferencesKey("fgs_budget_used_ms")
 }
 
 /**

@@ -43,6 +43,7 @@ class PhantomForegroundService : Service() {
 
     @Inject lateinit var poisonEngine: PoisonEngine
     @Inject lateinit var webViewPool: PhantomWebViewPool
+    @Inject lateinit var resumeScheduler: ResumeScheduler
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -65,6 +66,9 @@ class PhantomForegroundService : Service() {
         when (action) {
             ACTION_START -> {
                 Timber.i("Starting Phantom service")
+                // The user is opening / resuming the engine right now, so any previously
+                // scheduled tap-to-resume notification is stale — cancel it before starting.
+                runCatching { resumeScheduler.cancel() }
                 // startForeground() throws ForegroundServiceStartNotAllowedException (a subclass of
                 // IllegalStateException, API 31+) when the FGS-start is blocked — e.g., from a
                 // BOOT_COMPLETED context chain on Android 14+, or when the flavor-declared FGS
@@ -83,6 +87,9 @@ class PhantomForegroundService : Service() {
                     return START_NOT_STICKY
                 }
                 try {
+                    // Wire long-pause handler before starting so a same-tick resign
+                    // (e.g., engine started during quiet hours) sees the callback.
+                    poisonEngine.setOnLongPause { spec -> onEngineResigned(spec) }
                     poisonEngine.start()
                     startNotificationUpdates()
                 } catch (e: Exception) {
@@ -125,6 +132,27 @@ class PhantomForegroundService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /**
+     * Invoked by [PoisonEngine] from its run loop when it decides the service should
+     * stop and reappear later via tap-to-resume. Schedules the resume notification,
+     * then tears the foreground service down. Safe to call from any thread —
+     * [stopForeground] / [stopSelf] dispatch internally.
+     */
+    @androidx.annotation.VisibleForTesting
+    internal fun onEngineResigned(spec: ResumeSpec) {
+        Timber.i("Engine resigned; scheduling resume ($spec) and stopping FGS")
+        runCatching { resumeScheduler.schedule(spec) }
+            .onFailure { Timber.e(it, "Failed to schedule resume notification") }
+        notificationJob?.cancel()
+        notificationJob = null
+        try {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } catch (_: Exception) {
+            // stopForeground rarely throws; ignore so stopSelf still runs.
+        }
+        stopSelf()
+    }
 
     private fun startNotificationUpdates() {
         notificationJob = scope.launch {

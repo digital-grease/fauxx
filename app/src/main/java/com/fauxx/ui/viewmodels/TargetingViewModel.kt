@@ -1,7 +1,10 @@
 package com.fauxx.ui.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.targeting.TargetingEngine
@@ -14,6 +17,9 @@ import com.fauxx.targeting.layer2.ScrapeScheduler
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +31,9 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 
+/** Lifecycle state of an on-demand "Scrape Now" run. */
+enum class ScrapeState { IDLE, RUNNING, SUCCESS, FAILED }
+
 data class TargetingUiState(
     val layer1Enabled: Boolean = false,
     val layer2Enabled: Boolean = false,
@@ -33,8 +42,11 @@ data class TargetingUiState(
     val lastScrapeDate: String = "Never",
     val currentPersonaName: String? = null,
     val weights: Map<CategoryPool, Float> = emptyMap(),
-    val customInterestMappings: List<InterestMapping> = emptyList()
+    val customInterestMappings: List<InterestMapping> = emptyList(),
+    val scrapeState: ScrapeState = ScrapeState.IDLE
 )
+
+private const val SCRAPE_RESULT_DISPLAY_MS = 3_000L
 
 private val DATE_FMT = SimpleDateFormat("MMM d, yyyy", Locale.US)
 
@@ -47,7 +59,8 @@ class TargetingViewModel @Inject constructor(
     private val platformDao: PlatformProfileDao,
     private val personaHistoryDao: PersonaHistoryDao,
     private val personaLayer: PersonaRotationLayer,
-    private val scrapeScheduler: ScrapeScheduler
+    private val scrapeScheduler: ScrapeScheduler,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TargetingUiState())
@@ -71,6 +84,8 @@ class TargetingViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TargetingUiState())
 
+    private var scrapeObserverJob: Job? = null
+
     init {
         val profile = profileRepo.getProfile()
         _state.value = _state.value.copy(
@@ -90,6 +105,11 @@ class TargetingViewModel @Inject constructor(
         targetingEngine.setLayer2Enabled(enabled)
         saveLayerPrefs(layer2 = enabled)
         _state.value = _state.value.copy(layer2Enabled = enabled)
+        if (enabled) {
+            scrapeScheduler.schedule()
+        } else {
+            scrapeScheduler.cancel()
+        }
     }
 
     fun setLayer3Enabled(enabled: Boolean) {
@@ -99,7 +119,38 @@ class TargetingViewModel @Inject constructor(
     }
 
     fun scrapeNow() {
-        scrapeScheduler.schedule()
+        // Don't allow re-enqueue while one is in flight.
+        if (_state.value.scrapeState == ScrapeState.RUNNING) return
+
+        scrapeObserverJob?.cancel()
+        val id = scrapeScheduler.scrapeNow()
+        _state.value = _state.value.copy(scrapeState = ScrapeState.RUNNING)
+
+        scrapeObserverJob = viewModelScope.launch {
+            WorkManager.getInstance(context)
+                .getWorkInfoByIdFlow(id)
+                .collect { info ->
+                    when (info?.state) {
+                        WorkInfo.State.SUCCEEDED -> {
+                            _state.value = _state.value.copy(scrapeState = ScrapeState.SUCCESS)
+                            delay(SCRAPE_RESULT_DISPLAY_MS)
+                            _state.value = _state.value.copy(scrapeState = ScrapeState.IDLE)
+                        }
+                        WorkInfo.State.FAILED,
+                        WorkInfo.State.CANCELLED -> {
+                            _state.value = _state.value.copy(scrapeState = ScrapeState.FAILED)
+                            delay(SCRAPE_RESULT_DISPLAY_MS)
+                            _state.value = _state.value.copy(scrapeState = ScrapeState.IDLE)
+                        }
+                        WorkInfo.State.RUNNING,
+                        WorkInfo.State.ENQUEUED,
+                        WorkInfo.State.BLOCKED -> {
+                            _state.value = _state.value.copy(scrapeState = ScrapeState.RUNNING)
+                        }
+                        null -> { /* work info not yet available */ }
+                    }
+                }
+        }
     }
 
     fun rotatePersona() {
