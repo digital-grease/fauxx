@@ -81,20 +81,11 @@ class DashboardScreenTest {
         composeRule.onNodeWithText("NOISE RATIO").assertIsDisplayed()
     }
 
-    @Test
-    fun toggleProtectionOn_changesStatusToActive() {
-        composeRule.setContent {
-            FauxxTheme {
-                DashboardScreen()
-            }
-        }
-        // Initially inactive
-        composeRule.onNodeWithText("INACTIVE").assertIsDisplayed()
-
-        // Toggle the switch (it's the only Switch on this screen)
-        composeRule.onNodeWithText("Engine stopped").assertIsDisplayed()
-        // Note: toggling the engine starts a ForegroundService which requires
-        // FOREGROUND_SERVICE permission — the UI state update is still testable
-        composeRule.onNodeWithText("INACTIVE").assertIsDisplayed()
-    }
+    // toggleProtectionOn_changesStatusToActive removed 2026-05-13: it claimed to
+    // test the off→on transition but its body asserted "INACTIVE" twice without
+    // ever invoking the toggle. The remaining tests in this file cover the
+    // structural rendering. A real toggle test is deferred to the Phase 2 emulator
+    // smoke suite — it needs FOREGROUND_SERVICE permission handling and a
+    // foreground-service-startable context that instrumented unit tests don't
+    // reliably provide. See .devloop/spikes/integration-testing-audit.md.
 }
