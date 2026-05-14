@@ -17,21 +17,40 @@ import javax.inject.Singleton
 /**
  * Per-locale Play Store search-keyword table. The active locale's entry seeds the
  * deep-link URL; if a locale is missing a category (or the locale itself is missing
- * from the table), the EN entry is used as fallback. In Phase 2 only the EN row is
- * populated; ES and FR rows are intentionally empty pending native-speaker translation
- * in Phase 3 (translated keywords must actually return results on the localized Play
- * Store storefront — `meditación astrología bienestar` rather than a direct rendering
- * of `meditation astrology wellness`, etc.).
+ * from the table), the EN entry is used as fallback. Every [CategoryPool] value
+ * has an EN entry — verified by `AppSignalKeywordsCoverageTest` — so the
+ * [DEFAULT_KEYWORDS] fallback is defensive-only and shouldn't be hit in practice.
+ * Issue #18 ("App store links always search for 'productivity tools'") was caused
+ * by missing entries silently falling through to that default; the test prevents
+ * regression.
  */
-private val CATEGORY_APP_KEYWORDS: Map<SupportedLocale, Map<CategoryPool, String>> = mapOf(
+internal val CATEGORY_APP_KEYWORDS: Map<SupportedLocale, Map<CategoryPool, String>> = mapOf(
     SupportedLocale.EN to mapOf(
-        CategoryPool.GAMING to "strategy+games",
-        CategoryPool.FITNESS to "fitness+tracker",
-        CategoryPool.COOKING to "recipe+app",
-        CategoryPool.TRAVEL to "travel+planning",
-        CategoryPool.FINANCE to "budget+finance",
         CategoryPool.MEDICAL to "health+medical",
+        CategoryPool.LEGAL to "legal+forms+advice",
+        CategoryPool.AUTOMOTIVE to "car+maintenance+repair",
+        CategoryPool.PARENTING to "baby+tracker+parenting",
+        CategoryPool.RETIREMENT to "retirement+planning",
+        CategoryPool.GAMING to "strategy+games",
+        CategoryPool.AGRICULTURE to "farming+agriculture",
+        CategoryPool.FASHION to "fashion+outfit+style",
+        CategoryPool.ACADEMIC to "study+flashcards+homework",
+        CategoryPool.REAL_ESTATE to "real+estate+home+search",
+        CategoryPool.COOKING to "recipe+app",
         CategoryPool.SPORTS to "sports+scores",
+        CategoryPool.FINANCE to "budget+finance",
+        CategoryPool.TRAVEL to "travel+planning",
+        CategoryPool.TECHNOLOGY to "tech+news+gadgets",
+        CategoryPool.PETS to "pet+care+dog+cat",
+        CategoryPool.HOME_IMPROVEMENT to "home+improvement+DIY",
+        CategoryPool.BEAUTY to "makeup+beauty+tutorial",
+        CategoryPool.MUSIC to "music+streaming+radio",
+        CategoryPool.FITNESS to "fitness+tracker",
+        CategoryPool.ENTERTAINMENT to "movies+streaming",
+        CategoryPool.FOOD to "food+delivery+restaurant",
+        CategoryPool.POLITICS to "news+politics+current+events",
+        CategoryPool.SCIENCE to "science+news+research",
+        CategoryPool.BUSINESS to "business+invoicing+productivity",
         CategoryPool.OUTDOOR_RECREATION to "hiking+trails+outdoor",
         CategoryPool.CRAFTS to "craft+ideas+DIY",
         CategoryPool.HISTORY to "history+trivia+museum",
@@ -41,13 +60,31 @@ private val CATEGORY_APP_KEYWORDS: Map<SupportedLocale, Map<CategoryPool, String
         CategoryPool.RELATIONSHIPS_DATING to "dating+relationships"
     ),
     SupportedLocale.ES to mapOf(
-        CategoryPool.GAMING to "juegos+estrategia",
-        CategoryPool.FITNESS to "rastreador+fitness",
-        CategoryPool.COOKING to "recetas+cocina",
-        CategoryPool.TRAVEL to "planificar+viaje",
-        CategoryPool.FINANCE to "presupuesto+finanzas",
         CategoryPool.MEDICAL to "salud+medicina",
+        CategoryPool.LEGAL to "asesoría+legal+formularios",
+        CategoryPool.AUTOMOTIVE to "mantenimiento+coche+taller",
+        CategoryPool.PARENTING to "rastreador+bebé+crianza",
+        CategoryPool.RETIREMENT to "planificación+jubilación",
+        CategoryPool.GAMING to "juegos+estrategia",
+        CategoryPool.AGRICULTURE to "agricultura+campo",
+        CategoryPool.FASHION to "moda+estilo+outfit",
+        CategoryPool.ACADEMIC to "estudio+tareas+universitarios",
+        CategoryPool.REAL_ESTATE to "inmobiliaria+pisos+venta",
+        CategoryPool.COOKING to "recetas+cocina",
         CategoryPool.SPORTS to "resultados+deportes",
+        CategoryPool.FINANCE to "presupuesto+finanzas",
+        CategoryPool.TRAVEL to "planificar+viaje",
+        CategoryPool.TECHNOLOGY to "tecnología+gadgets+noticias",
+        CategoryPool.PETS to "mascotas+perros+gatos",
+        CategoryPool.HOME_IMPROVEMENT to "bricolaje+hogar+reformas",
+        CategoryPool.BEAUTY to "maquillaje+belleza+tutorial",
+        CategoryPool.MUSIC to "música+streaming+radio",
+        CategoryPool.FITNESS to "rastreador+fitness",
+        CategoryPool.ENTERTAINMENT to "películas+series+streaming",
+        CategoryPool.FOOD to "comida+a+domicilio+restaurantes",
+        CategoryPool.POLITICS to "noticias+política+actualidad",
+        CategoryPool.SCIENCE to "ciencia+noticias+investigación",
+        CategoryPool.BUSINESS to "facturación+negocios+productividad",
         CategoryPool.OUTDOOR_RECREATION to "senderismo+rutas+naturaleza",
         CategoryPool.CRAFTS to "manualidades+ideas+DIY",
         CategoryPool.HISTORY to "historia+museo+trivia",
@@ -57,13 +94,31 @@ private val CATEGORY_APP_KEYWORDS: Map<SupportedLocale, Map<CategoryPool, String
         CategoryPool.RELATIONSHIPS_DATING to "citas+relaciones"
     ),
     SupportedLocale.FR to mapOf(
-        CategoryPool.GAMING to "jeux+stratégie",
-        CategoryPool.FITNESS to "tracker+fitness",
-        CategoryPool.COOKING to "recettes+cuisine",
-        CategoryPool.TRAVEL to "planifier+voyage",
-        CategoryPool.FINANCE to "budget+finances",
         CategoryPool.MEDICAL to "santé+médical",
+        CategoryPool.LEGAL to "conseil+juridique+formulaires",
+        CategoryPool.AUTOMOTIVE to "entretien+voiture+garage",
+        CategoryPool.PARENTING to "bébé+parents+suivi",
+        CategoryPool.RETIREMENT to "planification+retraite",
+        CategoryPool.GAMING to "jeux+stratégie",
+        CategoryPool.AGRICULTURE to "agriculture+ferme",
+        CategoryPool.FASHION to "mode+style+tenue",
+        CategoryPool.ACADEMIC to "étudiant+révisions+fiches",
+        CategoryPool.REAL_ESTATE to "immobilier+annonces+location",
+        CategoryPool.COOKING to "recettes+cuisine",
         CategoryPool.SPORTS to "résultats+sport",
+        CategoryPool.FINANCE to "budget+finances",
+        CategoryPool.TRAVEL to "planifier+voyage",
+        CategoryPool.TECHNOLOGY to "tech+actualité+gadgets",
+        CategoryPool.PETS to "animaux+chien+chat",
+        CategoryPool.HOME_IMPROVEMENT to "bricolage+maison+travaux",
+        CategoryPool.BEAUTY to "maquillage+beauté+tutoriel",
+        CategoryPool.MUSIC to "musique+streaming+radio",
+        CategoryPool.FITNESS to "tracker+fitness",
+        CategoryPool.ENTERTAINMENT to "films+séries+streaming",
+        CategoryPool.FOOD to "livraison+restaurant+repas",
+        CategoryPool.POLITICS to "actualité+politique",
+        CategoryPool.SCIENCE to "science+actualité+recherche",
+        CategoryPool.BUSINESS to "facturation+entreprise+productivité",
         CategoryPool.OUTDOOR_RECREATION to "randonnée+nature+plein+air",
         CategoryPool.CRAFTS to "loisirs+créatifs+DIY",
         CategoryPool.HISTORY to "histoire+musée+culture",
@@ -74,6 +129,12 @@ private val CATEGORY_APP_KEYWORDS: Map<SupportedLocale, Map<CategoryPool, String
     )
 )
 
+/**
+ * Defensive fallback. With full EN coverage, this should never be hit; if it ever is,
+ * the [AppSignalKeywordsCoverageTest] would have failed first. Kept so a runtime miss
+ * (e.g. a future enum addition not yet on a release) degrades to a plausible search
+ * rather than crashing.
+ */
 private const val DEFAULT_KEYWORDS = "productivity+tools"
 
 /**
