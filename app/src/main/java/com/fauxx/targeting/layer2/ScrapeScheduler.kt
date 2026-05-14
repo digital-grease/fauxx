@@ -5,6 +5,7 @@ import timber.log.Timber
 import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
+import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -12,6 +13,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.targeting.layer2.scrapers.FacebookAdsScraper
 import com.fauxx.targeting.layer2.scrapers.GoogleAdsScraper
@@ -93,7 +95,18 @@ class ScrapeScheduler @Inject constructor(
 
 /**
  * Hilt-injected WorkManager worker that runs the scraping logic.
- * On ANY failure: logs, keeps stale cache, returns SUCCESS (so WorkManager reschedules).
+ *
+ * Distinguishes three outcomes via [Result] output data so the in-app UI can
+ * surface a "you need to log in" dialog rather than silently flashing "Failed"
+ * (issue follow-up to #39: users have no way to know that empty results almost
+ * always mean they're not signed into the ad-platform pages):
+ *
+ * - [OUTCOME_SUCCESS]: at least one platform returned categories.
+ * - [OUTCOME_NEEDS_LOGIN]: every platform returned an empty list with no thrown
+ *   exception — almost always means the user isn't signed into the ad-platform
+ *   pages, since real ad profiles are rarely empty for active accounts.
+ * - [OUTCOME_FAILED]: at least one platform threw (network/parse/timeout) and
+ *   nothing succeeded.
  */
 @HiltWorker
 class ScrapeWorker @AssistedInject constructor(
@@ -118,14 +131,15 @@ class ScrapeWorker @AssistedInject constructor(
 
         val scrapers = listOf(googleScraper, facebookScraper)
         val succeeded = mutableListOf<String>()
-        val failed = mutableListOf<String>()
+        val emptyResult = mutableListOf<String>()
+        val errored = mutableListOf<String>()
 
         for (scraper in scrapers) {
             try {
                 val rawCategories = scraper.scrape(scraperWebView)
                 if (rawCategories.isEmpty()) {
-                    Timber.d("${scraper.platformId}: no categories found (may need auth)")
-                    failed.add(scraper.platformId)
+                    Timber.d("${scraper.platformId}: no categories found (likely not signed in)")
+                    emptyResult.add(scraper.platformId)
                     continue
                 }
 
@@ -144,7 +158,7 @@ class ScrapeWorker @AssistedInject constructor(
 
             } catch (e: Exception) {
                 Timber.e(e, "${scraper.platformId} scrape failed")
-                failed.add(scraper.platformId)
+                errored.add(scraper.platformId)
                 // Keep existing cache — do not clear on failure
             }
         }
@@ -153,13 +167,39 @@ class ScrapeWorker @AssistedInject constructor(
             webViewPool.release(scraperWebView)
         }
 
-        if (succeeded.isEmpty()) {
-            Timber.w("All scrapers failed (${failed.joinToString()}) — scheduling retry")
-            return Result.retry()
+        val outcome = when {
+            succeeded.isNotEmpty() -> OUTCOME_SUCCESS
+            // All non-success and at least one returned cleanly empty — treat as
+            // "needs login." Real ad-platform profiles for active accounts are
+            // never empty; the only way to get all-empty is to not be signed in.
+            emptyResult.isNotEmpty() && errored.isEmpty() -> OUTCOME_NEEDS_LOGIN
+            else -> OUTCOME_FAILED
         }
-        if (failed.isNotEmpty()) {
-            Timber.w("Partial scrape: succeeded=${succeeded.joinToString()}, failed=${failed.joinToString()}")
+        val output = workDataOf(KEY_OUTCOME to outcome)
+
+        return when (outcome) {
+            OUTCOME_SUCCESS -> {
+                if (emptyResult.isNotEmpty() || errored.isNotEmpty()) {
+                    Timber.w("Partial scrape: succeeded=${succeeded.joinToString()}, empty=${emptyResult.joinToString()}, errored=${errored.joinToString()}")
+                }
+                Result.success(output)
+            }
+            OUTCOME_NEEDS_LOGIN -> {
+                Timber.w("Scrape produced no categories on any platform — likely not signed in (${emptyResult.joinToString()})")
+                // Do not Result.retry() — retrying doesn't help; the user has to act.
+                Result.failure(output)
+            }
+            else -> {
+                Timber.w("Scrape errored on all platforms (${errored.joinToString()}) — retrying")
+                Result.retry()
+            }
         }
-        return Result.success()
+    }
+
+    companion object {
+        const val KEY_OUTCOME = "outcome"
+        const val OUTCOME_SUCCESS = "success"
+        const val OUTCOME_NEEDS_LOGIN = "needs_login"
+        const val OUTCOME_FAILED = "failed"
     }
 }

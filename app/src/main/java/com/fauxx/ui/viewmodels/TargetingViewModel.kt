@@ -14,6 +14,7 @@ import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.UserDemographicProfile
 import com.fauxx.targeting.layer2.PlatformProfileDao
 import com.fauxx.targeting.layer2.ScrapeScheduler
+import com.fauxx.targeting.layer2.ScrapeWorker
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,8 +32,16 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 
-/** Lifecycle state of an on-demand "Scrape Now" run. */
-enum class ScrapeState { IDLE, RUNNING, SUCCESS, FAILED }
+/**
+ * Lifecycle state of an on-demand "Scrape Now" run.
+ *
+ * [NEEDS_LOGIN] is the special "no platform returned any categories" outcome — the
+ * scraper reads existing ad-platform cookies, so an all-empty result almost always
+ * means the user isn't signed into Google Ads Settings or Facebook ad preferences.
+ * The UI surfaces a dialog explaining this rather than letting the failure flash by
+ * as a generic "Failed".
+ */
+enum class ScrapeState { IDLE, RUNNING, SUCCESS, FAILED, NEEDS_LOGIN }
 
 data class TargetingUiState(
     val layer1Enabled: Boolean = false,
@@ -138,9 +147,18 @@ class TargetingViewModel @Inject constructor(
                         }
                         WorkInfo.State.FAILED,
                         WorkInfo.State.CANCELLED -> {
-                            _state.value = _state.value.copy(scrapeState = ScrapeState.FAILED)
-                            delay(SCRAPE_RESULT_DISPLAY_MS)
-                            _state.value = _state.value.copy(scrapeState = ScrapeState.IDLE)
+                            // Worker sets KEY_OUTCOME on the result — distinguish the
+                            // common "user isn't signed in" case from real errors so the
+                            // UI can show a helpful dialog instead of a generic "Failed".
+                            val outcome = info.outputData.getString(ScrapeWorker.KEY_OUTCOME)
+                            if (outcome == ScrapeWorker.OUTCOME_NEEDS_LOGIN) {
+                                // Don't auto-reset — the user has to act (sign in, then re-tap).
+                                _state.value = _state.value.copy(scrapeState = ScrapeState.NEEDS_LOGIN)
+                            } else {
+                                _state.value = _state.value.copy(scrapeState = ScrapeState.FAILED)
+                                delay(SCRAPE_RESULT_DISPLAY_MS)
+                                _state.value = _state.value.copy(scrapeState = ScrapeState.IDLE)
+                            }
                         }
                         WorkInfo.State.RUNNING,
                         WorkInfo.State.ENQUEUED,
@@ -150,6 +168,17 @@ class TargetingViewModel @Inject constructor(
                         null -> { /* work info not yet available */ }
                     }
                 }
+        }
+    }
+
+    /**
+     * Called by the screen when the user dismisses the "needs login" dialog. Resets
+     * scrape state to IDLE so the button is tappable again (the user has presumably
+     * signed in before tapping again).
+     */
+    fun dismissScrapeNeedsLogin() {
+        if (_state.value.scrapeState == ScrapeState.NEEDS_LOGIN) {
+            _state.value = _state.value.copy(scrapeState = ScrapeState.IDLE)
         }
     }
 
