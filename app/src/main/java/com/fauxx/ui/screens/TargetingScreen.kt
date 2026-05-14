@@ -50,6 +50,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.MappingConfidence
@@ -107,6 +110,9 @@ fun TargetingScreen(
             ScrapeState.RUNNING -> "Scraping…" to false
             ScrapeState.SUCCESS -> "Done" to false
             ScrapeState.FAILED -> "Failed — Retry" to true
+            // NEEDS_LOGIN: button stays tappable so user can re-attempt after signing in,
+            // but the dialog rendered below is the primary CTA.
+            ScrapeState.NEEDS_LOGIN -> "Sign in first" to true
         }
         LayerToggleCard(
             layerName = "Layer 2 — Adversarial Scraper",
@@ -116,9 +122,17 @@ fun TargetingScreen(
             statusText = "Last scraped: ${uiState.lastScrapeDate}",
             actionLabel = scrapeLabel,
             actionEnabled = scrapeEnabled,
-            actionEmphasizeError = uiState.scrapeState == ScrapeState.FAILED,
+            actionEmphasizeError = uiState.scrapeState == ScrapeState.FAILED ||
+                uiState.scrapeState == ScrapeState.NEEDS_LOGIN,
             onAction = { viewModel.scrapeNow() }
         )
+
+        // When the scraper returns zero categories from all platforms, almost certainly
+        // the user isn't signed in. Surface a dialog with deep links rather than letting
+        // the failure flash by silently. Dismissal resets state to IDLE.
+        if (uiState.scrapeState == ScrapeState.NEEDS_LOGIN) {
+            ScrapeNeedsLoginDialog(onDismiss = { viewModel.dismissScrapeNeedsLogin() })
+        }
 
         // Layer 3 toggle
         LayerToggleCard(
@@ -385,4 +399,56 @@ private fun WeightBar(label: String, value: Float, color: Color) {
             )
         }
     }
+}
+
+/**
+ * Shown after a scrape returns no categories from any platform — almost always
+ * means the user isn't signed into Google Ads Settings or Facebook ad preferences.
+ * Replaces the previous silent-failure UX where the button just flashed "Failed"
+ * with no actionable explanation.
+ *
+ * Each "Sign in" button opens the relevant ad-platform page in the user's default
+ * browser via implicit intent. Once the user signs in there, they come back to the
+ * app and tap "Scrape Now" again — the dialog dismisses on either button press.
+ */
+@Composable
+private fun ScrapeNeedsLoginDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val openUrl: (String) -> Unit = { url ->
+        runCatching {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+        onDismiss()
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Sign in to scrape") },
+        text = {
+            Text(
+                "The Adversarial Scraper reads your ad-platform interest profiles to " +
+                    "find what they think they know about you — but it can't log you in. " +
+                    "Sign into these sites in your browser, then come back and tap " +
+                    "\"Scrape Now\" again:\n\n" +
+                    "• Google Ads Settings — myadcenter.google.com\n" +
+                    "• Facebook ad preferences — facebook.com/adpreferences\n\n" +
+                    "Read-only — Fauxx never modifies or interacts with your ad settings."
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { openUrl("https://myadcenter.google.com") }) {
+                Text("Open Google")
+            }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = { openUrl("https://www.facebook.com/adpreferences") }) {
+                    Text("Open Facebook")
+                }
+                TextButton(onClick = onDismiss) { Text("Later") }
+            }
+        }
+    )
 }
