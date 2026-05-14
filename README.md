@@ -318,6 +318,29 @@ See `.devloop/spikes/multilingual-support.md` for the design and threat model.
 
 ## FAQ
 
+### What does "Noise Ratio" on the Dashboard mean?
+
+It's a throughput indicator: `min(actions today / 500, 100%)`. 500 actions in a day reads as a "saturated" Noise Ratio of 100%.
+
+What it *doesn't* measure: the *quality* of the noise — whether the synthetic activity is hitting categories that are actually different from your real interests, whether it's fooling profiling systems, or how diverse the topics are. It's just a rate gauge.
+
+If you want to see where the noise is actually going, the **Targeting screen's category-weight chart** is more useful: red bars are categories Fauxx is suppressing (because they match your demographic profile), green bars are categories it's boosting (off-profile noise), gray is neutral.
+
+A future release will move Noise Ratio toward a quality-aware metric rather than pure throughput. Tracked as a planned improvement.
+
+### How does the "Adversarial Scraper" (Layer 2) work, and why does it sometimes say "Last scraped: Never"?
+
+Layer 2 reads your existing ad-platform interest profiles from Google Ads Settings and Facebook Ad Preferences. It uses those to find categories the ad networks have already learned about you, and then tells the engine to *suppress* those categories — so the synthetic activity steers away from your real profile.
+
+A few mechanics worth knowing:
+
+- **Duration**: up to ~60 seconds. Each platform has a 30-second timeout, and Google + Facebook run sequentially.
+- **It does not log you in.** Fauxx reads cookies that are already on your device. You need to be signed into [myadcenter.google.com](https://myadcenter.google.com) and Facebook's ad preferences page in your default browser before tapping "Scrape Now," otherwise the scraper silently returns zero categories and "Last scraped" stays as "Never."
+- **Read-only.** The scraper never modifies, clicks, or interacts with your ad-platform settings — it just reads what's already there.
+- **Runs on a 7-day schedule.** Once Layer 2 is enabled, Fauxx auto-refreshes the scrape every week on WiFi. "Scrape Now" is a manual override for immediate refresh (one-shot, works on cellular too).
+
+If you're on v0.2.6 or older and "Scrape Now" never seems to do anything, that's [issue #22](https://github.com/digital-grease/fauxx/issues/22) — fixed in v0.2.7. Update via F-Droid / Orion / GitHub Releases and the button will work as intended.
+
 ### Why does the F-Droid build sometimes stop and show a "Tap to resume protection" notification?
 
 Short answer: Android 14 and newer cap the kind of background service Fauxx uses to **6 cumulative hours per 24 hours** while the app is in the background. To stay under that ceiling, Fauxx voluntarily stops itself a bit before the cap and posts a one-tap notification so you can resume when you next pick up your phone.
