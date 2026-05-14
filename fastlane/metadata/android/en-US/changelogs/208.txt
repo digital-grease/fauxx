@@ -1,0 +1,5 @@
+• Fix: F-Droid build now appears in Developer Options' mock-location list
+• Fix: dashboard one-tap "Use mobile data" when paused by Wi-Fi only mode
+• Fix: app store deep links use category-specific search terms again
+• New: in-app FAQ from the Help menu (Noise Ratio, Adversarial Scraper)
+• New: clearer hints when Layer 2 scraper or location spoofing need setup
