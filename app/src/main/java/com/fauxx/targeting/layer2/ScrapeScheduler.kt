@@ -134,7 +134,7 @@ class ScrapeWorker @AssistedInject constructor(
         val emptyResult = mutableListOf<String>()
         val errored = mutableListOf<String>()
 
-        for (scraper in scrapers) {
+        for ((index, scraper) in scrapers.withIndex()) {
             try {
                 val rawCategories = scraper.scrape(scraperWebView)
                 if (rawCategories.isEmpty()) {
@@ -160,6 +160,17 @@ class ScrapeWorker @AssistedInject constructor(
                 Timber.e(e, "${scraper.platformId} scrape failed")
                 errored.add(scraper.platformId)
                 // Keep existing cache — do not clear on failure
+            } finally {
+                // Between scrapers, flush the WebView's lingering page state so the
+                // next scraper's loadUrl doesn't queue behind the previous page's
+                // still-running JS / pending network requests. Skip on the last
+                // iteration since release() does the same teardown.
+                if (index < scrapers.lastIndex) {
+                    withContext(Dispatchers.Main) {
+                        scraperWebView.stopLoading()
+                        scraperWebView.loadUrl("about:blank")
+                    }
+                }
             }
         }
 
