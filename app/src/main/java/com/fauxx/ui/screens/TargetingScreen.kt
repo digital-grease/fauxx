@@ -56,8 +56,11 @@ import androidx.compose.ui.platform.LocalContext
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.MappingConfidence
+import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.viewmodels.ScrapeState
+import com.fauxx.ui.viewmodels.TargetingUiState
 import com.fauxx.ui.viewmodels.TargetingViewModel
+import androidx.compose.ui.res.stringResource
 
 /**
  * Targeting screen: visualizes the Demographic Distancing Engine state.
@@ -65,7 +68,8 @@ import com.fauxx.ui.viewmodels.TargetingViewModel
  */
 @Composable
 fun TargetingScreen(
-    viewModel: TargetingViewModel = hiltViewModel()
+    viewModel: TargetingViewModel = hiltViewModel(),
+    onEditProfile: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showClearDialog by remember { mutableStateOf(false) }
@@ -94,6 +98,11 @@ fun TargetingScreen(
             onToggle = { viewModel.setLayer1Enabled(it) },
             statusText = if (uiState.hasProfile) "Profile set" else "No profile"
         )
+
+        // Saved demographic profile (issue #29 — there was no view-or-edit path
+        // for these values once onboarding completed; users had to wipe via
+        // "Reset to defaults" to re-enter).
+        ProfileSummaryCard(state = uiState, onEditProfile = onEditProfile)
 
         // Custom interests (part of Layer 1)
         if (uiState.layer1Enabled) {
@@ -183,6 +192,79 @@ fun TargetingScreen(
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) { Text("Cancel") }
             }
+        )
+    }
+}
+
+@Composable
+private fun ProfileSummaryCard(
+    state: TargetingUiState,
+    onEditProfile: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "MY PROFILE",
+                style = MaterialTheme.typography.titleSmall,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.height(8.dp))
+
+            if (!state.hasProfile) {
+                Text(
+                    text = "No profile saved. Setting one up lets Layer 1 steer the noise away from your real demographics.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onEditProfile,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Set up profile") }
+                return@Card
+            }
+
+            ProfileSummaryRow(label = "Age", value = state.ageRange?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(label = "Gender", value = state.gender?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(label = "Profession", value = state.profession?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(label = "Region", value = state.region?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(
+                label = "Interests",
+                value = if (state.interests.isEmpty()) null
+                else state.interests
+                    .joinToString(", ") { it.name.lowercase().replace('_', ' ') }
+            )
+
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = onEditProfile,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Edit my profile") }
+        }
+    }
+}
+
+@Composable
+private fun ProfileSummaryRow(label: String, value: String?) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value ?: "—",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (value != null) MaterialTheme.colorScheme.onSurface
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontFamily = FontFamily.Monospace
         )
     }
 }

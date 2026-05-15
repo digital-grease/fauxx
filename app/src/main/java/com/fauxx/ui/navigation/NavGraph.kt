@@ -119,14 +119,24 @@ fun FauxxNavGraph(showOnboarding: Boolean) {
                 composable(Screen.Onboarding.route) {
                     com.fauxx.ui.screens.OnboardingScreen(
                         onFinish = {
-                            navController.navigate(Screen.Dashboard.route) {
-                                popUpTo(Screen.Onboarding.route) { inclusive = true }
+                            // popBackStack() returns true if there was a screen below (edit
+                            // mode came from Targeting). Returns false on first-launch
+                            // onboarding when this is the only entry — fall through to
+                            // Dashboard in that case.
+                            if (!navController.popBackStack()) {
+                                navController.navigate(Screen.Dashboard.route) {
+                                    popUpTo(Screen.Onboarding.route) { inclusive = true }
+                                }
                             }
                         }
                     )
                 }
                 composable(Screen.Dashboard.route) { DashboardScreen() }
-                composable(Screen.Targeting.route) { TargetingScreen() }
+                composable(Screen.Targeting.route) {
+                    TargetingScreen(
+                        onEditProfile = { navController.navigate(Screen.Onboarding.route) }
+                    )
+                }
                 composable(Screen.Modules.route) { ModulesScreen() }
                 composable(Screen.Log.route) { LogScreen() }
                 composable(Screen.Settings.route) {
