@@ -3,6 +3,7 @@ package com.fauxx.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.engine.modules.LocationDiagnostics
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,11 +22,15 @@ data class ModulesUiState(
 
 @HiltViewModel
 class ModulesViewModel @Inject constructor(
-    private val profileRepo: PoisonProfileRepository
+    private val profileRepo: PoisonProfileRepository,
+    locationDiagnostics: LocationDiagnostics
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(loadFromProfile())
     val uiState: StateFlow<ModulesUiState> = _uiState
+
+    val locationStartFailure: StateFlow<LocationDiagnostics.StartFailure> =
+        locationDiagnostics.lastStartFailure
 
     fun setSearchEnabled(v: Boolean) { update { it.copy(searchEnabled = v) } }
     fun setCookieEnabled(v: Boolean) { update { it.copy(cookieEnabled = v) } }

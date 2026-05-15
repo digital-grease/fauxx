@@ -37,7 +37,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.content.Context
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.engine.modules.LocationDiagnostics
 import com.fauxx.ui.viewmodels.ModulesViewModel
 
 /**
@@ -48,6 +50,7 @@ fun ModulesScreen(
     viewModel: ModulesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val locationFailure by viewModel.locationStartFailure.collectAsState()
     var showLocationSetupHint by remember { mutableStateOf(false) }
 
     if (showLocationSetupHint) {
@@ -113,6 +116,12 @@ fun ModulesScreen(
             },
             warning = "Requires Developer Options enabled and Fauxx selected as mock location app"
         )
+        // Inline post-mortem of the most recent start() attempt — only shown when the
+        // toggle is enabled AND start() failed. The user otherwise has no signal that
+        // location spoofing is silently doing nothing (issue #48).
+        if (uiState.locationEnabled && locationFailure.isUserFacing()) {
+            LocationFailureBanner(failure = locationFailure)
+        }
         ModuleToggleCard(
             name = "App Signals",
             description = "Opens app store pages for off-profile apps to trigger attribution pixels",
@@ -203,12 +212,7 @@ private fun LocationSetupHintDialog(onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = {
-                runCatching {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                }
+                openDeveloperOptionsOrSettings(context)
                 onDismiss()
             }) { Text("Open Developer Options") }
         },
@@ -216,4 +220,97 @@ private fun LocationSetupHintDialog(onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) { Text("Got it") }
         }
     )
+}
+
+/**
+ * `Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS` only resolves on devices where
+ * Developer Options has been unlocked (Settings → About phone → tap Build number 7×).
+ * On fresh devices it silently fails, leaving the user stuck. This helper checks the
+ * `DEVELOPMENT_SETTINGS_ENABLED` flag first and falls back to About phone (where the
+ * Build-number tap-counter lives) when dev options aren't unlocked yet — and finally
+ * to generic Settings if even that doesn't resolve.
+ */
+private fun openDeveloperOptionsOrSettings(context: Context) {
+    val devOptionsEnabled = Settings.Global.getInt(
+        context.contentResolver,
+        Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
+        0
+    ) == 1
+    val candidates = buildList {
+        if (devOptionsEnabled) add(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+        add(Settings.ACTION_DEVICE_INFO_SETTINGS) // About phone (where Build number lives)
+        add(Settings.ACTION_SETTINGS) // root Settings, always present
+    }
+    for (action in candidates) {
+        val intent = Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (intent.resolveActivity(context.packageManager) != null) {
+            runCatching { context.startActivity(intent) }
+            return
+        }
+    }
+}
+
+/**
+ * Returns true when the failure represents an actionable, user-visible state.
+ * NEVER_STARTED suppresses the banner before the engine has run (cold app launch,
+ * no signal yet); OK suppresses it on success.
+ */
+private fun LocationDiagnostics.StartFailure.isUserFacing(): Boolean = when (this) {
+    LocationDiagnostics.StartFailure.NEVER_STARTED,
+    LocationDiagnostics.StartFailure.OK -> false
+    LocationDiagnostics.StartFailure.NOT_MOCK_APP,
+    LocationDiagnostics.StartFailure.SECURITY_EXCEPTION,
+    LocationDiagnostics.StartFailure.RUNTIME_EXCEPTION -> true
+}
+
+/**
+ * Banner surfaced under the Location Spoofing toggle when [LocationDiagnostics] reports
+ * the most-recent start() attempt failed. Each failure mode gets a tailored message and
+ * (where applicable) a deep-link to Developer Options.
+ */
+@Composable
+private fun LocationFailureBanner(failure: LocationDiagnostics.StartFailure) {
+    val context = LocalContext.current
+    val (headline, detail, showDevOptions) = when (failure) {
+        LocationDiagnostics.StartFailure.NOT_MOCK_APP -> Triple(
+            "Fauxx is not the mock location app",
+            "Open Developer Options → Select mock location app → choose Fauxx, then restart the engine.",
+            true
+        )
+        LocationDiagnostics.StartFailure.SECURITY_EXCEPTION -> Triple(
+            "Mock provider rejected by Android",
+            "The system blocked addTestProvider despite the app op being allowed. Try toggling Fauxx off and back on under Developer Options → Select mock location app, then restart Fauxx.",
+            true
+        )
+        LocationDiagnostics.StartFailure.RUNTIME_EXCEPTION -> Triple(
+            "Could not register mock provider",
+            "Android refused the mock provider for an unexpected reason. Check app logs for details.",
+            false
+        )
+        else -> Triple("", "", false)
+    }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = headline,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            if (showDevOptions) {
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = { openDeveloperOptionsOrSettings(context) }) {
+                    Text("Open Developer Options")
+                }
+            }
+        }
+    }
 }

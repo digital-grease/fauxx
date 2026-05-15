@@ -1,8 +1,10 @@
 package com.fauxx.di
 
 import com.fauxx.engine.modules.DiverseBrowsingModule
+import com.fauxx.engine.modules.LocationDiagnostics
 import com.fauxx.engine.modules.LocationSignalModule
 import com.fauxx.engine.modules.Module
+import com.fauxx.engine.modules.NoOpLocationDiagnostics
 import dagger.Binds
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -22,4 +24,8 @@ abstract class FlavorModulesModule {
     @Singleton
     @LocationModuleImpl
     abstract fun bindLocationModule(impl: LocationSignalModule): Module
+
+    @Binds
+    @Singleton
+    abstract fun bindLocationDiagnostics(impl: NoOpLocationDiagnostics): LocationDiagnostics
 }
