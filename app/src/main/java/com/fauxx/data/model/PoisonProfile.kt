@@ -9,6 +9,9 @@ import com.fauxx.ui.theme.ThemeMode
  * @property intensity Action rate setting.
  * @property wifiOnly Only execute actions when connected to Wi-Fi.
  * @property batteryThreshold Pause when battery level drops below this percentage (0-100).
+ * @property ignoreBatteryThresholdWhileCharging When true, [batteryThreshold] is bypassed while
+ *   the device is plugged in — the engine keeps running even at low charge as long as it's
+ *   actively charging. Defaults to false to preserve historical behavior.
  * @property allowedHoursStart Hour of day (0-23) when activity is permitted to start.
  * @property allowedHoursEnd Hour of day (0-23) when activity must stop.
  * @property searchPoisonEnabled Whether the SearchPoisonModule is active.
@@ -31,6 +34,7 @@ data class PoisonProfile(
     val intensity: IntensityLevel = IntensityLevel.MEDIUM,
     val wifiOnly: Boolean = true,
     val batteryThreshold: Int = 20,
+    val ignoreBatteryThresholdWhileCharging: Boolean = false,
     val allowedHoursStart: Int = 7,
     val allowedHoursEnd: Int = 23,
     val searchPoisonEnabled: Boolean = true,

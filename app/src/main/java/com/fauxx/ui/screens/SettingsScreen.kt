@@ -249,6 +249,29 @@ fun SettingsScreen(
                 valueRange = 10f..50f,
                 steps = 7
             )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Ignore threshold while charging",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        "Keep running below the threshold when the device is plugged in.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = uiState.ignoreBatteryThresholdWhileCharging,
+                    onCheckedChange = { viewModel.setIgnoreBatteryThresholdWhileCharging(it) }
+                )
+            }
         }
 
         // Active hours

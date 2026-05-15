@@ -26,6 +26,7 @@ object PreferenceKeys {
     val INTENSITY = stringPreferencesKey("intensity")
     val WIFI_ONLY = booleanPreferencesKey("wifi_only")
     val BATTERY_THRESHOLD = intPreferencesKey("battery_threshold")
+    val IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING = booleanPreferencesKey("ignore_battery_threshold_while_charging")
     val ALLOWED_HOURS_START = intPreferencesKey("allowed_hours_start")
     val ALLOWED_HOURS_END = intPreferencesKey("allowed_hours_end")
 

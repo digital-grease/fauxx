@@ -30,6 +30,7 @@ data class SettingsUiState(
     val intensity: IntensityLevel = IntensityLevel.MEDIUM,
     val wifiOnly: Boolean = true,
     val batteryThreshold: Int = 20,
+    val ignoreBatteryThresholdWhileCharging: Boolean = false,
     val allowedHoursStart: Int = 7,
     val allowedHoursEnd: Int = 23,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
@@ -84,6 +85,9 @@ class SettingsViewModel @Inject constructor(
     fun setIntensity(level: IntensityLevel) { update { it.copy(intensity = level) } }
     fun setWifiOnly(v: Boolean) { update { it.copy(wifiOnly = v) } }
     fun setBatteryThreshold(v: Int) { update { it.copy(batteryThreshold = v) } }
+    fun setIgnoreBatteryThresholdWhileCharging(v: Boolean) {
+        update { it.copy(ignoreBatteryThresholdWhileCharging = v) }
+    }
     fun setAllowedHoursStart(v: Int) { update { it.copy(allowedHoursStart = v) } }
     fun setAllowedHoursEnd(v: Int) { update { it.copy(allowedHoursEnd = v) } }
     fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
@@ -139,6 +143,7 @@ class SettingsViewModel @Inject constructor(
                     intensity = new.intensity,
                     wifiOnly = new.wifiOnly,
                     batteryThreshold = new.batteryThreshold,
+                    ignoreBatteryThresholdWhileCharging = new.ignoreBatteryThresholdWhileCharging,
                     allowedHoursStart = new.allowedHoursStart,
                     allowedHoursEnd = new.allowedHoursEnd,
                     themeMode = new.themeMode,
@@ -154,6 +159,7 @@ class SettingsViewModel @Inject constructor(
             intensity = p.intensity,
             wifiOnly = p.wifiOnly,
             batteryThreshold = p.batteryThreshold,
+            ignoreBatteryThresholdWhileCharging = p.ignoreBatteryThresholdWhileCharging,
             allowedHoursStart = p.allowedHoursStart,
             allowedHoursEnd = p.allowedHoursEnd,
             themeMode = p.themeMode,
