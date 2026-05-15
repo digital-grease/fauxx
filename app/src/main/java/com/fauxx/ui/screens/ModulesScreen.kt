@@ -109,18 +109,34 @@ fun ModulesScreen(
             enabled = uiState.locationEnabled,
             onToggle = { enabled ->
                 viewModel.setLocationEnabled(enabled)
-                // Surface setup instructions whenever the user turns this on, since
-                // Android requires a separate Dev Options designation (issue #4 —
-                // users were toggling this and seeing no effect).
-                if (enabled) showLocationSetupHint = true
+                // Only surface the setup-hint dialog when setup hasn't already been
+                // done. Issue #4 originally added this dialog because users were
+                // toggling and seeing no effect; once they've done the Developer
+                // Options dance, nagging them again on every toggle is a regression.
+                if (enabled && !viewModel.isLocationReadyForUse()) {
+                    showLocationSetupHint = true
+                }
             },
-            warning = "Requires Developer Options enabled and Fauxx selected as mock location app"
+            // Pre-toggle informational hint only — once the toggle is on, the banner
+            // below replaces this text with a real success-or-failure signal so users
+            // aren't perpetually shown a "warning" when everything's actually fine.
+            hint = if (!uiState.locationEnabled) {
+                "Requires Developer Options enabled and Fauxx selected as mock location app"
+            } else null
         )
-        // Inline post-mortem of the most recent start() attempt — only shown when the
-        // toggle is enabled AND start() failed. The user otherwise has no signal that
-        // location spoofing is silently doing nothing (issue #48).
-        if (uiState.locationEnabled && locationFailure.isUserFacing()) {
-            LocationFailureBanner(failure = locationFailure)
+        // Inline post-mortem of the most recent start() attempt. Issue #48: users
+        // had no way to know location spoofing was silently doing nothing. Now we
+        // show either a green success banner (start() succeeded) or a red failure
+        // banner with a tailored remediation hint.
+        if (uiState.locationEnabled) {
+            when (locationFailure) {
+                LocationDiagnostics.StartFailure.OK -> LocationSuccessBanner()
+                LocationDiagnostics.StartFailure.NEVER_STARTED -> {
+                    // Transient pre-engine state on cold launch — show nothing
+                    // rather than flash a temporary banner.
+                }
+                else -> LocationFailureBanner(failure = locationFailure)
+            }
         }
         ModuleToggleCard(
             name = "App Signals",
@@ -137,7 +153,7 @@ private fun ModuleToggleCard(
     description: String,
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
-    warning: String? = null
+    hint: String? = null
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -175,12 +191,12 @@ private fun ModuleToggleCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (warning != null) {
+                if (hint != null) {
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = warning,
+                        text = hint,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -251,16 +267,32 @@ private fun openDeveloperOptionsOrSettings(context: Context) {
 }
 
 /**
- * Returns true when the failure represents an actionable, user-visible state.
- * NEVER_STARTED suppresses the banner before the engine has run (cold app launch,
- * no signal yet); OK suppresses it on success.
+ * Banner shown when the user has Location Spoofing enabled AND the most recent
+ * `LocationSpoofModule.start()` succeeded — i.e. Fauxx is actually feeding mock
+ * fixes. Replaces the perpetual "warning" copy that used to live on the toggle
+ * card itself, so a working setup gets a clear positive signal instead of a
+ * red string that made it look like something was wrong.
  */
-private fun LocationDiagnostics.StartFailure.isUserFacing(): Boolean = when (this) {
-    LocationDiagnostics.StartFailure.NEVER_STARTED,
-    LocationDiagnostics.StartFailure.OK -> false
-    LocationDiagnostics.StartFailure.NOT_MOCK_APP,
-    LocationDiagnostics.StartFailure.SECURITY_EXCEPTION,
-    LocationDiagnostics.StartFailure.RUNTIME_EXCEPTION -> true
+@Composable
+private fun LocationSuccessBanner() {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Mock location active",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Fauxx is registered as the system mock-location provider and feeding synthetic GPS fixes.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    }
 }
 
 /**

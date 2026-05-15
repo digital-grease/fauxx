@@ -54,7 +54,7 @@ class LocationSpoofModule @Inject constructor(
      * proactively lets us tell the user *why* spoofing failed instead of catching
      * an opaque SecurityException.
      */
-    private fun isMockLocationAppOpAllowed(): Boolean {
+    override fun isMockLocationAppOpAllowed(): Boolean {
         return try {
             @Suppress("DEPRECATION")
             val mode = appOpsManager.checkOpNoThrow(
@@ -70,6 +70,9 @@ class LocationSpoofModule @Inject constructor(
             true
         }
     }
+
+    /** Diagnostics-driven trigger so the UI can re-run start() outside the engine loop. */
+    override suspend fun requestStart() = start()
 
     @Suppress("DEPRECATION", "WrongConstant")
     override suspend fun start() {

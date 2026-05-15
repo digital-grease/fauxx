@@ -17,6 +17,26 @@ import javax.inject.Singleton
 interface LocationDiagnostics {
     val lastStartFailure: StateFlow<StartFailure>
 
+    /**
+     * Whether Fauxx is currently designated as the system mock-location provider
+     * (Developer Options → "Select mock location app"). Used by the UI to decide
+     * whether to surface the setup-hint dialog when the user toggles the module on
+     * — there's no point telling them to do the setup if it's already done.
+     *
+     * Always `false` on the play flavor, where there is no mock-provider integration.
+     */
+    fun isMockLocationAppOpAllowed(): Boolean
+
+    /**
+     * Re-invokes the underlying location module's `start()` outside the engine's
+     * startup loop. Lets the user get instant green-banner / red-banner feedback
+     * the moment they toggle the module on, instead of having to wait for the next
+     * engine restart for `lastStartFailure` to update.
+     *
+     * No-op on the play flavor.
+     */
+    suspend fun requestStart()
+
     enum class StartFailure {
         /** start() has not run yet for this module-singleton lifetime. */
         NEVER_STARTED,
@@ -52,4 +72,6 @@ interface LocationDiagnostics {
 class NoOpLocationDiagnostics @Inject constructor() : LocationDiagnostics {
     private val _state = MutableStateFlow(LocationDiagnostics.StartFailure.OK)
     override val lastStartFailure: StateFlow<LocationDiagnostics.StartFailure> = _state.asStateFlow()
+    override fun isMockLocationAppOpAllowed(): Boolean = false
+    override suspend fun requestStart() { /* no-op — play flavor has no mock-provider lifecycle */ }
 }

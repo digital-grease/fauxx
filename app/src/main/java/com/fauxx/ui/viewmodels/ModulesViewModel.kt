@@ -23,7 +23,7 @@ data class ModulesUiState(
 @HiltViewModel
 class ModulesViewModel @Inject constructor(
     private val profileRepo: PoisonProfileRepository,
-    locationDiagnostics: LocationDiagnostics
+    private val locationDiagnostics: LocationDiagnostics
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(loadFromProfile())
@@ -32,12 +32,28 @@ class ModulesViewModel @Inject constructor(
     val locationStartFailure: StateFlow<LocationDiagnostics.StartFailure> =
         locationDiagnostics.lastStartFailure
 
+    /**
+     * True if Fauxx is already designated as the system mock-location provider.
+     * Lets the screen skip the setup-hint dialog when the user has already done
+     * the Developer Options dance.
+     */
+    fun isLocationReadyForUse(): Boolean = locationDiagnostics.isMockLocationAppOpAllowed()
+
     fun setSearchEnabled(v: Boolean) { update { it.copy(searchEnabled = v) } }
     fun setCookieEnabled(v: Boolean) { update { it.copy(cookieEnabled = v) } }
     fun setDnsEnabled(v: Boolean) { update { it.copy(dnsEnabled = v) } }
     fun setFingerprintEnabled(v: Boolean) { update { it.copy(fingerprintEnabled = v) } }
     fun setAdEnabled(v: Boolean) { update { it.copy(adEnabled = v) } }
-    fun setLocationEnabled(v: Boolean) { update { it.copy(locationEnabled = v) } }
+    fun setLocationEnabled(v: Boolean) {
+        update { it.copy(locationEnabled = v) }
+        // Engine.start() only invokes module.start() during its own startup loop, so
+        // toggling this flag from the UI wouldn't otherwise refresh lastStartFailure
+        // until the next engine restart. Kick the module directly so the UI's
+        // green-or-red banner reflects the choice immediately.
+        if (v) {
+            viewModelScope.launch { locationDiagnostics.requestStart() }
+        }
+    }
     fun setAppSignalEnabled(v: Boolean) { update { it.copy(appSignalEnabled = v) } }
 
     private fun update(transform: (ModulesUiState) -> ModulesUiState) {
