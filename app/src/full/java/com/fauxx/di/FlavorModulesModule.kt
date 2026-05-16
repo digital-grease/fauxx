@@ -1,6 +1,7 @@
 package com.fauxx.di
 
 import com.fauxx.engine.modules.AdPollutionModule
+import com.fauxx.engine.modules.LocationDiagnostics
 import com.fauxx.engine.modules.LocationSpoofModule
 import com.fauxx.engine.modules.Module
 import dagger.Binds
@@ -22,4 +23,8 @@ abstract class FlavorModulesModule {
     @Singleton
     @LocationModuleImpl
     abstract fun bindLocationModule(impl: LocationSpoofModule): Module
+
+    @Binds
+    @Singleton
+    abstract fun bindLocationDiagnostics(impl: LocationSpoofModule): LocationDiagnostics
 }

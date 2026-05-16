@@ -37,7 +37,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.content.Context
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.engine.modules.LocationDiagnostics
 import com.fauxx.ui.viewmodels.ModulesViewModel
 
 /**
@@ -48,6 +50,7 @@ fun ModulesScreen(
     viewModel: ModulesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val locationFailure by viewModel.locationStartFailure.collectAsState()
     var showLocationSetupHint by remember { mutableStateOf(false) }
 
     if (showLocationSetupHint) {
@@ -106,13 +109,35 @@ fun ModulesScreen(
             enabled = uiState.locationEnabled,
             onToggle = { enabled ->
                 viewModel.setLocationEnabled(enabled)
-                // Surface setup instructions whenever the user turns this on, since
-                // Android requires a separate Dev Options designation (issue #4 —
-                // users were toggling this and seeing no effect).
-                if (enabled) showLocationSetupHint = true
+                // Only surface the setup-hint dialog when setup hasn't already been
+                // done. Issue #4 originally added this dialog because users were
+                // toggling and seeing no effect; once they've done the Developer
+                // Options dance, nagging them again on every toggle is a regression.
+                if (enabled && !viewModel.isLocationReadyForUse()) {
+                    showLocationSetupHint = true
+                }
             },
-            warning = "Requires Developer Options enabled and Fauxx selected as mock location app"
+            // Pre-toggle informational hint only — once the toggle is on, the banner
+            // below replaces this text with a real success-or-failure signal so users
+            // aren't perpetually shown a "warning" when everything's actually fine.
+            hint = if (!uiState.locationEnabled) {
+                "Requires Developer Options enabled and Fauxx selected as mock location app"
+            } else null
         )
+        // Inline post-mortem of the most recent start() attempt. Issue #48: users
+        // had no way to know location spoofing was silently doing nothing. Now we
+        // show either a green success banner (start() succeeded) or a red failure
+        // banner with a tailored remediation hint.
+        if (uiState.locationEnabled) {
+            when (locationFailure) {
+                LocationDiagnostics.StartFailure.OK -> LocationSuccessBanner()
+                LocationDiagnostics.StartFailure.NEVER_STARTED -> {
+                    // Transient pre-engine state on cold launch — show nothing
+                    // rather than flash a temporary banner.
+                }
+                else -> LocationFailureBanner(failure = locationFailure)
+            }
+        }
         ModuleToggleCard(
             name = "App Signals",
             description = "Opens app store pages for off-profile apps to trigger attribution pixels",
@@ -128,7 +153,7 @@ private fun ModuleToggleCard(
     description: String,
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
-    warning: String? = null
+    hint: String? = null
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -166,12 +191,12 @@ private fun ModuleToggleCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (warning != null) {
+                if (hint != null) {
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = warning,
+                        text = hint,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -203,12 +228,7 @@ private fun LocationSetupHintDialog(onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = {
-                runCatching {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                }
+                openDeveloperOptionsOrSettings(context)
                 onDismiss()
             }) { Text("Open Developer Options") }
         },
@@ -216,4 +236,113 @@ private fun LocationSetupHintDialog(onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) { Text("Got it") }
         }
     )
+}
+
+/**
+ * `Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS` only resolves on devices where
+ * Developer Options has been unlocked (Settings → About phone → tap Build number 7×).
+ * On fresh devices it silently fails, leaving the user stuck. This helper checks the
+ * `DEVELOPMENT_SETTINGS_ENABLED` flag first and falls back to About phone (where the
+ * Build-number tap-counter lives) when dev options aren't unlocked yet — and finally
+ * to generic Settings if even that doesn't resolve.
+ */
+private fun openDeveloperOptionsOrSettings(context: Context) {
+    val devOptionsEnabled = Settings.Global.getInt(
+        context.contentResolver,
+        Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
+        0
+    ) == 1
+    val candidates = buildList {
+        if (devOptionsEnabled) add(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+        add(Settings.ACTION_DEVICE_INFO_SETTINGS) // About phone (where Build number lives)
+        add(Settings.ACTION_SETTINGS) // root Settings, always present
+    }
+    for (action in candidates) {
+        val intent = Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (intent.resolveActivity(context.packageManager) != null) {
+            runCatching { context.startActivity(intent) }
+            return
+        }
+    }
+}
+
+/**
+ * Banner shown when the user has Location Spoofing enabled AND the most recent
+ * `LocationSpoofModule.start()` succeeded — i.e. Fauxx is actually feeding mock
+ * fixes. Replaces the perpetual "warning" copy that used to live on the toggle
+ * card itself, so a working setup gets a clear positive signal instead of a
+ * red string that made it look like something was wrong.
+ */
+@Composable
+private fun LocationSuccessBanner() {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Mock location active",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Fauxx is registered as the system mock-location provider and feeding synthetic GPS fixes.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    }
+}
+
+/**
+ * Banner surfaced under the Location Spoofing toggle when [LocationDiagnostics] reports
+ * the most-recent start() attempt failed. Each failure mode gets a tailored message and
+ * (where applicable) a deep-link to Developer Options.
+ */
+@Composable
+private fun LocationFailureBanner(failure: LocationDiagnostics.StartFailure) {
+    val context = LocalContext.current
+    val (headline, detail, showDevOptions) = when (failure) {
+        LocationDiagnostics.StartFailure.NOT_MOCK_APP -> Triple(
+            "Fauxx is not the mock location app",
+            "Open Developer Options → Select mock location app → choose Fauxx, then restart the engine.",
+            true
+        )
+        LocationDiagnostics.StartFailure.SECURITY_EXCEPTION -> Triple(
+            "Mock provider rejected by Android",
+            "The system blocked addTestProvider despite the app op being allowed. Try toggling Fauxx off and back on under Developer Options → Select mock location app, then restart Fauxx.",
+            true
+        )
+        LocationDiagnostics.StartFailure.RUNTIME_EXCEPTION -> Triple(
+            "Could not register mock provider",
+            "Android refused the mock provider for an unexpected reason. Check app logs for details.",
+            false
+        )
+        else -> Triple("", "", false)
+    }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = headline,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            if (showDevOptions) {
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = { openDeveloperOptionsOrSettings(context) }) {
+                    Text("Open Developer Options")
+                }
+            }
+        }
+    }
 }

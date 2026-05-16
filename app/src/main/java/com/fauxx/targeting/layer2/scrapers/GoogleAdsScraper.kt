@@ -10,8 +10,12 @@ import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import kotlin.coroutines.resume
 
-private const val SCRAPE_TIMEOUT_MS = 30_000L
+// 12s is well above the legitimate signed-in path (page + JS extract finishes in ~2-4s
+// in normal cases) and bounds the worst-case Main-thread lag for the user. The previous
+// 30s value compounded with two scrapers to a 60-second user-perceived freeze (#44).
+private const val SCRAPE_TIMEOUT_MS = 12_000L
 private const val ADS_SETTINGS_URL = "https://adssettings.google.com/authenticated"
+private const val FAUXX_BRIDGE = "FauxxBridge"
 
 /**
  * Reads the user's Google ad interest categories from adssettings.google.com.
@@ -36,24 +40,46 @@ class GoogleAdsScraper @Inject constructor() : PlatformScraper {
     }
 
     private suspend fun extractCategories(webView: WebView): Set<String> {
-        return suspendCancellableCoroutine { cont ->
+        try {
+            return suspendCancellableCoroutine { cont ->
+            // Resume-once gate: protects against the bridge firing after a timeout
+            // cancellation has already cleaned up. Without this, a late
+            // `window.FauxxBridge.onResult(...)` call could resume a continuation
+            // that's already cancelled, throwing IllegalStateException.
+            val resumed = java.util.concurrent.atomic.AtomicBoolean(false)
+            fun resumeOnce(value: Set<String>) {
+                if (resumed.compareAndSet(false, true)) cont.resume(value)
+            }
+
             val bridge = object {
                 @JavascriptInterface
                 fun onResult(result: String) {
                     val categories = result.split("|||")
                         .filter { it.isNotBlank() }
                         .toSet()
-                    cont.resume(categories)
+                    resumeOnce(categories)
                 }
 
                 @JavascriptInterface
                 fun onError(error: String) {
                     Timber.d("JS error: $error")
-                    cont.resume(emptySet())
+                    resumeOnce(emptySet())
                 }
             }
 
-            webView.addJavascriptInterface(bridge, "FauxxBridge")
+            // Cleanup runs on both the cancellation path (timeout) and on normal
+            // completion. Removes the JavascriptInterface so a stale callback from
+            // a later page load can't resume a dead coroutine (#6) and stops the
+            // WebView's lingering page work so the next scraper / about:blank
+            // navigation doesn't queue behind it (#44).
+            cont.invokeOnCancellation {
+                runCatching {
+                    webView.stopLoading()
+                    webView.removeJavascriptInterface(FAUXX_BRIDGE)
+                }
+            }
+
+            webView.addJavascriptInterface(bridge, FAUXX_BRIDGE)
             webView.loadUrl(ADS_SETTINGS_URL)
 
             webView.evaluateJavascript("""
@@ -85,6 +111,15 @@ class GoogleAdsScraper @Inject constructor() : PlatformScraper {
                     }
                 })();
             """.trimIndent(), null)
+            }
+        } finally {
+            // Belt-and-braces cleanup that ALSO runs on the happy path (the
+            // invokeOnCancellation above only fires when the coroutine is
+            // cancelled). Without this, a successful scrape would leave the
+            // bridge attached for the next page navigation to invoke (#6).
+            // Safe to call even when invokeOnCancellation already ran:
+            // removeJavascriptInterface on a missing key is a no-op.
+            runCatching { webView.removeJavascriptInterface(FAUXX_BRIDGE) }
         }
     }
 }

@@ -20,6 +20,10 @@ on:
   push:
     branches: [main]
 
+# Read-only — this workflow only inspects file diffs and commit subjects.
+permissions:
+  contents: read
+
 jobs:
   release-gate:
     name: Release Gate

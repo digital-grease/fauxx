@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
 
+# Default to least-privilege at the workflow level. The `release` job below
+# overrides this to `contents: write` for the GitHub Release upload step.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build ${{ matrix.flavorName }} Release

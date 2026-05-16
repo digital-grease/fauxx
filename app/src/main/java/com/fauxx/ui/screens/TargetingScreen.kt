@@ -50,9 +50,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.ui.platform.LocalContext
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.MappingConfidence
@@ -402,53 +399,42 @@ private fun WeightBar(label: String, value: Float, color: Color) {
 }
 
 /**
- * Shown after a scrape returns no categories from any platform — almost always
- * means the user isn't signed into Google Ads Settings or Facebook ad preferences.
- * Replaces the previous silent-failure UX where the button just flashed "Failed"
- * with no actionable explanation.
+ * Shown after a scrape returns no categories from any platform. The previous version
+ * of this dialog told users to "sign in via your browser" — that turned out to be
+ * misleading (issue #51): Fauxx's scraper WebView has its own cookie store, isolated
+ * from the standalone browser apps the user is logged into. Signing into Google in
+ * Brave does not put a Google session into Fauxx.
  *
- * Each "Sign in" button opens the relevant ad-platform page in the user's default
- * browser via implicit intent. Once the user signs in there, they come back to the
- * app and tap "Scrape Now" again — the dialog dismisses on either button press.
+ * Combined with Google's and Facebook's block on sign-in from embedded WebViews
+ * (returns 403 disallowed_useragent), there is currently no clean in-app workflow to
+ * establish the scraper session. The dialog now states this honestly instead of
+ * directing users into a loop that can't succeed. A redesign of Layer 2 to use
+ * user-driven exports / bookmarklets is tracked as a follow-up enhancement.
  */
 @Composable
 private fun ScrapeNeedsLoginDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val openUrl: (String) -> Unit = { url ->
-        runCatching {
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-        }
-        onDismiss()
-    }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Sign in to scrape") },
+        title = { Text("Layer 2 couldn't read your ad profiles") },
         text = {
             Text(
-                "The Adversarial Scraper reads your ad-platform interest profiles to " +
-                    "find what they think they know about you — but it can't log you in. " +
-                    "Sign into these sites in your browser, then come back and tap " +
-                    "\"Scrape Now\" again:\n\n" +
-                    "• Google Ads Settings — myadcenter.google.com\n" +
-                    "• Facebook ad preferences — facebook.com/adpreferences\n\n" +
-                    "Read-only — Fauxx never modifies or interacts with your ad settings."
+                "The Adversarial Scraper tries to read what Google and Facebook think " +
+                    "they know about you, then steers the noise away from those interests. " +
+                    "It just got back an empty list, which usually means the scraper has " +
+                    "no signed-in session for those sites.\n\n" +
+                    "Heads-up: Fauxx's scraper has its own browser session, separate from " +
+                    "Chrome/Brave/Firefox where you may already be signed in — Android " +
+                    "doesn't let apps share login cookies with each other. And Google/" +
+                    "Facebook don't allow sign-in from an in-app browser either, so a " +
+                    "'sign in here' button isn't possible.\n\n" +
+                    "Layer 2 is being redesigned to import your ad profile directly " +
+                    "(via Google Takeout or a browser bookmarklet) so it doesn't need a " +
+                    "live session at all. In the meantime, Layers 1 and 3 still work " +
+                    "without any scraping."
             )
         },
         confirmButton = {
-            TextButton(onClick = { openUrl("https://myadcenter.google.com") }) {
-                Text("Open Google")
-            }
-        },
-        dismissButton = {
-            Row {
-                TextButton(onClick = { openUrl("https://www.facebook.com/adpreferences") }) {
-                    Text("Open Facebook")
-                }
-                TextButton(onClick = onDismiss) { Text("Later") }
-            }
+            TextButton(onClick = onDismiss) { Text("Got it") }
         }
     )
 }

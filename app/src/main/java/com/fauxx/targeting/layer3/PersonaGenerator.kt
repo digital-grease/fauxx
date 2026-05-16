@@ -1,6 +1,7 @@
 package com.fauxx.targeting.layer3
 
 import android.content.Context
+import androidx.annotation.Keep
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import com.fauxx.data.model.SyntheticPersona
@@ -256,7 +257,16 @@ class PersonaGenerator @Inject constructor(
     }
 }
 
-/** JSON-mapped persona template from persona_templates.json. */
+/**
+ * JSON-mapped persona template from `persona_templates/{locale}.json`.
+ *
+ * @Keep: without this, R8 in release builds renames the field names, Gson's
+ * reflection-based deserialization returns `LinkedTreeMap`-backed objects,
+ * and the first access of `template.region` / `.ageRange` / `.interests`
+ * throws `ClassCastException` — silently degrading Layer 3 to neutral
+ * weights for the rest of the session.
+ */
+@Keep
 private data class PersonaTemplate(
     val archetype: String = "",
     val ageRange: String = "",
