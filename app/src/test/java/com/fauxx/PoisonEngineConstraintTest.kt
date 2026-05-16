@@ -151,6 +151,37 @@ class PoisonEngineConstraintTest {
         assertTrue(engine.isWithinAllowedHours(p, nowHour = 23))
     }
 
+    // --- shouldPauseForBattery (issue #20: ignore threshold while charging) ---
+
+    @Test
+    fun `shouldPauseForBattery returns false when battery is at or above threshold`() {
+        engine = createEngine()
+        assertFalse(engine.shouldPauseForBattery(50, 20, isCharging = false, ignoreThresholdWhileCharging = false))
+        assertFalse(engine.shouldPauseForBattery(20, 20, isCharging = false, ignoreThresholdWhileCharging = false))
+    }
+
+    @Test
+    fun `shouldPauseForBattery returns true when below threshold and not charging`() {
+        engine = createEngine()
+        assertTrue(engine.shouldPauseForBattery(10, 20, isCharging = false, ignoreThresholdWhileCharging = true))
+        assertTrue(engine.shouldPauseForBattery(10, 20, isCharging = false, ignoreThresholdWhileCharging = false))
+    }
+
+    @Test
+    fun `shouldPauseForBattery bypasses threshold when charging and toggle on`() {
+        engine = createEngine()
+        // Issue #20: plugged in + opted in → keep running even below the user's threshold.
+        assertFalse(engine.shouldPauseForBattery(5, 20, isCharging = true, ignoreThresholdWhileCharging = true))
+        assertFalse(engine.shouldPauseForBattery(0, 100, isCharging = true, ignoreThresholdWhileCharging = true))
+    }
+
+    @Test
+    fun `shouldPauseForBattery still pauses when charging but toggle off`() {
+        engine = createEngine()
+        // Default behavior preserved for users who haven't opted in.
+        assertTrue(engine.shouldPauseForBattery(10, 20, isCharging = true, ignoreThresholdWhileCharging = false))
+    }
+
     // --- decidePauseAction tests (FGS-budget-protection logic) ---
 
     private val ms5Hours = 5L * 60 * 60 * 1000

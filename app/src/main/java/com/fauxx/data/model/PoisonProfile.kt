@@ -9,6 +9,9 @@ import com.fauxx.ui.theme.ThemeMode
  * @property intensity Action rate setting.
  * @property wifiOnly Only execute actions when connected to Wi-Fi.
  * @property batteryThreshold Pause when battery level drops below this percentage (0-100).
+ * @property ignoreBatteryThresholdWhileCharging When true, [batteryThreshold] is bypassed while
+ *   the device is plugged in — the engine keeps running even at low charge as long as it's
+ *   actively charging. Defaults to false to preserve historical behavior.
  * @property allowedHoursStart Hour of day (0-23) when activity is permitted to start.
  * @property allowedHoursEnd Hour of day (0-23) when activity must stop.
  * @property searchPoisonEnabled Whether the SearchPoisonModule is active.
@@ -25,12 +28,18 @@ import com.fauxx.ui.theme.ThemeMode
  * @property resumeOnBoot When true, show a "tap to resume" notification after device
  *   reboot if the engine was enabled pre-reboot. True FGS auto-start is blocked by
  *   Android 14+ for our FGS types.
+ * @property customUserAgent When non-null/non-blank, used as the User-Agent for ALL
+ *   synthetic traffic (OkHttp + WebView) instead of randomizing across the
+ *   user_agents.json pool. Lets users match the synthetic-traffic UA to their
+ *   real browser so the noise blends with their actual activity (issue #7).
+ *   Null/blank = default per-request UA rotation.
  */
 data class PoisonProfile(
     val enabled: Boolean = false,
     val intensity: IntensityLevel = IntensityLevel.MEDIUM,
     val wifiOnly: Boolean = true,
     val batteryThreshold: Int = 20,
+    val ignoreBatteryThresholdWhileCharging: Boolean = false,
     val allowedHoursStart: Int = 7,
     val allowedHoursEnd: Int = 23,
     val searchPoisonEnabled: Boolean = true,
@@ -44,5 +53,6 @@ data class PoisonProfile(
     val layer2Enabled: Boolean = false,
     val layer3Enabled: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val resumeOnBoot: Boolean = true
+    val resumeOnBoot: Boolean = true,
+    val customUserAgent: String? = null
 )

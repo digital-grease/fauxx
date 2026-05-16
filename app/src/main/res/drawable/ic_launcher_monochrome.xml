@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Monochrome layer for the adaptive icon. Android 13+ themed icons re-tint
+    this drawable to the user's accent color, ignoring the declared fill — so
+    the white here is a placeholder, not a brand choice. Path matches the
+    foreground "F" so themed and unthemed icons stay visually consistent.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M34,28 L34,80 L44,80 L44,58 L66,58 L66,49 L44,49 L44,37 L70,37 L70,28 Z"/>
+</vector>

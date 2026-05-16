@@ -42,6 +42,29 @@ class OnboardingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState
 
+    init {
+        // Prepopulate from any existing profile so this screen also serves as
+        // an "edit my profile" surface (issue #29 — there was previously no path
+        // to revisit demographic selections after first-time onboarding without
+        // a full data reset). First-time users have no profile, so the state
+        // stays at default empty values.
+        viewModelScope.launch {
+            val existing = runCatching { dao.get() }.getOrNull() ?: return@launch
+            val customInterests = existing.getCustomInterests()
+            _uiState.value = _uiState.value.copy(
+                ageRange = existing.ageRange,
+                gender = existing.gender,
+                profession = existing.profession,
+                region = existing.region,
+                interests = existing.getInterests(),
+                customInterests = customInterests,
+                customInterestMappings = if (customInterests.isNotEmpty()) {
+                    customInterestMapper.mapAll(customInterests)
+                } else emptyList()
+            )
+        }
+    }
+
     fun setAgeRange(age: AgeRange) { _uiState.value = _uiState.value.copy(ageRange = age) }
     fun setGender(gender: Gender) { _uiState.value = _uiState.value.copy(gender = gender) }
     fun setProfession(prof: Profession) { _uiState.value = _uiState.value.copy(profession = prof) }

@@ -23,6 +23,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -249,6 +250,29 @@ fun SettingsScreen(
                 valueRange = 10f..50f,
                 steps = 7
             )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Ignore threshold while charging",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        "Keep running below the threshold when the device is plugged in.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = uiState.ignoreBatteryThresholdWhileCharging,
+                    onCheckedChange = { viewModel.setIgnoreBatteryThresholdWhileCharging(it) }
+                )
+            }
         }
 
         // Active hours
@@ -297,6 +321,63 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
+            }
+        }
+
+        // Custom User-Agent (issue #7)
+        SettingsCard {
+            Text(
+                "Match my browser",
+                style = MaterialTheme.typography.titleSmall
+            )
+            Text(
+                "By default, Fauxx rotates between many browser identifiers — but " +
+                    "real people usually use one browser, so the variety can itself " +
+                    "look like bot traffic. Tap below to use this device's built-in " +
+                    "browser identifier instead, so the noise blends with your real " +
+                    "activity. Leave blank to keep the default rotation.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            val ctx = LocalContext.current
+            OutlinedButton(
+                onClick = {
+                    val deviceUa = runCatching {
+                        // System WebView UA — what most Chromium-based browsers
+                        // (Chrome, Edge, Brave, etc.) and any in-app browser send.
+                        // Close enough for "match my browser" without asking the user
+                        // to know what a User-Agent string is.
+                        android.webkit.WebSettings.getDefaultUserAgent(ctx)
+                    }.getOrNull()
+                    if (!deviceUa.isNullOrBlank()) viewModel.setCustomUserAgent(deviceUa)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Use this device's browser") }
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = uiState.customUserAgent,
+                onValueChange = { viewModel.setCustomUserAgent(it) },
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text(
+                        "Browser identifier (advanced — leave blank to auto-rotate)",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                },
+                placeholder = {
+                    Text(
+                        "Mozilla/5.0 (...)",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                },
+                singleLine = true
+            )
+            if (uiState.customUserAgent.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                TextButton(
+                    onClick = { viewModel.setCustomUserAgent("") }
+                ) { Text("Clear and resume rotation") }
             }
         }
 
