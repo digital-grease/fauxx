@@ -47,6 +47,13 @@ fun postResumeNotification(context: Context) {
 
     val tapIntent = Intent(context, MainActivity::class.java).apply {
         action = Intent.ACTION_MAIN
+        // Constructor form `Intent(context, MainActivity::class.java)` already calls
+        // setComponent() internally, but CodeQL's implicit-PendingIntent analysis
+        // (CWE-927) doesn't always track the constructor as a component-setter and
+        // flags Intent.ACTION_MAIN as implicit even when the target class is set.
+        // setPackage() is unambiguously explicit and satisfies both the rule and the
+        // OWASP Android Mobile Top 10 hardening guidance for PendingIntents.
+        setPackage(context.packageName)
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
         putExtra(MainActivity.EXTRA_RESUME_ENGINE, true)
     }

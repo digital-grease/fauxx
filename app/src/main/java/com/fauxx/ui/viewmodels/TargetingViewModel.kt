@@ -8,9 +8,13 @@ import androidx.work.WorkManager
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.targeting.TargetingEngine
+import com.fauxx.targeting.layer1.AgeRange
 import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicProfileDao
+import com.fauxx.targeting.layer1.Gender
 import com.fauxx.targeting.layer1.InterestMapping
+import com.fauxx.targeting.layer1.Profession
+import com.fauxx.targeting.layer1.Region
 import com.fauxx.targeting.layer1.UserDemographicProfile
 import com.fauxx.targeting.layer2.PlatformProfileDao
 import com.fauxx.targeting.layer2.ScrapeScheduler
@@ -48,6 +52,11 @@ data class TargetingUiState(
     val layer2Enabled: Boolean = false,
     val layer3Enabled: Boolean = false,
     val hasProfile: Boolean = false,
+    val ageRange: AgeRange? = null,
+    val gender: Gender? = null,
+    val profession: Profession? = null,
+    val region: Region? = null,
+    val interests: Set<CategoryPool> = emptySet(),
     val lastScrapeDate: String = "Never",
     val currentPersonaName: String? = null,
     val weights: Map<CategoryPool, Float> = emptyMap(),
@@ -84,6 +93,11 @@ class TargetingViewModel @Inject constructor(
         val customInterests = profile?.getCustomInterests().orEmpty()
         state.copy(
             hasProfile = profile != null,
+            ageRange = profile?.ageRange,
+            gender = profile?.gender,
+            profession = profile?.profession,
+            region = profile?.region,
+            interests = profile?.getInterests().orEmpty(),
             lastScrapeDate = lastScrape?.takeIf { it > 0 }?.let { DATE_FMT.format(Date(it)) } ?: "Never",
             currentPersonaName = persona?.name,
             weights = weights,

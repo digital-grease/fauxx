@@ -50,14 +50,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.ui.platform.LocalContext
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.MappingConfidence
+import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.viewmodels.ScrapeState
+import com.fauxx.ui.viewmodels.TargetingUiState
 import com.fauxx.ui.viewmodels.TargetingViewModel
+import androidx.compose.ui.res.stringResource
 
 /**
  * Targeting screen: visualizes the Demographic Distancing Engine state.
@@ -65,7 +65,8 @@ import com.fauxx.ui.viewmodels.TargetingViewModel
  */
 @Composable
 fun TargetingScreen(
-    viewModel: TargetingViewModel = hiltViewModel()
+    viewModel: TargetingViewModel = hiltViewModel(),
+    onEditProfile: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showClearDialog by remember { mutableStateOf(false) }
@@ -94,6 +95,11 @@ fun TargetingScreen(
             onToggle = { viewModel.setLayer1Enabled(it) },
             statusText = if (uiState.hasProfile) "Profile set" else "No profile"
         )
+
+        // Saved demographic profile (issue #29 — there was no view-or-edit path
+        // for these values once onboarding completed; users had to wipe via
+        // "Reset to defaults" to re-enter).
+        ProfileSummaryCard(state = uiState, onEditProfile = onEditProfile)
 
         // Custom interests (part of Layer 1)
         if (uiState.layer1Enabled) {
@@ -183,6 +189,79 @@ fun TargetingScreen(
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) { Text("Cancel") }
             }
+        )
+    }
+}
+
+@Composable
+private fun ProfileSummaryCard(
+    state: TargetingUiState,
+    onEditProfile: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "MY PROFILE",
+                style = MaterialTheme.typography.titleSmall,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.height(8.dp))
+
+            if (!state.hasProfile) {
+                Text(
+                    text = "No profile saved. Setting one up lets Layer 1 steer the noise away from your real demographics.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onEditProfile,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Set up profile") }
+                return@Card
+            }
+
+            ProfileSummaryRow(label = "Age", value = state.ageRange?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(label = "Gender", value = state.gender?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(label = "Profession", value = state.profession?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(label = "Region", value = state.region?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(
+                label = "Interests",
+                value = if (state.interests.isEmpty()) null
+                else state.interests
+                    .joinToString(", ") { it.name.lowercase().replace('_', ' ') }
+            )
+
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = onEditProfile,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Edit my profile") }
+        }
+    }
+}
+
+@Composable
+private fun ProfileSummaryRow(label: String, value: String?) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value ?: "—",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (value != null) MaterialTheme.colorScheme.onSurface
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontFamily = FontFamily.Monospace
         )
     }
 }
@@ -402,53 +481,42 @@ private fun WeightBar(label: String, value: Float, color: Color) {
 }
 
 /**
- * Shown after a scrape returns no categories from any platform — almost always
- * means the user isn't signed into Google Ads Settings or Facebook ad preferences.
- * Replaces the previous silent-failure UX where the button just flashed "Failed"
- * with no actionable explanation.
+ * Shown after a scrape returns no categories from any platform. The previous version
+ * of this dialog told users to "sign in via your browser" — that turned out to be
+ * misleading (issue #51): Fauxx's scraper WebView has its own cookie store, isolated
+ * from the standalone browser apps the user is logged into. Signing into Google in
+ * Brave does not put a Google session into Fauxx.
  *
- * Each "Sign in" button opens the relevant ad-platform page in the user's default
- * browser via implicit intent. Once the user signs in there, they come back to the
- * app and tap "Scrape Now" again — the dialog dismisses on either button press.
+ * Combined with Google's and Facebook's block on sign-in from embedded WebViews
+ * (returns 403 disallowed_useragent), there is currently no clean in-app workflow to
+ * establish the scraper session. The dialog now states this honestly instead of
+ * directing users into a loop that can't succeed. A redesign of Layer 2 to use
+ * user-driven exports / bookmarklets is tracked as a follow-up enhancement.
  */
 @Composable
 private fun ScrapeNeedsLoginDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val openUrl: (String) -> Unit = { url ->
-        runCatching {
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-        }
-        onDismiss()
-    }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Sign in to scrape") },
+        title = { Text("Layer 2 couldn't read your ad profiles") },
         text = {
             Text(
-                "The Adversarial Scraper reads your ad-platform interest profiles to " +
-                    "find what they think they know about you — but it can't log you in. " +
-                    "Sign into these sites in your browser, then come back and tap " +
-                    "\"Scrape Now\" again:\n\n" +
-                    "• Google Ads Settings — myadcenter.google.com\n" +
-                    "• Facebook ad preferences — facebook.com/adpreferences\n\n" +
-                    "Read-only — Fauxx never modifies or interacts with your ad settings."
+                "The Adversarial Scraper tries to read what Google and Facebook think " +
+                    "they know about you, then steers the noise away from those interests. " +
+                    "It just got back an empty list, which usually means the scraper has " +
+                    "no signed-in session for those sites.\n\n" +
+                    "Heads-up: Fauxx's scraper has its own browser session, separate from " +
+                    "Chrome/Brave/Firefox where you may already be signed in — Android " +
+                    "doesn't let apps share login cookies with each other. And Google/" +
+                    "Facebook don't allow sign-in from an in-app browser either, so a " +
+                    "'sign in here' button isn't possible.\n\n" +
+                    "Layer 2 is being redesigned to import your ad profile directly " +
+                    "(via Google Takeout or a browser bookmarklet) so it doesn't need a " +
+                    "live session at all. In the meantime, Layers 1 and 3 still work " +
+                    "without any scraping."
             )
         },
         confirmButton = {
-            TextButton(onClick = { openUrl("https://myadcenter.google.com") }) {
-                Text("Open Google")
-            }
-        },
-        dismissButton = {
-            Row {
-                TextButton(onClick = { openUrl("https://www.facebook.com/adpreferences") }) {
-                    Text("Open Facebook")
-                }
-                TextButton(onClick = onDismiss) { Text("Later") }
-            }
+            TextButton(onClick = onDismiss) { Text("Got it") }
         }
     )
 }

@@ -1,0 +1,8 @@
+• Fix: location spoofing now surfaces why it isn't working instead of silently doing nothing
+• Fix: persona rotation crash that was degrading targeting to neutral weights
+• Fix: "Scrape Now" no longer freezes the app when signed out; sign-in dialog rewritten honestly
+• New: monochrome adaptive icon for Android 13+ themed icons
+• New: "Ignore battery threshold while charging" toggle in Settings
+• New: view + edit your demographic profile from the Targeting screen
+• New: Yandex added to the search-engine rotation; engine name shown in the action log
+• New: "Match my browser" mode in Settings — one tap to use this device's browser identifier

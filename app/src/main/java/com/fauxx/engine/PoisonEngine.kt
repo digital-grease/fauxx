@@ -202,6 +202,7 @@ class PoisonEngine @Inject constructor(
 
     // --- Cached constraint state (updated via BroadcastReceivers) ---
     private val cachedBatteryLevel = AtomicInteger(100)
+    private val cachedIsCharging = AtomicBoolean(false)
     private val cachedOnWifi = AtomicBoolean(false)
 
     /** Today's successful action count, incremented on each action. Reset on day rollover. */
@@ -231,6 +232,8 @@ class PoisonEngine @Inject constructor(
             val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
             val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
             if (level >= 0 && scale > 0) cachedBatteryLevel.set(level * 100 / scale)
+            // EXTRA_PLUGGED is 0 when unplugged; non-zero values are AC / USB / wireless.
+            cachedIsCharging.set(intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0)
         }
     }
 
@@ -392,12 +395,13 @@ class PoisonEngine @Inject constructor(
     }
 
     private fun registerConstraintReceivers() {
-        // Seed battery level from sticky broadcast
+        // Seed battery level + charging state from sticky broadcast
         val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         if (batteryIntent != null) {
             val level = batteryIntent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
             val scale = batteryIntent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
             if (level >= 0 && scale > 0) cachedBatteryLevel.set(level * 100 / scale)
+            cachedIsCharging.set(batteryIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0)
         }
         // Seed WiFi state
         cachedOnWifi.set(checkWifiNow())
@@ -567,7 +571,13 @@ class PoisonEngine @Inject constructor(
             Timber.d("Paused: wifi-only mode, no wifi")
             return EngineState.PAUSED_WIFI
         }
-        if (cachedBatteryLevel.get() < currentProfile.batteryThreshold) {
+        if (shouldPauseForBattery(
+                batteryLevel = cachedBatteryLevel.get(),
+                threshold = currentProfile.batteryThreshold,
+                isCharging = cachedIsCharging.get(),
+                ignoreThresholdWhileCharging = currentProfile.ignoreBatteryThresholdWhileCharging
+            )
+        ) {
             Timber.d("Paused: battery below threshold")
             return EngineState.PAUSED_BATTERY
         }
@@ -576,6 +586,22 @@ class PoisonEngine @Inject constructor(
             return EngineState.PAUSED_QUIET_HOURS
         }
         return null
+    }
+
+    /**
+     * Pure decision function for the battery branch of [checkConstraints]. Extracted so
+     * the bypass-while-charging behavior (issue #20) can be exercised without registering
+     * BroadcastReceivers in tests.
+     */
+    internal fun shouldPauseForBattery(
+        batteryLevel: Int,
+        threshold: Int,
+        isCharging: Boolean,
+        ignoreThresholdWhileCharging: Boolean
+    ): Boolean {
+        if (batteryLevel >= threshold) return false
+        // Below threshold: pause unless the user opted to keep running while plugged in.
+        return !(ignoreThresholdWhileCharging && isCharging)
     }
 
     /** Returns true if the current local hour falls within the profile's allowed window.
@@ -780,6 +806,8 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.INTENSITY] = p.intensity.name
         prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] = p.wifiOnly
         prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] = p.batteryThreshold
+        prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] =
+            p.ignoreBatteryThresholdWhileCharging
         prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] = p.allowedHoursStart
         prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] = p.allowedHoursEnd
         prefs[com.fauxx.di.PreferenceKeys.MODULE_SEARCH] = p.searchPoisonEnabled
@@ -794,6 +822,14 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.LAYER3_ENABLED] = p.layer3Enabled
         prefs[com.fauxx.di.PreferenceKeys.THEME_MODE] = p.themeMode.name
         prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] = p.resumeOnBoot
+        // Persist customUserAgent only when set; clear the key on null so a
+        // subsequent prefsToProfile read returns null, not stale empty string.
+        val ua = p.customUserAgent
+        if (ua.isNullOrBlank()) {
+            prefs.remove(com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT)
+        } else {
+            prefs[com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT] = ua
+        }
     }
 
     private fun prefsToProfile(prefs: androidx.datastore.preferences.core.Preferences): PoisonProfile =
@@ -805,6 +841,8 @@ class PoisonProfileRepository @Inject constructor(
             ),
             wifiOnly = prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] ?: true,
             batteryThreshold = prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] ?: 20,
+            ignoreBatteryThresholdWhileCharging =
+                prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] ?: false,
             allowedHoursStart = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] ?: 7,
             allowedHoursEnd = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] ?: 23,
             searchPoisonEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_SEARCH] ?: true,
@@ -823,6 +861,7 @@ class PoisonProfileRepository @Inject constructor(
                         ?: com.fauxx.ui.theme.ThemeMode.SYSTEM.name
                 )
             }.getOrDefault(com.fauxx.ui.theme.ThemeMode.SYSTEM),
-            resumeOnBoot = prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] ?: true
+            resumeOnBoot = prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] ?: true,
+            customUserAgent = prefs[com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT]?.takeIf { it.isNotBlank() }
         )
 }

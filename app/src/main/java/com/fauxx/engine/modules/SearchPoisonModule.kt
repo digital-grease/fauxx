@@ -26,6 +26,7 @@ import kotlin.random.Random
  *  - Bing: `setmkt=<lang>-<REGION>` query parameter
  *  - DuckDuckGo: `kl=<lang>-<region>` query parameter (lowercase region)
  *  - Yahoo: subdomain swap (`es.search.yahoo.com`, `fr.search.yahoo.com`)
+ *  - Yandex: `lang=<lang>` query parameter
  *
  * Returning a fully-built URL keeps engine-specific quirks isolated and makes locale
  * changes a single point of update.
@@ -47,6 +48,14 @@ private val SEARCH_ENGINES = listOf(
     },
     SearchEngine("yahoo") { q, l ->
         "https://${l.yahooSubdomainPrefix}search.yahoo.com/search?p=$q"
+    },
+    // Issue #24. Yandex broadens the engine pool — more engine diversity makes the
+    // synthetic-traffic profile harder to fingerprint as bot activity, since real
+    // users don't typically stick to a single SERP. yandex.com (the international
+    // entry point) accepts `lang` for query language; results are then served from
+    // the geographically nearest mirror.
+    SearchEngine("yandex") { q, l ->
+        "https://yandex.com/search/?text=$q&lang=${l.tag}"
     }
 )
 
@@ -150,7 +159,11 @@ class SearchPoisonModule @Inject constructor(
         return ActionLogEntity(
             actionType = ActionType.SEARCH_QUERY,
             category = category,
-            detail = "[$category] $query"
+            // Engine name suffix surfaces which SERP each search actually hit.
+            // Without this, the action log shows only the query and the user
+            // can't verify that newly-added engines (e.g. Yandex per #24) are
+            // actually firing.
+            detail = "[$category] $query · via ${engine.name}"
         )
     }
 }
