@@ -1,9 +1,11 @@
 {
   "_readme": [
     "French (fr) query-content blocklist enforced by QueryBlocklist.kt.",
-    "Status: LLM-DRAFTED, PENDING NATIVE-SPEAKER REVIEW.",
-    "Do NOT add `fr` to BuildConfig.SHIPPED_LOCALES until reviewed — see",
-    "memory file project_multilingual_safety_gate.md.",
+    "Status: REVIEWED 2026-05-16 by native French speaker. Safety-gate satisfied",
+    "for harmful_queries content; still gated on UI-strings review (values-fr/),",
+    "query-bank spot-check, and on-device QA before flipping `fr` into",
+    "BuildConfig.SHIPPED_LOCALES in defaultConfig — see memory file",
+    "project_multilingual_safety_gate.md.",
     "",
     "Reviewer must verify:",
     "  (a) class_a_terms cover regional vocabulary for illegal/harm-to-others content",
@@ -29,6 +31,7 @@
     "recette explosif anfo",
     "instructions culture anthrax",
     "preuve anti vaccin",
+    "preuve antivaccin",
     "noyaux abricot soigne cancer",
     "attaquer infrastructure critique",
     "méthode prendre contrôle compte bancaire",
@@ -44,6 +47,7 @@
     "acheter pédopornographie",
     "acheter fausse monnaie",
     "acheter fausse pièce identité darknet",
+    "acheter fausse pièce d'identité darknet",
     "acheter fentanyl en ligne sans ordonnance",
     "acheter armes à feu illégales en ligne",
     "acheter code source malware",
@@ -73,6 +77,7 @@
     "doxer adresse personne",
     "doxing adresse domicile cible",
     "boire javel cure",
+    "boire javel",
     "instructions bombe drone",
     "chimie synthèse drogues",
     "contourner emtala hack",
@@ -94,6 +99,8 @@
     "pirater dossiers scolaires enfants",
     "pirater réseau électrique",
     "pirater réseau hôpital",
+    "pirater réseau hôpitaux",
+    "pirater réseau hopitaux",
     "pirater base données gouvernement",
     "pirater téléphone sans accès",
     "étapes synthèse héroïne",
@@ -152,7 +159,9 @@
     "obtenir numéros sécurité sociale victimes",
     "instructions grenade surpression",
     "tactiques grooming pédophile",
+    "téléchargement kit phishing 2024",
     "téléchargement kit phishing 2025",
+    "téléchargement kit phishing 2026",
     "acquisition polonium-210",
     "produire images exploitation enfants",
     "produire opioïde synthétique maison",
@@ -323,6 +332,7 @@
     "\\bmifepristone\\b",
     "\\bmisoprostol\\b",
     "\\bofpra\\b",
-    "\\boqtf\\b"
+    "\\boqtf\\b",
+    "\\bkit phishing \\d{4}\\b"
   ]
 }
