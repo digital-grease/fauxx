@@ -239,12 +239,28 @@ class PoisonEngine @Inject constructor(
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-            cachedOnWifi.set(caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI))
+            cachedOnWifi.set(isWifiActive(caps, lookupUnderlyingCaps()))
         }
 
         override fun onLost(network: Network) {
             cachedOnWifi.set(false)
         }
+    }
+
+    /**
+     * Returns a callable that resolves the VPN underlying-network caps. Looked up lazily —
+     * only the VPN branch in [isWifiActive] invokes it, so the legacy non-VPN path stays
+     * cheap. Falls back to scanning `cm.allNetworks` on API < 31 where
+     * `NetworkCapabilities.underlyingNetworks` is unavailable.
+     */
+    private fun lookupUnderlyingCaps(): () -> List<NetworkCapabilities> = {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        // `NetworkCapabilities.getUnderlyingNetworks()` was hidden on early platform
+        // SDKs even when present at runtime, so the cleanest portable strategy is to
+        // scan `cm.allNetworks` for any non-VPN WiFi connection as a proxy for "the
+        // VPN is most likely tunneling over WiFi." Covers TrackerControl / NetGuard /
+        // local-VPN ad-blockers per issue #59.
+        cm?.allNetworks?.mapNotNull { cm.getNetworkCapabilities(it) }.orEmpty()
     }
 
     /** Returns today's successful action count (thread-safe, cached). */
@@ -747,7 +763,36 @@ class PoisonEngine @Inject constructor(
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = cm.activeNetwork ?: return false
         val caps = cm.getNetworkCapabilities(network) ?: return false
-        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        return isWifiActive(caps, lookupUnderlyingCaps())
+    }
+
+    companion object {
+        /**
+         * Pure decision function for "is the device currently on WiFi for the engine's
+         * purposes?" Extracted so the VPN-on-WiFi case (issue #59 — TrackerControl /
+         * other per-app VPNs make the active network appear as `TRANSPORT_VPN`, so a
+         * plain `hasTransport(TRANSPORT_WIFI)` check returns false even when the user
+         * is physically on WiFi) can be exercised without standing up a real
+         * ConnectivityManager.
+         *
+         * Returns true when:
+         *  - the active network is itself WiFi, OR
+         *  - the active network is a VPN AND any of its underlying networks is WiFi.
+         */
+        internal fun isWifiActive(
+            activeCaps: NetworkCapabilities?,
+            underlyingCaps: () -> List<NetworkCapabilities>
+        ): Boolean {
+            if (activeCaps == null) return false
+            if (activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return true
+            if (activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                return underlyingCaps().any {
+                    it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
+                        !it.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+                }
+            }
+            return false
+        }
     }
 }
 
