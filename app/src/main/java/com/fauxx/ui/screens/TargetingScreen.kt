@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.MappingConfidence
@@ -80,7 +81,7 @@ fun TargetingScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "TARGETING ENGINE",
+            text = stringResource(R.string.targeting_title),
             style = MaterialTheme.typography.titleLarge,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -89,11 +90,12 @@ fun TargetingScreen(
 
         // Layer 1 toggle
         LayerToggleCard(
-            layerName = "Layer 1 — Self Report",
-            description = "Boosts noise away from your declared demographics",
+            layerName = stringResource(R.string.targeting_layer1_name),
+            description = stringResource(R.string.targeting_layer1_description),
             enabled = uiState.layer1Enabled,
             onToggle = { viewModel.setLayer1Enabled(it) },
-            statusText = if (uiState.hasProfile) "Profile set" else "No profile"
+            statusText = if (uiState.hasProfile) stringResource(R.string.targeting_layer1_status_set)
+            else stringResource(R.string.targeting_layer1_status_unset)
         )
 
         // Saved demographic profile (issue #29 — there was no view-or-edit path
@@ -112,20 +114,20 @@ fun TargetingScreen(
 
         // Layer 2 toggle
         val (scrapeLabel, scrapeEnabled) = when (uiState.scrapeState) {
-            ScrapeState.IDLE -> "Scrape Now" to true
-            ScrapeState.RUNNING -> "Scraping…" to false
-            ScrapeState.SUCCESS -> "Done" to false
-            ScrapeState.FAILED -> "Failed — Retry" to true
+            ScrapeState.IDLE -> stringResource(R.string.targeting_layer2_action_scrape_now) to true
+            ScrapeState.RUNNING -> stringResource(R.string.targeting_layer2_action_scraping) to false
+            ScrapeState.SUCCESS -> stringResource(R.string.targeting_layer2_action_done) to false
+            ScrapeState.FAILED -> stringResource(R.string.targeting_layer2_action_failed_retry) to true
             // NEEDS_LOGIN: button stays tappable so user can re-attempt after signing in,
             // but the dialog rendered below is the primary CTA.
-            ScrapeState.NEEDS_LOGIN -> "Sign in first" to true
+            ScrapeState.NEEDS_LOGIN -> stringResource(R.string.targeting_layer2_action_sign_in_first) to true
         }
         LayerToggleCard(
-            layerName = "Layer 2 — Adversarial Scraper",
-            description = "Reads ad-platform profiles to find confirmed interests",
+            layerName = stringResource(R.string.targeting_layer2_name),
+            description = stringResource(R.string.targeting_layer2_description),
             enabled = uiState.layer2Enabled,
             onToggle = { viewModel.setLayer2Enabled(it) },
-            statusText = "Last scraped: ${uiState.lastScrapeDate}",
+            statusText = stringResource(R.string.targeting_layer2_last_scraped, uiState.lastScrapeDate),
             actionLabel = scrapeLabel,
             actionEnabled = scrapeEnabled,
             actionEmphasizeError = uiState.scrapeState == ScrapeState.FAILED ||
@@ -142,12 +144,13 @@ fun TargetingScreen(
 
         // Layer 3 toggle
         LayerToggleCard(
-            layerName = "Layer 3 — Persona Rotation",
-            description = "Maintains coherent synthetic personas (rotates weekly)",
+            layerName = stringResource(R.string.targeting_layer3_name),
+            description = stringResource(R.string.targeting_layer3_description),
             enabled = uiState.layer3Enabled,
             onToggle = { viewModel.setLayer3Enabled(it) },
-            statusText = uiState.currentPersonaName?.let { "Persona: $it" } ?: "No persona yet",
-            actionLabel = "Rotate Now",
+            statusText = uiState.currentPersonaName?.let { stringResource(R.string.targeting_layer3_status_active, it) }
+                ?: stringResource(R.string.targeting_layer3_status_none),
+            actionLabel = stringResource(R.string.targeting_layer3_action_rotate_now),
             onAction = { viewModel.rotatePersona() }
         )
 
@@ -166,28 +169,23 @@ fun TargetingScreen(
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Clear My Profile")
+            Text(stringResource(R.string.targeting_clear_profile_button))
         }
     }
 
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Clear Profile?") },
-            text = {
-                Text(
-                    "This will delete your demographic profile, all platform data, and persona history. " +
-                    "The engine will revert to uniform random targeting."
-                )
-            },
+            title = { Text(stringResource(R.string.targeting_clear_dialog_title)) },
+            text = { Text(stringResource(R.string.targeting_clear_dialog_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.clearProfile()
                     showClearDialog = false
-                }) { Text("Clear", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.targeting_clear_dialog_confirm), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showClearDialog = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -203,7 +201,7 @@ private fun ProfileSummaryCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "MY PROFILE",
+                text = stringResource(R.string.targeting_profile_summary_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
@@ -213,7 +211,7 @@ private fun ProfileSummaryCard(
 
             if (!state.hasProfile) {
                 Text(
-                    text = "No profile saved. Setting one up lets Layer 1 steer the noise away from your real demographics.",
+                    text = stringResource(R.string.targeting_profile_summary_empty),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -221,16 +219,16 @@ private fun ProfileSummaryCard(
                 Button(
                     onClick = onEditProfile,
                     modifier = Modifier.fillMaxWidth()
-                ) { Text("Set up profile") }
+                ) { Text(stringResource(R.string.targeting_profile_set_up_button)) }
                 return@Card
             }
 
-            ProfileSummaryRow(label = "Age", value = state.ageRange?.let { stringResource(it.displayNameRes()) })
-            ProfileSummaryRow(label = "Gender", value = state.gender?.let { stringResource(it.displayNameRes()) })
-            ProfileSummaryRow(label = "Profession", value = state.profession?.let { stringResource(it.displayNameRes()) })
-            ProfileSummaryRow(label = "Region", value = state.region?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(label = stringResource(R.string.targeting_profile_row_age), value = state.ageRange?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(label = stringResource(R.string.targeting_profile_row_gender), value = state.gender?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(label = stringResource(R.string.targeting_profile_row_profession), value = state.profession?.let { stringResource(it.displayNameRes()) })
+            ProfileSummaryRow(label = stringResource(R.string.targeting_profile_row_region), value = state.region?.let { stringResource(it.displayNameRes()) })
             ProfileSummaryRow(
-                label = "Interests",
+                label = stringResource(R.string.targeting_profile_row_interests),
                 value = if (state.interests.isEmpty()) null
                 else state.interests
                     .joinToString(", ") { it.name.lowercase().replace('_', ' ') }
@@ -240,7 +238,7 @@ private fun ProfileSummaryCard(
             OutlinedButton(
                 onClick = onEditProfile,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Edit my profile") }
+            ) { Text(stringResource(R.string.targeting_profile_edit_button)) }
         }
     }
 }
@@ -333,7 +331,7 @@ private fun WeightChart(weights: Map<CategoryPool, Float>) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "CATEGORY WEIGHTS",
+                text = stringResource(R.string.targeting_category_weights_title),
                 style = MaterialTheme.typography.labelMedium,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -375,13 +373,13 @@ private fun CustomInterestsCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Custom Interests",
+                text = stringResource(R.string.targeting_custom_interests_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Add specific interests to suppress (mapped to nearest category)",
+                text = stringResource(R.string.targeting_custom_interests_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -397,7 +395,7 @@ private fun CustomInterestsCard(
                     value = textFieldValue,
                     onValueChange = { textFieldValue = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("e.g., woodworking") },
+                    placeholder = { Text(stringResource(R.string.onboarding_custom_interest_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
@@ -413,7 +411,7 @@ private fun CustomInterestsCard(
                         textFieldValue = ""
                     }
                 }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add interest")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.onboarding_add_interest_cd))
                 }
             }
 
@@ -426,9 +424,9 @@ private fun CustomInterestsCard(
                     mappings.forEachIndexed { index, mapping ->
                         val categoryLabel = mapping.category?.name?.lowercase()?.replace("_", " ")
                         val label = if (categoryLabel != null) {
-                            "${mapping.interest} → $categoryLabel"
+                            stringResource(R.string.targeting_custom_interest_mapped, mapping.interest, categoryLabel)
                         } else {
-                            "${mapping.interest} (unmapped)"
+                            stringResource(R.string.targeting_custom_interest_unmapped, mapping.interest)
                         }
                         InputChip(
                             selected = true,
@@ -437,7 +435,7 @@ private fun CustomInterestsCard(
                             trailingIcon = {
                                 Icon(
                                     Icons.Default.Close,
-                                    contentDescription = "Remove",
+                                    contentDescription = stringResource(R.string.onboarding_remove_cd),
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -497,26 +495,10 @@ private fun WeightBar(label: String, value: Float, color: Color) {
 private fun ScrapeNeedsLoginDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Layer 2 couldn't read your ad profiles") },
-        text = {
-            Text(
-                "The Adversarial Scraper tries to read what Google and Facebook think " +
-                    "they know about you, then steers the noise away from those interests. " +
-                    "It just got back an empty list, which usually means the scraper has " +
-                    "no signed-in session for those sites.\n\n" +
-                    "Heads-up: Fauxx's scraper has its own browser session, separate from " +
-                    "Chrome/Brave/Firefox where you may already be signed in — Android " +
-                    "doesn't let apps share login cookies with each other. And Google/" +
-                    "Facebook don't allow sign-in from an in-app browser either, so a " +
-                    "'sign in here' button isn't possible.\n\n" +
-                    "Layer 2 is being redesigned to import your ad profile directly " +
-                    "(via Google Takeout or a browser bookmarklet) so it doesn't need a " +
-                    "live session at all. In the meantime, Layers 1 and 3 still work " +
-                    "without any scraping."
-            )
-        },
+        title = { Text(stringResource(R.string.targeting_scrape_dialog_title)) },
+        text = { Text(stringResource(R.string.targeting_scrape_dialog_body)) },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Got it") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_got_it)) }
         }
     )
 }

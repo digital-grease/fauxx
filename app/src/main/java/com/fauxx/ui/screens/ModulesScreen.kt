@@ -34,11 +34,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.content.Context
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.R
 import com.fauxx.engine.modules.LocationDiagnostics
 import com.fauxx.ui.viewmodels.ModulesViewModel
 
@@ -66,7 +68,7 @@ fun ModulesScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "MODULES",
+            text = stringResource(R.string.modules_title),
             style = MaterialTheme.typography.titleLarge,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -74,38 +76,38 @@ fun ModulesScreen(
         )
 
         ModuleToggleCard(
-            name = "Search Poisoning",
-            description = "Executes search queries across Google, Bing, DuckDuckGo, Yahoo",
+            name = stringResource(R.string.module_search_name),
+            description = stringResource(R.string.module_search_description),
             enabled = uiState.searchEnabled,
             onToggle = { viewModel.setSearchEnabled(it) }
         )
         ModuleToggleCard(
-            name = "Cookie Saturation",
-            description = "Visits 10,000+ URLs in background to accumulate diverse tracker cookies",
+            name = stringResource(R.string.module_cookie_name),
+            description = stringResource(R.string.module_cookie_description),
             enabled = uiState.cookieEnabled,
             onToggle = { viewModel.setCookieEnabled(it) }
         )
         ModuleToggleCard(
-            name = "DNS Noise",
-            description = "Resolves diverse domains to generate ISP-visible DNS query noise",
+            name = stringResource(R.string.module_dns_name),
+            description = stringResource(R.string.module_dns_description),
             enabled = uiState.dnsEnabled,
             onToggle = { viewModel.setDnsEnabled(it) }
         )
         ModuleToggleCard(
-            name = "Fingerprint Rotation",
-            description = "Rotates User-Agent, canvas noise, and navigator properties",
+            name = stringResource(R.string.module_fingerprint_name),
+            description = stringResource(R.string.module_fingerprint_description),
             enabled = uiState.fingerprintEnabled,
             onToggle = { viewModel.setFingerprintEnabled(it) }
         )
         ModuleToggleCard(
-            name = "Ad Pollution",
-            description = "Loads ad-heavy pages and visits ad preference dashboards",
+            name = stringResource(R.string.module_ad_name),
+            description = stringResource(R.string.module_ad_description),
             enabled = uiState.adEnabled,
             onToggle = { viewModel.setAdEnabled(it) }
         )
         ModuleToggleCard(
-            name = "Location Spoofing",
-            description = "Feeds synthetic GPS routes via MockLocationProvider",
+            name = stringResource(R.string.module_location_name),
+            description = stringResource(R.string.module_location_description),
             enabled = uiState.locationEnabled,
             onToggle = { enabled ->
                 viewModel.setLocationEnabled(enabled)
@@ -121,7 +123,7 @@ fun ModulesScreen(
             // below replaces this text with a real success-or-failure signal so users
             // aren't perpetually shown a "warning" when everything's actually fine.
             hint = if (!uiState.locationEnabled) {
-                "Requires Developer Options enabled and Fauxx selected as mock location app"
+                stringResource(R.string.module_location_setup_hint)
             } else null
         )
         // Inline post-mortem of the most recent start() attempt. Issue #48: users
@@ -139,8 +141,8 @@ fun ModulesScreen(
             }
         }
         ModuleToggleCard(
-            name = "App Signals",
-            description = "Opens app store pages for off-profile apps to trigger attribution pixels",
+            name = stringResource(R.string.module_appsignal_name),
+            description = stringResource(R.string.module_appsignal_description),
             enabled = uiState.appSignalEnabled,
             onToggle = { viewModel.setAppSignalEnabled(it) }
         )
@@ -217,23 +219,16 @@ private fun LocationSetupHintDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("One more step") },
-        text = {
-            Text(
-                "Android requires you to designate Fauxx as the mock location app:\n\n" +
-                    "1. Enable Developer Options if you haven't yet: Settings → About phone → tap Build Number 7 times.\n\n" +
-                    "2. Open Developer Options → \"Select mock location app\" and choose Fauxx.\n\n" +
-                    "Without this step, Location Spoofing will silently do nothing."
-            )
-        },
+        title = { Text(stringResource(R.string.module_location_setup_dialog_title)) },
+        text = { Text(stringResource(R.string.module_location_setup_dialog_body)) },
         confirmButton = {
             TextButton(onClick = {
                 openDeveloperOptionsOrSettings(context)
                 onDismiss()
-            }) { Text("Open Developer Options") }
+            }) { Text(stringResource(R.string.action_open_developer_options)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Got it") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_got_it)) }
         }
     )
 }
@@ -280,14 +275,14 @@ private fun LocationSuccessBanner() {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Mock location active",
+                text = stringResource(R.string.module_location_success_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Fauxx is registered as the system mock-location provider and feeding synthetic GPS fixes.",
+                text = stringResource(R.string.module_location_success_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -305,18 +300,18 @@ private fun LocationFailureBanner(failure: LocationDiagnostics.StartFailure) {
     val context = LocalContext.current
     val (headline, detail, showDevOptions) = when (failure) {
         LocationDiagnostics.StartFailure.NOT_MOCK_APP -> Triple(
-            "Fauxx is not the mock location app",
-            "Open Developer Options → Select mock location app → choose Fauxx, then restart the engine.",
+            stringResource(R.string.module_location_failure_not_mock_app_title),
+            stringResource(R.string.module_location_failure_not_mock_app_body),
             true
         )
         LocationDiagnostics.StartFailure.SECURITY_EXCEPTION -> Triple(
-            "Mock provider rejected by Android",
-            "The system blocked addTestProvider despite the app op being allowed. Try toggling Fauxx off and back on under Developer Options → Select mock location app, then restart Fauxx.",
+            stringResource(R.string.module_location_failure_security_title),
+            stringResource(R.string.module_location_failure_security_body),
             true
         )
         LocationDiagnostics.StartFailure.RUNTIME_EXCEPTION -> Triple(
-            "Could not register mock provider",
-            "Android refused the mock provider for an unexpected reason. Check app logs for details.",
+            stringResource(R.string.module_location_failure_runtime_title),
+            stringResource(R.string.module_location_failure_runtime_body),
             false
         )
         else -> Triple("", "", false)
@@ -340,7 +335,7 @@ private fun LocationFailureBanner(failure: LocationDiagnostics.StartFailure) {
             if (showDevOptions) {
                 Spacer(Modifier.height(8.dp))
                 TextButton(onClick = { openDeveloperOptionsOrSettings(context) }) {
-                    Text("Open Developer Options")
+                    Text(stringResource(R.string.action_open_developer_options))
                 }
             }
         }

@@ -50,12 +50,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.EngineState
 import com.fauxx.ui.viewmodels.DashboardViewModel
@@ -143,7 +145,7 @@ fun DashboardScreen(
     ) {
         // Title
         Text(
-            text = "FAUXX",
+            text = stringResource(R.string.dashboard_title),
             style = MaterialTheme.typography.headlineLarge,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -159,9 +161,8 @@ fun DashboardScreen(
         // Notification permission warning
         if (notificationDenied) {
             WarningCard(
-                text = "Notification permission denied — background activity indicator is hidden. " +
-                    "Grant notification permission in Settings to see the status notification.",
-                actionLabel = "Open settings",
+                text = stringResource(R.string.dashboard_warning_notification_denied),
+                actionLabel = stringResource(R.string.dashboard_warning_action_open_settings),
                 onAction = {
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                         data = Uri.fromParts("package", context.packageName, null)
@@ -175,10 +176,8 @@ fun DashboardScreen(
         // the app isn't on the unrestricted list. Shown until the user grants exemption.
         if (batteryOptimized && uiState.engineEnabled) {
             WarningCard(
-                text = "Android battery optimization is restricting Fauxx. " +
-                    "Background activity will pause when the screen is off. " +
-                    "Allow unrestricted background usage to keep the engine running.",
-                actionLabel = "Allow",
+                text = stringResource(R.string.dashboard_warning_battery_optimized),
+                actionLabel = stringResource(R.string.dashboard_warning_action_allow),
                 onAction = { showBatteryExplainer = true }
             )
         }
@@ -276,9 +275,9 @@ private fun ProtectionCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = when {
-                            isPaused -> "PAUSED"
-                            enabled -> "ACTIVE"
-                            else -> "INACTIVE"
+                            isPaused -> stringResource(R.string.dashboard_paused)
+                            enabled -> stringResource(R.string.dashboard_active)
+                            else -> stringResource(R.string.dashboard_inactive)
                         },
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
@@ -290,12 +289,12 @@ private fun ProtectionCard(
                     )
                     Text(
                         text = when (engineState) {
-                            EngineState.ACTIVE -> "Generating synthetic activity"
-                            EngineState.PAUSED_WIFI -> "Wi-Fi only mode — waiting for Wi-Fi"
-                            EngineState.PAUSED_BATTERY -> "Battery below threshold"
-                            EngineState.PAUSED_RATE_LIMIT -> "Hourly rate limit reached"
-                            EngineState.PAUSED_QUIET_HOURS -> "Outside active hours"
-                            EngineState.STOPPED -> "Engine stopped"
+                            EngineState.ACTIVE -> stringResource(R.string.dashboard_engine_state_active)
+                            EngineState.PAUSED_WIFI -> stringResource(R.string.dashboard_engine_state_paused_wifi)
+                            EngineState.PAUSED_BATTERY -> stringResource(R.string.dashboard_engine_state_paused_battery)
+                            EngineState.PAUSED_RATE_LIMIT -> stringResource(R.string.dashboard_engine_state_paused_rate_limit)
+                            EngineState.PAUSED_QUIET_HOURS -> stringResource(R.string.dashboard_engine_state_paused_quiet_hours)
+                            EngineState.STOPPED -> stringResource(R.string.dashboard_engine_state_stopped)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -311,7 +310,7 @@ private fun ProtectionCard(
                     onClick = onUseMobileData,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Use mobile data")
+                    Text(stringResource(R.string.dashboard_action_use_mobile_data))
                 }
             }
         }
@@ -324,8 +323,8 @@ private fun CounterRow(actionsToday: Int, actionsThisWeek: Int) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        StatCard(label = "TODAY", value = actionsToday.toString(), modifier = Modifier.weight(1f))
-        StatCard(label = "THIS WEEK", value = actionsThisWeek.toString(), modifier = Modifier.weight(1f))
+        StatCard(label = stringResource(R.string.dashboard_today), value = actionsToday.toString(), modifier = Modifier.weight(1f))
+        StatCard(label = stringResource(R.string.dashboard_this_week), value = actionsThisWeek.toString(), modifier = Modifier.weight(1f))
     }
 }
 
@@ -378,7 +377,12 @@ private fun buildChartSlices(
         cat.name.lowercase().replace("_", " ") to w
     }
     val otherWeight = sorted.drop(MAX_CHART_SLICES).sumOf { it.value.toDouble() }.toFloat()
-    return if (otherWeight > 0f) top + ("other" to otherWeight) else top
+    // "other" is a localized aggregate-slice label. Resolved here as a literal because
+    // this function isn't @Composable; the actual displayed label is resolved by the
+    // caller via stringResource(R.string.dashboard_category_other) if needed. Kept as a
+    // sentinel string so the build doesn't break — callers should detect this and
+    // swap it out at render time. Today only ChartLegend renders these labels.
+    return if (otherWeight > 0f) top + ("__other__" to otherWeight) else top
 }
 
 @Composable
@@ -391,10 +395,8 @@ private fun CategoryDonutCard(distribution: Map<CategoryPool, Float>) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             SectionHeaderWithHelp(
-                title = "CATEGORY DISTRIBUTION",
-                help = "Shows how your synthetic noise is spread across topic categories. " +
-                    "A wider spread means trackers see a more confused profile. " +
-                    "Categories are weighted by the targeting engine to maximize distance from your real interests."
+                title = stringResource(R.string.dashboard_category_distribution_title),
+                help = stringResource(R.string.dashboard_category_distribution_help)
             )
             Spacer(Modifier.height(12.dp))
 
@@ -446,7 +448,9 @@ private fun ChartLegend(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        slices.forEachIndexed { index, (label, weight) ->
+        val otherLabel = stringResource(R.string.dashboard_category_other)
+        slices.forEachIndexed { index, (rawLabel, weight) ->
+            val label = if (rawLabel == "__other__") otherLabel else rawLabel
             val pct = if (total > 0f) (weight / total * 100f).toInt() else 0
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -459,7 +463,7 @@ private fun ChartLegend(
                         .background(chartColors[index % chartColors.size])
                 )
                 Text(
-                    text = "$label $pct%",
+                    text = stringResource(R.string.dashboard_chart_legend_entry, label, pct),
                     style = MaterialTheme.typography.labelSmall,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -477,12 +481,9 @@ private fun PersonaCard(name: String, ageRange: String, profession: String, inte
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             SectionHeaderWithHelp(
-                title = "ACTIVE PERSONA",
+                title = stringResource(R.string.dashboard_active_persona_title),
                 titleColor = MaterialTheme.colorScheme.secondary,
-                help = "A synthetic identity the engine adopts for about a week. " +
-                    "Activity is weighted toward this persona's interests to create " +
-                    "temporally coherent noise — making it harder for trackers to " +
-                    "filter out the fake signal. Personas rotate automatically."
+                help = stringResource(R.string.dashboard_active_persona_help)
             )
             Spacer(Modifier.height(8.dp))
             Text(
@@ -492,7 +493,7 @@ private fun PersonaCard(name: String, ageRange: String, profession: String, inte
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "$ageRange · $profession",
+                text = stringResource(R.string.dashboard_persona_subtitle, ageRange, profession),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -563,13 +564,11 @@ private fun NoiseRatioCard(ratio: Float) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 SectionHeaderWithHelp(
-                    title = "NOISE RATIO",
-                    help = "Estimates how much of your visible browsing profile is synthetic noise " +
-                        "vs real activity. Higher is better — at 80%+, a data broker would need " +
-                        "to correctly identify 4 out of 5 signals as fake to build an accurate profile."
+                    title = stringResource(R.string.dashboard_noise_ratio_title),
+                    help = stringResource(R.string.dashboard_noise_ratio_help)
                 )
                 Text(
-                    text = "${(animated * 100).toInt()}%",
+                    text = stringResource(R.string.dashboard_noise_ratio_value, (animated * 100).toInt()),
                     style = MaterialTheme.typography.labelMedium,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.primary
@@ -630,20 +629,18 @@ private fun BatteryOptimizationDialog(onAllow: () -> Unit, onDismiss: () -> Unit
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Keep Fauxx running in the background",
+                text = stringResource(R.string.dashboard_battery_dialog_title),
                 style = MaterialTheme.typography.titleLarge
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Android aggressively pauses background apps to save battery. " +
-                        "For continuous profile poisoning, Fauxx needs to be exempt from battery optimization.",
+                    text = stringResource(R.string.dashboard_battery_dialog_body_intro),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "On the next screen, choose \"Allow\" so the engine can keep " +
-                        "generating synthetic activity while your screen is off.",
+                    text = stringResource(R.string.dashboard_battery_dialog_body_action),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -651,12 +648,12 @@ private fun BatteryOptimizationDialog(onAllow: () -> Unit, onDismiss: () -> Unit
         },
         confirmButton = {
             TextButton(onClick = onAllow) {
-                Text("Continue")
+                Text(stringResource(R.string.dashboard_battery_dialog_continue))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Not now")
+                Text(stringResource(R.string.dashboard_battery_dialog_not_now))
             }
         }
     )
@@ -668,25 +665,24 @@ private fun ConsentDialog(onAccept: () -> Unit, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Before you start",
+                text = stringResource(R.string.consent_title),
                 style = MaterialTheme.typography.titleLarge
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Fauxx will perform the following background activities:",
+                    text = stringResource(R.string.consent_intro),
                     style = MaterialTheme.typography.bodyMedium
                 )
-                ConsentBullet("Search diverse topics on Google, Bing, DuckDuckGo, and Yahoo")
-                ConsentBullet("Visit a variety of websites to broaden your browsing profile")
-                ConsentBullet("Rotate browser fingerprints (User-Agent, language headers)")
-                ConsentBullet("Generate DNS lookups across varied domains")
-                ConsentBullet("Use battery and mobile data while running in the background")
+                ConsentBullet(stringResource(R.string.consent_bullet_search))
+                ConsentBullet(stringResource(R.string.consent_bullet_browse))
+                ConsentBullet(stringResource(R.string.consent_bullet_fingerprint))
+                ConsentBullet(stringResource(R.string.consent_bullet_dns))
+                ConsentBullet(stringResource(R.string.consent_bullet_battery))
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "All activity is synthetic and stays on your device. " +
-                        "No personal data is collected or transmitted.",
+                    text = stringResource(R.string.consent_footer),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -694,12 +690,12 @@ private fun ConsentDialog(onAccept: () -> Unit, onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = onAccept) {
-                Text("I understand, start")
+                Text(stringResource(R.string.consent_accept))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
