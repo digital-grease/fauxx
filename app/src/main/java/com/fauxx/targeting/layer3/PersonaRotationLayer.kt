@@ -90,8 +90,41 @@ class PersonaRotationLayer @Inject constructor(
     fun setEnabled(enabled: Boolean) {
         _enabled.value = enabled
         if (enabled && _currentPersona.value == null) {
-            rotatePersona()
+            // Issue #63: `_currentPersona` was in-memory only, so the FGS resume cycle
+            // (Android 14+ kills our process every ~6h to enforce the cumulative
+            // foreground-service runtime cap) caused setEnabled() to fire on a fresh
+            // process with `_currentPersona == null`, generating a brand-new persona
+            // every restart. Users perceived "persona rotates daily" instead of weekly.
+            // Restore the most-recent still-active persona from history before falling
+            // back to generation.
+            scope.launch {
+                val restored = restoreMostRecentActivePersona()
+                if (restored != null) {
+                    _currentPersona.value = restored
+                    Timber.d(
+                        "Restored persona ${restored.name} from history (active until ${restored.activeUntil})"
+                    )
+                } else {
+                    rotatePersona()
+                }
+            }
         }
+    }
+
+    /**
+     * Walk history for the most recently created persona whose `activeUntil` window has
+     * not yet expired. Returns null when no eligible persona exists (history empty, or
+     * every entry has expired). Suspending because it touches the DAO. Internal for tests.
+     */
+    internal suspend fun restoreMostRecentActivePersona(): SyntheticPersona? {
+        val cutoff = System.currentTimeMillis() - HISTORY_RETENTION_MS
+        val entries = runCatching { historyDao.getRecentPersonas(cutoff) }.getOrNull() ?: return null
+        val now = System.currentTimeMillis()
+        // `getRecentPersonas` already sorts DESC by createdAt — first deserializable
+        // entry whose activeUntil is in the future is the right pick.
+        return entries.asSequence()
+            .mapNotNull { runCatching { gson.fromJson(it.personaJson, SyntheticPersona::class.java) }.getOrNull() }
+            .firstOrNull { it.activeUntil > now }
     }
 
     /**
