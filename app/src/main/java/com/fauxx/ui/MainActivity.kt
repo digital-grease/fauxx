@@ -4,7 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Handler
 import android.os.LocaleList
+import android.os.Looper
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,9 +19,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.lifecycleScope
+import com.fauxx.R
 import com.fauxx.di.PreferenceKeys
 import com.fauxx.di.fauxxDataStore
+import com.fauxx.logging.BootGuard
 import com.fauxx.logging.CrashDetector
 import com.fauxx.service.PhantomForegroundService
 import com.fauxx.ui.navigation.FauxxNavGraph
@@ -45,6 +51,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var crashDetector: CrashDetector
+
+    @Inject
+    lateinit var bootGuard: BootGuard
 
     /**
      * Apply the per-app language stored by `AppCompatDelegate.setApplicationLocales()`
@@ -76,7 +85,44 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        reconcileEngineState(intent)
+        val inSafeMode = bootGuard.isInSafeMode()
+        if (inSafeMode) {
+            // Two boots in a row failed to reach the success callback — the most likely
+            // cause is that PhantomWebViewPool's WebView constructor is hanging Main when
+            // a Layer 2 scrape kicks off. Force-disable Layer 2 + the engine before
+            // anything tries to start them, then let startup proceed normally.
+            Timber.w("BootGuard: safe mode active — disabling Layer 2 and engine")
+            lifecycleScope.launch {
+                runCatching {
+                    fauxxDataStore.edit { prefs ->
+                        prefs[PreferenceKeys.LAYER2_ENABLED] = false
+                        prefs[PreferenceKeys.ENABLED] = false
+                    }
+                }.onFailure { Timber.e(it, "Failed to write safe-mode prefs") }
+            }
+        }
+
+        if (!inSafeMode) {
+            reconcileEngineState(intent)
+        }
+
+        // Surface a one-time toast to the user the first time we exit safe mode so they
+        // know why Layer 2 (and the engine) were turned off.
+        if (bootGuard.consumePendingRecoveryNotice()) {
+            Toast.makeText(
+                this,
+                R.string.boot_guard_safe_mode_notice,
+                Toast.LENGTH_LONG
+            ).show()
+        }
+
+        // Reset the boot counter after the main thread has been responsive for
+        // BOOT_SUCCESS_DELAY_MS. If main is hung before then, the callback never runs
+        // and the counter survives to the next boot.
+        Handler(Looper.getMainLooper()).postDelayed(
+            { runCatching { bootGuard.recordBootSuccess() } },
+            BootGuard.BOOT_SUCCESS_DELAY_MS
+        )
 
         val themeFlow = fauxxDataStore.data
             .map { prefs ->
