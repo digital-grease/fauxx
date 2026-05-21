@@ -9,7 +9,6 @@ import com.fauxx.data.model.IntensityLevel
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.QueryBankManager
-import com.fauxx.engine.FgsBudgetTracker
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.modules.AppSignalModule
@@ -147,103 +146,6 @@ class PoisonEngineLoopTest {
         assertEquals(androidx.work.NetworkType.UNMETERED, whenConstraint.network)
     }
 
-    @Test
-    fun `runLoop resigns at FGS 5h hard limit even when active`() = runTest {
-        val clock = FakeClock(noonEpochMs())
-        val dispatcher = StandardTestDispatcher(testScheduler)
-        val alwaysAllowed = baseProfile.copy(allowedHoursStart = 0, allowedHoursEnd = 24)
-        engine = buildEngine(clock, profile = alwaysAllowed, moduleFails = true, loopDispatcher = dispatcher)
-
-        var resignedWith: ResumeSpec? = null
-        engine.setOnLongPause { spec -> resignedWith = spec }
-        engine.start()
-
-        advanceVirtualTime(clock, scheduler = testScheduler, by = 5L * 60 * 60 * 1000 + 60_000)
-
-        assertNotNull(
-            "engine must resign at the 5h FGS hard limit regardless of state",
-            resignedWith
-        )
-    }
-
-    @Test
-    fun `start short-circuits and schedules resume when 24h FGS budget is exhausted`() = runTest {
-        // Mid-active-window, fresh profile that would normally fire actions immediately.
-        val clock = FakeClock(noonEpochMs())
-        val dispatcher = StandardTestDispatcher(testScheduler)
-        val resetTime = clock.nowMs + 4L * 60 * 60 * 1000
-        val exhaustedTracker: FgsBudgetTracker = mockk(relaxed = true) {
-            every { remainingBudgetMs() } returns 0L
-            every { nextWindowResetMs() } returns resetTime
-        }
-        engine = buildEngine(
-            clock,
-            profile = baseProfile.copy(allowedHoursStart = 0, allowedHoursEnd = 24),
-            loopDispatcher = dispatcher,
-            budgetTracker = exhaustedTracker
-        )
-
-        var resignedWith: ResumeSpec? = null
-        engine.setOnLongPause { spec -> resignedWith = spec }
-        engine.start()
-
-        // Engine should NOT enter the loop — any virtual-time advance should not trigger
-        // module actions or additional resigns. Verify by pumping time and asserting the
-        // resume spec captured is the one from the synchronous start() short-circuit.
-        advanceVirtualTime(clock, scheduler = testScheduler, by = 60_000)
-
-        assertNotNull(
-            "engine must invoke onLongPause synchronously when budget is exhausted at start",
-            resignedWith
-        )
-        assertTrue(
-            "budget-exhausted resign must use AtTime spec pointing at the window reset",
-            resignedWith is ResumeSpec.AtTime
-        )
-        assertEquals(resetTime, (resignedWith as ResumeSpec.AtTime).epochMs)
-        assertEquals(
-            "engine state must read STOPPED after a budget-exhausted refusal to start",
-            com.fauxx.engine.EngineState.STOPPED,
-            engine.engineState.value
-        )
-    }
-
-    @Test
-    fun `start refusing on exhausted budget is idempotent across repeated Reconciles`() = runTest {
-        val clock = FakeClock(noonEpochMs())
-        val dispatcher = StandardTestDispatcher(testScheduler)
-        val resetTime = clock.nowMs + 4L * 60 * 60 * 1000
-        val exhaustedTracker: FgsBudgetTracker = mockk(relaxed = true) {
-            every { remainingBudgetMs() } returns 0L
-            every { nextWindowResetMs() } returns resetTime
-        }
-        engine = buildEngine(
-            clock,
-            profile = baseProfile.copy(allowedHoursStart = 0, allowedHoursEnd = 24),
-            loopDispatcher = dispatcher,
-            budgetTracker = exhaustedTracker
-        )
-
-        val resumeSpecs = mutableListOf<ResumeSpec>()
-        engine.setOnLongPause { spec -> resumeSpecs.add(spec) }
-
-        // Simulate three back-to-back Reconciles (PhantomForegroundService.onStartCommand
-        // re-firing on settings changes, BOOT_COMPLETED, user toggle, etc.). The pre-fix
-        // bug shape: each Reconcile starts a fresh ~50ms FGS cycle. Post-fix: each Reconcile
-        // still invokes onLongPause once, but never enters the run loop.
-        engine.start()
-        advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
-        engine.start()
-        advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
-        engine.start()
-        advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
-
-        assertEquals("each Reconcile must produce exactly one resume schedule", 3, resumeSpecs.size)
-        for (spec in resumeSpecs) {
-            assertEquals(resetTime, (spec as ResumeSpec.AtTime).epochMs)
-        }
-    }
-
     /**
      * Step time forward in small increments so `runTest`'s scheduler can fire
      * each `delay()` resumption. The fake clock advances together with the
@@ -301,11 +203,7 @@ class PoisonEngineLoopTest {
         clock: Clock,
         profile: PoisonProfile,
         moduleFails: Boolean = false,
-        loopDispatcher: CoroutineDispatcher,
-        budgetTracker: FgsBudgetTracker = mockk<FgsBudgetTracker>(relaxed = true) {
-            every { remainingBudgetMs() } returns FgsBudgetTracker.BUDGET_MS
-            every { nextWindowResetMs() } returns clock.currentTimeMillis() + 60 * 60 * 1000L
-        }
+        loopDispatcher: CoroutineDispatcher
     ): PoisonEngine {
         val profileRepo: PoisonProfileRepository = mockk {
             every { getProfile() } returns profile
@@ -370,7 +268,6 @@ class PoisonEngineLoopTest {
                 every { isEnabled() } returns false
             },
             clock = clock,
-            budgetTracker = budgetTracker,
             loopDispatcher = loopDispatcher
         )
     }

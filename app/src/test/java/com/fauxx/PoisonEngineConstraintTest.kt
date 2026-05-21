@@ -12,7 +12,6 @@ import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.QueryBankManager
 import androidx.work.NetworkType
 import com.fauxx.engine.EngineState
-import com.fauxx.engine.FgsBudgetTracker
 import com.fauxx.engine.PauseDecision
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
@@ -277,39 +276,6 @@ class PoisonEngineConstraintTest {
     }
 
     @Test
-    fun `decidePauseAction hard-resigns at FGS 5h limit even when active`() {
-        engine = createEngine()
-        val decision = engine.decidePauseAction(
-            state = EngineState.ACTIVE,
-            currentProfile = profile,
-            pauseElapsedMs = 0,
-            totalRuntimeMs = ms5Hours,
-            nowMs = nowMs
-        )
-        assertTrue(decision is PauseDecision.Resign)
-        val spec = (decision as PauseDecision.Resign).resumeSpec
-        assertTrue(spec is ResumeSpec.AtTime)
-        // Default fallback: 1 hour from now
-        assertEquals(nowMs + ms1Hour, (spec as ResumeSpec.AtTime).epochMs)
-    }
-
-    @Test
-    fun `decidePauseAction hard-resigns at 5h with wifi constraint when state is paused_wifi`() {
-        engine = createEngine()
-        val decision = engine.decidePauseAction(
-            state = EngineState.PAUSED_WIFI,
-            currentProfile = profile,
-            pauseElapsedMs = 1000,
-            totalRuntimeMs = ms5Hours + 1000,
-            nowMs = nowMs
-        )
-        assertTrue(decision is PauseDecision.Resign)
-        val spec = (decision as PauseDecision.Resign).resumeSpec
-        assertTrue(spec is ResumeSpec.WhenConstraintMet)
-        assertEquals(NetworkType.UNMETERED, (spec as ResumeSpec.WhenConstraintMet).network)
-    }
-
-    @Test
     fun `nextAllowedHoursStartMs returns same-day boundary when start hour is later`() {
         engine = createEngine()
         // Construct nowMs that is at 03:00 local time (use Calendar to build it)
@@ -385,16 +351,11 @@ class PoisonEngineConstraintTest {
             every { currentTimeMillis() } returns System.currentTimeMillis()
             every { elapsedRealtime() } returns 0L
         }
-        val budgetTracker: FgsBudgetTracker = mockk(relaxed = true) {
-            every { remainingBudgetMs() } returns FgsBudgetTracker.BUDGET_MS
-            every { nextWindowResetMs() } returns System.currentTimeMillis() + 60 * 60 * 1000L
-        }
         return PoisonEngine(
             context, profileRepo, targetingEngine, dispatcher, scheduler, actionLogDao,
             blocklist, queryBankManager, crawlListManager, cityDatabase,
             searchModule, adModule, locationModule, fingerprintModule,
             cookieModule, appSignalModule, dnsModule, clock,
-            budgetTracker = budgetTracker,
             loopDispatcher = kotlinx.coroutines.Dispatchers.Unconfined
         )
     }
