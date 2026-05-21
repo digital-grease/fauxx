@@ -307,6 +307,17 @@ class PoisonEngine @Inject constructor(
         // with a fresh budget — that's our intra-session safety net.
         sessionBudgetMs = minOf(FGS_HARD_LIMIT_MS, budgetTracker.remainingBudgetMs())
         Timber.i("Engine session budget = ${sessionBudgetMs}ms (${sessionBudgetMs / 60_000}min)")
+        if (sessionBudgetMs <= 0L) {
+            // Cross-session 24h budget already spent. Don't enter the run loop — it
+            // would resign on the first iteration and produce a tight start-resign
+            // cycle on every Reconcile until the budget window expires. Issues #64/#65.
+            hasResigned = true
+            val resumeAt = budgetTracker.nextWindowResetMs()
+            Timber.i("Engine refusing to start — 24h FGS budget exhausted; resume at $resumeAt")
+            _engineState.value = EngineState.STOPPED
+            onLongPause?.invoke(ResumeSpec.AtTime(resumeAt))
+            return
+        }
         registerConstraintReceivers()
         engineJob = scope.launch {
             // Sync targeting layer enable flags from persisted profile
