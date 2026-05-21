@@ -82,6 +82,14 @@ class LocationSpoofModule @Inject constructor(
             Timber.w("Fauxx is not selected as mock-location app in Developer Options")
             return
         }
+        // Clear any stale test provider left behind by a previous session that didn't
+        // tear down cleanly — happens on Samsung devices where the OEM battery manager
+        // kills the FGS process before stop() can run, and on Android 8 where
+        // removeTestProvider doesn't always survive certain lifecycle paths. Without
+        // this pre-remove, addTestProvider throws IllegalArgumentException("Provider
+        // 'fauxx_mock' already exists") and the user sees "android refused the mock
+        // provider for an unexpected reason." See issue #66.
+        runCatching { locationManager.removeTestProvider(MOCK_PROVIDER) }
         try {
             locationManager.addTestProvider(
                 MOCK_PROVIDER,
