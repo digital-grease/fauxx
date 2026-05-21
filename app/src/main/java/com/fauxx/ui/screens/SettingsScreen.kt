@@ -50,6 +50,7 @@ import com.fauxx.data.model.IntensityLevel
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.ui.theme.ThemeMode
 import com.fauxx.ui.viewmodels.SettingsViewModel
+import kotlin.math.roundToInt
 
 /**
  * Global settings screen: intensity, wifi-only, battery threshold, active hours, clear data.
@@ -291,7 +292,12 @@ fun SettingsScreen(
             )
             Slider(
                 value = uiState.allowedHoursStart.toFloat(),
-                onValueChange = { viewModel.setAllowedHoursStart(it.toInt()) },
+                // Issue #61: the slider snaps to integer positions visually, but Compose's
+                // internal fraction × range arithmetic produces values like 6.99999… for the
+                // hour-7 snap (1/23 × 23 doesn't round-trip exactly in float). toInt()
+                // truncates 6.99999 to 6, so dragging onto hour 7 silently writes hour 6 —
+                // making 7 unreachable. roundToInt() resolves to the nearest integer hour.
+                onValueChange = { viewModel.setAllowedHoursStart(it.roundToInt()) },
                 valueRange = 0f..23f,
                 steps = 22
             )
@@ -302,7 +308,7 @@ fun SettingsScreen(
             )
             Slider(
                 value = uiState.allowedHoursEnd.toFloat(),
-                onValueChange = { viewModel.setAllowedHoursEnd(it.toInt()) },
+                onValueChange = { viewModel.setAllowedHoursEnd(it.roundToInt()) },
                 valueRange = 0f..23f,
                 steps = 22
             )

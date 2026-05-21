@@ -42,6 +42,10 @@ class LocationSpoofModuleFailureTest {
         every { context.getSystemService(Context.LOCATION_SERVICE) } returns locationManager
         every { context.getSystemService(Context.APP_OPS_SERVICE) } returns appOps
         every { context.packageName } returns "com.fauxx"
+        // start() always pre-removes a (possibly stale) provider before addTestProvider —
+        // default to a no-op so tests that don't care about teardown behavior aren't
+        // forced to wire it up. Tests that DO care override per-test.
+        every { locationManager.removeTestProvider(any()) } just runs
 
         module = LocationSpoofModule(
             context = context,
@@ -130,6 +134,51 @@ class LocationSpoofModuleFailureTest {
         every {
             locationManager.setTestProviderEnabled(any(), any())
         } just runs
+
+        module.start()
+
+        assertEquals(LocationDiagnostics.StartFailure.OK, module.lastStartFailure.value)
+    }
+
+    @Test
+    fun `start pre-removes a stale provider before addTestProvider`() = runBlocking {
+        // Reproduces issue #66: previous FGS process killed by Samsung battery manager
+        // before stop() could remove the test provider. Without the pre-remove, the
+        // first addTestProvider call on this fresh process throws "Provider already
+        // exists". With the fix, removeTestProvider runs first and the second add succeeds.
+        every {
+            appOps.checkOpNoThrow(AppOpsManager.OPSTR_MOCK_LOCATION, any(), any())
+        } returns AppOpsManager.MODE_ALLOWED
+        every {
+            locationManager.addTestProvider(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } just runs
+        every { locationManager.setTestProviderEnabled(any(), any()) } just runs
+
+        module.start()
+
+        io.mockk.verifyOrder {
+            locationManager.removeTestProvider("fauxx_mock")
+            locationManager.addTestProvider(eq("fauxx_mock"), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
+        assertEquals(LocationDiagnostics.StartFailure.OK, module.lastStartFailure.value)
+    }
+
+    @Test
+    fun `start treats removeTestProvider failure as recoverable`() = runBlocking {
+        // On Android 8 the system can throw IllegalArgumentException from
+        // removeTestProvider when no provider with that name exists — that's the
+        // *expected* state on first launch. The pre-remove must runCatching it so a
+        // clean first start isn't disrupted by the absence of a stale provider.
+        every {
+            appOps.checkOpNoThrow(AppOpsManager.OPSTR_MOCK_LOCATION, any(), any())
+        } returns AppOpsManager.MODE_ALLOWED
+        every {
+            locationManager.removeTestProvider("fauxx_mock")
+        } throws IllegalArgumentException("Provider \"fauxx_mock\" unknown")
+        every {
+            locationManager.addTestProvider(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } just runs
+        every { locationManager.setTestProviderEnabled(any(), any()) } just runs
 
         module.start()
 

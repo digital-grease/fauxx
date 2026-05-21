@@ -7,6 +7,7 @@ import androidx.annotation.RequiresApi
 import timber.log.Timber
 import android.webkit.SafeBrowsingResponse
 import android.webkit.SslErrorHandler
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -67,6 +68,18 @@ class PhantomWebViewClient(
         }
 
         return null
+    }
+
+    override fun onReceivedError(
+        view: WebView,
+        request: WebResourceRequest?,
+        error: WebResourceError?
+    ) {
+        super.onReceivedError(view, request, error)
+        if (request?.isForMainFrame != true) return
+        val description = error?.description ?: "unknown error"
+        val code = error?.errorCode ?: 0
+        Timber.w("WebView load error on ${request.url} (code=$code): $description")
     }
 
     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {

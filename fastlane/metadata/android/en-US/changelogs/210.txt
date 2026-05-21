@@ -1,0 +1,7 @@
+• Fix: active-hours slider can land on 7:00 (and other hours it was skipping)
+• Fix: WiFi detected correctly when a local VPN app (TrackerControl, NetGuard) is active
+• Fix: persona no longer rotates more often than scheduled after process restart
+• Fix: app auto-recovers if a Layer 2 scrape hangs at startup (disables Layer 2 on the next launch)
+• Fix: splash screen honours dark mode on cold launch
+• Fix: engine no longer loops stop/start after using its daily background-runtime budget
+• Fix: location spoofing recovers after Android kills the background process
