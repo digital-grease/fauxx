@@ -14,16 +14,34 @@ import javax.inject.Singleton
 
 /**
  * Blocklist for query CONTENT (distinct from [com.fauxx.data.crawllist.DomainBlocklist]
- * which blocks URL destinations). Rejects two classes of query:
+ * which blocks URL destinations). The blocklist defends against two specific risks
+ * Fauxx's synthetic search traffic could otherwise create for the user:
  *
- *  - **Class A — harm to others / illegal content**: bomb recipes, CSAM, drug synthesis,
- *    weaponization guides. Safe-to-execute-by-humans is NOT a defense.
+ *  - **Class A — law-enforcement / criminal-attention risk**: queries whose appearance
+ *    in a user's broker / ISP / search-engine profile could plausibly trigger a
+ *    criminal investigation, watchlist placement, or platform ban. Includes CSAM,
+ *    bomb / explosive synthesis, weapon conversion (auto-fire, ghost guns), drug
+ *    synthesis (fentanyl, meth, sarin, ricin, etc.), terrorism recruitment, hire-a-
+ *    hitman, trafficking, doxing / stalkerware, identity-theft (stolen SSN / cards /
+ *    passports), and cybercrime tooling (ransomware kits, carding, hospital / grid
+ *    intrusion). Safe-to-execute-by-humans is NOT a defense — the harm is the
+ *    profile entry, not the result.
  *  - **Class B — self-signal harm**: queries that are individually benign (often
  *    lifesaving for a real searcher) but create a false first-person distress signal
- *    when dispatched as synthetic user activity. Example: a 988 query from a real user
- *    is a lifeline; the same query injected as noise creates a false "user in crisis"
- *    flag in broker / government / insurer profiles with real-world consequences
- *    (wellness checks, insurance denial, watchlists).
+ *    when dispatched as synthetic user activity. Example: a 988 query from a real
+ *    user is a lifeline; the same query injected as noise creates a false "user in
+ *    crisis" flag in broker / government / insurer profiles with real-world
+ *    consequences (wellness checks, insurance denial, watchlists). Also covers
+ *    asylum / immigration, bankruptcy, abortion, eviction — vulnerability signals
+ *    that should never appear as synthetic noise.
+ *
+ * **Out of scope** (intentionally, do NOT add): medical misinformation / quackery
+ * (anti-vaccine, bleach / MMS cures, colloidal silver, apricot seeds, ivermectin),
+ * conspiracy theories, fringe-science searches. Searching them won't put the user
+ * on a watchlist or look like a crisis. They are a real concern for algorithmic-
+ * feed pollution (the user's *real* recommendations getting pulled toward quackery
+ * via their inferred profile), but the right defense there is corpus selection
+ * (don't ship those topics in `query_banks/`), not runtime blocking.
  *
  * Enforced at four chokepoints to provide defense in depth:
  *  1. [QueryBankManager.getQueries] — pre-filters the corpus at load time
