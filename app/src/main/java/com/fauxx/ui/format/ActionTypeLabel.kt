@@ -19,4 +19,5 @@ val ActionType.label: String
         ActionType.COOKIE_HARVEST -> "COOKIES"
         ActionType.DEEP_LINK_VISIT -> "DEEP LINK"
         ActionType.FINGERPRINT_ROTATE -> "FINGERPRINT"
+        ActionType.AD_PROFILE_IMPORT -> "AD IMPORT"
     }
