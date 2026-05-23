@@ -94,6 +94,33 @@ class HarmfulQueriesLocaleAuditTest {
         )
     }
 
+    @Test
+    fun `russian blocklist contains Telephone-of-Trust and DV sentinels`() {
+        // RU is community-contributed (PR #30, thestability), structurally sound but
+        // pending native-speaker review before SHIPPED_LOCALES can include it. This
+        // test asserts the documented hotline sentinels are present so a future review
+        // pass can't silently drop them while iterating on translations.
+        val parsed = load("harmful_queries/ru.json")
+        assertNonEmpty("ru", parsed)
+        assertContainsAny(
+            "ru",
+            parsed,
+            // Russia's federal Telephone of Trust (Телефон доверия): the canonical
+            // suicide / psychological-distress helpline. Some regional services also
+            // publish 8-800-2000-122 as their primary number — same string fragment.
+            listOf("8-800-2000-122", "2000-122"),
+            "the Russian federal Telephone of Trust (8-800-2000-122)"
+        )
+        assertContainsAny(
+            "ru",
+            parsed,
+            // Anna Center's nationwide women's helpline. Also a 8-800- format; we
+            // accept either the full number or the centre name as a present sentinel.
+            listOf("8-800-7000-600", "7000-600", "анна"),
+            "a Russian-region domestic-violence helpline (Anna Center 8-800-7000-600 or equivalent)"
+        )
+    }
+
     private fun assertNonEmpty(locale: String, parsed: HarmfulQueries) {
         assertTrue(
             "[$locale] class_a_terms must not be empty (would fail-closed at runtime)",

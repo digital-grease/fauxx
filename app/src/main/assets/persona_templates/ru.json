@@ -1,0 +1,100 @@
+[
+  {
+    "archetype": "moscow_product_manager",
+    "ageRange": "AGE_25_34",
+    "interests": ["TECHNOLOGY", "BUSINESS", "FITNESS"],
+    "region": "RUSSIA",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "spb_designer",
+    "ageRange": "AGE_25_34",
+    "interests": ["FASHION", "MUSIC", "ENTERTAINMENT"],
+    "region": "RUSSIA",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "kazan_student",
+    "ageRange": "AGE_18_24",
+    "interests": ["ACADEMIC", "GAMING", "SCIENCE"],
+    "region": "RUSSIA",
+    "profession": "STUDENT"
+  },
+  {
+    "archetype": "novosibirsk_engineer",
+    "ageRange": "AGE_35_44",
+    "interests": ["TECHNOLOGY", "AUTOMOTIVE", "OUTDOOR_RECREATION"],
+    "region": "RUSSIA",
+    "profession": "ENGINEER"
+  },
+  {
+    "archetype": "ekaterinburg_finance",
+    "ageRange": "AGE_35_44",
+    "interests": ["FINANCE", "REAL_ESTATE", "BUSINESS"],
+    "region": "RUSSIA",
+    "profession": "FINANCE_PROF"
+  },
+  {
+    "archetype": "krasnodar_parent",
+    "ageRange": "AGE_35_44",
+    "interests": ["PARENTING", "HOME_IMPROVEMENT", "COOKING"],
+    "region": "RUSSIA",
+    "profession": "RETAIL"
+  },
+  {
+    "archetype": "sochi_travel_host",
+    "ageRange": "AGE_45_54",
+    "interests": ["TRAVEL", "FOOD", "OUTDOOR_RECREATION"],
+    "region": "RUSSIA",
+    "profession": "OTHER"
+  },
+  {
+    "archetype": "perm_teacher",
+    "ageRange": "AGE_45_54",
+    "interests": ["ACADEMIC", "HISTORY", "PARENTING"],
+    "region": "RUSSIA",
+    "profession": "TEACHER"
+  },
+  {
+    "archetype": "vladivostok_fisher",
+    "ageRange": "AGE_55_64",
+    "interests": ["OUTDOOR_RECREATION", "AUTOMOTIVE", "FOOD"],
+    "region": "RUSSIA",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "ufa_healthcare",
+    "ageRange": "AGE_35_44",
+    "interests": ["MEDICAL", "FITNESS", "WELLNESS_ALTERNATIVE"],
+    "region": "RUSSIA",
+    "profession": "HEALTHCARE"
+  },
+  {
+    "archetype": "rostov_retired",
+    "ageRange": "AGE_65_PLUS",
+    "interests": ["RETIREMENT", "AGRICULTURE", "COOKING"],
+    "region": "RUSSIA",
+    "profession": "RETIRED"
+  },
+  {
+    "archetype": "nizhny_maker",
+    "ageRange": "AGE_25_34",
+    "interests": ["CRAFTS", "TECHNOLOGY", "HOME_IMPROVEMENT"],
+    "region": "RUSSIA",
+    "profession": "CREATIVE"
+  },
+  {
+    "archetype": "samara_auto",
+    "ageRange": "AGE_45_54",
+    "interests": ["AUTOMOTIVE", "SPORTS", "MUSIC"],
+    "region": "RUSSIA",
+    "profession": "TRADES"
+  },
+  {
+    "archetype": "irkutsk_ecology",
+    "ageRange": "AGE_25_34",
+    "interests": ["ENVIRONMENT", "SCIENCE", "OUTDOOR_RECREATION"],
+    "region": "RUSSIA",
+    "profession": "OTHER"
+  }
+]
