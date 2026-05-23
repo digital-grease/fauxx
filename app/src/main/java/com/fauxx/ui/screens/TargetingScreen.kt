@@ -120,7 +120,7 @@ fun TargetingScreen(
             description = "Imports your existing ad profile from Google Takeout / Facebook DYI",
             enabled = uiState.layer2Enabled,
             onToggle = { viewModel.setLayer2Enabled(it) },
-            statusText = "Last imported: ${uiState.lastScrapeDate}"
+            statusText = "Last imported: ${uiState.lastImportedDate}"
         )
 
         if (uiState.layer2Enabled) {

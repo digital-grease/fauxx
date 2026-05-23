@@ -50,7 +50,7 @@ data class TargetingUiState(
     val profession: Profession? = null,
     val region: Region? = null,
     val interests: Set<CategoryPool> = emptySet(),
-    val lastScrapeDate: String = "Never",
+    val lastImportedDate: String = "Never",
     val currentPersonaName: String? = null,
     val weights: Map<CategoryPool, Float> = emptyMap(),
     val customInterestMappings: List<InterestMapping> = emptyList(),
@@ -96,13 +96,13 @@ class TargetingViewModel @Inject constructor(
         personaLayer.currentPersona,
         targetingEngine.getWeights()
     ) { state, profile, platforms, persona, weights ->
-        val lastScrape = platforms.maxOfOrNull { it.lastScraped }
+        val lastImportedAt = platforms.maxOfOrNull { it.lastScraped }
         val customInterests = profile?.getCustomInterests().orEmpty()
         // 90-day reminder visibility derived here so the UI doesn't recompute the date math.
         val now = System.currentTimeMillis()
-        val showReminder = lastScrape != null &&
-            lastScrape > 0L &&
-            now - lastScrape > NINETY_DAYS_MS &&
+        val showReminder = lastImportedAt != null &&
+            lastImportedAt > 0L &&
+            now - lastImportedAt > NINETY_DAYS_MS &&
             now > state.importReminderMutedUntil
         state.copy(
             hasProfile = profile != null,
@@ -111,7 +111,7 @@ class TargetingViewModel @Inject constructor(
             profession = profile?.profession,
             region = profile?.region,
             interests = profile?.getInterests().orEmpty(),
-            lastScrapeDate = lastScrape?.takeIf { it > 0 }?.let { DATE_FMT.format(Date(it)) } ?: "Never",
+            lastImportedDate = lastImportedAt?.takeIf { it > 0 }?.let { DATE_FMT.format(Date(it)) } ?: "Never",
             currentPersonaName = persona?.name,
             weights = weights,
             customInterestMappings = if (customInterests.isNotEmpty())
