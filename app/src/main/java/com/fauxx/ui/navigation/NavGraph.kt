@@ -2,15 +2,19 @@ package com.fauxx.ui.navigation
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material.icons.outlined.BugReport
@@ -24,6 +28,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -41,7 +47,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.fauxx.R
+import com.fauxx.locale.SupportedLocale
 import com.fauxx.ui.screens.DashboardScreen
+import com.fauxx.ui.viewmodels.LanguagePickerViewModel
 import com.fauxx.ui.screens.FaqScreen
 import com.fauxx.ui.screens.LogScreen
 import com.fauxx.ui.screens.ModulesScreen
@@ -56,15 +64,15 @@ private const val README_URL = "https://github.com/digital-grease/fauxx#readme"
 private const val ISSUES_URL = "https://github.com/digital-grease/fauxx/issues/new/choose"
 
 /** Navigation destinations. */
-sealed class Screen(val route: String, val label: String) {
-    object Dashboard : Screen("dashboard", "Dashboard")
-    object Targeting : Screen("targeting", "Targeting")
-    object Modules : Screen("modules", "Modules")
-    object Log : Screen("log", "Log")
-    object Settings : Screen("settings", "Settings")
-    object Onboarding : Screen("onboarding", "Onboarding")
-    object About : Screen("about", "About & Privacy")
-    object Faq : Screen("faq", "FAQ")
+sealed class Screen(val route: String, @androidx.annotation.StringRes val labelRes: Int) {
+    object Dashboard : Screen("dashboard", R.string.nav_dashboard)
+    object Targeting : Screen("targeting", R.string.nav_targeting)
+    object Modules : Screen("modules", R.string.nav_modules)
+    object Log : Screen("log", R.string.nav_log)
+    object Settings : Screen("settings", R.string.nav_settings)
+    object Onboarding : Screen("onboarding", R.string.nav_onboarding)
+    object About : Screen("about", R.string.about_title)
+    object Faq : Screen("faq", R.string.faq_title)
 }
 
 private val bottomNavItems = listOf(
@@ -89,8 +97,8 @@ fun FauxxNavGraph(showOnboarding: Boolean) {
                 NavigationBar {
                     bottomNavItems.forEach { (screen, icon) ->
                         NavigationBarItem(
-                            icon = { Icon(icon, contentDescription = screen.label) },
-                            label = { Text(screen.label) },
+                            icon = { Icon(icon, contentDescription = stringResource(screen.labelRes)) },
+                            label = { Text(stringResource(screen.labelRes)) },
                             selected = currentDest?.hierarchy?.any { it.route == screen.route } == true,
                             onClick = {
                                 navController.navigate(screen.route) {
@@ -153,10 +161,13 @@ fun FauxxNavGraph(showOnboarding: Boolean) {
             }
 
             if (showHelp) {
-                HelpMenuButton(
-                    navController = navController,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
-                )
+                Row(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    LanguagePickerButton()
+                    HelpMenuButton(navController = navController)
+                }
             }
         }
     }
@@ -208,6 +219,76 @@ private fun HelpMenuButton(
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ISSUES_URL)))
                 }
             )
+        }
+    }
+}
+
+/**
+ * Quick-access language picker rendered to the left of the help-menu button. Lets the
+ * user switch app language without traversing Settings — useful for users who land in
+ * the app on a non-preferred locale and want to switch immediately.
+ *
+ * State + persistence delegated to [LanguagePickerViewModel] (which is in turn a thin
+ * wrapper over [com.fauxx.locale.LocaleManager]). The Settings screen's own picker
+ * shares the same `LocaleManager.userOverrideFlow`, so both stay in sync. Selecting an
+ * unshipped locale is a no-op in the VM, matching Settings' gating; the dropdown still
+ * renders those entries so users see the planned-locale list, but they're disabled
+ * with a "(coming soon)" suffix.
+ */
+@Composable
+private fun LanguagePickerButton(
+    modifier: Modifier = Modifier,
+    viewModel: LanguagePickerViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsState()
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                imageVector = Icons.Filled.Language,
+                contentDescription = stringResource(R.string.language_picker_content_desc),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            // System-default row: clears the override so the app follows the device locale.
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.settings_language_system_default)) },
+                leadingIcon = {
+                    if (state.userOverride == null) {
+                        Icon(Icons.Filled.Check, contentDescription = null)
+                    }
+                },
+                onClick = {
+                    expanded = false
+                    viewModel.setLanguage(null)
+                }
+            )
+            SupportedLocale.values().forEach { locale ->
+                val shipped = locale in state.shippedLocales
+                DropdownMenuItem(
+                    text = {
+                        val suffix = if (!shipped) {
+                            " (" + stringResource(R.string.settings_language_coming_soon) + ")"
+                        } else ""
+                        Text(locale.displayName + suffix)
+                    },
+                    leadingIcon = {
+                        if (state.userOverride == locale) {
+                            Icon(Icons.Filled.Check, contentDescription = null)
+                        }
+                    },
+                    enabled = shipped,
+                    onClick = {
+                        expanded = false
+                        viewModel.setLanguage(locale)
+                    }
+                )
+            }
         }
     }
 }

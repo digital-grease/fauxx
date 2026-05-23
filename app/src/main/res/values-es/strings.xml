@@ -110,6 +110,74 @@
     <string name="settings_theme_light">Claro</string>
     <string name="settings_theme_dark">Oscuro</string>
 
+    <!-- LLM-DRAFTED 2026-05-23, PENDING NATIVE-SPEAKER REVIEW -->
+    <string name="category_medical">Salud</string>
+    <string name="category_legal">Legal</string>
+    <string name="category_automotive">Automoción</string>
+    <string name="category_parenting">Crianza</string>
+    <string name="category_retirement">Jubilación</string>
+    <string name="category_gaming">Videojuegos</string>
+    <string name="category_agriculture">Agricultura</string>
+    <string name="category_fashion">Moda</string>
+    <string name="category_academic">Académico</string>
+    <string name="category_real_estate">Inmobiliario</string>
+    <string name="category_cooking">Cocina</string>
+    <string name="category_sports">Deportes</string>
+    <string name="category_finance">Finanzas</string>
+    <string name="category_travel">Viajes</string>
+    <string name="category_technology">Tecnología</string>
+    <string name="category_pets">Mascotas</string>
+    <string name="category_home_improvement">Bricolaje</string>
+    <string name="category_beauty">Belleza</string>
+    <string name="category_music">Música</string>
+    <string name="category_fitness">Fitness</string>
+    <string name="category_entertainment">Entretenimiento</string>
+    <string name="category_food">Comida</string>
+    <string name="category_politics">Política</string>
+    <string name="category_science">Ciencia</string>
+    <string name="category_business">Negocios</string>
+    <string name="category_outdoor_recreation">Aire libre</string>
+    <string name="category_crafts">Manualidades</string>
+    <string name="category_history">Historia</string>
+    <string name="category_environment">Medio ambiente</string>
+    <string name="category_military_defense">Militar y defensa</string>
+    <string name="category_wellness_alternative">Bienestar y alternativo</string>
+    <string name="category_relationships_dating">Relaciones y citas</string>
+
+    <string name="action_type_search_query">BÚSQUEDA</string>
+    <string name="action_type_ad_click">CLIC ANUNCIO</string>
+    <string name="action_type_page_visit">VISITA</string>
+    <string name="action_type_location_spoof">UBICACIÓN</string>
+    <string name="action_type_dns_lookup">DNS</string>
+    <string name="action_type_cookie_harvest">COOKIES</string>
+    <string name="action_type_deep_link_visit">ENLACE</string>
+    <string name="action_type_fingerprint_rotate">HUELLA</string>
+
+    <string name="log_screen_title">REGISTRO DE ACCIONES</string>
+    <string name="log_export_content_desc">Exportar</string>
+    <string name="log_export_csv">Exportar CSV</string>
+    <string name="log_export_json">Exportar JSON</string>
+    <string name="log_export_chooser_title">Exportar registro</string>
+    <string name="log_filter_all">Todo</string>
+    <string name="log_detail_type">Tipo</string>
+    <string name="log_detail_category">Categoría</string>
+    <string name="log_detail_detail">Detalle</string>
+    <string name="log_detail_time">Hora</string>
+    <string name="log_detail_status">Estado</string>
+    <string name="log_detail_status_success">Éxito</string>
+    <string name="log_detail_status_failed">Fallido</string>
+    <string name="crash_dialog_title">Fauxx se cerró inesperadamente</string>
+    <string name="crash_dialog_body">Fauxx falló durante la última sesión. Puedes compartir el informe de error para ayudar a diagnosticar el problema. El informe se ha depurado de datos personales.</string>
+    <string name="crash_dialog_share">Compartir informe</string>
+    <string name="crash_dialog_dismiss">Descartar</string>
+
+    <string name="nav_dashboard">Inicio</string>
+    <string name="nav_targeting">Segmentación</string>
+    <string name="nav_modules">Módulos</string>
+    <string name="nav_log">Registro</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="nav_onboarding">Bienvenida</string>
+
     <!-- Demographic enum labels (onboarding pickers) -->
     <string name="age_18_24">18–24</string>
     <string name="age_25_34">25–34</string>

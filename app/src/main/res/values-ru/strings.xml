@@ -135,6 +135,18 @@
     <string name="settings_theme_light">Светлая</string>
     <string name="settings_theme_dark">Тёмная</string>
 
+    <!-- LLM-DRAFTED 2026-05-23, PENDING NATIVE-SPEAKER REVIEW -->
+    <string name="log_screen_title">ЖУРНАЛ ДЕЙСТВИЙ</string>
+    <string name="log_export_content_desc">Экспорт</string>
+    <string name="log_detail_status_success">Успешно</string>
+    <string name="log_detail_status_failed">Ошибка</string>
+    <string name="crash_dialog_title">Fauxx завершился с ошибкой</string>
+    <string name="crash_dialog_body">Fauxx завершился с ошибкой в прошлой сессии. Вы можете поделиться отчётом о сбое, чтобы помочь диагностировать проблему. Из отчёта удалены персональные данные.</string>
+    <string name="crash_dialog_share">Отправить отчёт</string>
+    <string name="crash_dialog_dismiss">Закрыть</string>
+
+    <string name="nav_onboarding">Знакомство</string>
+
     <!-- Navigation -->
     <string name="nav_dashboard">Панель</string>
     <string name="nav_targeting">Таргетинг</string>

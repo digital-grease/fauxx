@@ -60,6 +60,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.EngineState
+import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.viewmodels.DashboardViewModel
 
 /**
@@ -233,13 +234,13 @@ fun DashboardScreen(
 
         // Current persona card
         uiState.currentPersona?.let { persona ->
+            val interestLabels = persona.interests.take(3)
+                .map { stringResource(it.displayNameRes()) }
             PersonaCard(
                 name = persona.name,
                 ageRange = persona.ageRange,
                 profession = persona.profession,
-                interests = persona.interests.take(3).joinToString(", ") {
-                    it.name.lowercase().replace("_", " ")
-                }
+                interests = interestLabels.joinToString(", ")
             )
         }
 
@@ -368,21 +369,14 @@ private val chartColors = listOf(
  */
 private fun buildChartSlices(
     distribution: Map<CategoryPool, Float>
-): List<Pair<String, Float>> {
+): List<Pair<CategoryPool?, Float>> {
     val total = distribution.values.sum()
     if (total <= 0f) return emptyList()
 
     val sorted = distribution.entries.sortedByDescending { it.value }
-    val top = sorted.take(MAX_CHART_SLICES).map { (cat, w) ->
-        cat.name.lowercase().replace("_", " ") to w
-    }
+    val top: List<Pair<CategoryPool?, Float>> = sorted.take(MAX_CHART_SLICES).map { (cat, w) -> cat to w }
     val otherWeight = sorted.drop(MAX_CHART_SLICES).sumOf { it.value.toDouble() }.toFloat()
-    // "other" is a localized aggregate-slice label. Resolved here as a literal because
-    // this function isn't @Composable; the actual displayed label is resolved by the
-    // caller via stringResource(R.string.dashboard_category_other) if needed. Kept as a
-    // sentinel string so the build doesn't break — callers should detect this and
-    // swap it out at render time. Today only ChartLegend renders these labels.
-    return if (otherWeight > 0f) top + ("__other__" to otherWeight) else top
+    return if (otherWeight > 0f) top + (null to otherWeight) else top
 }
 
 @Composable
@@ -417,7 +411,7 @@ private fun CategoryDonutCard(distribution: Map<CategoryPool, Float>) {
 }
 
 @Composable
-private fun DonutChart(slices: List<Pair<String, Float>>, total: Float) {
+private fun DonutChart(slices: List<Pair<CategoryPool?, Float>>, total: Float) {
     Canvas(modifier = Modifier.size(140.dp)) {
         if (total <= 0f) return@Canvas
 
@@ -440,7 +434,7 @@ private fun DonutChart(slices: List<Pair<String, Float>>, total: Float) {
 
 @Composable
 private fun ChartLegend(
-    slices: List<Pair<String, Float>>,
+    slices: List<Pair<CategoryPool?, Float>>,
     total: Float,
     modifier: Modifier = Modifier
 ) {
@@ -449,8 +443,8 @@ private fun ChartLegend(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         val otherLabel = stringResource(R.string.dashboard_category_other)
-        slices.forEachIndexed { index, (rawLabel, weight) ->
-            val label = if (rawLabel == "__other__") otherLabel else rawLabel
+        slices.forEachIndexed { index, (category, weight) ->
+            val label = category?.let { stringResource(it.displayNameRes()) } ?: otherLabel
             val pct = if (total > 0f) (weight / total * 100f).toInt() else 0
             Row(
                 verticalAlignment = Alignment.CenterVertically,

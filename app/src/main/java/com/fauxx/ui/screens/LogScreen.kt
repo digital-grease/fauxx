@@ -40,13 +40,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.R
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.model.ActionType
-import com.fauxx.ui.format.label
+import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.viewmodels.LogViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -83,33 +85,34 @@ fun LogScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ACTION LOG",
+                text = stringResource(R.string.log_screen_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
+            val chooserTitle = stringResource(R.string.log_export_chooser_title)
             IconButton(onClick = { showExportMenu = true }) {
-                Icon(Icons.Default.Download, "Export")
+                Icon(Icons.Default.Download, stringResource(R.string.log_export_content_desc))
                 DropdownMenu(
                     expanded = showExportMenu,
                     onDismissRequest = { showExportMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Export CSV") },
+                        text = { Text(stringResource(R.string.log_export_csv)) },
                         onClick = {
                             showExportMenu = false
                             viewModel.exportCsv { csv ->
-                                shareText(context, csv, "text/csv", "action_log.csv")
+                                shareText(context, csv, "text/csv", "action_log.csv", chooserTitle)
                             }
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Export JSON") },
+                        text = { Text(stringResource(R.string.log_export_json)) },
                         onClick = {
                             showExportMenu = false
                             viewModel.exportJson { json ->
-                                shareText(context, json, "application/json", "action_log.json")
+                                shareText(context, json, "application/json", "action_log.json", chooserTitle)
                             }
                         }
                     )
@@ -127,14 +130,14 @@ fun LogScreen(
                 FilterChip(
                     selected = uiState.filter == null,
                     onClick = { viewModel.setFilter(null) },
-                    label = { Text("All") }
+                    label = { Text(stringResource(R.string.log_filter_all)) }
                 )
             }
             items(ActionType.values()) { type ->
                 FilterChip(
                     selected = uiState.filter == type,
                     onClick = { viewModel.setFilter(type) },
-                    label = { Text(type.label) }
+                    label = { Text(stringResource(type.displayNameRes())) }
                 )
             }
         }
@@ -169,13 +172,13 @@ private fun LogEntryRow(entry: ActionLogEntity) {
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = entry.actionType.name.take(8),
+                    text = stringResource(entry.actionType.displayNameRes()),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = entry.category.name,
+                    text = stringResource(entry.category.displayNameRes()),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.tertiary
                 )
@@ -200,11 +203,14 @@ private fun LogEntryRow(entry: ActionLogEntity) {
                     Spacer(Modifier.height(8.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     Spacer(Modifier.height(8.dp))
-                    DetailRow("Type", entry.actionType.name)
-                    DetailRow("Category", entry.category.name)
-                    DetailRow("Detail", entry.detail.removePrefix("[${entry.category}] "))
-                    DetailRow("Time", FULL_DATE_FORMAT.format(Date(entry.timestamp)))
-                    DetailRow("Status", if (entry.success) "Success" else "Failed")
+                    DetailRow(stringResource(R.string.log_detail_type), stringResource(entry.actionType.displayNameRes()))
+                    DetailRow(stringResource(R.string.log_detail_category), stringResource(entry.category.displayNameRes()))
+                    DetailRow(stringResource(R.string.log_detail_detail), entry.detail.removePrefix("[${entry.category}] "))
+                    DetailRow(stringResource(R.string.log_detail_time), FULL_DATE_FORMAT.format(Date(entry.timestamp)))
+                    DetailRow(
+                        stringResource(R.string.log_detail_status),
+                        stringResource(if (entry.success) R.string.log_detail_status_success else R.string.log_detail_status_failed)
+                    )
                 }
             }
         }
@@ -234,12 +240,13 @@ private fun shareText(
     context: android.content.Context,
     text: String,
     mimeType: String,
-    filename: String
+    filename: String,
+    chooserTitle: String
 ) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = mimeType
         putExtra(Intent.EXTRA_TEXT, text)
         putExtra(Intent.EXTRA_SUBJECT, filename)
     }
-    context.startActivity(Intent.createChooser(intent, "Export Log"))
+    context.startActivity(Intent.createChooser(intent, chooserTitle))
 }

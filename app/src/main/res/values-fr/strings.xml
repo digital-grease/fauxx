@@ -110,6 +110,74 @@
     <string name="settings_theme_light">Clair</string>
     <string name="settings_theme_dark">Sombre</string>
 
+    <!-- LLM-DRAFTED 2026-05-23, PENDING NATIVE-SPEAKER REVIEW -->
+    <string name="category_medical">Santé</string>
+    <string name="category_legal">Juridique</string>
+    <string name="category_automotive">Automobile</string>
+    <string name="category_parenting">Parentalité</string>
+    <string name="category_retirement">Retraite</string>
+    <string name="category_gaming">Jeux vidéo</string>
+    <string name="category_agriculture">Agriculture</string>
+    <string name="category_fashion">Mode</string>
+    <string name="category_academic">Universitaire</string>
+    <string name="category_real_estate">Immobilier</string>
+    <string name="category_cooking">Cuisine</string>
+    <string name="category_sports">Sports</string>
+    <string name="category_finance">Finance</string>
+    <string name="category_travel">Voyages</string>
+    <string name="category_technology">Technologie</string>
+    <string name="category_pets">Animaux</string>
+    <string name="category_home_improvement">Bricolage</string>
+    <string name="category_beauty">Beauté</string>
+    <string name="category_music">Musique</string>
+    <string name="category_fitness">Fitness</string>
+    <string name="category_entertainment">Divertissement</string>
+    <string name="category_food">Alimentation</string>
+    <string name="category_politics">Politique</string>
+    <string name="category_science">Sciences</string>
+    <string name="category_business">Affaires</string>
+    <string name="category_outdoor_recreation">Plein air</string>
+    <string name="category_crafts">Artisanat</string>
+    <string name="category_history">Histoire</string>
+    <string name="category_environment">Environnement</string>
+    <string name="category_military_defense">Militaire et défense</string>
+    <string name="category_wellness_alternative">Bien-être et alternatif</string>
+    <string name="category_relationships_dating">Relations et rencontres</string>
+
+    <string name="action_type_search_query">RECHERCHE</string>
+    <string name="action_type_ad_click">CLIC PUB</string>
+    <string name="action_type_page_visit">VISITE</string>
+    <string name="action_type_location_spoof">POSITION</string>
+    <string name="action_type_dns_lookup">DNS</string>
+    <string name="action_type_cookie_harvest">COOKIES</string>
+    <string name="action_type_deep_link_visit">LIEN</string>
+    <string name="action_type_fingerprint_rotate">EMPREINTE</string>
+
+    <string name="log_screen_title">JOURNAL D\'ACTIONS</string>
+    <string name="log_export_content_desc">Exporter</string>
+    <string name="log_export_csv">Exporter CSV</string>
+    <string name="log_export_json">Exporter JSON</string>
+    <string name="log_export_chooser_title">Exporter le journal</string>
+    <string name="log_filter_all">Tout</string>
+    <string name="log_detail_type">Type</string>
+    <string name="log_detail_category">Catégorie</string>
+    <string name="log_detail_detail">Détail</string>
+    <string name="log_detail_time">Heure</string>
+    <string name="log_detail_status">État</string>
+    <string name="log_detail_status_success">Succès</string>
+    <string name="log_detail_status_failed">Échec</string>
+    <string name="crash_dialog_title">Fauxx a planté</string>
+    <string name="crash_dialog_body">Fauxx a planté lors de la dernière session. Vous pouvez partager le rapport d\'incident pour aider à diagnostiquer le problème. Le rapport a été nettoyé des données personnelles.</string>
+    <string name="crash_dialog_share">Partager le rapport</string>
+    <string name="crash_dialog_dismiss">Ignorer</string>
+
+    <string name="nav_dashboard">Tableau de bord</string>
+    <string name="nav_targeting">Ciblage</string>
+    <string name="nav_modules">Modules</string>
+    <string name="nav_log">Journal</string>
+    <string name="nav_settings">Paramètres</string>
+    <string name="nav_onboarding">Bienvenue</string>
+
     <!-- Demographic enum labels (onboarding pickers) -->
     <string name="age_18_24">18–24</string>
     <string name="age_25_34">25–34</string>

@@ -227,11 +227,13 @@ private fun ProfileSummaryCard(
             ProfileSummaryRow(label = stringResource(R.string.targeting_profile_row_gender), value = state.gender?.let { stringResource(it.displayNameRes()) })
             ProfileSummaryRow(label = stringResource(R.string.targeting_profile_row_profession), value = state.profession?.let { stringResource(it.displayNameRes()) })
             ProfileSummaryRow(label = stringResource(R.string.targeting_profile_row_region), value = state.region?.let { stringResource(it.displayNameRes()) })
+            val interestsValue = if (state.interests.isEmpty()) null
+            else state.interests
+                .map { stringResource(it.displayNameRes()) }
+                .joinToString(", ")
             ProfileSummaryRow(
                 label = stringResource(R.string.targeting_profile_row_interests),
-                value = if (state.interests.isEmpty()) null
-                else state.interests
-                    .joinToString(", ") { it.name.lowercase().replace('_', ' ') }
+                value = interestsValue
             )
 
             Spacer(Modifier.height(12.dp))
@@ -351,7 +353,7 @@ private fun WeightChart(weights: Map<CategoryPool, Float>) {
                         else -> MaterialTheme.colorScheme.secondary                       // Neutral
                     }
                     WeightBar(
-                        label = category.name.lowercase().replace("_", " "),
+                        label = stringResource(category.displayNameRes()),
                         value = weight / maxWeight,
                         color = barColor
                     )
@@ -422,7 +424,7 @@ private fun CustomInterestsCard(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     mappings.forEachIndexed { index, mapping ->
-                        val categoryLabel = mapping.category?.name?.lowercase()?.replace("_", " ")
+                        val categoryLabel = mapping.category?.let { stringResource(it.displayNameRes()) }
                         val label = if (categoryLabel != null) {
                             stringResource(R.string.targeting_custom_interest_mapped, mapping.interest, categoryLabel)
                         } else {

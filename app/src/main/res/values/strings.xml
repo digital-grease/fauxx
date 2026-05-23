@@ -105,6 +105,77 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
 
+    <!-- Content category labels — shown on Onboarding chips, Dashboard distribution, Targeting weights -->
+    <string name="category_medical">Medical</string>
+    <string name="category_legal">Legal</string>
+    <string name="category_automotive">Automotive</string>
+    <string name="category_parenting">Parenting</string>
+    <string name="category_retirement">Retirement</string>
+    <string name="category_gaming">Gaming</string>
+    <string name="category_agriculture">Agriculture</string>
+    <string name="category_fashion">Fashion</string>
+    <string name="category_academic">Academic</string>
+    <string name="category_real_estate">Real estate</string>
+    <string name="category_cooking">Cooking</string>
+    <string name="category_sports">Sports</string>
+    <string name="category_finance">Finance</string>
+    <string name="category_travel">Travel</string>
+    <string name="category_technology">Technology</string>
+    <string name="category_pets">Pets</string>
+    <string name="category_home_improvement">Home improvement</string>
+    <string name="category_beauty">Beauty</string>
+    <string name="category_music">Music</string>
+    <string name="category_fitness">Fitness</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_food">Food</string>
+    <string name="category_politics">Politics</string>
+    <string name="category_science">Science</string>
+    <string name="category_business">Business</string>
+    <string name="category_outdoor_recreation">Outdoor recreation</string>
+    <string name="category_crafts">Crafts</string>
+    <string name="category_history">History</string>
+    <string name="category_environment">Environment</string>
+    <string name="category_military_defense">Military &amp; defense</string>
+    <string name="category_wellness_alternative">Wellness &amp; alternative</string>
+    <string name="category_relationships_dating">Relationships &amp; dating</string>
+
+    <!-- Action type labels — shown on Log screen filter chips and entries -->
+    <string name="action_type_search_query">SEARCH</string>
+    <string name="action_type_ad_click">AD CLICK</string>
+    <string name="action_type_page_visit">PAGE VISIT</string>
+    <string name="action_type_location_spoof">LOCATION</string>
+    <string name="action_type_dns_lookup">DNS</string>
+    <string name="action_type_cookie_harvest">COOKIES</string>
+    <string name="action_type_deep_link_visit">DEEP LINK</string>
+    <string name="action_type_fingerprint_rotate">FINGERPRINT</string>
+
+    <!-- Log screen + crash dialog -->
+    <string name="log_screen_title">ACTION LOG</string>
+    <string name="log_export_content_desc">Export</string>
+    <string name="log_export_csv">Export CSV</string>
+    <string name="log_export_json">Export JSON</string>
+    <string name="log_export_chooser_title">Export Log</string>
+    <string name="log_filter_all">All</string>
+    <string name="log_detail_type">Type</string>
+    <string name="log_detail_category">Category</string>
+    <string name="log_detail_detail">Detail</string>
+    <string name="log_detail_time">Time</string>
+    <string name="log_detail_status">Status</string>
+    <string name="log_detail_status_success">Success</string>
+    <string name="log_detail_status_failed">Failed</string>
+    <string name="crash_dialog_title">Fauxx Crashed</string>
+    <string name="crash_dialog_body">Fauxx crashed during the last session. You can share the crash report to help diagnose the issue. The report has been scrubbed of personal data.</string>
+    <string name="crash_dialog_share">Share Report</string>
+    <string name="crash_dialog_dismiss">Dismiss</string>
+
+    <!-- Bottom navigation labels -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_targeting">Targeting</string>
+    <string name="nav_modules">Modules</string>
+    <string name="nav_log">Log</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_onboarding">Onboarding</string>
+
     <!-- Demographic enum labels (onboarding pickers) -->
     <string name="age_18_24">18–24</string>
     <string name="age_25_34">25–34</string>
