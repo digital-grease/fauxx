@@ -96,6 +96,14 @@ android {
     lint {
         abortOnError = true
         warningsAsErrors = false
+        // Baseline freezes the set of pre-existing lint issues so the build only fails
+        // on newly-introduced ones. Primary use case: community-contributed locales
+        // (e.g. ru, PR #30) that land structurally complete but lack full UI-string
+        // coverage. Without a baseline, the ~130 missing-translation errors would
+        // block the build; with one, we accept the gap as known and keep the check
+        // armed for any *new* MissingTranslation regressions (e.g. an EN-only string
+        // added without a corresponding ES/FR translation).
+        baseline = file("lint-baseline.xml")
     }
 
     testOptions {

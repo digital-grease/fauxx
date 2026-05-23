@@ -1,9 +1,15 @@
 package com.fauxx.locale
 
+import android.content.Context
+import android.os.Build
+import android.os.LocaleList
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import com.fauxx.di.PreferenceKeys
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,6 +45,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class LocaleManager @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val dataStore: DataStore<Preferences>
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -76,12 +83,19 @@ class LocaleManager @Inject constructor(
         .distinctUntilChanged()
 
     /**
-     * Persist a user choice. Pass null to clear the override and follow system locale.
+     * Persist a user choice AND apply it to the system per-app-language store so the UI
+     * recreates with the new locale's resources. Pass null to clear the override and
+     * follow the system locale.
      *
-     * NOTE: This only persists the preference. The caller is responsible for triggering
-     * the actual UI re-render via `AppCompatDelegate.setApplicationLocales()` so that
-     * resource lookups (`getString(...)`) resolve to the new locale's `values-<tag>/`
-     * directory. See [com.fauxx.ui.MainActivity] for the wiring.
+     * Application path differs by API:
+     *  - **API 33+ (Tiramisu)**: directly via [android.app.LocaleManager.setApplicationLocales].
+     *    Triggers Activity recreate via the OS per-app-language API.
+     *  - **API 26-32**: falls back to [AppCompatDelegate.setApplicationLocales]. **Caveat**:
+     *    that path is only reliable when the hosting activity is an `AppCompatActivity`;
+     *    [com.fauxx.ui.MainActivity] is a `ComponentActivity`, so the recreate may not
+     *    fire on older devices. Pre-Tiramisu users may need to relaunch the app after a
+     *    language change for the UI to refresh — a tradeoff worth revisiting if support
+     *    requests come in from API 32-and-earlier users.
      */
     suspend fun setUserOverride(locale: SupportedLocale?) {
         dataStore.edit { prefs ->
@@ -90,6 +104,25 @@ class LocaleManager @Inject constructor(
             } else {
                 prefs[PreferenceKeys.LANGUAGE_OVERRIDE] = locale.tag
             }
+        }
+        applyToSystem(locale)
+    }
+
+    private fun applyToSystem(locale: SupportedLocale?) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val sysLocaleManager = context.getSystemService(android.app.LocaleManager::class.java)
+            sysLocaleManager?.applicationLocales = if (locale == null) {
+                LocaleList.getEmptyLocaleList()
+            } else {
+                LocaleList.forLanguageTags(locale.tag)
+            }
+        } else {
+            val appCompatLocales = if (locale == null) {
+                LocaleListCompat.getEmptyLocaleList()
+            } else {
+                LocaleListCompat.forLanguageTags(locale.tag)
+            }
+            AppCompatDelegate.setApplicationLocales(appCompatLocales)
         }
     }
 

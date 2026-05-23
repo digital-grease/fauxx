@@ -1,7 +1,5 @@
 package com.fauxx.ui.viewmodels
 
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fauxx.BuildConfig
@@ -102,13 +100,10 @@ class SettingsViewModel @Inject constructor(
      */
     fun setLanguage(locale: SupportedLocale?) {
         if (locale != null && locale !in shippedLocales) return
+        // LocaleManager.setUserOverride handles both persistence + system per-app-language
+        // application (which drives the activity recreate). See LocaleManager docs for
+        // the per-API behavior split.
         viewModelScope.launch { localeManager.setUserOverride(locale) }
-        val appCompatLocales = if (locale == null) {
-            LocaleListCompat.getEmptyLocaleList()
-        } else {
-            LocaleListCompat.forLanguageTags(locale.tag)
-        }
-        AppCompatDelegate.setApplicationLocales(appCompatLocales)
     }
 
     /** Delete all locally-stored data and reset settings to defaults. */
