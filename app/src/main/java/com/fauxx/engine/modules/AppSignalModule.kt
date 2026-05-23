@@ -1,18 +1,21 @@
 package com.fauxx.engine.modules
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import timber.log.Timber
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 /**
  * Per-locale Play Store search-keyword table. The active locale's entry seeds the
@@ -148,10 +151,13 @@ private const val DEFAULT_KEYWORDS = "productivity+tools"
 class AppSignalModule @Inject constructor(
     @ApplicationContext private val context: Context,
     private val profileRepo: PoisonProfileRepository,
+    private val webViewPool: PhantomWebViewPool,
     private val localeManager: LocaleManager
 ) : Module {
 
-    override suspend fun start() {}
+    override suspend fun start() {
+        webViewPool.initialize()
+    }
     override suspend fun stop() {}
 
     override fun isEnabled(): Boolean = profileRepo.getProfile().appSignalEnabled
@@ -162,22 +168,40 @@ class AppSignalModule @Inject constructor(
             ?: CATEGORY_APP_KEYWORDS[SupportedLocale.EN]?.get(category)
             ?: DEFAULT_KEYWORDS
         val url = "https://play.google.com/store/search?q=$keywords&c=apps&hl=${locale.tag}"
+        // Defensive precondition: URL is internally constructed but assert host so any
+        // future change that lets caller-controlled data into the URL fails fast here
+        // rather than in the WebView.
+        check(url.startsWith("https://play.google.com/store/")) {
+            "AppSignal URL must remain on play.google.com — refusing to load $url"
+        }
 
-        try {
-            // Use implicit intent — fires attribution pixels without opening full browser
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        // Load Play Store search in a background WebView. Fires the same server-side
+        // analytics + JS attribution pixels Google sees from any browser hit, without
+        // launching the Play Store app — the prior ACTION_VIEW intent path let the
+        // OS intent resolver pick Play Store, which yanked the foreground from the
+        // user mid-task. PhantomWebViewClient.shouldOverrideUrlLoading also rejects
+        // navigations to blocklisted hosts; non-http schemes (market://) fail
+        // silently in WebView.
+        val dwellMs = (3_000L..8_000L).random()
+        val success = withContext(Dispatchers.Main) {
+            val webView = webViewPool.acquire()
+            try {
+                webView.loadUrl(url)
+                delay(dwellMs)
+                true
+            } catch (e: Exception) {
+                Timber.w("App signal load failed: ${e.message}")
+                false
+            } finally {
+                webViewPool.release(webView)
             }
-            // Note: this will open Play Store or browser — guard with try/catch
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            Timber.w("Failed to open app signal URL: ${e.message}")
         }
 
         return ActionLogEntity(
             actionType = ActionType.DEEP_LINK_VISIT,
             category = category,
-            detail = url
+            detail = url,
+            success = success
         )
     }
 }
