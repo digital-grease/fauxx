@@ -175,6 +175,7 @@
     <string name="nav_log">Log</string>
     <string name="nav_settings">Settings</string>
     <string name="nav_onboarding">Onboarding</string>
+    <string name="nav_back_content_desc">Back</string>
 
     <!-- Demographic enum labels (onboarding pickers) -->
     <string name="age_18_24">18–24</string>

@@ -58,7 +58,7 @@ fun AboutScreen(onBack: () -> Unit) {
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.nav_back_content_desc),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }

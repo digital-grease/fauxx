@@ -146,6 +146,7 @@
     <string name="crash_dialog_dismiss">Закрыть</string>
 
     <string name="nav_onboarding">Знакомство</string>
+    <string name="nav_back_content_desc">Назад</string>
 
     <!-- Navigation -->
     <string name="nav_dashboard">Панель</string>

@@ -177,6 +177,7 @@
     <string name="nav_log">Registro</string>
     <string name="nav_settings">Ajustes</string>
     <string name="nav_onboarding">Bienvenida</string>
+    <string name="nav_back_content_desc">Atrás</string>
 
     <!-- Demographic enum labels (onboarding pickers) -->
     <string name="age_18_24">18–24</string>

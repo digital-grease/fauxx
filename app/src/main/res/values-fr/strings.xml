@@ -177,6 +177,7 @@
     <string name="nav_log">Journal</string>
     <string name="nav_settings">Paramètres</string>
     <string name="nav_onboarding">Bienvenue</string>
+    <string name="nav_back_content_desc">Retour</string>
 
     <!-- Demographic enum labels (onboarding pickers) -->
     <string name="age_18_24">18–24</string>
