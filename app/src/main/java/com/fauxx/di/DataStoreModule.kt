@@ -82,18 +82,10 @@ object PreferenceKeys {
     val FGS_BUDGET_WINDOW_START = androidx.datastore.preferences.core.longPreferencesKey("fgs_budget_window_start")
     val FGS_BUDGET_USED_MS = androidx.datastore.preferences.core.longPreferencesKey("fgs_budget_used_ms")
 
-    // Layer 2 import (issue #52). The in-app scraper was retired in v0.3.0 — these prefs
-    // gate the UI nudges that explain the new user-driven import flow.
-    //
-    // STALE_SCRAPE_CACHE_NOTICE_SHOWN: true once the user has dismissed the one-time
-    // "your old scraped cache is stale, import a fresh archive" notice. Persists across
-    // restarts so we never re-nag.
-    //
-    // IMPORT_REMINDER_MUTED_UNTIL: epoch ms after which the 90-day-old-import banner is
-    // allowed to show again. Set to (now + 30 days) on Snooze, set to Long.MAX_VALUE on
-    // permanent-mute. 0 (default) means the banner can show now if its 90-day trigger
-    // condition is met.
-    val STALE_SCRAPE_CACHE_NOTICE_SHOWN = booleanPreferencesKey("stale_scrape_cache_notice_shown")
+    // Layer 2 import (issue #52). IMPORT_REMINDER_MUTED_UNTIL is the epoch ms after
+    // which the 90-day-old-import banner is allowed to show again. Set to (now + 30
+    // days) on Snooze, set to Long.MAX_VALUE on permanent-mute. 0 (default) means the
+    // banner can show now if its 90-day trigger condition is met.
     val IMPORT_REMINDER_MUTED_UNTIL = androidx.datastore.preferences.core.longPreferencesKey("import_reminder_muted_until")
 }
 

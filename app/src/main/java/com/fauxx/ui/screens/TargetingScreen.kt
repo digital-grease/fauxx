@@ -124,12 +124,6 @@ fun TargetingScreen(
         )
 
         if (uiState.layer2Enabled) {
-            // One-time post-v0.3.0 notice: existing cache rows came from the retired
-            // scraper. We keep using them so the user's L2 weights don't go cold, but
-            // we surface the fact that they're stale until the user imports fresh data.
-            if (uiState.showStaleCacheNotice) {
-                StaleCacheBanner(onDismiss = { viewModel.dismissStaleCacheNotice() })
-            }
             // 90-day reminder. Muteable (snooze / permanent) so it doesn't nag.
             if (uiState.showImportReminder) {
                 ImportReminderBanner(
@@ -595,42 +589,6 @@ private fun ImportResultRow(result: ImportResult, onDismiss: () -> Unit) {
                 modifier = Modifier.size(16.dp),
                 tint = tint
             )
-        }
-    }
-}
-
-/**
- * One-time notice rendered on the first launch of v0.3.0 if the user has any
- * PlatformProfileCache rows left over from the retired in-app scraper. The cache rows
- * still feed AdversarialScraperLayer in the meantime so the user's L2 weights don't
- * drop to neutral — this banner just explains the change and points at the new flow.
- * Dismissal is permanent (one boolean pref).
- */
-@Composable
-private fun StaleCacheBanner(onDismiss: () -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Layer 2 now imports your ad profile from a file instead of " +
-                    "auto-scraping (the in-app scraper couldn't reach your signed-in " +
-                    "session). Your existing weights stay until you import a fresh archive.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = onDismiss) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = "Dismiss",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer
-                )
-            }
         }
     }
 }

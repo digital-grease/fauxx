@@ -59,16 +59,12 @@ data class TargetingUiState(
     // most recent outcome shown to the user — auto-clears after a short display window.
     val importInProgress: ImportSource? = null,
     val lastImportResult: ImportResult? = null,
-    // Banner visibility — derived in the combine() block from prefs + cache state.
-    // [showStaleCacheNotice] fires once after upgrade to v0.3.0 if a pre-v0.3.0 scrape
-    // left cache rows behind; user dismisses via the X.
-    // [showImportReminder] fires if the most recent import is > 90 days old and the user
-    // hasn't snoozed/muted it.
-    val showStaleCacheNotice: Boolean = false,
+    // [showImportReminder] fires if the most recent import is > 90 days old and the
+    // user hasn't snoozed/muted it. Derived in the combine() block from cache state +
+    // the mute-until pref mirrored via [importReminderMutedUntil].
     val showImportReminder: Boolean = false,
     // Internal: mirrored from DataStore by an init-launched collector so the combine()
-    // block has them available without exceeding the 5-flow overload limit.
-    val staleCacheNoticeDismissed: Boolean = false,
+    // block has it available without exceeding the 5-flow overload limit.
     val importReminderMutedUntil: Long = 0L
 )
 
@@ -102,10 +98,8 @@ class TargetingViewModel @Inject constructor(
     ) { state, profile, platforms, persona, weights ->
         val lastScrape = platforms.maxOfOrNull { it.lastScraped }
         val customInterests = profile?.getCustomInterests().orEmpty()
-        // Banner visibility derived here so the UI doesn't have to recompute the date math.
+        // 90-day reminder visibility derived here so the UI doesn't recompute the date math.
         val now = System.currentTimeMillis()
-        val hasAnyCache = platforms.any { it.lastScraped > 0 }
-        val showStale = hasAnyCache && !state.staleCacheNoticeDismissed
         val showReminder = lastScrape != null &&
             lastScrape > 0L &&
             now - lastScrape > NINETY_DAYS_MS &&
@@ -123,7 +117,6 @@ class TargetingViewModel @Inject constructor(
             customInterestMappings = if (customInterests.isNotEmpty())
                 customInterestMapper.mapAll(customInterests)
             else emptyList(),
-            showStaleCacheNotice = showStale,
             showImportReminder = showReminder
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TargetingUiState())
@@ -135,13 +128,12 @@ class TargetingViewModel @Inject constructor(
             layer2Enabled = profile.layer2Enabled,
             layer3Enabled = profile.layer3Enabled
         )
-        // Bridge the import-banner-related prefs into _state. Kept off the main combine()
-        // because combine() taps out at 5 typed flows — a separate collector preserves
-        // reactivity without forcing the nested-combine plumbing.
+        // Bridge the 90-day-reminder mute-until pref into _state. Kept off the main
+        // combine() because combine() taps out at 5 typed flows — a separate collector
+        // preserves reactivity without forcing the nested-combine plumbing.
         viewModelScope.launch {
             context.fauxxDataStore.data.collect { prefs ->
                 _state.value = _state.value.copy(
-                    staleCacheNoticeDismissed = prefs[PreferenceKeys.STALE_SCRAPE_CACHE_NOTICE_SHOWN] ?: false,
                     importReminderMutedUntil = prefs[PreferenceKeys.IMPORT_REMINDER_MUTED_UNTIL] ?: 0L
                 )
             }
@@ -190,18 +182,6 @@ class TargetingViewModel @Inject constructor(
     /** Tap on the result banner — clears it without waiting for the auto-dismiss timer. */
     fun dismissImportResult() {
         _state.value = _state.value.copy(lastImportResult = null)
-    }
-
-    /**
-     * One-time dismissal of the post-v0.3.0 "your old scrape cache is stale" notice.
-     * Writes a permanent flag — banner never shows again on this device.
-     */
-    fun dismissStaleCacheNotice() {
-        viewModelScope.launch {
-            context.fauxxDataStore.edit { prefs ->
-                prefs[PreferenceKeys.STALE_SCRAPE_CACHE_NOTICE_SHOWN] = true
-            }
-        }
     }
 
     /** Hide the 90-day-old-import reminder for 30 days. */
