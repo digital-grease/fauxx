@@ -14,7 +14,6 @@ import com.fauxx.data.model.IntensityLevel
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.QueryBankManager
-import com.fauxx.engine.FgsBudgetTracker
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.modules.AppSignalModule
@@ -243,10 +242,6 @@ class EngineResumeSchedulerIntegrationTest {
         val context: android.content.Context = mockk(relaxed = true) {
             every { getSystemService(android.content.Context.CONNECTIVITY_SERVICE) } returns connectivityManager
         }
-        val budgetTracker: FgsBudgetTracker = mockk(relaxed = true) {
-            every { remainingBudgetMs() } returns FgsBudgetTracker.BUDGET_MS
-            every { nextWindowResetMs() } returns clock.currentTimeMillis() + 60 * 60 * 1000L
-        }
         return PoisonEngine(
             context, profileRepo, targetingEngine, dispatcher, scheduler, actionLogDao,
             blocklist, queryBankManager, crawlListManager, cityDatabase,
@@ -266,7 +261,6 @@ class EngineResumeSchedulerIntegrationTest {
                 every { isEnabled() } returns false
             },
             clock = clock,
-            budgetTracker = budgetTracker,
             loopDispatcher = loopDispatcher
         )
     }

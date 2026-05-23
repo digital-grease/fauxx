@@ -2,14 +2,18 @@
 <!--
     Full (F-Droid / GitHub) flavor manifest overlay.
 
-    F-Droid does not enforce Google's foreground-service-type policy. We keep
-    "dataSync" here because it is the closest runtime-accurate match for the
-    engine's long-running background-network role on Android 14+.
+    Uses "specialUse" FGS type to match the play flavor — the runtime semantics
+    are identical (continuous synthetic background traffic for privacy poisoning),
+    and "specialUse" has no Android-enforced cumulative-runtime cap. "dataSync"
+    was the original choice (closest plain-English match) but its 6h-per-24h cap
+    on Android 14+ drove the FgsBudgetTracker machinery and a string of crashes
+    (#64/#65). F-Droid does not enforce Google's FGS-type policy, so the same
+    subtype rationale that satisfies Play also stands for F-Droid.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!--
         Mock-location permission for the Location Spoof module. Android's "Select
@@ -28,8 +32,12 @@
     <application>
         <service
             android:name=".service.PhantomForegroundService"
-            android:foregroundServiceType="dataSync"
-            tools:node="merge" />
+            android:foregroundServiceType="specialUse"
+            tools:node="merge">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Generates synthetic, off-profile browsing activity continuously in the background to dilute user-identifying signal available to third-party data brokers and ad-tech trackers. The service cannot be an instant-off/on worker because its privacy value depends on maintaining a stable, human-like traffic rhythm (Poisson-distributed cadence, 5-20 minute gaps, circadian quiet hours) that short-lived tasks cannot sustain." />
+        </service>
     </application>
 
 </manifest>

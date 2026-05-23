@@ -72,16 +72,6 @@ object PreferenceKeys {
     // Read by com.fauxx.locale.LocaleManager.
     val LANGUAGE_OVERRIDE = stringPreferencesKey("language_override")
 
-    // Foreground-service runtime budget tracker. Android 14+ enforces a 6h cumulative
-    // dataSync FGS runtime per rolling 24h while backgrounded; if our in-process timer
-    // missed past-session contributions, the next session could still hit the OS limit.
-    // FGS_BUDGET_WINDOW_START = wall-clock epoch ms when the current 24h budget window
-    // began (set to "now" on first session after a reset); FGS_BUDGET_USED_MS = total
-    // FGS runtime credited to that window so far. Reset by FgsBudgetTracker when the
-    // window age exceeds 24h.
-    val FGS_BUDGET_WINDOW_START = androidx.datastore.preferences.core.longPreferencesKey("fgs_budget_window_start")
-    val FGS_BUDGET_USED_MS = androidx.datastore.preferences.core.longPreferencesKey("fgs_budget_used_ms")
-
     // Layer 2 import (issue #52). IMPORT_REMINDER_MUTED_UNTIL is the epoch ms after
     // which the 90-day-old-import banner is allowed to show again. Set to (now + 30
     // days) on Snooze, set to Long.MAX_VALUE on permanent-mute. 0 (default) means the

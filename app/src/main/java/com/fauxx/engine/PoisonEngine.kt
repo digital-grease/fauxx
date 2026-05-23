@@ -109,14 +109,6 @@ private const val MODULE_STOP_TIMEOUT_MS = 2_000L
 private const val LONG_PAUSE_THRESHOLD_MS = 30L * 60 * 1000
 
 /**
- * Hard runtime safety net. Android 14+ kills `dataSync` foreground services at 6h of
- * cumulative background runtime per 24h. We resign at 5h to keep a 1h margin and avoid
- * the [android.app.RemoteServiceException.ForegroundServiceDidNotStopInTimeException]
- * crashes reported by F-Droid users.
- */
-private const val FGS_HARD_LIMIT_MS = 5L * 60 * 60 * 1000
-
-/**
  * Decision returned by [PoisonEngine.decidePauseAction]: either keep the current
  * delay-loop ([Continue]) or [Resign] from the foreground service and schedule a
  * resume notification when the constraint clears.
@@ -154,7 +146,6 @@ class PoisonEngine @Inject constructor(
     private val appSignalModule: AppSignalModule,
     private val dnsModule: DnsNoiseModule,
     private val clock: Clock,
-    private val budgetTracker: FgsBudgetTracker,
     /**
      * Dispatcher the engine's main loop runs on. Provided by [com.fauxx.di.DispatchersModule]
      * as [Dispatchers.IO] in production; tests substitute a `TestDispatcher` so `runLoop`
@@ -185,14 +176,6 @@ class PoisonEngine @Inject constructor(
 
     /** Set true once [runLoop] has invoked [onLongPause] for the current run, to avoid double-firing. */
     private var hasResigned: Boolean = false
-
-    /**
-     * Effective FGS-runtime limit for the *current* engine session, computed from
-     * the persisted 24h budget on each [start]. Falls back to [FGS_HARD_LIMIT_MS]
-     * if the budget tracker hasn't been initialised (cold cache). Treated as
-     * "session cap" — when elapsed since start exceeds this, the engine resigns.
-     */
-    private var sessionBudgetMs: Long = FGS_HARD_LIMIT_MS
 
     /** Tracks consecutive failure count per module class name. */
     private val failureCounts = ConcurrentHashMap<String, Int>()
@@ -302,22 +285,6 @@ class PoisonEngine @Inject constructor(
         pauseEnteredAtElapsedMs = 0L
         lastPauseState = EngineState.ACTIVE
         hasResigned = false
-        // Cap this session's effective limit by what the cross-session 24h budget
-        // has left. min() because we never want to exceed FGS_HARD_LIMIT_MS even
-        // with a fresh budget — that's our intra-session safety net.
-        sessionBudgetMs = minOf(FGS_HARD_LIMIT_MS, budgetTracker.remainingBudgetMs())
-        Timber.i("Engine session budget = ${sessionBudgetMs}ms (${sessionBudgetMs / 60_000}min)")
-        if (sessionBudgetMs <= 0L) {
-            // Cross-session 24h budget already spent. Don't enter the run loop — it
-            // would resign on the first iteration and produce a tight start-resign
-            // cycle on every Reconcile until the budget window expires. Issues #64/#65.
-            hasResigned = true
-            val resumeAt = budgetTracker.nextWindowResetMs()
-            Timber.i("Engine refusing to start — 24h FGS budget exhausted; resume at $resumeAt")
-            _engineState.value = EngineState.STOPPED
-            onLongPause?.invoke(ResumeSpec.AtTime(resumeAt))
-            return
-        }
         registerConstraintReceivers()
         engineJob = scope.launch {
             // Sync targeting layer enable flags from persisted profile
@@ -369,9 +336,6 @@ class PoisonEngine @Inject constructor(
      * engine's IO scope with a bounded timeout. Never blocks the caller.
      */
     fun stop() {
-        val sessionDurationMs = if (engineStartElapsedMs != 0L && !hasResigned) {
-            clock.elapsedRealtime() - engineStartElapsedMs
-        } else 0L
         engineJob?.cancel()
         engineJob = null
         _engineState.value = EngineState.STOPPED
@@ -379,12 +343,6 @@ class PoisonEngine @Inject constructor(
         unregisterConstraintReceivers()
         val modules = allModules
         scope.launch {
-            // Credit this user-initiated stop's session to the budget tracker if
-            // we haven't already (resign paths record their own).
-            if (sessionDurationMs > 0) {
-                runCatching { budgetTracker.recordSession(sessionDurationMs) }
-                    .onFailure { Timber.e(it, "Failed to record FGS session duration on stop") }
-            }
             withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
                 modules.forEach { runCatching { it.stop() } }
             } ?: Timber.w("Module stop timed out after ${MODULE_STOP_TIMEOUT_MS}ms")
@@ -397,9 +355,6 @@ class PoisonEngine @Inject constructor(
      * to ensure no leaked coroutines survive process cleanup.
      */
     fun destroy() {
-        val sessionDurationMs = if (engineStartElapsedMs != 0L && !hasResigned) {
-            clock.elapsedRealtime() - engineStartElapsedMs
-        } else 0L
         engineJob?.cancel()
         engineJob = null
         _engineState.value = EngineState.STOPPED
@@ -409,10 +364,6 @@ class PoisonEngine @Inject constructor(
         // Fire-and-forget teardown; scope is cancelled after a short grace period so the
         // launched stop coroutine has a chance to run. Bounded by timeout to avoid leaks.
         scope.launch {
-            if (sessionDurationMs > 0) {
-                runCatching { budgetTracker.recordSession(sessionDurationMs) }
-                    .onFailure { Timber.e(it, "Failed to record FGS session duration on destroy") }
-            }
             withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
                 modules.forEach { runCatching { it.stop() } }
             }
@@ -492,15 +443,6 @@ class PoisonEngine @Inject constructor(
             // Reset pause tracking on a successful constraint check
             lastPauseState = EngineState.ACTIVE
             pauseEnteredAtElapsedMs = 0L
-
-            // Hard safety net even when constraints pass — protect the FGS budget so a
-            // user who keeps the app active without ever pausing still doesn't crash.
-            // sessionBudgetMs accounts for cross-session 24h cumulative usage.
-            if (!hasResigned && clock.elapsedRealtime() - engineStartElapsedMs >= sessionBudgetMs) {
-                val spec = ResumeSpec.AtTime(budgetTracker.nextWindowResetMs())
-                resignAndRecord(state = null, spec = spec, reason = "FGS budget exhausted")
-                return
-            }
 
             // Per-hour rate limit: prune stale timestamps and check cap
             val rateLimitNow = clock.currentTimeMillis()
@@ -656,19 +598,15 @@ class PoisonEngine @Inject constructor(
 
     /**
      * Mark the engine resigned, credit this session's runtime to the cross-session
-     * budget tracker, and invoke the [onLongPause] callback. Centralised so every
-     * resign path (pause-triggered, hard-limit-triggered, budget-exhausted) records
-     * the session — the original cumulative-budget gap came from forgetting one path.
+     * and invoke the [onLongPause] callback.
      */
-    private suspend fun resignAndRecord(
+    private fun resignAndRecord(
         state: EngineState?,
         spec: ResumeSpec,
         reason: String? = null
     ) {
         hasResigned = true
         val sessionDurationMs = clock.elapsedRealtime() - engineStartElapsedMs
-        runCatching { budgetTracker.recordSession(sessionDurationMs) }
-            .onFailure { Timber.e(it, "Failed to record FGS session duration") }
         val ctx = reason ?: state?.toString() ?: "unknown"
         Timber.i("Engine resigning ($ctx) after ${sessionDurationMs}ms; resume spec: $spec")
         onLongPause?.invoke(spec)
@@ -679,14 +617,11 @@ class PoisonEngine @Inject constructor(
      * (stop the FGS and schedule a resume notification).
      *
      * Rules:
-     * - [EngineState.PAUSED_QUIET_HOURS]: always resign — quiet hours can be 8+ hours long,
-     *   far exceeding the 6h Android-14+ `dataSync` FGS budget.
+     * - [EngineState.PAUSED_QUIET_HOURS]: always resign — quiet hours can be 8+ hours long
+     *   and there is no value in holding the FGS through them.
      * - [EngineState.PAUSED_WIFI] / [EngineState.PAUSED_BATTERY]: resign once the pause has
      *   lasted [LONG_PAUSE_THRESHOLD_MS]. Short blips (commute, brief WiFi drop) keep the
-     *   FGS up, but sustained pauses release the budget.
-     * - Cumulative FGS runtime ≥ [FGS_HARD_LIMIT_MS]: always resign, regardless of state.
-     *   This catches edge cases where the user is on cellular all day with wifiOnly off, or
-     *   active hours span >5h continuously.
+     *   FGS up; sustained pauses release it so the system can reclaim resources.
      */
     @VisibleForTesting
     internal fun decidePauseAction(
@@ -696,19 +631,6 @@ class PoisonEngine @Inject constructor(
         totalRuntimeMs: Long,
         nowMs: Long = clock.currentTimeMillis()
     ): PauseDecision {
-        if (totalRuntimeMs >= FGS_HARD_LIMIT_MS) {
-            val spec: ResumeSpec = when (state) {
-                EngineState.PAUSED_QUIET_HOURS ->
-                    ResumeSpec.AtTime(nextAllowedHoursStartMs(currentProfile, nowMs))
-                EngineState.PAUSED_WIFI ->
-                    ResumeSpec.WhenConstraintMet(network = NetworkType.UNMETERED)
-                EngineState.PAUSED_BATTERY ->
-                    ResumeSpec.WhenConstraintMet(batteryNotLow = true)
-                else -> ResumeSpec.AtTime(nowMs + 60 * 60 * 1000L)
-            }
-            return PauseDecision.Resign(spec)
-        }
-
         return when (state) {
             EngineState.PAUSED_QUIET_HOURS ->
                 PauseDecision.Resign(ResumeSpec.AtTime(nextAllowedHoursStartMs(currentProfile, nowMs)))
