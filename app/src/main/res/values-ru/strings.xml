@@ -158,6 +158,9 @@
     <string name="nav_help_cd">Помощь</string>
     <string name="nav_help">Помощь</string>
     <string name="nav_contact_us">Связаться</string>
+    <!-- LLM-DRAFTED 2026-05-23, PENDING NATIVE-SPEAKER REVIEW -->
+    <string name="help_menu_help">Помощь</string>
+    <string name="help_menu_contact">Связаться</string>
 
     <!-- Settings screen -->
     <string name="settings_title">НАСТРОЙКИ</string>

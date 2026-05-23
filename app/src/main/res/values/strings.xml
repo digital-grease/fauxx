@@ -244,6 +244,8 @@
     <string name="faq_title">FAQ</string>
     <string name="faq_back">Back</string>
     <string name="help_menu_faq">FAQ</string>
+    <string name="help_menu_help">Help</string>
+    <string name="help_menu_contact">Contact us</string>
     <string name="faq_q1_question">Why does Fauxx sometimes stop and show a “Tap to resume protection” notification?</string>
     <string name="faq_q1_answer">Android 14 and newer cap the kind of background service Fauxx uses to 6 cumulative hours per 24 hours while the app is in the background. To stay safely under that ceiling, Fauxx voluntarily stops itself a bit early and posts a one-tap notification so you can resume when you next pick up your phone.\n\nYou\'ll typically see this notification:\n\n• In the morning if you have quiet hours configured (default 7am–11pm). Rather than burn the daily budget idling overnight, Fauxx stops at 11pm and reappears at 7am as a tap-to-resume.\n• After about 5 hours of continuous backgrounded run-time. Fauxx self-stops at 5h with a 1h safety margin under the OS limit.\n• After a long no-WiFi pause if you have “WiFi only” enabled. Sustained pauses past 30 minutes release the slot rather than spinning idle.\n\nTapping the notification opens Fauxx and restarts protection. Nothing is lost — your settings, profile, persona, and action log are persistent.\n\nThis affects the F-Droid / sideload build specifically. The Play Store build uses a different foreground-service type that doesn\'t have the 6-hour cap; the behavior is otherwise identical.</string>
     <string name="faq_q2_question">Sometimes I enable protection and it stops almost immediately — why?</string>

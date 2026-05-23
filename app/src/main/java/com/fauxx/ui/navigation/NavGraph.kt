@@ -204,7 +204,7 @@ private fun HelpMenuButton(
                 }
             )
             DropdownMenuItem(
-                text = { Text("Help") },
+                text = { Text(stringResource(R.string.help_menu_help)) },
                 leadingIcon = { Icon(Icons.AutoMirrored.Outlined.MenuBook, contentDescription = null) },
                 onClick = {
                     expanded = false
@@ -212,7 +212,7 @@ private fun HelpMenuButton(
                 }
             )
             DropdownMenuItem(
-                text = { Text("Contact us") },
+                text = { Text(stringResource(R.string.help_menu_contact)) },
                 leadingIcon = { Icon(Icons.Outlined.BugReport, contentDescription = null) },
                 onClick = {
                     expanded = false
