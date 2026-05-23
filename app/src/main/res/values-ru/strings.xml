@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Russian (ru) translation for UI strings that have already been extracted to resources.
-    Synthetic activity content is shipped separately under assets/*/ru.
+    Russian (ru) translation for UI strings.
+
+    Community-contributed via PR #30 (thestability), pending native-speaker review.
+    INCOMPLETE: this file is missing ~130 keys present in values/strings.xml because
+    they were added on i18n/v0.3.0 after the PR was opened. The locale stays out of
+    BuildConfig.SHIPPED_LOCALES until a native speaker fills the gaps and reviews the
+    safety-critical surfaces (notifications, consent dialog, harmful_queries readme).
+
+    Until then, tools:ignore="MissingTranslation" tells lint to allow the incomplete
+    state — selecting `ru` in a debug build falls back to English for un-translated
+    strings, which is acceptable for previewing the locale but is not ship-quality.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation">
     <string name="app_name">Fauxx</string>
 
     <!-- Notification -->
@@ -116,6 +126,14 @@
     <string name="settings_language_subtitle_explicit">Синтетическая активность тоже будет использовать этот язык</string>
     <string name="settings_language_system_default">Системный язык</string>
     <string name="settings_language_coming_soon">Скоро</string>
+    <!-- LLM-DRAFTED 2026-05-23, PENDING NATIVE-SPEAKER REVIEW -->
+    <string name="language_picker_content_desc">Изменить язык приложения</string>
+    <string name="settings_intensity_low">Низкая</string>
+    <string name="settings_intensity_medium">Средняя</string>
+    <string name="settings_intensity_high">Высокая</string>
+    <string name="settings_theme_system">Системная</string>
+    <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_dark">Тёмная</string>
 
     <!-- Navigation -->
     <string name="nav_dashboard">Панель</string>

@@ -97,6 +97,13 @@
     <string name="settings_language_subtitle_explicit">Synthetic activity will also use this language</string>
     <string name="settings_language_system_default">System default</string>
     <string name="settings_language_coming_soon">Coming soon</string>
+    <string name="language_picker_content_desc">Change app language</string>
+    <string name="settings_intensity_low">Low</string>
+    <string name="settings_intensity_medium">Medium</string>
+    <string name="settings_intensity_high">High</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
 
     <!-- Demographic enum labels (onboarding pickers) -->
     <string name="age_18_24">18–24</string>

@@ -48,6 +48,7 @@ import com.fauxx.BuildConfig
 import com.fauxx.R
 import com.fauxx.data.model.IntensityLevel
 import com.fauxx.locale.SupportedLocale
+import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.theme.ThemeMode
 import com.fauxx.ui.viewmodels.SettingsViewModel
 import kotlin.math.roundToInt
@@ -99,7 +100,7 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = level.name,
+                            text = stringResource(level.displayNameRes()),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (uiState.intensity == level)
                                 MaterialTheme.colorScheme.onPrimary
@@ -165,7 +166,7 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = mode.name,
+                            text = stringResource(mode.displayNameRes()),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (uiState.themeMode == mode)
                                 MaterialTheme.colorScheme.onPrimary

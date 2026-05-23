@@ -101,6 +101,14 @@
     <string name="settings_language_subtitle_explicit">L\'activité synthétique utilisera aussi cette langue</string>
     <string name="settings_language_system_default">Par défaut du système</string>
     <string name="settings_language_coming_soon">Bientôt disponible</string>
+    <!-- LLM-DRAFTED 2026-05-23, PENDING NATIVE-SPEAKER REVIEW -->
+    <string name="language_picker_content_desc">Changer la langue de l\'application</string>
+    <string name="settings_intensity_low">Faible</string>
+    <string name="settings_intensity_medium">Moyenne</string>
+    <string name="settings_intensity_high">Élevée</string>
+    <string name="settings_theme_system">Système</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_dark">Sombre</string>
 
     <!-- Demographic enum labels (onboarding pickers) -->
     <string name="age_18_24">18–24</string>
