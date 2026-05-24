@@ -13,6 +13,9 @@ name: Release Gate
 # To intentionally release: make the version-bump commit subject start with
 #   release: v<X.Y.Z> — <short note>
 # or "release(scope):" if a scope is useful (conventional-commits style).
+# A bare-version style is also accepted:
+#   release v<X.Y.Z>: <short note>
+# (i.e. the colon comes after the version rather than after "release").
 
 on:
   pull_request:
@@ -79,7 +82,11 @@ jobs:
           echo "Commit subjects in range:"
           echo "$subjects"
 
-          if echo "$subjects" | grep -qiE '^release(\([^)]+\))?:'; then
+          # Accept both styles:
+          #   release: v0.3.0 — note          (colon after "release")
+          #   release(scope): v0.3.0 — note   (conventional-commits scope)
+          #   release v0.3.0: note            (colon after the version — also used)
+          if echo "$subjects" | grep -qiE '^release(\([^)]+\))?:|^release[[:space:]]+v?[0-9]+\.[0-9]+(\.[0-9]+)?:'; then
             echo "Found release-prefixed commit — gate satisfied."
             exit 0
           fi
