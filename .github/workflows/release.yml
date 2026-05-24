@@ -11,8 +11,95 @@ permissions:
   contents: read
 
 jobs:
+  # Mirror of the Release Gate check that runs on every push to main: confirms the
+  # commits between the prior tag and this one include a release-prefixed subject,
+  # plus that version.properties + a matching fastlane changelog landed together.
+  # Inlined here (rather than just relying on the standalone Release Gate workflow)
+  # so a failed gate actually blocks the artifact build — the standalone workflow
+  # is advisory and runs in parallel to other on-main triggers; this one is
+  # `needs:`-blocking for build + release.
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Determine compare range
+        id: range
+        run: |
+          # "Previous tag" = most-recent tag strictly older than the current one.
+          # `git describe --tags --abbrev=0 HEAD^` walks back from HEAD's parent and
+          # finds the nearest annotated tag — exactly the prior release boundary.
+          # Falls back to the root commit if no prior tag exists (first release).
+          if prev=$(git describe --tags --abbrev=0 "${GITHUB_SHA}^" 2>/dev/null); then
+            base="$prev"
+          else
+            base=$(git rev-list --max-parents=0 HEAD | head -1)
+            echo "No prior tag found; falling back to root commit ($base)."
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "head=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "Comparing $base..$GITHUB_SHA"
+
+      - name: Detect release-related file changes
+        id: detect
+        run: |
+          base="${{ steps.range.outputs.base }}"
+          head="${{ steps.range.outputs.head }}"
+          changed=$(git diff --name-only "$base" "$head")
+          version_touched=false
+          changelog_touched=false
+          if echo "$changed" | grep -qx "app/version.properties"; then
+            version_touched=true
+          fi
+          if echo "$changed" | grep -qE "^fastlane/metadata/android/[^/]+/changelogs/[0-9]+\.txt$"; then
+            changelog_touched=true
+          fi
+          echo "version_touched=$version_touched" >> "$GITHUB_OUTPUT"
+          echo "changelog_touched=$changelog_touched" >> "$GITHUB_OUTPUT"
+
+      - name: Require release-prefixed commit
+        if: steps.detect.outputs.version_touched == 'true' || steps.detect.outputs.changelog_touched == 'true'
+        run: |
+          base="${{ steps.range.outputs.base }}"
+          head="${{ steps.range.outputs.head }}"
+          subjects=$(git log --format=%s "$base..$head")
+          echo "Commit subjects in range:"
+          echo "$subjects"
+          # Accept both styles — see .github/workflows/release-gate.yml for the rationale.
+          if echo "$subjects" | grep -qiE '^release(\([^)]+\))?:|^release[[:space:]]+v?[0-9]+\.[0-9]+(\.[0-9]+)?:'; then
+            echo "Found release-prefixed commit — gate satisfied."
+            exit 0
+          fi
+          echo "::error::Release-related files were modified between $base and this tag, but no commit subject starts with 'release:' or 'release vX.Y.Z:'."
+          echo "::error::Either retitle the version-bump commit and re-tag, or revert the unintended release-file change."
+          exit 1
+
+      - name: Ensure version bump and changelog stay in sync
+        if: steps.detect.outputs.version_touched == 'true' || steps.detect.outputs.changelog_touched == 'true'
+        run: |
+          base="${{ steps.range.outputs.base }}"
+          head="${{ steps.range.outputs.head }}"
+          version_touched="${{ steps.detect.outputs.version_touched }}"
+          changelog_touched="${{ steps.detect.outputs.changelog_touched }}"
+          if [ "$version_touched" = "true" ] && [ "$changelog_touched" = "false" ]; then
+            new_code=$(git show "$head:app/version.properties" | sed -n 's/^versionCode=\(.*\)$/\1/p')
+            echo "::error::app/version.properties bumped to versionCode=$new_code but no fastlane changelog was added in this range."
+            exit 1
+          fi
+          if [ "$version_touched" = "false" ] && [ "$changelog_touched" = "true" ]; then
+            echo "::error::A fastlane changelog was added/modified, but app/version.properties was not bumped."
+            exit 1
+          fi
+          echo "Version + changelog in sync."
+
   build:
     name: Build ${{ matrix.flavorName }} Release
+    needs: gate
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
