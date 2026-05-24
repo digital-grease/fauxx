@@ -1,7 +1,7 @@
 [versions]
 agp = "9.1.1"
 kotlin = "2.3.20"
-ksp = "2.3.6"
+ksp = "2.3.8"
 coreKtx = "1.18.0"
 lifecycle = "2.10.0"
 activityCompose = "1.12.3"
