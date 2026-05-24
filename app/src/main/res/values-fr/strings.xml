@@ -337,6 +337,7 @@
     <string name="targeting_layer2_name">Couche 2 — Import du profil publicitaire</string>
     <string name="targeting_layer2_description">Importe ton profil publicitaire existant depuis Google Takeout / Facebook DYI</string>
     <string name="targeting_layer2_last_imported">Dernier import : %s</string>
+    <string name="targeting_import_never_label">Jamais</string>
 
     <!-- LLM-DRAFTED 2026-05-24, PENDING NATIVE-SPEAKER REVIEW -->
     <string name="targeting_import_card_title">Importer le profil publicitaire</string>

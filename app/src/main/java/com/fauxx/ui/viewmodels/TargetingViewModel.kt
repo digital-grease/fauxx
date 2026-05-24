@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.di.PreferenceKeys
 import com.fauxx.di.fauxxDataStore
@@ -35,7 +36,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -72,7 +72,10 @@ private const val IMPORT_RESULT_DISPLAY_MS = 4_000L
 private const val NINETY_DAYS_MS = 90L * 24 * 60 * 60 * 1000
 private const val THIRTY_DAYS_MS = 30L * 24 * 60 * 60 * 1000
 
-private val DATE_FMT = SimpleDateFormat("MMM d, yyyy", Locale.US)
+// DateFormat is reconstructed per call so it picks up the current locale every time —
+// `SimpleDateFormat("...", Locale.US)` previously rendered "May 22, 2026" under any locale,
+// breaking the translated UI. `DateFormat.getDateInstance(MEDIUM, Locale.getDefault())`
+// emits the locale-conventional medium-length date (22 may 2026 in ES, 22 мая 2026 in RU).
 
 @HiltViewModel
 class TargetingViewModel @Inject constructor(
@@ -111,7 +114,9 @@ class TargetingViewModel @Inject constructor(
             profession = profile?.profession,
             region = profile?.region,
             interests = profile?.getInterests().orEmpty(),
-            lastImportedDate = lastImportedAt?.takeIf { it > 0 }?.let { DATE_FMT.format(Date(it)) } ?: "Never",
+            lastImportedDate = lastImportedAt?.takeIf { it > 0 }?.let {
+                java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM, Locale.getDefault()).format(Date(it))
+            } ?: context.getString(R.string.targeting_import_never_label),
             currentPersonaName = persona?.name,
             weights = weights,
             customInterestMappings = if (customInterests.isNotEmpty())
