@@ -1,0 +1,4 @@
+• New: Spanish, French, and Russian translations across the whole app — pick a language under Settings or use the globe icon up top
+• New: Layer 2 reworked — import your Google Takeout / Facebook DYI archive instead of in-app scraping, which Android cookie isolation made impossible
+• Fix: F-Droid build switched to a foreground-service type without the 6-hour cap, so the engine no longer stops itself before nightfall
+• Fix: synthetic Play Store searches no longer pop the Play Store app to the foreground while you're using Fauxx

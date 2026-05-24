@@ -1,0 +1,4 @@
+• Nouveau : traductions en espagnol, français et russe dans toute l'application — choisis ta langue dans Paramètres ou via l'icône globe en haut
+• Nouveau : la Couche 2 est refondue — importe ton archive Google Takeout / Facebook DYI au lieu du scraping intégré, rendu impossible par l'isolation des cookies sur Android
+• Correction : la version F-Droid utilise désormais un type de service au premier plan sans la limite des 6 heures, le moteur ne s'arrête donc plus tout seul avant la tombée du jour
+• Correction : les recherches synthétiques dans le Play Store ne ramènent plus l'application Play Store au premier plan pendant que tu utilises Fauxx

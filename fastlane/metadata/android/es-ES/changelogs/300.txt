@@ -1,0 +1,4 @@
+• Nuevo: traducciones al español, francés y ruso en toda la app — elige el idioma en Ajustes o pulsa el icono del globo arriba
+• Nuevo: la Capa 2 se ha rediseñado — importa tu archivo de Google Takeout / Facebook DYI en lugar del scraping dentro de la app, imposible por el aislamiento de cookies de Android
+• Corrección: la versión de F-Droid usa ahora un tipo de servicio en primer plano sin el límite de 6 horas, así que el motor ya no se detiene solo antes del anochecer
+• Corrección: las búsquedas sintéticas en Play Store ya no abren la app de Play Store en primer plano mientras usas Fauxx
