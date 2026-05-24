@@ -8,9 +8,15 @@ import javax.inject.Singleton
 
 /**
  * Detects splash-hang loops where the UI thread blocks before the app finishes starting,
- * and signals "safe mode" so callers can disable the feature most likely responsible
- * (Layer 2 adversarial scraper — WebView creation on the main thread can hang on some
- * device + WebView-provider combinations, e.g., Pixels on Android 16, LineageOS + microG).
+ * and signals "safe mode" so callers can disable the engine and let the user re-enable
+ * once the underlying provider issue clears (typically a WebView constructor hang on
+ * broken device + WebView-provider combinations, e.g., Pixels on Android 16, LineageOS +
+ * microG).
+ *
+ * Originally added to defend against the in-app Layer 2 scraper firing at cold boot
+ * (issue #55); that scrape path was retired in v0.3.0 (issue #52), but BootGuard stays
+ * as defense in depth for the remaining AdPollution / Cookie / DiverseBrowsing WebView
+ * initialization paths that can still hang Main during engine startup.
  *
  * Mechanism:
  * - [recordBootStart] increments a counter in a dedicated SharedPreferences file (separate
@@ -20,8 +26,8 @@ import javax.inject.Singleton
  *   handler with a few seconds of delay; if the main thread is hung, the callback never
  *   fires and the counter survives to the next boot.
  * - [isInSafeMode] returns true once the counter reaches [SAFE_MODE_THRESHOLD]. Callers
- *   should treat that as a signal to skip auto-starting the engine / cancel pending
- *   ScrapeWorker work / write `LAYER2_ENABLED=false`.
+ *   should treat that as a signal to skip auto-starting the engine / write
+ *   `LAYER2_ENABLED=false` and `ENABLED=false`.
  *
  * Uses synchronous `commit()` because a write that loses to a crash defeats the purpose.
  * Writes are tiny (a single int) so commit cost is negligible.

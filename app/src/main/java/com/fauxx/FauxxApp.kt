@@ -4,7 +4,6 @@ import android.app.Application
 import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import androidx.work.WorkManager
 import com.fauxx.logging.BootGuard
 import com.fauxx.logging.CrashReportWriter
 import com.fauxx.logging.EncryptedFileTree
@@ -57,20 +56,13 @@ class FauxxApp : Application(), Configuration.Provider {
         // schedules BootGuard.recordBootSuccess() a few seconds after onCreate; if the
         // main thread is hung before then (e.g., WebView constructor stuck in
         // PhantomWebViewPool.initialize() on a broken WebView provider) the success
-        // callback never fires and the counter survives.
+        // callback never fires and the counter survives. Issue #52 retired the
+        // ScrapeWorker that was the primary cold-boot hang vector — the guard now
+        // covers the remaining AdPollution / Cookie / DiverseBrowsing WebView paths
+        // that can still hang on certain device + WebView-provider combinations.
         try {
             bootGuard.recordBootStart()
             if (bootGuard.isInSafeMode()) {
-                // Cancel pending ScrapeWorker invocations BEFORE WorkManager's scheduler
-                // can launch them on this process start. WorkManager runs workers on its
-                // own executor but the worker calls withContext(Dispatchers.Main) inside
-                // PhantomWebViewPool.initialize() to create WebViews — which is what
-                // hangs Main on affected devices. See bug #55.
-                runCatching {
-                    val wm = WorkManager.getInstance(this)
-                    wm.cancelUniqueWork("fauxx_scrape")
-                    wm.cancelUniqueWork("fauxx_scrape_now")
-                }.onFailure { Log.e("FauxxApp", "Failed to cancel scrape work", it) }
                 bootGuard.markRecoveryTriggered()
                 Timber.w("BootGuard: entering safe mode after repeated startup failures")
             }

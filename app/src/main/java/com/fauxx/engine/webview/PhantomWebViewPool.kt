@@ -15,7 +15,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** Maximum number of WebView instances in the pool. */
-private const val POOL_SIZE = 3
+private const val POOL_SIZE = 2
 
 /**
  * Manages a pool of reusable background [WebView] instances with:
@@ -25,8 +25,12 @@ private const val POOL_SIZE = 3
  * - DOM storage enabled
  * - Process isolation via separate data directories
  *
- * One instance is reserved/tagged for Layer 2 scraping to avoid cookie contamination.
  * All WebViews use [PhantomWebViewClient] which blocks blocklisted domains.
+ *
+ * Pool size was reduced from 3 to 2 in v0.3.0 when the scraper-reserved slot was
+ * retired alongside the in-app Layer 2 scraper (issue #52). AdPollution + Cookie
+ * + DiverseBrowsing modules share the remaining slots; concurrent acquires block
+ * via [poolSemaphore].
  */
 @Singleton
 class PhantomWebViewPool @Inject constructor(
@@ -36,11 +40,8 @@ class PhantomWebViewPool @Inject constructor(
     private val pool = mutableListOf<WebView>()
     private var initialized = false
 
-    /** Semaphore controlling access to non-scraper WebViews (POOL_SIZE - 1 permits). */
-    private val poolSemaphore = Semaphore(POOL_SIZE - 1)
-
-    /** Semaphore controlling access to the scraper WebView (1 permit). */
-    private val scraperSemaphore = Semaphore(1)
+    /** Semaphore controlling access to pooled WebViews. */
+    private val poolSemaphore = Semaphore(POOL_SIZE)
 
     /** Tracks which WebViews are currently acquired (tag -> true). */
     private val acquired = ConcurrentHashMap<String, Boolean>()
@@ -50,11 +51,6 @@ class PhantomWebViewPool @Inject constructor(
      * Updated by [FingerprintModule] on each rotation action.
      */
     private val currentUserAgent = AtomicReference<String?>(null)
-
-    /** Tag identifying the scraper-reserved WebView instance. */
-    companion object {
-        const val SCRAPER_TAG = "scraper"
-    }
 
     /**
      * Set the User-Agent string that will be applied to WebViews when they are acquired.
@@ -71,42 +67,26 @@ class PhantomWebViewPool @Inject constructor(
     suspend fun initialize() = withContext(Dispatchers.Main) {
         if (initialized) return@withContext
         repeat(POOL_SIZE) { index ->
-            val webView = createWebView(tag = if (index == 0) SCRAPER_TAG else "pool_$index")
+            val webView = createWebView(tag = "pool_$index")
             pool.add(webView)
         }
         initialized = true
     }
 
     /**
-     * Acquire a WebView from the pool for general use (not scraping).
-     * Suspends if all non-scraper instances are in use until one is released.
+     * Acquire a WebView from the pool. Suspends if all instances are in use until
+     * one is released.
      */
     suspend fun acquire(): WebView {
         poolSemaphore.acquire()
         return try {
             withContext(Dispatchers.Main) {
-                val wv = pool.first { it.tag != SCRAPER_TAG && acquired.putIfAbsent(it.tag as String, true) == null }
+                val wv = pool.first { acquired.putIfAbsent(it.tag as String, true) == null }
                 currentUserAgent.get()?.let { wv.settings.userAgentString = it }
                 wv
             }
         } catch (e: Exception) {
             poolSemaphore.release()
-            throw e
-        }
-    }
-
-    /**
-     * Acquire the scraper-reserved WebView instance (Layer 2 use only).
-     * Suspends if the scraper instance is in use.
-     */
-    suspend fun acquireForScraper(): WebView {
-        scraperSemaphore.acquire()
-        return try {
-            withContext(Dispatchers.Main) {
-                pool.first { it.tag == SCRAPER_TAG }.also { acquired[SCRAPER_TAG] = true }
-            }
-        } catch (e: Exception) {
-            scraperSemaphore.release()
             throw e
         }
     }
@@ -127,7 +107,7 @@ class PhantomWebViewPool @Inject constructor(
         // Per-WebView cleanup (stopLoading + clearHistory + clearCache + about:blank) is
         // sufficient; accumulated DOM storage/cookies are desired for tracker accumulation.
         acquired.remove(tag)
-        if (tag == SCRAPER_TAG) scraperSemaphore.release() else poolSemaphore.release()
+        poolSemaphore.release()
     }
 
     /**

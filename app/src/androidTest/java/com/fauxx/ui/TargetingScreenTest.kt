@@ -57,7 +57,7 @@ class TargetingScreenTest {
             }
         }
         composeRule.onNodeWithText("Layer 1 — Self Report").assertIsDisplayed()
-        composeRule.onNodeWithText("Layer 2 — Adversarial Scraper").assertIsDisplayed()
+        composeRule.onNodeWithText("Layer 2 — Ad Profile Import").assertIsDisplayed()
         composeRule.onNodeWithText("Layer 3 — Persona Rotation").assertIsDisplayed()
     }
 
@@ -94,16 +94,6 @@ class TargetingScreenTest {
         composeRule.onNodeWithText("Cancel").performClick()
         // Dialog should be dismissed — title no longer visible
         composeRule.onNodeWithText("Clear Profile?").assertDoesNotExist()
-    }
-
-    @Test
-    fun scrapeNowButton_isDisplayedUnderLayer2() {
-        composeRule.setContent {
-            FauxxTheme {
-                TargetingScreen()
-            }
-        }
-        composeRule.onNodeWithText("Scrape Now").assertIsDisplayed()
     }
 
     @Test

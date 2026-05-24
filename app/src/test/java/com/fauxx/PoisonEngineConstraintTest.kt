@@ -181,11 +181,9 @@ class PoisonEngineConstraintTest {
         assertTrue(engine.shouldPauseForBattery(10, 20, isCharging = true, ignoreThresholdWhileCharging = false))
     }
 
-    // --- decidePauseAction tests (FGS-budget-protection logic) ---
+    // --- decidePauseAction tests ---
 
-    private val ms5Hours = 5L * 60 * 60 * 1000
     private val ms30Min = 30L * 60 * 1000
-    private val ms1Hour = 60L * 60 * 1000
     private val nowMs = 1_700_000_000_000L // arbitrary fixed epoch
 
     @Test

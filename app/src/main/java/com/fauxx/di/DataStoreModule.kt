@@ -71,6 +71,12 @@ object PreferenceKeys {
     // SupportedLocale, fallback EN). Otherwise a SupportedLocale.tag value: "en", "es", "fr".
     // Read by com.fauxx.locale.LocaleManager.
     val LANGUAGE_OVERRIDE = stringPreferencesKey("language_override")
+
+    // Layer 2 import (issue #52). IMPORT_REMINDER_MUTED_UNTIL is the epoch ms after
+    // which the 90-day-old-import banner is allowed to show again. Set to (now + 30
+    // days) on Snooze, set to Long.MAX_VALUE on permanent-mute. 0 (default) means the
+    // banner can show now if its 90-day trigger condition is met.
+    val IMPORT_REMINDER_MUTED_UNTIL = androidx.datastore.preferences.core.longPreferencesKey("import_reminder_muted_until")
 }
 
 /**

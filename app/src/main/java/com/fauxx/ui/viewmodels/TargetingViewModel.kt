@@ -1,11 +1,13 @@
 package com.fauxx.ui.viewmodels
 
 import android.content.Context
+import android.net.Uri
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.di.PreferenceKeys
+import com.fauxx.di.fauxxDataStore
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.layer1.AgeRange
@@ -17,13 +19,15 @@ import com.fauxx.targeting.layer1.Profession
 import com.fauxx.targeting.layer1.Region
 import com.fauxx.targeting.layer1.UserDemographicProfile
 import com.fauxx.targeting.layer2.PlatformProfileDao
-import com.fauxx.targeting.layer2.ScrapeScheduler
-import com.fauxx.targeting.layer2.ScrapeWorker
+import com.fauxx.targeting.layer2.importers.AdProfileImporter
+import com.fauxx.targeting.layer2.importers.FacebookDyiImporter
+import com.fauxx.targeting.layer2.importers.GoogleTakeoutImporter
+import com.fauxx.targeting.layer2.importers.ImportResult
+import com.fauxx.targeting.layer2.importers.ImportSource
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,17 +40,6 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 
-/**
- * Lifecycle state of an on-demand "Scrape Now" run.
- *
- * [NEEDS_LOGIN] is the special "no platform returned any categories" outcome — the
- * scraper reads existing ad-platform cookies, so an all-empty result almost always
- * means the user isn't signed into Google Ads Settings or Facebook ad preferences.
- * The UI surfaces a dialog explaining this rather than letting the failure flash by
- * as a generic "Failed".
- */
-enum class ScrapeState { IDLE, RUNNING, SUCCESS, FAILED, NEEDS_LOGIN }
-
 data class TargetingUiState(
     val layer1Enabled: Boolean = false,
     val layer2Enabled: Boolean = false,
@@ -57,14 +50,27 @@ data class TargetingUiState(
     val profession: Profession? = null,
     val region: Region? = null,
     val interests: Set<CategoryPool> = emptySet(),
-    val lastScrapeDate: String = "Never",
+    val lastImportedDate: String = "Never",
     val currentPersonaName: String? = null,
     val weights: Map<CategoryPool, Float> = emptyMap(),
     val customInterestMappings: List<InterestMapping> = emptyList(),
-    val scrapeState: ScrapeState = ScrapeState.IDLE
+    // Layer 2 import (issue #52). [importInProgress] is the source currently mid-import
+    // (drives button "Importing…" state); null when idle. [lastImportResult] is the
+    // most recent outcome shown to the user — auto-clears after a short display window.
+    val importInProgress: ImportSource? = null,
+    val lastImportResult: ImportResult? = null,
+    // [showImportReminder] fires if the most recent import is > 90 days old and the
+    // user hasn't snoozed/muted it. Derived in the combine() block from cache state +
+    // the mute-until pref mirrored via [importReminderMutedUntil].
+    val showImportReminder: Boolean = false,
+    // Internal: mirrored from DataStore by an init-launched collector so the combine()
+    // block has it available without exceeding the 5-flow overload limit.
+    val importReminderMutedUntil: Long = 0L
 )
 
-private const val SCRAPE_RESULT_DISPLAY_MS = 3_000L
+private const val IMPORT_RESULT_DISPLAY_MS = 4_000L
+private const val NINETY_DAYS_MS = 90L * 24 * 60 * 60 * 1000
+private const val THIRTY_DAYS_MS = 30L * 24 * 60 * 60 * 1000
 
 private val DATE_FMT = SimpleDateFormat("MMM d, yyyy", Locale.US)
 
@@ -77,7 +83,8 @@ class TargetingViewModel @Inject constructor(
     private val platformDao: PlatformProfileDao,
     private val personaHistoryDao: PersonaHistoryDao,
     private val personaLayer: PersonaRotationLayer,
-    private val scrapeScheduler: ScrapeScheduler,
+    private val googleTakeoutImporter: GoogleTakeoutImporter,
+    private val facebookDyiImporter: FacebookDyiImporter,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -89,8 +96,14 @@ class TargetingViewModel @Inject constructor(
         personaLayer.currentPersona,
         targetingEngine.getWeights()
     ) { state, profile, platforms, persona, weights ->
-        val lastScrape = platforms.maxOfOrNull { it.lastScraped }
+        val lastImportedAt = platforms.maxOfOrNull { it.lastScraped }
         val customInterests = profile?.getCustomInterests().orEmpty()
+        // 90-day reminder visibility derived here so the UI doesn't recompute the date math.
+        val now = System.currentTimeMillis()
+        val showReminder = lastImportedAt != null &&
+            lastImportedAt > 0L &&
+            now - lastImportedAt > NINETY_DAYS_MS &&
+            now > state.importReminderMutedUntil
         state.copy(
             hasProfile = profile != null,
             ageRange = profile?.ageRange,
@@ -98,16 +111,15 @@ class TargetingViewModel @Inject constructor(
             profession = profile?.profession,
             region = profile?.region,
             interests = profile?.getInterests().orEmpty(),
-            lastScrapeDate = lastScrape?.takeIf { it > 0 }?.let { DATE_FMT.format(Date(it)) } ?: "Never",
+            lastImportedDate = lastImportedAt?.takeIf { it > 0 }?.let { DATE_FMT.format(Date(it)) } ?: "Never",
             currentPersonaName = persona?.name,
             weights = weights,
             customInterestMappings = if (customInterests.isNotEmpty())
                 customInterestMapper.mapAll(customInterests)
-            else emptyList()
+            else emptyList(),
+            showImportReminder = showReminder
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TargetingUiState())
-
-    private var scrapeObserverJob: Job? = null
 
     init {
         val profile = profileRepo.getProfile()
@@ -116,6 +128,79 @@ class TargetingViewModel @Inject constructor(
             layer2Enabled = profile.layer2Enabled,
             layer3Enabled = profile.layer3Enabled
         )
+        // Bridge the 90-day-reminder mute-until pref into _state. Kept off the main
+        // combine() because combine() taps out at 5 typed flows — a separate collector
+        // preserves reactivity without forcing the nested-combine plumbing.
+        viewModelScope.launch {
+            context.fauxxDataStore.data.collect { prefs ->
+                _state.value = _state.value.copy(
+                    importReminderMutedUntil = prefs[PreferenceKeys.IMPORT_REMINDER_MUTED_UNTIL] ?: 0L
+                )
+            }
+        }
+    }
+
+    /**
+     * Begin a Google Takeout import for [uri] (delivered by the SAF picker on the
+     * Targeting screen). No-op if any import is already in flight to prevent the user
+     * from double-tapping the picker callback.
+     */
+    fun importGoogleTakeout(uri: Uri) = runImport(uri, googleTakeoutImporter)
+
+    /** Begin a Facebook DYI import. See [importGoogleTakeout] for behavior. */
+    fun importFacebookDyi(uri: Uri) = runImport(uri, facebookDyiImporter)
+
+    private fun runImport(uri: Uri, importer: AdProfileImporter) {
+        if (_state.value.importInProgress != null) return
+        _state.value = _state.value.copy(
+            importInProgress = importer.source,
+            lastImportResult = null
+        )
+        viewModelScope.launch {
+            val result = importer.import(uri)
+            _state.value = _state.value.copy(
+                importInProgress = null,
+                lastImportResult = result
+            )
+            // A successful import is the user actively engaging — clear any prior snooze
+            // so the next 90-day cycle counts from this fresh import. Avoid editing prefs
+            // when the result is an error to keep the snoozed state stable on retries.
+            if (result is ImportResult.Success) {
+                context.fauxxDataStore.edit { prefs ->
+                    prefs[PreferenceKeys.IMPORT_REMINDER_MUTED_UNTIL] = 0L
+                }
+            }
+            // Auto-clear the result banner after a display window. Re-check the captured
+            // result identity so a fast second import doesn't have its result wiped.
+            delay(IMPORT_RESULT_DISPLAY_MS)
+            if (_state.value.lastImportResult === result) {
+                _state.value = _state.value.copy(lastImportResult = null)
+            }
+        }
+    }
+
+    /** Tap on the result banner — clears it without waiting for the auto-dismiss timer. */
+    fun dismissImportResult() {
+        _state.value = _state.value.copy(lastImportResult = null)
+    }
+
+    /** Hide the 90-day-old-import reminder for 30 days. */
+    fun snoozeImportReminder() {
+        viewModelScope.launch {
+            context.fauxxDataStore.edit { prefs ->
+                prefs[PreferenceKeys.IMPORT_REMINDER_MUTED_UNTIL] =
+                    System.currentTimeMillis() + THIRTY_DAYS_MS
+            }
+        }
+    }
+
+    /** Hide the 90-day-old-import reminder permanently (user can re-enable by re-importing). */
+    fun muteImportReminderPermanently() {
+        viewModelScope.launch {
+            context.fauxxDataStore.edit { prefs ->
+                prefs[PreferenceKeys.IMPORT_REMINDER_MUTED_UNTIL] = Long.MAX_VALUE
+            }
+        }
     }
 
     fun setLayer1Enabled(enabled: Boolean) {
@@ -128,72 +213,12 @@ class TargetingViewModel @Inject constructor(
         targetingEngine.setLayer2Enabled(enabled)
         saveLayerPrefs(layer2 = enabled)
         _state.value = _state.value.copy(layer2Enabled = enabled)
-        if (enabled) {
-            scrapeScheduler.schedule()
-        } else {
-            scrapeScheduler.cancel()
-        }
     }
 
     fun setLayer3Enabled(enabled: Boolean) {
         targetingEngine.setLayer3Enabled(enabled)
         saveLayerPrefs(layer3 = enabled)
         _state.value = _state.value.copy(layer3Enabled = enabled)
-    }
-
-    fun scrapeNow() {
-        // Don't allow re-enqueue while one is in flight.
-        if (_state.value.scrapeState == ScrapeState.RUNNING) return
-
-        scrapeObserverJob?.cancel()
-        val id = scrapeScheduler.scrapeNow()
-        _state.value = _state.value.copy(scrapeState = ScrapeState.RUNNING)
-
-        scrapeObserverJob = viewModelScope.launch {
-            WorkManager.getInstance(context)
-                .getWorkInfoByIdFlow(id)
-                .collect { info ->
-                    when (info?.state) {
-                        WorkInfo.State.SUCCEEDED -> {
-                            _state.value = _state.value.copy(scrapeState = ScrapeState.SUCCESS)
-                            delay(SCRAPE_RESULT_DISPLAY_MS)
-                            _state.value = _state.value.copy(scrapeState = ScrapeState.IDLE)
-                        }
-                        WorkInfo.State.FAILED,
-                        WorkInfo.State.CANCELLED -> {
-                            // Worker sets KEY_OUTCOME on the result — distinguish the
-                            // common "user isn't signed in" case from real errors so the
-                            // UI can show a helpful dialog instead of a generic "Failed".
-                            val outcome = info.outputData.getString(ScrapeWorker.KEY_OUTCOME)
-                            if (outcome == ScrapeWorker.OUTCOME_NEEDS_LOGIN) {
-                                // Don't auto-reset — the user has to act (sign in, then re-tap).
-                                _state.value = _state.value.copy(scrapeState = ScrapeState.NEEDS_LOGIN)
-                            } else {
-                                _state.value = _state.value.copy(scrapeState = ScrapeState.FAILED)
-                                delay(SCRAPE_RESULT_DISPLAY_MS)
-                                _state.value = _state.value.copy(scrapeState = ScrapeState.IDLE)
-                            }
-                        }
-                        WorkInfo.State.RUNNING,
-                        WorkInfo.State.ENQUEUED,
-                        WorkInfo.State.BLOCKED -> {
-                            _state.value = _state.value.copy(scrapeState = ScrapeState.RUNNING)
-                        }
-                        null -> { /* work info not yet available */ }
-                    }
-                }
-        }
-    }
-
-    /**
-     * Called by the screen when the user dismisses the "needs login" dialog. Resets
-     * scrape state to IDLE so the button is tappable again (the user has presumably
-     * signed in before tapping again).
-     */
-    fun dismissScrapeNeedsLogin() {
-        if (_state.value.scrapeState == ScrapeState.NEEDS_LOGIN) {
-            _state.value = _state.value.copy(scrapeState = ScrapeState.IDLE)
-        }
     }
 
     fun rotatePersona() {

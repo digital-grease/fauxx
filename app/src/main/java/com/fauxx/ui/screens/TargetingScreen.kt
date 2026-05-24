@@ -1,5 +1,7 @@
 package com.fauxx.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,8 +55,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer1.InterestMapping
 import com.fauxx.targeting.layer1.MappingConfidence
+import com.fauxx.targeting.layer2.importers.ImportResult
+import com.fauxx.targeting.layer2.importers.ImportSource
 import com.fauxx.ui.format.displayNameRes
-import com.fauxx.ui.viewmodels.ScrapeState
 import com.fauxx.ui.viewmodels.TargetingUiState
 import com.fauxx.ui.viewmodels.TargetingViewModel
 import androidx.compose.ui.res.stringResource
@@ -110,34 +113,30 @@ fun TargetingScreen(
             )
         }
 
-        // Layer 2 toggle
-        val (scrapeLabel, scrapeEnabled) = when (uiState.scrapeState) {
-            ScrapeState.IDLE -> "Scrape Now" to true
-            ScrapeState.RUNNING -> "Scraping…" to false
-            ScrapeState.SUCCESS -> "Done" to false
-            ScrapeState.FAILED -> "Failed — Retry" to true
-            // NEEDS_LOGIN: button stays tappable so user can re-attempt after signing in,
-            // but the dialog rendered below is the primary CTA.
-            ScrapeState.NEEDS_LOGIN -> "Sign in first" to true
-        }
+        // Layer 2 — user-driven import (replaced the live in-app scraper in v0.3.0 per
+        // issue #52; cookie isolation between apps made the old approach unworkable).
         LayerToggleCard(
-            layerName = "Layer 2 — Adversarial Scraper",
-            description = "Reads ad-platform profiles to find confirmed interests",
+            layerName = "Layer 2 — Ad Profile Import",
+            description = "Imports your existing ad profile from Google Takeout / Facebook DYI",
             enabled = uiState.layer2Enabled,
             onToggle = { viewModel.setLayer2Enabled(it) },
-            statusText = "Last scraped: ${uiState.lastScrapeDate}",
-            actionLabel = scrapeLabel,
-            actionEnabled = scrapeEnabled,
-            actionEmphasizeError = uiState.scrapeState == ScrapeState.FAILED ||
-                uiState.scrapeState == ScrapeState.NEEDS_LOGIN,
-            onAction = { viewModel.scrapeNow() }
+            statusText = "Last imported: ${uiState.lastImportedDate}"
         )
 
-        // When the scraper returns zero categories from all platforms, almost certainly
-        // the user isn't signed in. Surface a dialog with deep links rather than letting
-        // the failure flash by silently. Dismissal resets state to IDLE.
-        if (uiState.scrapeState == ScrapeState.NEEDS_LOGIN) {
-            ScrapeNeedsLoginDialog(onDismiss = { viewModel.dismissScrapeNeedsLogin() })
+        if (uiState.layer2Enabled) {
+            // 90-day reminder. Muteable (snooze / permanent) so it doesn't nag.
+            if (uiState.showImportReminder) {
+                ImportReminderBanner(
+                    onSnooze = { viewModel.snoozeImportReminder() },
+                    onMute = { viewModel.muteImportReminderPermanently() }
+                )
+            }
+            ImportButtonsCard(
+                uiState = uiState,
+                onImportGoogle = { viewModel.importGoogleTakeout(it) },
+                onImportFacebook = { viewModel.importFacebookDyi(it) },
+                onDismissResult = { viewModel.dismissImportResult() }
+            )
         }
 
         // Layer 3 toggle
@@ -481,42 +480,146 @@ private fun WeightBar(label: String, value: Float, color: Color) {
 }
 
 /**
- * Shown after a scrape returns no categories from any platform. The previous version
- * of this dialog told users to "sign in via your browser" — that turned out to be
- * misleading (issue #51): Fauxx's scraper WebView has its own cookie store, isolated
- * from the standalone browser apps the user is logged into. Signing into Google in
- * Brave does not put a Google session into Fauxx.
+ * Two SAF launchers (Google Takeout ZIP/JSON, Facebook DYI ZIP/JSON) plus the live
+ * import progress / last-result feedback. Replaces the v0.2.x "Scrape Now" button.
  *
- * Combined with Google's and Facebook's block on sign-in from embedded WebViews
- * (returns 403 disallowed_useragent), there is currently no clean in-app workflow to
- * establish the scraper session. The dialog now states this honestly instead of
- * directing users into a loop that can't succeed. A redesign of Layer 2 to use
- * user-driven exports / bookmarklets is tracked as a follow-up enhancement.
+ * MIME filter passed to OpenDocument is `{application/zip, application/json}` — most
+ * file pickers honor this; some (especially OEM-skinned ones) ignore the filter and
+ * show all files anyway. We don't reject by MIME on the receiving side because users
+ * sometimes get files with surprising or empty MIME types from share-extracted
+ * downloads — the importer's content-sniffing handles real-world inputs.
  */
 @Composable
-private fun ScrapeNeedsLoginDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Layer 2 couldn't read your ad profiles") },
-        text = {
+private fun ImportButtonsCard(
+    uiState: TargetingUiState,
+    onImportGoogle: (android.net.Uri) -> Unit,
+    onImportFacebook: (android.net.Uri) -> Unit,
+    onDismissResult: () -> Unit
+) {
+    val mimeFilter = remember { arrayOf("application/zip", "application/json", "*/*") }
+    val googleLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let(onImportGoogle) }
+    val facebookLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let(onImportFacebook) }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "The Adversarial Scraper tries to read what Google and Facebook think " +
-                    "they know about you, then steers the noise away from those interests. " +
-                    "It just got back an empty list, which usually means the scraper has " +
-                    "no signed-in session for those sites.\n\n" +
-                    "Heads-up: Fauxx's scraper has its own browser session, separate from " +
-                    "Chrome/Brave/Firefox where you may already be signed in — Android " +
-                    "doesn't let apps share login cookies with each other. And Google/" +
-                    "Facebook don't allow sign-in from an in-app browser either, so a " +
-                    "'sign in here' button isn't possible.\n\n" +
-                    "Layer 2 is being redesigned to import your ad profile directly " +
-                    "(via Google Takeout or a browser bookmarklet) so it doesn't need a " +
-                    "live session at all. In the meantime, Layers 1 and 3 still work " +
-                    "without any scraping."
+                text = "Import ad profile",
+                style = MaterialTheme.typography.titleSmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.primary
             )
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Got it") }
+            Text(
+                text = "Export your ad-targeting data from Google Takeout or Facebook " +
+                    "Download Your Information, then import the file here. Fauxx never " +
+                    "logs in for you and never modifies your ad settings.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(12.dp))
+
+            val googleBusy = uiState.importInProgress == ImportSource.GOOGLE_TAKEOUT
+            val facebookBusy = uiState.importInProgress == ImportSource.FACEBOOK_DYI
+            val anyBusy = uiState.importInProgress != null
+
+            OutlinedButton(
+                onClick = { googleLauncher.launch(mimeFilter) },
+                enabled = !anyBusy,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (googleBusy) "Importing Google Takeout…" else "Import Google Takeout")
+            }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { facebookLauncher.launch(mimeFilter) },
+                enabled = !anyBusy,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (facebookBusy) "Importing Facebook DYI…" else "Import Facebook DYI")
+            }
+
+            uiState.lastImportResult?.let { result ->
+                Spacer(Modifier.height(12.dp))
+                ImportResultRow(result = result, onDismiss = onDismissResult)
+            }
         }
-    )
+    }
+}
+
+/**
+ * Per-result feedback row rendered under the import buttons. Colors itself by outcome
+ * (primary tint for success, error tint for failure variants). Stays up for ~4s then
+ * auto-clears via the ViewModel's delay; the X gives the user an immediate dismiss.
+ */
+@Composable
+private fun ImportResultRow(result: ImportResult, onDismiss: () -> Unit) {
+    val (text, isError) = when (result) {
+        is ImportResult.Success -> {
+            val n = result.categoryCount
+            val label = if (n == 1) "1 category" else "$n categories"
+            "Imported $label from ${result.source.displayName}." to false
+        }
+        is ImportResult.WrongFormat -> result.reason to true
+        is ImportResult.ParseError ->
+            "Couldn't parse the ${result.source.displayName} archive: ${result.message}" to true
+        is ImportResult.IoError ->
+            "Couldn't read the file. Permission may have been revoked." to true
+    }
+    val tint = if (isError) MaterialTheme.colorScheme.error
+    else MaterialTheme.colorScheme.primary
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = tint,
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = onDismiss) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Dismiss",
+                modifier = Modifier.size(16.dp),
+                tint = tint
+            )
+        }
+    }
+}
+
+/**
+ * Soft nudge rendered when the most-recent import is > 90 days old. Two dismiss options:
+ *  - **Snooze**: re-shows in 30 days. For users who plan to refresh but not right now.
+ *  - **Mute**: never shows again (until a successful import resets the pref). For users
+ *    who explicitly don't want the reminder.
+ */
+@Composable
+private fun ImportReminderBanner(onSnooze: () -> Unit, onMute: () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Your Layer 2 ad profile is over 90 days old. " +
+                    "Re-import a fresh export to keep targeting up to date.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onSnooze) { Text("Remind me in 30 days") }
+                Spacer(Modifier.size(4.dp))
+                TextButton(onClick = onMute) { Text("Don't remind me") }
+            }
+        }
+    }
 }

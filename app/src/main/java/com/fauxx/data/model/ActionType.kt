@@ -27,5 +27,8 @@ enum class ActionType {
     DEEP_LINK_VISIT,
 
     /** Rotates User-Agent, canvas fingerprint, and related signals. */
-    FINGERPRINT_ROTATE
+    FINGERPRINT_ROTATE,
+
+    /** User-initiated import of an ad-targeting profile from a Takeout / DYI archive. */
+    AD_PROFILE_IMPORT
 }
