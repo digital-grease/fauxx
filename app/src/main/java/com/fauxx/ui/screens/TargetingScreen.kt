@@ -118,11 +118,11 @@ fun TargetingScreen(
         // Layer 2 — user-driven import (replaced the live in-app scraper in v0.3.0 per
         // issue #52; cookie isolation between apps made the old approach unworkable).
         LayerToggleCard(
-            layerName = "Layer 2 — Ad Profile Import",
-            description = "Imports your existing ad profile from Google Takeout / Facebook DYI",
+            layerName = stringResource(R.string.targeting_layer2_name),
+            description = stringResource(R.string.targeting_layer2_description),
             enabled = uiState.layer2Enabled,
             onToggle = { viewModel.setLayer2Enabled(it) },
-            statusText = "Last imported: ${uiState.lastImportedDate}"
+            statusText = stringResource(R.string.targeting_layer2_last_imported, uiState.lastImportedDate)
         )
 
         if (uiState.layer2Enabled) {
@@ -509,15 +509,13 @@ private fun ImportButtonsCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Import ad profile",
+                text = stringResource(R.string.targeting_import_card_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Export your ad-targeting data from Google Takeout or Facebook " +
-                    "Download Your Information, then import the file here. Fauxx never " +
-                    "logs in for you and never modifies your ad settings.",
+                text = stringResource(R.string.targeting_import_card_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -532,7 +530,10 @@ private fun ImportButtonsCard(
                 enabled = !anyBusy,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (googleBusy) "Importing Google Takeout…" else "Import Google Takeout")
+                Text(stringResource(
+                    if (googleBusy) R.string.targeting_import_google_button_busy
+                    else R.string.targeting_import_google_button
+                ))
             }
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
@@ -540,7 +541,10 @@ private fun ImportButtonsCard(
                 enabled = !anyBusy,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (facebookBusy) "Importing Facebook DYI…" else "Import Facebook DYI")
+                Text(stringResource(
+                    if (facebookBusy) R.string.targeting_import_facebook_button_busy
+                    else R.string.targeting_import_facebook_button
+                ))
             }
 
             uiState.lastImportResult?.let { result ->
@@ -561,14 +565,15 @@ private fun ImportResultRow(result: ImportResult, onDismiss: () -> Unit) {
     val (text, isError) = when (result) {
         is ImportResult.Success -> {
             val n = result.categoryCount
-            val label = if (n == 1) "1 category" else "$n categories"
-            "Imported $label from ${result.source.displayName}." to false
+            val countLabel = if (n == 1) stringResource(R.string.targeting_import_count_one)
+            else stringResource(R.string.targeting_import_count_many, n)
+            stringResource(R.string.targeting_import_success, countLabel, result.source.displayName) to false
         }
-        is ImportResult.WrongFormat -> result.reason to true
+        is ImportResult.WrongFormat -> stringResource(result.reasonRes) to true
         is ImportResult.ParseError ->
-            "Couldn't parse the ${result.source.displayName} archive: ${result.message}" to true
+            stringResource(R.string.targeting_import_parse_error, result.source.displayName, result.message) to true
         is ImportResult.IoError ->
-            "Couldn't read the file. Permission may have been revoked." to true
+            stringResource(R.string.targeting_import_io_error) to true
     }
     val tint = if (isError) MaterialTheme.colorScheme.error
     else MaterialTheme.colorScheme.primary
@@ -585,7 +590,7 @@ private fun ImportResultRow(result: ImportResult, onDismiss: () -> Unit) {
         IconButton(onClick = onDismiss) {
             Icon(
                 Icons.Default.Close,
-                contentDescription = "Dismiss",
+                contentDescription = stringResource(R.string.targeting_import_dismiss_cd),
                 modifier = Modifier.size(16.dp),
                 tint = tint
             )
@@ -606,8 +611,7 @@ private fun ImportReminderBanner(onSnooze: () -> Unit, onMute: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Your Layer 2 ad profile is over 90 days old. " +
-                    "Re-import a fresh export to keep targeting up to date.",
+                text = stringResource(R.string.targeting_import_reminder_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
@@ -616,9 +620,9 @@ private fun ImportReminderBanner(onSnooze: () -> Unit, onMute: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = onSnooze) { Text("Remind me in 30 days") }
+                TextButton(onClick = onSnooze) { Text(stringResource(R.string.targeting_import_snooze_button)) }
                 Spacer(Modifier.size(4.dp))
-                TextButton(onClick = onMute) { Text("Don't remind me") }
+                TextButton(onClick = onMute) { Text(stringResource(R.string.targeting_import_mute_button)) }
             }
         }
     }

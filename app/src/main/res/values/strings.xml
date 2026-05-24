@@ -332,14 +332,29 @@
     <string name="targeting_layer1_description">Boosts noise away from your declared demographics</string>
     <string name="targeting_layer1_status_set">Profile set</string>
     <string name="targeting_layer1_status_unset">No profile</string>
-    <string name="targeting_layer2_name">Layer 2 — Adversarial Scraper</string>
-    <string name="targeting_layer2_description">Reads ad-platform profiles to find confirmed interests</string>
-    <string name="targeting_layer2_last_scraped">Last scraped: %s</string>
-    <string name="targeting_layer2_action_scrape_now">Scrape Now</string>
-    <string name="targeting_layer2_action_scraping">Scraping…</string>
-    <string name="targeting_layer2_action_done">Done</string>
-    <string name="targeting_layer2_action_failed_retry">Failed — Retry</string>
-    <string name="targeting_layer2_action_sign_in_first">Sign in first</string>
+    <string name="targeting_layer2_name">Layer 2 — Ad Profile Import</string>
+    <string name="targeting_layer2_description">Imports your existing ad profile from Google Takeout / Facebook DYI</string>
+    <string name="targeting_layer2_last_imported">Last imported: %s</string>
+
+    <!-- Layer 2 import card + result row + 90-day reminder banner -->
+    <string name="targeting_import_card_title">Import ad profile</string>
+    <string name="targeting_import_card_body">Export your ad-targeting data from Google Takeout or Facebook Download Your Information, then import the file here. Fauxx never logs in for you and never modifies your ad settings.</string>
+    <string name="targeting_import_google_button">Import Google Takeout</string>
+    <string name="targeting_import_google_button_busy">Importing Google Takeout…</string>
+    <string name="targeting_import_facebook_button">Import Facebook DYI</string>
+    <string name="targeting_import_facebook_button_busy">Importing Facebook DYI…</string>
+    <string name="targeting_import_success">Imported %1$s from %2$s.</string>
+    <string name="targeting_import_count_one">1 category</string>
+    <string name="targeting_import_count_many">%d categories</string>
+    <string name="targeting_import_parse_error">Couldn\'t parse the %1$s archive: %2$s</string>
+    <string name="targeting_import_io_error">Couldn\'t read the file. Permission may have been revoked.</string>
+    <string name="targeting_import_wrong_format_google">Couldn\'t find an ad-interest file inside the archive. Try exporting \"My Ad Center\" specifically from Google Takeout (not the full archive).</string>
+    <string name="targeting_import_wrong_format_facebook">Couldn\'t find an ad-interest file inside the archive. From accountscenter.facebook.com, choose Download Your Information → JSON format → \"Ads and businesses\" specifically.</string>
+    <string name="targeting_import_dismiss_cd">Dismiss</string>
+    <string name="targeting_import_reminder_body">Your Layer 2 ad profile is over 90 days old. Re-import a fresh export to keep targeting up to date.</string>
+    <string name="targeting_import_snooze_button">Remind me in 30 days</string>
+    <string name="targeting_import_mute_button">Don\'t remind me</string>
+
     <string name="targeting_layer3_name">Layer 3 — Persona Rotation</string>
     <string name="targeting_layer3_description">Maintains coherent synthetic personas (rotates weekly)</string>
     <string name="targeting_layer3_status_active">Persona: %s</string>

@@ -334,14 +334,29 @@
     <string name="targeting_layer1_description">Renforce le bruit en l\'éloignant de tes données démographiques déclarées</string>
     <string name="targeting_layer1_status_set">Profil configuré</string>
     <string name="targeting_layer1_status_unset">Aucun profil</string>
-    <string name="targeting_layer2_name">Couche 2 — Scraper adversarial</string>
-    <string name="targeting_layer2_description">Lit les profils des plateformes publicitaires pour trouver les centres d\'intérêt confirmés</string>
-    <string name="targeting_layer2_last_scraped">Dernière extraction : %s</string>
-    <string name="targeting_layer2_action_scrape_now">Extraire maintenant</string>
-    <string name="targeting_layer2_action_scraping">Extraction en cours…</string>
-    <string name="targeting_layer2_action_done">Terminé</string>
-    <string name="targeting_layer2_action_failed_retry">Échec — Réessayer</string>
-    <string name="targeting_layer2_action_sign_in_first">Connecte-toi d\'abord</string>
+    <string name="targeting_layer2_name">Couche 2 — Import du profil publicitaire</string>
+    <string name="targeting_layer2_description">Importe ton profil publicitaire existant depuis Google Takeout / Facebook DYI</string>
+    <string name="targeting_layer2_last_imported">Dernier import : %s</string>
+
+    <!-- LLM-DRAFTED 2026-05-24, PENDING NATIVE-SPEAKER REVIEW -->
+    <string name="targeting_import_card_title">Importer le profil publicitaire</string>
+    <string name="targeting_import_card_body">Exporte tes données de ciblage publicitaire depuis Google Takeout ou Télécharger tes informations sur Facebook, puis importe le fichier ici. Fauxx ne se connecte jamais à ta place et ne modifie jamais tes paramètres publicitaires.</string>
+    <string name="targeting_import_google_button">Importer Google Takeout</string>
+    <string name="targeting_import_google_button_busy">Import de Google Takeout…</string>
+    <string name="targeting_import_facebook_button">Importer Facebook DYI</string>
+    <string name="targeting_import_facebook_button_busy">Import de Facebook DYI…</string>
+    <string name="targeting_import_success">%1$s importée(s) depuis %2$s.</string>
+    <string name="targeting_import_count_one">1 catégorie</string>
+    <string name="targeting_import_count_many">%d catégories</string>
+    <string name="targeting_import_parse_error">Impossible de lire l\'archive %1$s : %2$s</string>
+    <string name="targeting_import_io_error">Impossible de lire le fichier. La permission a peut-être été révoquée.</string>
+    <string name="targeting_import_wrong_format_google">Aucun fichier d\'intérêts publicitaires trouvé dans l\'archive. Essaie d\'exporter spécifiquement \"My Ad Center\" depuis Google Takeout (pas l\'archive complète).</string>
+    <string name="targeting_import_wrong_format_facebook">Aucun fichier d\'intérêts publicitaires trouvé dans l\'archive. Sur accountscenter.facebook.com, choisis Télécharger tes informations → format JSON → \"Publicités et entreprises\" spécifiquement.</string>
+    <string name="targeting_import_dismiss_cd">Ignorer</string>
+    <string name="targeting_import_reminder_body">Ton profil publicitaire de Couche 2 a plus de 90 jours. Réimporte un nouvel export pour garder le ciblage à jour.</string>
+    <string name="targeting_import_snooze_button">Rappeler dans 30 jours</string>
+    <string name="targeting_import_mute_button">Ne plus rappeler</string>
+
     <string name="targeting_layer3_name">Couche 3 — Rotation de personas</string>
     <string name="targeting_layer3_description">Maintient des personas synthétiques cohérents (rotation hebdomadaire)</string>
     <string name="targeting_layer3_status_active">Persona : %s</string>

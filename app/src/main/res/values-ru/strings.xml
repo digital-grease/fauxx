@@ -213,7 +213,30 @@
     <string name="targeting_layer1_desc">Уводит шум от указанных вами демографических признаков</string>
     <string name="targeting_profile_set">Профиль задан</string>
     <string name="targeting_no_profile">Профиля нет</string>
-    <string name="targeting_layer2_name">Считывает рекламные профили, чтобы найти подтверждённые интересы</string>
+    <!-- LLM-DRAFTED 2026-05-24, PENDING NATIVE-SPEAKER REVIEW (post-#52 import retreat) -->
+    <string name="targeting_layer2_name">Слой 2 — Импорт рекламного профиля</string>
+    <string name="targeting_layer2_description">Импортирует существующий рекламный профиль из Google Takeout / Facebook DYI</string>
+    <string name="targeting_layer2_last_imported">Последний импорт: %s</string>
+
+    <string name="targeting_import_card_title">Импортировать рекламный профиль</string>
+    <string name="targeting_import_card_body">Экспортируй свои данные рекламного таргетинга из Google Takeout или из «Скачать вашу информацию» в Facebook, затем импортируй файл сюда. Fauxx никогда не входит в твой аккаунт и не меняет твои рекламные настройки.</string>
+    <string name="targeting_import_google_button">Импортировать Google Takeout</string>
+    <string name="targeting_import_google_button_busy">Импорт Google Takeout…</string>
+    <string name="targeting_import_facebook_button">Импортировать Facebook DYI</string>
+    <string name="targeting_import_facebook_button_busy">Импорт Facebook DYI…</string>
+    <string name="targeting_import_success">Импортировано %1$s из %2$s.</string>
+    <string name="targeting_import_count_one">1 категория</string>
+    <string name="targeting_import_count_many">%d категорий</string>
+    <string name="targeting_import_parse_error">Не удалось разобрать архив %1$s: %2$s</string>
+    <string name="targeting_import_io_error">Не удалось прочитать файл. Возможно, разрешение было отозвано.</string>
+    <string name="targeting_import_wrong_format_google">В архиве не найден файл с рекламными интересами. Попробуй экспортировать именно «My Ad Center» из Google Takeout (а не весь архив).</string>
+    <string name="targeting_import_wrong_format_facebook">В архиве не найден файл с рекламными интересами. На accountscenter.facebook.com выбери Скачать вашу информацию → формат JSON → именно «Реклама и компании».</string>
+    <string name="targeting_import_dismiss_cd">Закрыть</string>
+    <string name="targeting_import_reminder_body">Твоему рекламному профилю Слоя 2 больше 90 дней. Реимпортируй свежую выгрузку, чтобы поддерживать таргетинг актуальным.</string>
+    <string name="targeting_import_snooze_button">Напомнить через 30 дней</string>
+    <string name="targeting_import_mute_button">Не напоминать</string>
+
+    <!-- Legacy PR #30 keys (orphan post-#52; absorbed by lint baseline). -->
     <string name="targeting_layer2_desc">Считывает рекламные профили, чтобы найти подтвержденные интересы</string>
     <string name="targeting_last_scraped">Последнее считывание: %1$s</string>
     <string name="targeting_scrape_now">Считать сейчас</string>

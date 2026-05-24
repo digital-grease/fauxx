@@ -75,8 +75,7 @@ class GoogleTakeoutImporter @Inject constructor(
         if (rawStrings == null) {
             return@withContext ImportResult.WrongFormat(
                 source,
-                "Couldn't find an ad-interest file inside the archive. Try exporting " +
-                    "\"My Ad Center\" specifically from Google Takeout (not the full archive)."
+                com.fauxx.R.string.targeting_import_wrong_format_google
             )
         }
         if (rawStrings.isEmpty()) {

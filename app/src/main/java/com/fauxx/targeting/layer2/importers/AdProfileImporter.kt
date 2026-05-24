@@ -32,9 +32,15 @@ sealed class ImportResult {
     /**
      * Archive opened successfully but didn't contain the platform's ad-interest data.
      * Usually means the user exported the wrong subset (e.g., picked "My Activity" but
-     * not "Ads" in Takeout). [reason] describes what the importer looked for.
+     * not "Ads" in Takeout). [reasonRes] is the @StringRes id the UI resolves — keeping
+     * this as a resource id instead of a String means the importer (which has no
+     * Composition or Context) doesn't need to resolve user-visible text and the message
+     * follows the active locale at render time.
      */
-    data class WrongFormat(val source: ImportSource, val reason: String) : ImportResult()
+    data class WrongFormat(
+        val source: ImportSource,
+        @androidx.annotation.StringRes val reasonRes: Int
+    ) : ImportResult()
 
     /** Archive found the expected data file but parsing failed. */
     data class ParseError(

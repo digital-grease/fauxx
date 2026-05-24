@@ -80,9 +80,7 @@ class FacebookDyiImporter @Inject constructor(
         if (rawStrings == null) {
             return@withContext ImportResult.WrongFormat(
                 source,
-                "Couldn't find an ad-interest file inside the archive. From " +
-                    "accountscenter.facebook.com, choose Download Your Information → " +
-                    "JSON format → \"Ads and businesses\" specifically."
+                com.fauxx.R.string.targeting_import_wrong_format_facebook
             )
         }
         if (rawStrings.isEmpty()) {

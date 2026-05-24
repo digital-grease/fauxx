@@ -334,14 +334,29 @@
     <string name="targeting_layer1_description">Aumenta el ruido alejándolo de los datos demográficos que declaraste</string>
     <string name="targeting_layer1_status_set">Perfil configurado</string>
     <string name="targeting_layer1_status_unset">Sin perfil</string>
-    <string name="targeting_layer2_name">Capa 2 — Extractor adversarial</string>
-    <string name="targeting_layer2_description">Lee los perfiles de las plataformas publicitarias para encontrar intereses confirmados</string>
-    <string name="targeting_layer2_last_scraped">Última extracción: %s</string>
-    <string name="targeting_layer2_action_scrape_now">Extraer ahora</string>
-    <string name="targeting_layer2_action_scraping">Extrayendo…</string>
-    <string name="targeting_layer2_action_done">Hecho</string>
-    <string name="targeting_layer2_action_failed_retry">Fallido — Reintentar</string>
-    <string name="targeting_layer2_action_sign_in_first">Inicia sesión primero</string>
+    <string name="targeting_layer2_name">Capa 2 — Importación de perfil publicitario</string>
+    <string name="targeting_layer2_description">Importa tu perfil publicitario existente desde Google Takeout / Facebook DYI</string>
+    <string name="targeting_layer2_last_imported">Última importación: %s</string>
+
+    <!-- LLM-DRAFTED 2026-05-24, PENDING NATIVE-SPEAKER REVIEW -->
+    <string name="targeting_import_card_title">Importar perfil publicitario</string>
+    <string name="targeting_import_card_body">Exporta tus datos de segmentación publicitaria desde Google Takeout o Descargar tu información de Facebook, después importa el archivo aquí. Fauxx nunca inicia sesión por ti y nunca modifica tus ajustes publicitarios.</string>
+    <string name="targeting_import_google_button">Importar Google Takeout</string>
+    <string name="targeting_import_google_button_busy">Importando Google Takeout…</string>
+    <string name="targeting_import_facebook_button">Importar Facebook DYI</string>
+    <string name="targeting_import_facebook_button_busy">Importando Facebook DYI…</string>
+    <string name="targeting_import_success">Se importaron %1$s desde %2$s.</string>
+    <string name="targeting_import_count_one">1 categoría</string>
+    <string name="targeting_import_count_many">%d categorías</string>
+    <string name="targeting_import_parse_error">No se pudo procesar el archivo de %1$s: %2$s</string>
+    <string name="targeting_import_io_error">No se pudo leer el archivo. Es posible que se haya revocado el permiso.</string>
+    <string name="targeting_import_wrong_format_google">No se encontró un archivo de intereses publicitarios dentro del archivo. Prueba a exportar específicamente \"My Ad Center\" desde Google Takeout (no el archivo completo).</string>
+    <string name="targeting_import_wrong_format_facebook">No se encontró un archivo de intereses publicitarios dentro del archivo. Desde accountscenter.facebook.com, elige Descargar tu información → formato JSON → \"Anuncios y empresas\" específicamente.</string>
+    <string name="targeting_import_dismiss_cd">Descartar</string>
+    <string name="targeting_import_reminder_body">Tu perfil publicitario de Capa 2 tiene más de 90 días. Reimporta una exportación reciente para mantener la segmentación al día.</string>
+    <string name="targeting_import_snooze_button">Recordar en 30 días</string>
+    <string name="targeting_import_mute_button">No volver a recordar</string>
+
     <string name="targeting_layer3_name">Capa 3 — Rotación de personas</string>
     <string name="targeting_layer3_description">Mantiene personas sintéticas coherentes (rotan semanalmente)</string>
     <string name="targeting_layer3_status_active">Persona: %s</string>
