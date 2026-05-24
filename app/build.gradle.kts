@@ -40,7 +40,7 @@ android {
         buildConfigField(
             "String[]",
             "SHIPPED_LOCALES",
-            "new String[]{\"en\"}"
+            "new String[]{\"en\", \"es\", \"fr\", \"ru\"}"
         )
     }
 
@@ -72,7 +72,7 @@ android {
             buildConfigField(
                 "String[]",
                 "SHIPPED_LOCALES",
-                "new String[]{\"en\", \"es\", \"fr\"}"
+                "new String[]{\"en\", \"es\", \"fr\", \"ru\"}"
             )
         }
     }

@@ -8,7 +8,7 @@
 
     <!-- Notification -->
     <string name="notification_channel_name">Protección de privacidad</string>
-    <string name="notification_channel_desc">Notificaciones de la diversificación de navegación en segundo plano de Fauxx</string>
+    <string name="notification_channel_desc">Notificaciones sobre la diversificación de navegación en segundo plano de Fauxx</string>
     <string name="notification_title">Fauxx</string>
     <string name="notification_active">Generando actividad de navegación variada — %d acciones hoy</string>
     <string name="notification_paused_wifi">En pausa — esperando WiFi</string>
@@ -63,26 +63,26 @@
     <string name="consent_cancel">Cancelar</string>
 
     <!-- About & Privacy -->
-    <string name="about_title">ACERCA DE Y PRIVACIDAD</string>
-    <string name="about_app_description">Una herramienta de privacidad de código abierto que envenena los perfiles de los intermediarios de datos y de la publicidad generando, desde tu dispositivo, actividad sintética continua, plausible y fuera de tu demografía.</string>
+    <string name="about_title">INFORMACIÓN Y PRIVACIDAD</string>
+    <string name="about_app_description">Una herramienta de privacidad de código abierto que envenena los perfiles de intermediarios de datos y tecnología publicitaria generando desde tu dispositivo actividad sintética continua, plausible y fuera de tu demografía.</string>
     <string name="about_privacy_title">Política de privacidad</string>
     <string name="about_data_on_device_title">Datos que permanecen en tu dispositivo</string>
-    <string name="about_data_on_device_body">Todos los datos personales se quedan exclusivamente en tu dispositivo y se cifran en reposo:\n\n• Perfil demográfico (edad, género, intereses, profesión, región)\n• Caché del perfil de plataformas publicitarias (categorías de interés extraídas)\n• Historial de personajes sintéticos\n• Registros de auditoría de acciones\n\nEstos datos se almacenan en una base de datos cifrada (SQLCipher) con una clave gestionada por Android Keystore. Nunca salen de tu dispositivo en ninguna forma.</string>
+    <string name="about_data_on_device_body">Todos los datos personales se quedan exclusivamente en tu dispositivo y se cifran en reposo:\n\n• Perfil demográfico (edad, género, intereses, profesión, región)\n• Caché de perfiles de plataformas publicitarias (categorías de interés extraídas)\n• Historial de personas sintéticas\n• Registros de auditoría de acciones\n\nEstos datos se almacenan en una base de datos cifrada (SQLCipher) con una clave gestionada por Android Keystore. Nunca salen de tu dispositivo de ninguna forma.</string>
     <string name="about_network_title">Solicitudes de red que realiza la app</string>
-    <string name="about_network_body">Fauxx genera actividad de navegación sintética para confundir los perfiles de seguimiento. Esto significa que la app:\n\n• Realizará búsquedas web en Google, Bing, DuckDuckGo y Yahoo\n• Visitará URL categorizadas para acumular cookies de seguimiento variadas\n• Cargará páginas variadas en webviews en segundo plano\n• Resolverá nombres de dominio para generar ruido en consultas DNS\n• Abrirá deep links de la tienda de apps para apps fuera de tu perfil\n\nTodas las solicitudes usan cabeceras User-Agent aleatorizadas y tienen un límite de frecuencia para no sobrecargar los servicios. Los dominios bloqueados (redes privadas, contenido dañino) nunca se contactan.</string>
+    <string name="about_network_body">Fauxx genera actividad de navegación sintética para confundir los perfiles de seguimiento. Esto significa que la app:\n\n• Realizará búsquedas web en Google, Bing, DuckDuckGo y Yahoo\n• Visitará URL categorizadas para acumular cookies de rastreadores variadas\n• Cargará páginas variadas en vistas web en segundo plano\n• Resolverá nombres de dominio para generar ruido en consultas DNS\n• Abrirá enlaces profundos de tiendas de apps para apps fuera de tu perfil\n\nTodas las solicitudes usan cabeceras User-Agent aleatorizadas y tienen un límite de frecuencia para no sobrecargar los servicios de destino. Nunca se contacta con dominios bloqueados (redes privadas, contenido dañino).</string>
     <string name="about_not_collected_title">Lo que NO recopilamos</string>
     <string name="about_not_collected_body">• Sin analíticas ni telemetría de ningún tipo\n• Sin envío de informes de fallos a servicios externos\n• Sin identificadores publicitarios ni píxeles de seguimiento\n• Sin cuentas en servidor ni almacenamiento en la nube\n• Sin compartir datos con terceros\n\nFauxx no tiene servidor backend. La app es completamente autónoma.</string>
-    <string name="about_location_title">Ruido de señal de ubicación</string>
+    <string name="about_location_title">Ruido en la señal de ubicación</string>
     <string name="about_location_body">Si está activado, el módulo de Señal de Ubicación genera consultas de búsqueda y visita sitios web que sugieren actividad en regiones distintas a tu ubicación real, dificultando que los intermediarios de datos sepan dónde vives.</string>
     <string name="about_deletion_title">Eliminación de datos</string>
-    <string name="about_deletion_body">Puedes eliminar todos los datos almacenados en cualquier momento desde Ajustes > Borrar todos los datos. Esto eliminará permanentemente tu perfil demográfico, la caché de plataformas, el historial de personajes, los registros de acciones y restablecerá todos los ajustes a sus valores por defecto. Desinstalar la app también borra todos los datos.</string>
+    <string name="about_deletion_body">Puedes eliminar todos los datos almacenados en cualquier momento desde Ajustes > Borrar todos los datos. Esto eliminará permanentemente tu perfil demográfico, la caché de plataformas, el historial de personas sintéticas y los registros de acciones, y restablecerá todos los ajustes a sus valores por defecto. Desinstalar la app también borra todos los datos.</string>
     <string name="about_privacy_url">https://github.com/digital-grease/fauxx/blob/main/PRIVACY.md</string>
     <string name="about_view_full_policy">Ver la política de privacidad completa en línea</string>
     <string name="about_license_title">Licencia</string>
     <string name="about_license_body">Fauxx es software de código abierto. El código fuente y los detalles de la licencia están disponibles en el repositorio del proyecto.</string>
 
     <!-- Support -->
-    <string name="about_support_title">Apoyo</string>
+    <string name="about_support_title">Apoya el proyecto</string>
     <string name="about_support_body">Si Fauxx te resulta útil, considera invitarme a un café.</string>
     <string name="about_support_button">Invítame a un café</string>
 
@@ -141,11 +141,11 @@
     <string name="category_history">Historia</string>
     <string name="category_environment">Medio ambiente</string>
     <string name="category_military_defense">Militar y defensa</string>
-    <string name="category_wellness_alternative">Bienestar y alternativo</string>
+    <string name="category_wellness_alternative">Bienestar y alternativas</string>
     <string name="category_relationships_dating">Relaciones y citas</string>
 
     <string name="action_type_search_query">BÚSQUEDA</string>
-    <string name="action_type_ad_click">CLIC ANUNCIO</string>
+    <string name="action_type_ad_click">CLIC EN ANUNCIO</string>
     <string name="action_type_page_visit">VISITA</string>
     <string name="action_type_location_spoof">UBICACIÓN</string>
     <string name="action_type_dns_lookup">DNS</string>
@@ -195,7 +195,7 @@
 
     <string name="profession_student">Estudiante</string>
     <string name="profession_teacher">Docente</string>
-    <string name="profession_engineer">Ingeniería</string>
+    <string name="profession_engineer">Ingeniero/a</string>
     <string name="profession_healthcare">Personal sanitario</string>
     <string name="profession_legal">Sector legal</string>
     <string name="profession_finance_prof">Empresa / finanzas</string>
@@ -252,17 +252,17 @@
     <string name="help_menu_help">Ayuda</string>
     <string name="help_menu_contact">Contáctanos</string>
     <string name="faq_q1_question">¿Por qué Fauxx a veces se detiene y muestra una notificación de “Toca para reanudar la protección”?</string>
-    <string name="faq_q1_answer">Android 14 y versiones posteriores limitan el tipo de servicio en segundo plano que Fauxx utiliza a 6 horas acumuladas por cada 24 horas mientras la aplicación está en segundo plano. Para mantenerse con seguridad por debajo de ese límite, Fauxx se detiene voluntariamente un poco antes y publica una notificación de un solo toque para que puedas reanudar cuando vuelvas a usar el teléfono.\n\nNormalmente verás esta notificación:\n\n• Por la mañana si tienes horas tranquilas configuradas (por defecto 7:00–23:00). En lugar de consumir el presupuesto diario quedándose inactivo de noche, Fauxx se detiene a las 23:00 y reaparece a las 7:00 como toque-para-reanudar.\n• Tras unas 5 horas de funcionamiento continuo en segundo plano. Fauxx se detiene a las 5 h, dejando 1 h de margen bajo el límite del sistema.\n• Tras una pausa prolongada sin WiFi si tienes activado “Solo WiFi”. Las pausas sostenidas de más de 30 minutos liberan el espacio en vez de quedarse en espera.\n\nAl tocar la notificación se abre Fauxx y se reanuda la protección. No se pierde nada: tus ajustes, perfil, persona y registro de acciones se conservan.\n\nEsto afecta específicamente a la compilación de F-Droid / sideload. La compilación de Play Store usa un tipo de servicio en primer plano distinto que no tiene el límite de 6 horas; por lo demás, el comportamiento es idéntico.</string>
+    <string name="faq_q1_answer">Android 14 y versiones posteriores limitan a 6 horas acumuladas cada 24 horas el tipo de servicio en segundo plano que usa Fauxx mientras la app está en segundo plano. Para mantenerse con seguridad por debajo de ese límite, Fauxx se detiene voluntariamente un poco antes y muestra una notificación que puedes tocar para reanudar la protección cuando vuelvas a usar el teléfono.\n\nNormalmente verás esta notificación:\n\n• Por la mañana si tienes configurado un horario de descanso (por defecto, 7:00–23:00). En lugar de consumir el presupuesto diario quedándose inactivo durante la noche, Fauxx se detiene a las 23:00 y reaparece a las 7:00 con una notificación para reanudar.\n• Tras unas 5 horas de funcionamiento continuo en segundo plano. Fauxx se detiene a las 5 h, dejando 1 h de margen de seguridad por debajo del límite del sistema.\n• Tras una pausa prolongada sin WiFi si tienes activado “Solo WiFi”. Las pausas de más de 30 minutos liberan el intervalo en vez de quedarse inactivas.\n\nAl tocar la notificación se abre Fauxx y se reanuda la protección. No se pierde nada: tus ajustes, perfil, persona y registro de acciones se conservan.\n\nEsto afecta específicamente a la compilación de F-Droid o instalación manual. La compilación de Play Store usa un tipo de servicio en primer plano distinto que no tiene el límite de 6 horas; por lo demás, el comportamiento es idéntico.</string>
     <string name="faq_q2_question">A veces activo la protección y se detiene casi de inmediato; ¿por qué?</string>
-    <string name="faq_q2_answer">Fauxx registra cuánto tiempo de servicio en primer plano has usado en las últimas 24 horas, de forma persistente entre reinicios de la aplicación. Si ya has consumido la mayor parte del presupuesto diario — por ejemplo, una sesión de 4 horas hoy mismo — una nueva sesión tendrá menos margen antes de que se restablezca el límite. Fauxx se iniciará, verá que no queda margen y publicará la notificación de toque-para-reanudar programada para cuando se reinicie la ventana del presupuesto.\n\nPuedes esperar a que la notificación se active más tarde, o revisar Ajustes → Horas activas y Solo WiFi para confirmar que tus restricciones no estén pausando el motor.</string>
+    <string name="faq_q2_answer">Fauxx registra cuánto tiempo de servicio en primer plano has usado en las últimas 24 horas y conserva ese dato aunque reinicies la app. Si ya has consumido la mayor parte del presupuesto diario —por ejemplo, con una sesión de 4 horas hoy mismo—, una nueva sesión tendrá menos margen antes de que se restablezca el límite. Fauxx se iniciará, verá que no queda margen y mostrará la notificación para reanudar cuando caduque la ventana del presupuesto.\n\nPuedes esperar a que aparezca la notificación más tarde, o revisar Ajustes → Horas activas y Solo WiFi para confirmar que tus restricciones no estén pausando el motor.</string>
     <string name="faq_q3_question">¿Por qué Fauxx fallaba por la noche en versiones anteriores?</string>
-    <string name="faq_q3_answer">Las versiones anteriores a esta no detenían proactivamente el servicio en primer plano durante pausas largas, por lo que podía acumular las 6 horas completas de tiempo de ejecución mientras estaba inactivo — por ejemplo durante las horas tranquilas configuradas. Cuando Android 14+ aplicó el límite, el sistema forzaba la detención del proceso con un ForegroundServiceDidNotStopInTimeException. Esta versión añade el seguimiento del presupuesto y el flujo de toque-para-reanudar descrito arriba, así que el fallo ya no debería ocurrir.\n\nSi sigues viendo fallos, abre un informe de error desde Ajustes (“Crear un problema en GitHub”).</string>
-    <string name="faq_q4_question">¿Qué significa la “Ratio de ruido” del panel?</string>
-    <string name="faq_q4_answer">Es un indicador de rendimiento: acciones de hoy divididas entre 500, con un máximo del 100%. 500 acciones en un día equivalen a una saturación del 100%.\n\nNO mide la calidad del ruido — si la actividad sintética está afectando categorías fuera de tu perfil, si engaña a los sistemas de seguimiento o si cubre una variedad amplia de temas. Es solo un medidor de ritmo.\n\nPara ver hacia dónde está yendo realmente el ruido, mira el gráfico de pesos por categoría en la pantalla de Segmentación. Las barras rojas son las categorías que Fauxx está suprimiendo (porque coinciden con tu perfil real), las verdes son las que está potenciando y las grises son neutrales.</string>
-    <string name="faq_q5_question">¿Cómo funciona el “Scraper adversarial” (Capa 2) y por qué a veces dice “Último scrape: Nunca”?</string>
-    <string name="faq_q5_answer">La Capa 2 lee tus perfiles de intereses existentes en Google Ads Settings y en las Preferencias de anuncios de Facebook. Identifica las categorías que las redes publicitarias ya saben sobre ti y le indica al motor que las suprima — así la actividad sintética se aleja de tu perfil real.\n\nDetalles a tener en cuenta:\n\n• Tarda hasta unos 60 segundos: cada plataforma tiene un tiempo límite de 30 segundos y Google y Facebook se ejecutan en serie.\n• NO inicia sesión por ti. Fauxx lee las cookies que ya tienes en el dispositivo. Tienes que estar conectada/o a myadcenter.google.com y a las preferencias de anuncios de Facebook en tu navegador antes de pulsar “Scrape ahora”; si no, el scraper devuelve cero categorías en silencio y “Último scrape” se queda en “Nunca”.\n• Solo lectura. El scraper nunca modifica, hace clic ni interactúa con tus ajustes publicitarios — solo lee lo que ya está ahí.\n• Se actualiza automáticamente cada 7 días por WiFi cuando la Capa 2 está activa. “Scrape ahora” es un disparador manual que también funciona con datos móviles.\n\nSi estás en v0.2.6 o anterior y “Scrape ahora” no parece hacer nada, era un fallo corregido en v0.2.7.</string>
+    <string name="faq_q3_answer">Las versiones anteriores a esta no detenían de forma proactiva el servicio en primer plano durante pausas largas, por lo que podía acumular las 6 horas completas de ejecución mientras estaba inactivo, por ejemplo durante el horario de descanso configurado. Cuando Android 14+ aplicaba el límite, el sistema forzaba la detención del proceso con un ForegroundServiceDidNotStopInTimeException. Esta versión añade el seguimiento del presupuesto y el flujo de reanudación descrito arriba, así que el fallo ya no debería ocurrir.\n\nSi sigues viendo fallos, abre una incidencia desde Ajustes (“Crear una incidencia en GitHub”).</string>
+    <string name="faq_q4_question">¿Qué significa la “Proporción de ruido” del panel?</string>
+    <string name="faq_q4_answer">Es un indicador de volumen: acciones de hoy divididas entre 500, con un máximo del 100%%. 500 acciones en un día se muestran como un 100%% saturado.\n\nNO mide la calidad del ruido: si la actividad sintética está apuntando a categorías fuera de tu perfil, si engaña a los sistemas de perfilado o si cubre una variedad amplia de temas. Es solo un medidor de ritmo.\n\nPara ver hacia dónde va realmente el ruido, mira el gráfico de pesos por categoría en la pantalla de Segmentación. Las barras rojas son las categorías que Fauxx está suprimiendo (porque coinciden con tu perfil real), las verdes son las que está potenciando y las grises son neutrales.</string>
+    <string name="faq_q5_question">¿Cómo funciona el “Extractor adversarial” (Capa 2) y por qué a veces dice “Última extracción: Nunca”?</string>
+    <string name="faq_q5_answer">La Capa 2 lee tus perfiles de intereses existentes en la configuración de anuncios de Google y en las preferencias de anuncios de Facebook. Los usa para encontrar categorías que las redes publicitarias ya han aprendido sobre ti y luego le indica al motor que las suprima, para que la actividad sintética se aleje de tu perfil real.\n\nDetalles a tener en cuenta:\n\n• Tarda hasta unos 60 segundos: cada plataforma tiene un tiempo límite de 30 segundos y Google y Facebook se ejecutan en serie.\n• NO inicia sesión por ti. Fauxx lee las cookies que ya tienes en el dispositivo. Primero tienes que haber iniciado sesión en myadcenter.google.com y en la página de preferencias de anuncios de Facebook desde tu navegador; si no, el extractor devuelve cero categorías sin mostrar nada y “Última extracción” se queda en “Nunca”.\n• Solo lectura. El extractor nunca modifica, hace clic ni interactúa con tus ajustes publicitarios: solo lee lo que ya está ahí.\n• Se actualiza automáticamente cada 7 días por WiFi cuando la Capa 2 está activa. “Extraer ahora” es una acción manual que también funciona con datos móviles.\n\nSi estás en v0.2.6 o anterior y “Extraer ahora” no parece hacer nada, era un fallo corregido en v0.2.7.</string>
     <!-- LLM-DRAFTED 2026-05-19, PENDING NATIVE-SPEAKER REVIEW -->
-    <string name="boot_guard_safe_mode_notice">Fauxx desactivó la Capa 2 y el motor tras varios bloqueos al iniciar. Vuelve a activarlos desde Segmentación y el Panel cuando quieras volver a intentarlo.</string>
+    <string name="boot_guard_safe_mode_notice">Fauxx desactivó la Capa 2 y el motor tras varios bloqueos al iniciar. Vuelve a activarlos desde Segmentación e Inicio cuando quieras volver a intentarlo.</string>
 
     <!-- Modules screen — LLM-DRAFTED 2026-05-16, PENDING NATIVE-SPEAKER REVIEW -->
     <string name="modules_title">MÓDULOS</string>
@@ -276,14 +276,14 @@
     <string name="module_fingerprint_description">Rota User-Agent, ruido de canvas y propiedades del navegador</string>
     <string name="module_ad_name">Contaminación publicitaria</string>
     <string name="module_ad_description">Carga páginas saturadas de anuncios y visita paneles de preferencias publicitarias</string>
-    <string name="module_location_name">Simulación de ubicación</string>
-    <string name="module_location_description">Alimenta rutas GPS sintéticas mediante MockLocationProvider</string>
+    <string name="module_location_name">Suplantación de ubicación</string>
+    <string name="module_location_description">Proporciona rutas GPS sintéticas mediante MockLocationProvider</string>
     <string name="module_location_setup_hint">Requiere las Opciones de desarrollador activadas y Fauxx seleccionado como aplicación de ubicación simulada</string>
     <string name="module_appsignal_name">Señales de apps</string>
     <string name="module_appsignal_description">Abre páginas de la tienda de apps para apps fuera de tu perfil y dispara píxeles de atribución</string>
 
     <string name="module_location_setup_dialog_title">Un paso más</string>
-    <string name="module_location_setup_dialog_body">Android requiere que designes Fauxx como la aplicación de ubicación simulada:\n\n1. Activa las Opciones de desarrollador si aún no lo has hecho: Ajustes → Acerca del teléfono → toca Número de compilación 7 veces.\n\n2. Abre Opciones de desarrollador → \"Seleccionar aplicación de ubicación simulada\" y elige Fauxx.\n\nSin este paso, la Simulación de ubicación no hará nada en silencio.</string>
+    <string name="module_location_setup_dialog_body">Android requiere que designes Fauxx como la app de ubicación simulada:\n\n1. Activa las Opciones de desarrollador si aún no lo has hecho: Ajustes → Acerca del teléfono → toca Número de compilación 7 veces.\n\n2. Abre Opciones de desarrollador → \"Seleccionar aplicación de ubicación simulada\" y elige Fauxx.\n\nSin este paso, la Suplantación de ubicación no funcionará y no mostrará ningún aviso.</string>
     <string name="module_location_success_title">Ubicación simulada activa</string>
     <string name="module_location_success_body">Fauxx está registrado como el proveedor de ubicación simulada del sistema y está enviando coordenadas GPS sintéticas.</string>
     <string name="module_location_failure_not_mock_app_title">Fauxx no es la aplicación de ubicación simulada</string>
@@ -325,23 +325,23 @@
     <string name="settings_custom_ua_clear_button">Borrar y reanudar la rotación</string>
     <string name="settings_clear_all_data_button">Borrar todos los datos</string>
     <string name="settings_export_debug_logs_button">Exportar registros de depuración</string>
-    <string name="settings_about_privacy_button">Acerca de y política de privacidad</string>
+    <string name="settings_about_privacy_button">Información y política de privacidad</string>
     <string name="settings_version_info">Fauxx v%1$s (compilación %2$d)</string>
     <string name="settings_clear_dialog_title">¿Borrar todos los datos?</string>
-    <string name="settings_clear_dialog_body">Esto eliminará permanentemente:\n• Todos los registros de acciones\n• Tu perfil demográfico\n• La caché de perfiles publicitarios\n• El historial de personas generadas\n\nTodos los ajustes se restablecerán a sus valores por defecto. El motor se detendrá y volverá a la Capa 0 (ruido uniforme).\n\nEsto no se puede deshacer.</string>
+    <string name="settings_clear_dialog_body">Esto eliminará permanentemente:\n• Todos los registros de acciones\n• Tu perfil demográfico\n• La caché de perfiles publicitarios\n• El historial de personas sintéticas\n\nTodos los ajustes se restablecerán a sus valores por defecto. El motor se detendrá y volverá a la Capa 0 (ruido uniforme).\n\nEsto no se puede deshacer.</string>
     <string name="settings_clear_dialog_confirm">Borrar todo</string>
 
     <!-- Targeting screen — LLM-DRAFTED 2026-05-16, PENDING NATIVE-SPEAKER REVIEW -->
     <string name="targeting_title">MOTOR DE SEGMENTACIÓN</string>
-    <string name="targeting_layer1_name">Capa 1 — Autoinforme</string>
+    <string name="targeting_layer1_name">Capa 1 — Datos declarados</string>
     <string name="targeting_layer1_description">Aumenta el ruido alejándolo de los datos demográficos que declaraste</string>
     <string name="targeting_layer1_status_set">Perfil configurado</string>
     <string name="targeting_layer1_status_unset">Sin perfil</string>
-    <string name="targeting_layer2_name">Capa 2 — Scraper adversarial</string>
+    <string name="targeting_layer2_name">Capa 2 — Extractor adversarial</string>
     <string name="targeting_layer2_description">Lee los perfiles de las plataformas publicitarias para encontrar intereses confirmados</string>
-    <string name="targeting_layer2_last_scraped">Último scrape: %s</string>
-    <string name="targeting_layer2_action_scrape_now">Scrape ahora</string>
-    <string name="targeting_layer2_action_scraping">Scrapeando…</string>
+    <string name="targeting_layer2_last_scraped">Última extracción: %s</string>
+    <string name="targeting_layer2_action_scrape_now">Extraer ahora</string>
+    <string name="targeting_layer2_action_scraping">Extrayendo…</string>
     <string name="targeting_layer2_action_done">Hecho</string>
     <string name="targeting_layer2_action_failed_retry">Fallido — Reintentar</string>
     <string name="targeting_layer2_action_sign_in_first">Inicia sesión primero</string>
@@ -352,7 +352,7 @@
     <string name="targeting_layer3_action_rotate_now">Rotar ahora</string>
     <string name="targeting_clear_profile_button">Borrar mi perfil</string>
     <string name="targeting_clear_dialog_title">¿Borrar perfil?</string>
-    <string name="targeting_clear_dialog_body">Esto eliminará tu perfil demográfico, todos los datos de plataformas y el historial de personas. El motor volverá a una segmentación aleatoria uniforme.</string>
+    <string name="targeting_clear_dialog_body">Esto eliminará tu perfil demográfico, todos los datos de plataformas y el historial de personas sintéticas. El motor volverá a una segmentación aleatoria uniforme.</string>
     <string name="targeting_clear_dialog_confirm">Borrar</string>
     <string name="targeting_profile_summary_title">MI PERFIL</string>
     <string name="targeting_profile_summary_empty">No hay perfil guardado. Configurarlo permite que la Capa 1 dirija el ruido lejos de tus datos demográficos reales.</string>
@@ -369,7 +369,7 @@
     <string name="targeting_custom_interest_mapped">%1$s → %2$s</string>
     <string name="targeting_custom_interest_unmapped">%s (sin asignar)</string>
     <string name="targeting_scrape_dialog_title">La Capa 2 no pudo leer tus perfiles publicitarios</string>
-    <string name="targeting_scrape_dialog_body">El Scraper adversarial intenta leer lo que Google y Facebook creen saber sobre ti y luego aleja el ruido de esos intereses. Acaba de devolver una lista vacía, lo que normalmente significa que el scraper no tiene una sesión iniciada en esos sitios.\n\nAclaración: el scraper de Fauxx tiene su propia sesión de navegador, separada de Chrome/Brave/Firefox donde puedas haber iniciado sesión — Android no permite que las apps compartan cookies de inicio de sesión entre sí. Y Google/Facebook tampoco permiten iniciar sesión desde un navegador integrado en otra app, así que un botón de \"iniciar sesión aquí\" no es posible.\n\nLa Capa 2 está siendo rediseñada para importar tu perfil publicitario directamente (mediante Google Takeout o un bookmarklet del navegador) para que no necesite una sesión en vivo. Mientras tanto, las Capas 1 y 3 siguen funcionando sin necesidad de scraping.</string>
+    <string name="targeting_scrape_dialog_body">El Extractor adversarial intenta leer lo que Google y Facebook creen saber sobre ti y luego aleja el ruido de esos intereses. Acaba de devolver una lista vacía, lo que normalmente significa que el extractor no tiene una sesión iniciada en esos sitios.\n\nAclaración: el extractor de Fauxx tiene su propia sesión de navegador, separada de Chrome/Brave/Firefox, donde puede que ya hayas iniciado sesión. Android no permite que las apps compartan cookies de inicio de sesión entre sí. Google y Facebook tampoco permiten iniciar sesión desde un navegador integrado en otra app, así que no es posible añadir un botón de \"iniciar sesión aquí\".\n\nLa Capa 2 se está rediseñando para importar tu perfil publicitario directamente (mediante Google Takeout o un bookmarklet del navegador), de modo que no necesite una sesión activa. Mientras tanto, las Capas 1 y 3 siguen funcionando sin necesidad de extracción.</string>
 
     <!-- Dashboard screen — LLM-DRAFTED 2026-05-16, PENDING NATIVE-SPEAKER REVIEW -->
     <string name="dashboard_warning_notification_denied">Permiso de notificaciones denegado — el indicador de actividad en segundo plano está oculto. Concede el permiso de notificaciones en Ajustes para ver la notificación de estado.</string>
@@ -388,10 +388,10 @@
     <string name="dashboard_category_other">otros</string>
     <string name="dashboard_chart_legend_entry">%1$s %2$d%%</string>
     <string name="dashboard_active_persona_title">PERSONA ACTIVA</string>
-    <string name="dashboard_active_persona_help">Una identidad sintética que el motor adopta durante aproximadamente una semana. La actividad se pondera hacia los intereses de esta persona para crear un ruido temporalmente coherente, lo que dificulta que los rastreadores filtren la señal falsa. Las personas rotan automáticamente.</string>
+    <string name="dashboard_active_persona_help">Una identidad sintética que el motor adopta durante aproximadamente una semana. La actividad se pondera hacia los intereses de esta persona para crear un ruido temporalmente coherente, lo que dificulta que los rastreadores filtren la señal falsa. Las personas sintéticas rotan automáticamente.</string>
     <string name="dashboard_persona_subtitle">%1$s · %2$s</string>
-    <string name="dashboard_noise_ratio_title">RATIO DE RUIDO</string>
-    <string name="dashboard_noise_ratio_help">Estima cuánto de tu perfil de navegación visible es ruido sintético frente a actividad real. Cuanto más alto, mejor: al 80 %% o más, un corredor de datos tendría que identificar correctamente 4 de cada 5 señales como falsas para construir un perfil preciso.</string>
+    <string name="dashboard_noise_ratio_title">PROPORCIÓN DE RUIDO</string>
+    <string name="dashboard_noise_ratio_help">Estima cuánto de tu perfil de navegación visible es ruido sintético frente a actividad real. Cuanto más alto, mejor: al 80%% o más, un intermediario de datos tendría que identificar correctamente 4 de cada 5 señales como falsas para construir un perfil preciso.</string>
     <string name="dashboard_noise_ratio_value">%d%%</string>
     <string name="dashboard_battery_dialog_title">Mantener Fauxx funcionando en segundo plano</string>
     <string name="dashboard_battery_dialog_body_intro">Android pausa de forma agresiva las apps en segundo plano para ahorrar batería. Para envenenar perfiles de forma continua, Fauxx necesita estar exento de la optimización de batería.</string>
@@ -401,7 +401,7 @@
 
     <!-- Log export sheet — LLM-DRAFTED 2026-05-16, PENDING NATIVE-SPEAKER REVIEW -->
     <string name="log_export_scrubbed_notice">Se han eliminado todos los datos personales de los registros.</string>
-    <string name="log_export_option_github">Crear un problema en GitHub</string>
+    <string name="log_export_option_github">Crear una incidencia en GitHub</string>
     <string name="log_export_option_github_description">Abre un formulario de incidencia rellenado previamente. Los registros se incrustan directamente cuando caben; si no, se copian al portapapeles para pegarlos abajo.</string>
     <string name="log_export_option_share">Compartir mediante…</string>
     <string name="log_export_option_share_description">Enviar por correo, Slack u otra app</string>
