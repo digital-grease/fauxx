@@ -5,5 +5,5 @@
   "internalChecksFilter": "strict",
   "dependencyDashboard": true,
   "labels": ["dependencies"],
-  "prConcurrentLimit": 5
+  "prConcurrentLimit": 0
 }
