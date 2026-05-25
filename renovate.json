@@ -5,5 +5,17 @@
   "internalChecksFilter": "strict",
   "dependencyDashboard": true,
   "labels": ["dependencies"],
-  "prConcurrentLimit": 0
+  "prConcurrentLimit": 0,
+  "packageRules": [
+    {
+      "description": "Force-revive kotlinx-coroutines + tink once prConcurrentLimit is restored — initial v0.3.1-bundle PRs were closed by a base-branch conflict that has since resolved. Renovate normally treats user-closed PRs as 'ignore'; this rule overrides that for these specific packages so the bumps get re-filed automatically.",
+      "matchPackageNames": [
+        "org.jetbrains.kotlinx:kotlinx-coroutines-core",
+        "org.jetbrains.kotlinx:kotlinx-coroutines-android",
+        "org.jetbrains.kotlinx:kotlinx-coroutines-test",
+        "com.google.crypto.tink:tink-android"
+      ],
+      "recreateWhen": "always"
+    }
+  ]
 }
