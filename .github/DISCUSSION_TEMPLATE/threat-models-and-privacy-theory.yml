@@ -1,0 +1,39 @@
+title: "[Threat Model] "
+labels: ["threat-model"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for questions about how Fauxx actually defends against
+        profiling, what attacker capabilities it assumes, where the noise falls
+        short, or how the design holds up against a specific adversary.
+
+        Bug reports and feature requests stay in the
+        [Issues tab](https://github.com/digital-grease/fauxx/issues).
+  - type: textarea
+    id: scenario
+    attributes:
+      label: What's the question or scenario?
+      placeholder: Describe the threat, privacy concern, or design question you're thinking about.
+    validations:
+      required: true
+  - type: textarea
+    id: attacker
+    attributes:
+      label: What attacker capabilities are you assuming?
+      description: |
+        Examples: a data broker buying ad-tech exhaust, an ISP doing traffic analysis,
+        a state-level adversary with cross-device behavioral biometrics, an advertiser
+        with logged-in identity ground truth, a malicious app on the same device.
+        Knowing what threat model you have in mind is the difference between a
+        useful answer and a generic one.
+      placeholder: e.g., "Data broker buying ad-tech exhaust who can correlate ad-IDs across apps"
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: What have you already considered, read, or ruled out?
+      description: Optional. Helps avoid round-trips on "did you check X?"
+    validations:
+      required: false

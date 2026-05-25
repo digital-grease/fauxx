@@ -2,7 +2,8 @@
 # An "Other" Markdown fallback is still available for genuinely unusual issues.
 blank_issues_enabled: false
 
-# Links shown alongside the issue forms. Helps users self-resolve before filing.
+# Links shown alongside the issue forms. Helps users self-resolve and routes
+# conversational / speculative posts to Discussions instead of Issues.
 contact_links:
   - name: FAQ (README)
     url: https://github.com/digital-grease/fauxx#faq
@@ -10,3 +11,9 @@ contact_links:
   - name: Latest release & changelog
     url: https://github.com/digital-grease/fauxx/releases/latest
     about: If the bug you hit was already fixed in a newer version, that'll save us both a round trip.
+  - name: How Fauxx defends against profiling (Discussions)
+    url: https://github.com/digital-grease/fauxx/discussions/categories/threat-models-and-privacy-theory
+    about: For questions about how the noise actually works, what attacker capabilities Fauxx assumes, or where it falls short. Better as a discussion than an issue.
+  - name: Feature ideas & wishlist (Discussions)
+    url: https://github.com/digital-grease/fauxx/discussions/categories/ideas
+    about: Bigger-picture asks (platform expansion, new surfaces) that aren't ready to be a tracked enhancement. File an issue if it's a concrete, incremental change.

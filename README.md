@@ -11,6 +11,8 @@
 
 Fauxx is an open-source Android privacy tool that poisons data broker and ad-tech profiles by generating continuous, plausible, off-demographic synthetic activity from your device. The goal is simple: make your real behavioral signal statistically indistinguishable from noise.
 
+> 💬 **Questions about how Fauxx works, or wishlist ideas?** Use [Discussions](https://github.com/digital-grease/fauxx/discussions). Bug reports and feature requests stay in [Issues](https://github.com/digital-grease/fauxx/issues).
+
 ## The Problem
 
 Every search you make, every link you click, every location you visit is collected by data brokers, ad networks, and analytics platforms. Over time, they build a detailed profile of who you are, what you want, and what you're likely to do next. That profile is sold, traded, and collated with other data and profiles to continue the process.

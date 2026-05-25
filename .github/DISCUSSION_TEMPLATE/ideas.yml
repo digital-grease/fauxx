@@ -1,0 +1,39 @@
+title: "[Idea] "
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for bigger-picture, speculative, or wishlist asks —
+        platform expansion ("PC version?"), new product surfaces, design
+        directions worth a conversation before they become committed work.
+
+        For incremental tweaks to existing functionality (e.g., a new Settings
+        toggle, a higher actions-per-hour cap), file an enhancement
+        [issue](https://github.com/digital-grease/fauxx/issues/new/choose) instead.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      placeholder: Describe the pain or gap you'd want to address.
+    validations:
+      required: true
+  - type: textarea
+    id: audience
+    attributes:
+      label: Who else would benefit?
+      description: |
+        Is this a personal-use idea, or do you think a meaningful chunk of the
+        userbase wants the same thing? Honest answers welcome — "mostly me"
+        is fine.
+    validations:
+      required: false
+  - type: textarea
+    id: why-discussion
+    attributes:
+      label: Why this doesn't fit as a regular enhancement issue
+      description: |
+        Optional. Examples: it's speculative, depends on platform decisions,
+        needs design discussion, or you're not sure it's the right shape yet.
+    validations:
+      required: false
