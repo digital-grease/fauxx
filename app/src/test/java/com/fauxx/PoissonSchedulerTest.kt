@@ -2,6 +2,7 @@ package com.fauxx
 
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.util.SystemClockImpl
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -9,7 +10,7 @@ import kotlin.math.abs
 
 class PoissonSchedulerTest {
 
-    private val scheduler = PoissonScheduler()
+    private val scheduler = PoissonScheduler(SystemClockImpl())
 
     /** Sentinel allowed-hours window that covers all 24 hours so wall-clock can't gate tests. */
     private val ALL_HOURS_START = 0

@@ -6,6 +6,7 @@ import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 /**
  * OkHttp interceptor that rotates User-Agent and randomizes other HTTP headers to reduce
@@ -23,7 +24,8 @@ import javax.inject.Singleton
 @Singleton
 class HeaderRandomizerInterceptor @Inject constructor(
     private val uaPool: UserAgentPool,
-    private val localeManager: LocaleManager
+    private val localeManager: LocaleManager,
+    private val random: Random = Random.Default,
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -38,7 +40,7 @@ class HeaderRandomizerInterceptor @Inject constructor(
         return chain.proceed(request)
     }
 
-    private fun randomAccept(): String = ACCEPT_VARIANTS.random()
+    private fun randomAccept(): String = ACCEPT_VARIANTS.random(random)
 
     private fun randomAcceptLanguage(): String {
         val locale = localeManager.currentLocale
@@ -46,7 +48,7 @@ class HeaderRandomizerInterceptor @Inject constructor(
         // since the enum and the table are co-defined, but a missing entry should not
         // emit an empty header).
         val variants = LANGUAGE_VARIANTS[locale] ?: LANGUAGE_VARIANTS.getValue(SupportedLocale.EN)
-        return variants.random()
+        return variants.random(random)
     }
 
     companion object {

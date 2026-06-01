@@ -17,6 +17,8 @@ import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.service.PhantomForegroundService
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.layer3.PersonaRotationLayer
+import com.fauxx.util.Clock
+import com.fauxx.util.SystemClockImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,7 +51,8 @@ class DashboardViewModel @Inject constructor(
     private val poisonEngine: PoisonEngine,
     private val targetingEngine: TargetingEngine,
     private val personaLayer: PersonaRotationLayer,
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
+    private val clock: Clock = SystemClockImpl(),
 ) : ViewModel() {
 
     private val _enabled = MutableStateFlow(profileRepo.getProfile().enabled)
@@ -72,8 +75,8 @@ class DashboardViewModel @Inject constructor(
 
     val uiState: StateFlow<DashboardUiState> = combine(
         _enabled,
-        actionLogDao.countSince(System.currentTimeMillis() - 24 * 60 * 60 * 1000L),
-        actionLogDao.countSince(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L),
+        actionLogDao.countSince(clock.currentTimeMillis() - 24 * 60 * 60 * 1000L),
+        actionLogDao.countSince(clock.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L),
         targetingEngine.getWeights(),
         personaLayer.currentPersona,
         poisonEngine.healthWarnings,

@@ -8,6 +8,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 /**
  * Curated pool of real User-Agent strings loaded from assets/user_agents.json.
@@ -22,7 +23,8 @@ import javax.inject.Singleton
 @Singleton
 class UserAgentPool @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val profileRepo: PoisonProfileRepository
+    private val profileRepo: PoisonProfileRepository,
+    private val random: Random = Random.Default,
 ) {
     private val agents: List<String> by lazy { loadAgents() }
 
@@ -36,7 +38,7 @@ class UserAgentPool @Inject constructor(
         profileRepo.getProfile().customUserAgent
             ?.takeIf { it.isNotBlank() }
             ?.let { return it }
-        return if (agents.isNotEmpty()) agents.random() else DEFAULT_UA
+        return if (agents.isNotEmpty()) agents.random(random) else DEFAULT_UA
     }
 
     private fun loadAgents(): List<String> {

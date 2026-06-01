@@ -3,6 +3,8 @@ package com.fauxx.targeting.layer3
 import timber.log.Timber
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.util.Clock
+import com.fauxx.util.SystemClockImpl
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,7 +48,8 @@ private const val NEUTRAL_WEIGHT = 1.0f
 @Singleton
 class PersonaRotationLayer @Inject constructor(
     private val generator: PersonaGenerator,
-    private val historyDao: PersonaHistoryDao
+    private val historyDao: PersonaHistoryDao,
+    private val clock: Clock = SystemClockImpl(),
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val gson = Gson()
@@ -79,7 +82,7 @@ class PersonaRotationLayer @Inject constructor(
             while (isActive) {
                 delay(ROTATION_CHECK_INTERVAL_MS)
                 val current = _currentPersona.value
-                if (current != null && System.currentTimeMillis() > current.activeUntil) {
+                if (current != null && clock.currentTimeMillis() > current.activeUntil) {
                     rotatePersona()
                 }
             }
@@ -117,9 +120,9 @@ class PersonaRotationLayer @Inject constructor(
      * every entry has expired). Suspending because it touches the DAO. Internal for tests.
      */
     internal suspend fun restoreMostRecentActivePersona(): SyntheticPersona? {
-        val cutoff = System.currentTimeMillis() - HISTORY_RETENTION_MS
+        val cutoff = clock.currentTimeMillis() - HISTORY_RETENTION_MS
         val entries = runCatching { historyDao.getRecentPersonas(cutoff) }.getOrNull() ?: return null
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         // `getRecentPersonas` already sorts DESC by createdAt — first deserializable
         // entry whose activeUntil is in the future is the right pick.
         return entries.asSequence()
@@ -179,7 +182,7 @@ class PersonaRotationLayer @Inject constructor(
                     )
                 )
                 // Prune old history beyond 90 days
-                val cutoff = System.currentTimeMillis() - HISTORY_RETENTION_MS
+                val cutoff = clock.currentTimeMillis() - HISTORY_RETENTION_MS
                 historyDao.pruneOlderThan(cutoff)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to rotate persona, falling back to neutral weights")

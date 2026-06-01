@@ -25,7 +25,8 @@ import kotlin.random.Random
 class DiverseBrowsingModule @Inject constructor(
     private val crawlListManager: CrawlListManager,
     private val webViewPool: PhantomWebViewPool,
-    private val profileRepo: PoisonProfileRepository
+    private val profileRepo: PoisonProfileRepository,
+    private val random: Random = Random.Default,
 ) : Module {
 
     override suspend fun start() {
@@ -55,7 +56,7 @@ class DiverseBrowsingModule @Inject constructor(
         }
 
         val url = pending.entry.url
-        val dwellMs = Random.nextLong(3_000L, 15_000L)
+        val dwellMs = random.nextLong(3_000L, 15_000L)
 
         val success = withContext(Dispatchers.Main) {
             val webView = webViewPool.acquire()

@@ -8,6 +8,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 /**
  * Bundled database of 500+ city center coordinates worldwide, loaded from assets/city_coords.json.
@@ -15,7 +16,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class CityDatabase @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val random: Random = Random.Default,
 ) {
     val cities: List<CityCoord> by lazy { loadCities() }
 
@@ -27,7 +29,7 @@ class CityDatabase @Inject constructor(
         } else {
             cities
         }
-        return pool.randomOrNull() ?: CityCoord("New York", 40.7128, -74.0060, "US_NORTHEAST")
+        return pool.randomOrNull(random) ?: CityCoord("New York", 40.7128, -74.0060, "US_NORTHEAST")
     }
 
     private fun loadCities(): List<CityCoord> {

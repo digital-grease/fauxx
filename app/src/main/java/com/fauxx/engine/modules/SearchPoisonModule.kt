@@ -84,7 +84,8 @@ class SearchPoisonModule @Inject constructor(
     private val demographicDao: DemographicProfileDao,
     private val customInterestMapper: CustomInterestMapper,
     private val queryBlocklist: QueryBlocklist,
-    private val localeManager: LocaleManager
+    private val localeManager: LocaleManager,
+    private val random: Random = Random.Default,
 ) : Module {
 
     override suspend fun start() {
@@ -118,7 +119,7 @@ class SearchPoisonModule @Inject constructor(
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
         // Use Markov generator 60% of the time for natural-looking queries
-        val query = if (Random.nextFloat() < 0.60f) {
+        val query = if (random.nextFloat() < 0.60f) {
             markovGenerator.generate(category)
         } else {
             queryBankManager.randomQuery(category)
@@ -142,7 +143,7 @@ class SearchPoisonModule @Inject constructor(
         }
 
         val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
-        val engine = SEARCH_ENGINES.random()
+        val engine = SEARCH_ENGINES.random(random)
         val url = engine.build(encodedQuery, localeManager.currentLocale)
 
         try {

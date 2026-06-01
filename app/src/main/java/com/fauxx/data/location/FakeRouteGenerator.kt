@@ -1,6 +1,8 @@
 package com.fauxx.data.location
 
 import android.location.Location
+import com.fauxx.util.Clock
+import com.fauxx.util.SystemClockImpl
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.cos
@@ -43,7 +45,9 @@ data class RoutePoint(
  */
 @Singleton
 class FakeRouteGenerator @Inject constructor(
-    private val cityDatabase: CityDatabase
+    private val cityDatabase: CityDatabase,
+    private val clock: Clock = SystemClockImpl(),
+    private val random: Random = Random.Default,
 ) {
     enum class MovementMode { WALKING, DRIVING, STATIONARY }
 
@@ -66,30 +70,30 @@ class FakeRouteGenerator @Inject constructor(
         val points = mutableListOf<RoutePoint>()
         var lat = start.lat
         var lng = start.lng
-        var bearing = Random.nextDouble(0.0, 360.0)
-        val baseTime = System.currentTimeMillis() - count * intervalMs
+        var bearing = random.nextDouble(0.0, 360.0)
+        val baseTime = clock.currentTimeMillis() - count * intervalMs
         val baseElapsedNanos = System.nanoTime() - count * intervalMs * 1_000_000L
 
         for (i in 0 until count) {
             val (speed, accuracy) = when (mode) {
                 MovementMode.WALKING -> Pair(
-                    Random.nextFloat() * 1.5f + 0.8f, // 0.8-2.3 m/s (3-8 km/h)
-                    Random.nextFloat() * 5f + 3f      // 3-8m accuracy
+                    random.nextFloat() * 1.5f + 0.8f, // 0.8-2.3 m/s (3-8 km/h)
+                    random.nextFloat() * 5f + 3f      // 3-8m accuracy
                 )
                 MovementMode.DRIVING -> Pair(
-                    Random.nextFloat() * 20f + 8f,    // 8-28 m/s (30-100 km/h)
-                    Random.nextFloat() * 10f + 5f     // 5-15m accuracy
+                    random.nextFloat() * 20f + 8f,    // 8-28 m/s (30-100 km/h)
+                    random.nextFloat() * 10f + 5f     // 5-15m accuracy
                 )
                 MovementMode.STATIONARY -> Pair(
                     0f,
-                    Random.nextFloat() * 8f + 2f      // 2-10m jitter
+                    random.nextFloat() * 8f + 2f      // 2-10m jitter
                 )
             }
 
             // Apply movement
             if (mode != MovementMode.STATIONARY) {
                 // Gentle bearing changes
-                bearing += Random.nextDouble(-15.0, 15.0)
+                bearing += random.nextDouble(-15.0, 15.0)
 
                 val distanceM = speed * intervalMs / 1000.0
                 val deltaLat = distanceM * cos(Math.toRadians(bearing)) / 111_320.0
@@ -99,8 +103,8 @@ class FakeRouteGenerator @Inject constructor(
                 lng += deltaLng
             } else {
                 // Stationary jitter
-                lat += Random.nextDouble(-0.00002, 0.00002)
-                lng += Random.nextDouble(-0.00002, 0.00002)
+                lat += random.nextDouble(-0.00002, 0.00002)
+                lng += random.nextDouble(-0.00002, 0.00002)
             }
 
             points.add(

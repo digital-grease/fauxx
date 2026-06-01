@@ -6,6 +6,8 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.fauxx.util.Clock
+import com.fauxx.util.SystemClockImpl
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -41,14 +43,15 @@ private const val WORK_NAME = "fauxx_resume"
  */
 @Singleton
 class ResumeScheduler @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val clock: Clock = SystemClockImpl(),
 ) {
     fun schedule(spec: ResumeSpec) {
         val builder = OneTimeWorkRequestBuilder<ResumeWorker>()
 
         when (spec) {
             is ResumeSpec.AtTime -> {
-                val delayMs = (spec.epochMs - System.currentTimeMillis()).coerceAtLeast(0L)
+                val delayMs = (spec.epochMs - clock.currentTimeMillis()).coerceAtLeast(0L)
                 builder.setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
                 Timber.d("ResumeScheduler: scheduling at ${spec.epochMs} (in ${delayMs / 1000}s)")
             }

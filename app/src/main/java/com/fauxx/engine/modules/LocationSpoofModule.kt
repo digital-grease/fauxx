@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 private const val MOCK_PROVIDER = "fauxx_mock"
 
@@ -33,7 +34,8 @@ class LocationSpoofModule @Inject constructor(
     @ApplicationContext private val context: Context,
     private val routeGenerator: FakeRouteGenerator,
     private val cityDatabase: CityDatabase,
-    private val profileRepo: PoisonProfileRepository
+    private val profileRepo: PoisonProfileRepository,
+    private val random: Random = Random.Default,
 ) : Module, LocationDiagnostics {
 
     private val locationManager: LocationManager =
@@ -131,7 +133,7 @@ class LocationSpoofModule @Inject constructor(
             )
         }
 
-        val mode = FakeRouteGenerator.MovementMode.values().random()
+        val mode = FakeRouteGenerator.MovementMode.values().random(random)
         val city = cityDatabase.randomCity()
         val route = routeGenerator.generateRoute(origin = city, mode = mode, count = 5)
 
