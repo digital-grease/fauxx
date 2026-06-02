@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.model.ActionType
+import com.fauxx.logging.LogScrubber
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,7 +53,7 @@ class LogViewModel @Inject constructor(
                     appendLine(
                         "${fmt.format(Date(e.timestamp))}," +
                         "${e.actionType},${e.category}," +
-                        "\"${e.detail.replace("\"", "\"\"")}\",${e.success}"
+                        "${csvCell(LogScrubber.scrub(e.detail))},${e.success}"
                     )
                 }
             }
@@ -62,8 +63,20 @@ class LogViewModel @Inject constructor(
 
     fun exportJson(onReady: (String) -> Unit) {
         viewModelScope.launch {
-            val entries = dao.getAllForExport()
+            val entries = dao.getAllForExport().map { it.copy(detail = LogScrubber.scrub(it.detail)) }
             onReady(Gson().toJson(entries))
         }
+    }
+
+    /**
+     * Render a CSV cell safely. A cell beginning with =, +, -, @, tab, or CR is executed as
+     * a formula by spreadsheet apps (CSV injection), so prefix it with a single quote; then
+     * RFC-4180-quote the value (double embedded quotes, wrap in quotes). The action-log
+     * export is a user-shareable artifact, so detail is also run through [LogScrubber] before
+     * it reaches this point.
+     */
+    private fun csvCell(raw: String): String {
+        val guarded = if (raw.isNotEmpty() && raw.first() in "=+-@\t\r") "'$raw" else raw
+        return "\"${guarded.replace("\"", "\"\"")}\""
     }
 }
