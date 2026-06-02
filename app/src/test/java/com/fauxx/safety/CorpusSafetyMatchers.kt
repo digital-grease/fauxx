@@ -45,7 +45,9 @@ object CorpusSafetyMatchers {
             .filter { it.isNotEmpty() }
             .toSet()
         val regexes = parsed.regexPatterns.mapNotNull {
-            runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull()
+            // (?U) mirrors QueryBlocklist: makes \b/\w Unicode-aware so Cyrillic word-boundary
+            // patterns fire (ASCII-only \b never matches before a non-ASCII letter).
+            runCatching { Regex("(?U)$it", RegexOption.IGNORE_CASE) }.getOrNull()
         }
         return { query ->
             val n = normalize(query)

@@ -168,7 +168,11 @@ class QueryBlocklist @Inject constructor(
             .filter { it.isNotEmpty() }
             .toSet()
         val regexes = parsed.regexPatterns.mapNotNull {
-            runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull()
+            // (?U) = UNICODE_CHARACTER_CLASS. Without it, Java's \b and \w are ASCII-only,
+            // so a word-boundary pattern never fires before a Cyrillic (or other non-ASCII)
+            // letter — silently disabling every non-English self-signal regex. Input is
+            // already NFKC-normalized and lowercased by normalizeForMatch.
+            runCatching { Regex("(?U)$it", RegexOption.IGNORE_CASE) }.getOrNull()
         }
         return BlocklistData(phraseTerms, regexes, loadFailed = false)
     }

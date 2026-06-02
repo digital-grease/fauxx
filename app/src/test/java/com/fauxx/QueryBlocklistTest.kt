@@ -225,4 +225,24 @@ class QueryBlocklistTest {
             escaped
         )
     }
+
+    @Test
+    fun `unicode word-boundary regex fires for non-ASCII (Cyrillic) queries`() {
+        // Regression for the (?U) fix: Java's default \b/\w are ASCII-only, so a
+        // word-boundary pattern never fires before a Cyrillic letter, silently disabling
+        // every non-English self-signal regex. QueryBlocklist compiles patterns with (?U).
+        val json = """
+            {
+              "class_a_terms": ["safe anchor phrase"],
+              "self_signal_terms": [],
+              "regex_patterns": ["\\bдепортаци(я|и)\\b"]
+            }
+        """.trimIndent()
+        val bl = makeBlocklistWithJson(json)
+        assertTrue(
+            "Cyrillic word-boundary regex must match a Cyrillic query",
+            bl.isBlocked("вопрос про депортации сегодня")
+        )
+        assertFalse(bl.isBlocked("обычный безопасный запрос про путешествия"))
+    }
 }
