@@ -93,6 +93,23 @@ class CrashReportWriterTest {
     }
 
     @Test
+    fun `scrubs PII from the stack trace section, not just recent logs`() {
+        // An exception message can carry user content; the stack-trace section is offered
+        // for sharing into a public issue, so it must be scrubbed like the logs section.
+        val exception = RuntimeException("failed while contacting bob@secret.example.com")
+        writer.writeCrashReport(exception)
+
+        val content = File(filesDir, CrashReportWriter.CRASH_FILE_NAME).readText()
+        assertFalse(
+            "email in the exception message must be redacted in the stack trace",
+            content.contains("bob@secret.example.com")
+        )
+        assertTrue("redaction marker present", content.contains("[REDACTED]"))
+        // Structural info stays for debugging.
+        assertTrue("exception type retained", content.contains("RuntimeException"))
+    }
+
+    @Test
     fun `handles nested exception causes`() {
         val root = IllegalStateException("root cause")
         val exception = RuntimeException("wrapper", root)
