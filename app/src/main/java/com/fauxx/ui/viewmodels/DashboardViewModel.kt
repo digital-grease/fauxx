@@ -21,11 +21,16 @@ import com.fauxx.util.Clock
 import com.fauxx.util.SystemClockImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -43,6 +48,7 @@ data class DashboardUiState(
     val healthWarnings: List<String> = emptyList()
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -75,8 +81,8 @@ class DashboardViewModel @Inject constructor(
 
     val uiState: StateFlow<DashboardUiState> = combine(
         _enabled,
-        actionLogDao.countSince(clock.currentTimeMillis() - 24 * 60 * 60 * 1000L),
-        actionLogDao.countSince(clock.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L),
+        windowedActionCount(DAY_MS),
+        windowedActionCount(WEEK_MS),
         targetingEngine.getWeights(),
         personaLayer.currentPersona,
         poisonEngine.healthWarnings,
@@ -166,5 +172,28 @@ class DashboardViewModel @Inject constructor(
     private fun computeNoiseRatio(actionsToday: Int): Float {
         // Simple heuristic: 0% at 0 actions, 100% at 500+ actions per day
         return (actionsToday / 500f).coerceIn(0f, 1f)
+    }
+
+    /**
+     * Count of successful actions within a rolling [windowMs] window. The window boundary is
+     * recomputed every [WINDOW_REFRESH_MS] via a ticker so it actually SLIDES. Computing the
+     * boundary once at flow-construction time froze it, so "today" / "this week" silently
+     * widened the longer the dashboard stayed open.
+     */
+    private fun windowedActionCount(windowMs: Long): Flow<Int> =
+        flow {
+            while (true) {
+                emit(Unit)
+                delay(WINDOW_REFRESH_MS)
+            }
+        }.flatMapLatest {
+            actionLogDao.countSince(clock.currentTimeMillis() - windowMs)
+        }
+
+    companion object {
+        private const val DAY_MS = 24 * 60 * 60 * 1000L
+        private const val WEEK_MS = 7 * DAY_MS
+        /** How often the rolling-window boundary is recomputed (so the window slides). */
+        private const val WINDOW_REFRESH_MS = 60_000L
     }
 }
