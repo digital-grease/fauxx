@@ -49,6 +49,17 @@ class QueryBlocklistTest {
         return QueryBlocklist(context, mockLocaleManager())
     }
 
+    /** Map ASCII to the fullwidth block (U+FF01..U+FF5E correspond to U+0021..U+007E); space -> U+3000. */
+    private fun toFullwidth(s: String): String = buildString {
+        for (c in s) append(
+            when {
+                c == ' ' -> '　'
+                c.code in 0x21..0x7E -> (c.code - 0x20 + 0xFF00).toChar()
+                else -> c
+            }
+        )
+    }
+
     private val sampleJson = """
         {
           "class_a_terms": ["bomb making instructions", "how to make ricin"],
@@ -99,6 +110,34 @@ class QueryBlocklistTest {
         assertTrue(bl.isBlocked("CALL 988"))
         assertTrue(bl.isBlocked("Suicide Hotline"))
         assertTrue(bl.isBlocked("BoMb MaKiNg InStRuCtIoNs"))
+    }
+
+    @Test
+    fun `blocks Unicode-evasion variants that bypass naive substring matching`() {
+        val bl = makeBlocklistWithJson(sampleJson)
+        // Fullwidth letters NFKC-fold to ASCII, so a fullwidth render of a blocked phrase
+        // must still be caught.
+        assertTrue(
+            "fullwidth letters must not evade the phrase guard",
+            bl.isBlocked(toFullwidth("bomb making instructions"))
+        )
+        // Fullwidth digits must still trip the \b988\b regex after normalization.
+        assertTrue(
+            "fullwidth digits must not evade the regex guard",
+            bl.isBlocked("please call " + toFullwidth("988") + " right now")
+        )
+        // Zero-width characters injected inside a blocked phrase are stripped before matching.
+        assertTrue(
+            "zero-width injection must not evade the phrase guard",
+            bl.isBlocked("bo​mb ma‌king instru‍ctions")
+        )
+        // Soft hyphen (U+00AD) injected mid-word is stripped.
+        assertTrue(
+            "soft hyphen must not evade",
+            bl.isBlocked("national suicide­ hotline number")
+        )
+        // Sanity: NFKC must NOT newly block a legitimate accented query (no diacritic stripping).
+        assertFalse(bl.isBlocked("café latte recipe ideas"))
     }
 
     @Test

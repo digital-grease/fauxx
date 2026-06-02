@@ -8,6 +8,7 @@ import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.text.Normalizer
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -107,11 +108,30 @@ class QueryBlocklist @Inject constructor(
     fun isBlocked(query: String): Boolean {
         val data = dataForCurrentLocale()
         if (data.loadFailed) return true
-        val normalized = query.lowercase()
+        val normalized = normalizeForMatch(query)
         if (data.phraseTerms.any { normalized.contains(it) }) return true
         if (data.regexes.any { it.containsMatchIn(normalized) }) return true
         return false
     }
+
+    /**
+     * Canonicalize text before matching so common evasion tricks cannot smuggle a harmful
+     * phrase past the substring/regex guard:
+     *  - NFKC folds compatibility forms (fullwidth letters/digits, ligatures) to their
+     *    canonical equivalents, so "ｂｏｍｂ" / "９８８" match "bomb" / "988".
+     *  - Zero-width and soft-hyphen characters (often injected mid-word) are stripped.
+     *  - Lowercased and trimmed for case-insensitive substring matching.
+     *
+     * Applied to BOTH the incoming query and the stored blocklist terms so the two sides
+     * canonicalize identically. Cross-script homoglyph confusables (e.g. Cyrillic "а" for
+     * Latin "a") are NOT folded here — that needs a full Unicode confusables table and is
+     * tracked as a follow-up.
+     */
+    private fun normalizeForMatch(text: String): String =
+        Normalizer.normalize(text, Normalizer.Form.NFKC)
+            .replace(ZERO_WIDTH_CHARS, "")
+            .lowercase()
+            .trim()
 
     private fun dataForCurrentLocale(): BlocklistData {
         val locale = localeManager.currentLocale
@@ -144,7 +164,7 @@ class QueryBlocklist @Inject constructor(
         }
 
         val phraseTerms = (parsed.classATerms + parsed.selfSignalTerms)
-            .map { it.lowercase().trim() }
+            .map { normalizeForMatch(it) }
             .filter { it.isNotEmpty() }
             .toSet()
         val regexes = parsed.regexPatterns.mapNotNull {
@@ -168,6 +188,13 @@ class QueryBlocklist @Inject constructor(
          * existing tests and as a transitional shim during the locale split.
          */
         private const val LEGACY_PATH = "harmful_queries.json"
+
+        /**
+         * Zero-width / format characters stripped before matching: ZWSP (U+200B), ZWNJ
+         * (U+200C), ZWJ (U+200D), word joiner (U+2060), BOM/ZWNBSP (U+FEFF), soft hyphen
+         * (U+00AD). Injecting these mid-phrase is a common way to break substring matching.
+         */
+        private val ZERO_WIDTH_CHARS = Regex("[\u200B-\u200D\u2060\uFEFF\u00AD]")
     }
 }
 
