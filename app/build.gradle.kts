@@ -19,6 +19,13 @@ android {
     namespace = "com.fauxx"
     compileSdk = 36
 
+    sourceSets {
+        // Room exports schema JSONs to app/schemas (see the `ksp { arg("room.schemaLocation") }`
+        // block below). Surfacing them as androidTest assets lets MigrationTestHelper read the
+        // historical schemas on-device when validating migrations.
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+
     defaultConfig {
         applicationId = "com.fauxx"
         minSdk = 26
@@ -147,6 +154,13 @@ tasks.withType<JavaCompile>().configureEach {
     javaCompiler = javaToolchains.compilerFor {
         languageVersion = JavaLanguageVersion.of(21)
     }
+}
+
+ksp {
+    // Export Room schemas to app/schemas/<database>/<version>.json so migrations can be
+    // validated against the entity history (MigrationTestHelper). Each version is committed;
+    // any future schema change must commit its new JSON or the Room schema-export check fails.
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
