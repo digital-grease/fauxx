@@ -54,4 +54,29 @@ object CorpusSafetyMatchers {
             terms.any { n.contains(it) } || regexes.any { it.containsMatchIn(n) }
         }
     }
+
+    private data class BlocklistShape(
+        val domains: List<String> = emptyList(),
+        val patterns: List<String> = emptyList(),
+    )
+
+    /**
+     * Build a `(host) -> Boolean` matcher from a `blocklist.json` string. Mirrors
+     * [com.fauxx.data.crawllist.DomainBlocklist.isBlocked]: lowercase + trimStart('.'),
+     * exact-domain match, subdomain (`endsWith(".$domain")`), and IGNORE_CASE regex
+     * patterns. No `(?U)` here — blocklist domains/patterns are ASCII hosts/IP ranges.
+     */
+    fun domainBlocker(blocklistJson: String): (String) -> Boolean {
+        val parsed = gson.fromJson(blocklistJson, BlocklistShape::class.java)
+        val domains = parsed.domains.map { it.lowercase().trim() }.toSet()
+        val patterns = parsed.patterns.mapNotNull {
+            runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull()
+        }
+        return { host ->
+            val n = host.lowercase().trimStart('.')
+            n in domains ||
+                domains.any { n.endsWith(".$it") } ||
+                patterns.any { it.containsMatchIn(n) }
+        }
+    }
 }
