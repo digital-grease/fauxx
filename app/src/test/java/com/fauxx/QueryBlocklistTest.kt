@@ -167,6 +167,49 @@ class QueryBlocklistTest {
     }
 
     @Test
+    fun `non-English locale fails closed and does NOT fall back to the legacy English list`() {
+        // ES has no harmful_queries/es.json, but the legacy harmful_queries.json IS present.
+        // An English blocklist cannot catch Spanish crisis lines / self-signal phrasing, so
+        // a non-EN locale must NEVER silently fall back to it — it must fail closed instead.
+        val context: Context = mockk()
+        val assetManager: AssetManager = mockk()
+        every { context.assets } returns assetManager
+        every { assetManager.open("harmful_queries/es.json") } throws IOException("missing")
+        every { assetManager.open("harmful_queries.json") } returns
+            ByteArrayInputStream(sampleJson.toByteArray())
+
+        val bl = QueryBlocklist(context, mockLocaleManager(SupportedLocale.ES))
+
+        // loadFailed == true proves it did NOT load the legacy EN list (a fallback would
+        // have produced a working, non-failed blocklist).
+        assertTrue("ES must fail closed when its own file is missing", bl.loadFailed)
+        assertTrue("Fail-closed must block every query", bl.isBlocked("recetas de pasta"))
+    }
+
+    @Test
+    fun `switching from a failed locale to a clean one clears loadFailed`() {
+        val context: Context = mockk()
+        val assetManager: AssetManager = mockk()
+        every { context.assets } returns assetManager
+        every { assetManager.open("harmful_queries/es.json") } throws IOException("missing")
+        every { assetManager.open("harmful_queries/fr.json") } returns
+            ByteArrayInputStream(sampleJson.toByteArray())
+
+        var current = SupportedLocale.ES
+        val localeManager: LocaleManager = mockk(relaxed = true)
+        every { localeManager.currentLocale } answers { current }
+
+        val bl = QueryBlocklist(context, localeManager)
+        assertTrue("ES fails closed (no es.json, no non-EN fallback)", bl.loadFailed)
+
+        // Switch to FR, whose file loads cleanly — loadFailed must flip back to false and
+        // the FR list must be active.
+        current = SupportedLocale.FR
+        assertFalse("FR loads cleanly, so loadFailed must clear on switch", bl.loadFailed)
+        assertTrue("FR blocklist must be active after the switch", bl.isBlocked("call 988 now"))
+    }
+
+    @Test
     fun `malformed regex is dropped silently without crashing isBlocked`() {
         val json = """
             {
