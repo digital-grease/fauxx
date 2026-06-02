@@ -7,9 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.di.PreferenceKeys
 import com.fauxx.di.fauxxDataStore
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.logging.EncryptedFileTree
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.layer1.AgeRange
 import com.fauxx.targeting.layer1.CustomInterestMapper
@@ -91,6 +93,8 @@ class TargetingViewModel @Inject constructor(
     private val googleTakeoutImporter: GoogleTakeoutImporter,
     private val facebookDyiImporter: FacebookDyiImporter,
     @ApplicationContext private val context: Context,
+    private val encryptedFileTree: EncryptedFileTree,
+    private val markovGenerator: MarkovQueryGenerator,
     private val clock: Clock = SystemClockImpl(),
 ) : ViewModel() {
 
@@ -270,6 +274,11 @@ class TargetingViewModel @Inject constructor(
             demographicDao.delete()
             platformDao.deleteAll()
             personaHistoryDao.deleteAll()
+            // The Markov model is seeded from custom interests on this profile, and the
+            // encrypted logs hold persona/profile dumps — clear both so no interest-derived
+            // trail survives a profile wipe.
+            encryptedFileTree.clearLogs()
+            markovGenerator.clearAllState()
             targetingEngine.setLayer1Enabled(false)
             targetingEngine.setLayer2Enabled(false)
             targetingEngine.setLayer3Enabled(false)

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.fauxx.BuildConfig
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.IntensityLevel
+import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
@@ -59,7 +60,8 @@ class SettingsViewModel @Inject constructor(
     private val personaHistoryDao: PersonaHistoryDao,
     private val targetingEngine: TargetingEngine,
     private val encryptedFileTree: EncryptedFileTree,
-    private val localeManager: LocaleManager
+    private val localeManager: LocaleManager,
+    private val markovGenerator: MarkovQueryGenerator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(loadFromProfile())
@@ -113,6 +115,11 @@ class SettingsViewModel @Inject constructor(
             demographicDao.delete()
             platformDao.deleteAll()
             personaHistoryDao.deleteAll()
+            // Clear the recoverable trail too: the encrypted log files (up to 48h of
+            // query/persona text) and the Markov model trained from custom interests.
+            // Without these, "delete all data" leaves a recoverable activity trail.
+            encryptedFileTree.clearLogs()
+            markovGenerator.clearAllState()
             targetingEngine.setLayer1Enabled(false)
             targetingEngine.setLayer2Enabled(false)
             targetingEngine.setLayer3Enabled(false)

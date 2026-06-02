@@ -200,6 +200,19 @@ class MarkovQueryGenerator @Inject constructor(
         seedPhrases.clear()
     }
 
+    /**
+     * Clear ALL trained state: seed phrases, the bigram model, and the trained-category set.
+     * Used by the user-initiated data wipe. The seed phrases are folded into [bigramMap] via
+     * [train] from the user's custom interests, so [clearSeedPhrases] alone leaves
+     * interest-derived bigrams resident; this removes the entire trained surface.
+     */
+    @Synchronized
+    fun clearAllState() {
+        seedPhrases.clear()
+        bigramMap.clear()
+        trainedCategories.clear()
+    }
+
     companion object {
         /** Probability of using an injected seed phrase vs. a corpus query. */
         private const val SEED_PHRASE_PROBABILITY = 0.3f
