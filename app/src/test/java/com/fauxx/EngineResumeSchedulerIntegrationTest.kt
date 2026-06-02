@@ -25,6 +25,7 @@ import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.PoissonScheduler
 import com.fauxx.service.ResumeScheduler
+import com.fauxx.support.FakeClock
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.util.Clock
 import io.mockk.coEvery
@@ -72,11 +73,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class EngineResumeSchedulerIntegrationTest {
-
-    private class FakeClock(var nowMs: Long) : Clock {
-        override fun currentTimeMillis(): Long = nowMs
-        override fun elapsedRealtime(): Long = nowMs
-    }
 
     private lateinit var workManager: WorkManager
     private lateinit var engine: PoisonEngine

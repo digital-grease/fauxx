@@ -20,6 +20,7 @@ import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.PoissonScheduler
 import com.fauxx.service.ResumeSpec
+import com.fauxx.support.FakeClock
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.util.Clock
 import io.mockk.coEvery
@@ -57,16 +58,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class PoisonEngineLoopTest {
-
-    /**
-     * Clock backed by a mutable field so test code can advance it in sync with the
-     * `runTest` scheduler. Both wall-clock and elapsed are slaved to the same value
-     * — fine for these tests since they only care about relative deltas.
-     */
-    private class FakeClock(var nowMs: Long) : Clock {
-        override fun currentTimeMillis(): Long = nowMs
-        override fun elapsedRealtime(): Long = nowMs
-    }
 
     private val baseProfile = PoisonProfile(
         enabled = true,

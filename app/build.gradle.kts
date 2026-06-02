@@ -20,6 +20,10 @@ android {
     compileSdk = 36
 
     sourceSets {
+        // Shared test support (FakeClock, MainDispatcherRule, seeded Random) lives in
+        // src/sharedTest so unit and instrumented tests use one copy.
+        getByName("test").kotlin.srcDir("src/sharedTest/java")
+        getByName("androidTest").kotlin.srcDir("src/sharedTest/java")
         // Room exports schema JSONs to app/schemas (see the `ksp { arg("room.schemaLocation") }`
         // block below). Surfacing them as androidTest assets lets MigrationTestHelper read the
         // historical schemas on-device when validating migrations.

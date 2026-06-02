@@ -10,19 +10,17 @@ import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.modules.AdPollutionModule
 import com.fauxx.engine.modules.CookieSaturationModule
 import com.fauxx.engine.webview.PhantomWebViewPool
+import com.fauxx.support.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -34,6 +32,10 @@ import org.robolectric.annotation.Config
 class ModuleSilentFailureTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+
     private val webView: WebView = mockk(relaxed = true)
     private val webViewPool: PhantomWebViewPool = mockk(relaxed = true)
     private val crawlListManager: CrawlListManager = mockk(relaxed = true)
@@ -46,13 +48,7 @@ class ModuleSilentFailureTest {
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         coEvery { webViewPool.acquire() } returns webView
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test
