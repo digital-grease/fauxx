@@ -84,6 +84,15 @@ class HeaderRandomizerInterceptor @Inject constructor(
                 "fr-FR,fr;q=0.9",
                 "fr-FR,fr;q=0.9,en-US;q=0.7,en;q=0.5",
                 "fr-BE,fr;q=0.9,en;q=0.6"
+            ),
+            // Without a RU entry, a Russian install fell back to the EN variants (getValue(EN))
+            // and emitted en-US — the locale/language mismatch the interceptor exists to avoid.
+            SupportedLocale.RU to listOf(
+                "ru-RU,ru;q=0.9,en;q=0.6",
+                "ru-RU,ru;q=0.9",
+                "ru,en;q=0.7",
+                "ru-RU,ru;q=0.9,en-US;q=0.7,en;q=0.5",
+                "ru-RU,ru;q=0.8,en;q=0.6"
             )
         )
     }

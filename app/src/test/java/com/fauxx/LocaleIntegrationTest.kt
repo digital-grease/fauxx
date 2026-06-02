@@ -99,6 +99,47 @@ class LocaleIntegrationTest {
     }
 
     @Test
+    fun `header randomizer emits Russian primary when locale is ru`() {
+        val captured = mutableListOf<Request>()
+        val interceptor = HeaderRandomizerInterceptor(ua(), localeManager(SupportedLocale.RU))
+        repeat(20) { interceptor.intercept(fakeChain(captured)) }
+
+        val acceptLanguages = captured.map { it.header("Accept-Language") ?: "" }
+        assertTrue(
+            "All emissions must have a Russian primary tag — got $acceptLanguages",
+            acceptLanguages.all { it.startsWith("ru-") || it.startsWith("ru,") }
+        )
+        assertTrue(
+            "Should never emit en as primary in Russian locale (the locale/language mismatch bug)",
+            acceptLanguages.none { it.startsWith("en-") || it.startsWith("en,") }
+        )
+    }
+
+    @Test
+    fun `no shipped non-English locale falls back to the English Accept-Language variants`() {
+        // Coverage guard: a locale missing from LANGUAGE_VARIANTS silently uses the EN
+        // variants, emitting en-US for e.g. a Russian install. Assert every shipped non-en
+        // locale emits its OWN primary language tag.
+        val nonEnglish = com.fauxx.BuildConfig.SHIPPED_LOCALES
+            .mapNotNull { runCatching { SupportedLocale.fromTag(it) }.getOrNull() }
+            .filter { it != SupportedLocale.EN }
+            .toSet()
+        for (locale in nonEnglish) {
+            val captured = mutableListOf<Request>()
+            HeaderRandomizerInterceptor(ua(), localeManager(locale)).let { interceptor ->
+                repeat(20) { interceptor.intercept(fakeChain(captured)) }
+            }
+            val primaries = captured
+                .map { (it.header("Accept-Language") ?: "").substringBefore(",").substringBefore("-").lowercase() }
+                .toSet()
+            assertTrue(
+                "[$locale] must emit its own language primary, not English — got $primaries",
+                primaries.all { it == locale.tag.lowercase() }
+            )
+        }
+    }
+
+    @Test
     fun `SupportedLocale carries correct region and yahoo subdomain mapping`() {
         // Ensure the en/es/fr mappings match what SearchPoisonModule's URL builders rely on.
         assertEquals("US", SupportedLocale.EN.defaultRegion)
