@@ -2,6 +2,7 @@ package com.fauxx.service
 
 import androidx.work.NetworkType
 import com.fauxx.engine.PoisonEngine
+import com.fauxx.engine.modules.MockLocationProviderCleaner
 import com.fauxx.engine.webview.PhantomWebViewPool
 import io.mockk.Runs
 import io.mockk.every
@@ -110,5 +111,39 @@ class PhantomForegroundServiceTest {
         // It's fine for cancel() to be called (ACTION_START calls it; the test
         // double-counts that). Just assert it isn't a schedule.
         assertEquals(Unit, Unit) // explicit pass after the negative verify
+    }
+
+    @Test
+    fun `onTaskRemoved sweeps the mock-location provider and stops the engine`() {
+        // Swipe-away can kill the service without onDestroy on some OEMs, orphaning the system
+        // mock-location provider (finding #6 / issue #66). The service must remove it eagerly.
+        val service = Robolectric.buildService(PhantomForegroundService::class.java).get()
+        val cleaner: MockLocationProviderCleaner = mockk(relaxed = true)
+        val engine: PoisonEngine = mockk(relaxed = true)
+        service.poisonEngine = engine
+        service.webViewPool = mockk(relaxed = true)
+        service.resumeScheduler = mockk(relaxed = true)
+        service.mockLocationProviderCleaner = cleaner
+
+        service.onTaskRemoved(null)
+
+        verify(exactly = 1) { cleaner.clearOrphanedProvider() }
+        verify(exactly = 1) { engine.stop() }
+    }
+
+    @Test
+    fun `onDestroy sweeps the mock-location provider`() {
+        // onDestroy's engine teardown is async and can lose the race to process death, so the
+        // provider removal must also run synchronously here.
+        val service = Robolectric.buildService(PhantomForegroundService::class.java).get()
+        val cleaner: MockLocationProviderCleaner = mockk(relaxed = true)
+        service.poisonEngine = mockk(relaxed = true)
+        service.webViewPool = mockk(relaxed = true)
+        service.resumeScheduler = mockk(relaxed = true)
+        service.mockLocationProviderCleaner = cleaner
+
+        service.onDestroy()
+
+        verify(exactly = 1) { cleaner.clearOrphanedProvider() }
     }
 }
