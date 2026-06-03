@@ -1,6 +1,7 @@
 [versions]
 agp = "9.1.1"
 kotlin = "2.3.20"
+kover = "0.9.8"
 ksp = "2.3.6"
 coreKtx = "1.18.0"
 lifecycle = "2.10.0"
@@ -85,3 +86,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

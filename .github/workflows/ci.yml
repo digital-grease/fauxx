@@ -42,6 +42,10 @@ jobs:
       - name: Run unit tests
         run: ./gradlew test${{ matrix.flavorName }}DebugUnitTest
 
+      - name: Coverage gate (ratcheting)
+        if: matrix.flavor == 'play'
+        run: ./gradlew koverVerifyPlayDebug
+
       - name: Android Lint
         if: matrix.flavor == 'play'
         run: ./gradlew lint${{ matrix.flavorName }}Debug
