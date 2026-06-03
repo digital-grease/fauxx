@@ -232,6 +232,8 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.work.testing)
+    testImplementation(libs.mockwebserver)
+    testImplementation(libs.kotest.property)
     androidTestImplementation(libs.junit.ext)
     androidTestImplementation(libs.espresso)
     androidTestImplementation(platform(libs.compose.bom))
