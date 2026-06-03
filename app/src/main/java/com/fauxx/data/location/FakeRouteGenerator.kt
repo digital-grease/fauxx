@@ -90,21 +90,24 @@ class FakeRouteGenerator @Inject constructor(
                 )
             }
 
-            // Apply movement
+            // Apply movement, keeping coordinates valid: clamp latitude to [-90, 90] and wrap
+            // longitude to [-180, 180] so a route near a pole or across the antimeridian stays
+            // a valid GPS fix. Near the poles cos(lat) -> 0, which would blow the east-west
+            // degrees-per-metre up toward infinity, so floor the denominator.
             if (mode != MovementMode.STATIONARY) {
                 // Gentle bearing changes
                 bearing += random.nextDouble(-15.0, 15.0)
 
                 val distanceM = speed * intervalMs / 1000.0
                 val deltaLat = distanceM * cos(Math.toRadians(bearing)) / 111_320.0
-                val deltaLng = distanceM * sin(Math.toRadians(bearing)) /
-                    (111_320.0 * cos(Math.toRadians(lat)))
-                lat += deltaLat
-                lng += deltaLng
+                val metersPerDegLng = 111_320.0 * maxOf(cos(Math.toRadians(lat)), 0.01)
+                val deltaLng = distanceM * sin(Math.toRadians(bearing)) / metersPerDegLng
+                lat = (lat + deltaLat).coerceIn(-90.0, 90.0)
+                lng = wrapLongitude(lng + deltaLng)
             } else {
                 // Stationary jitter
-                lat += random.nextDouble(-0.00002, 0.00002)
-                lng += random.nextDouble(-0.00002, 0.00002)
+                lat = (lat + random.nextDouble(-0.00002, 0.00002)).coerceIn(-90.0, 90.0)
+                lng = wrapLongitude(lng + random.nextDouble(-0.00002, 0.00002))
             }
 
             points.add(
@@ -120,5 +123,11 @@ class FakeRouteGenerator @Inject constructor(
         }
 
         return points
+    }
+
+    /** Wrap a longitude into [-180, 180] so an antimeridian crossing stays a valid coordinate. */
+    private fun wrapLongitude(lng: Double): Double {
+        val x = (lng + 180.0) % 360.0
+        return (if (x < 0) x + 360.0 else x) - 180.0
     }
 }
