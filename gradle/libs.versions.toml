@@ -28,7 +28,7 @@ mockk = "1.14.9"
 turbine = "1.2.1"
 mockkAndroid = "1.14.9"
 robolectric = "4.16.1"
-kotest = "5.9.1"
+kotest = "6.1.11"
 timber = "5.0.1"
 appcompat = "1.7.0"
 
