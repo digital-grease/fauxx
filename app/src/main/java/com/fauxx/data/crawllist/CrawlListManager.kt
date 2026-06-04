@@ -8,11 +8,14 @@ import timber.log.Timber
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
+import com.fauxx.util.Clock
+import com.fauxx.util.SystemClockImpl
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 /** Minimum milliseconds between requests to the same domain (safety requirement). */
 private const val MIN_DOMAIN_INTERVAL_MS = 5_000L
@@ -41,7 +44,9 @@ private const val CLEANUP_THRESHOLD = 500
 class CrawlListManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val blocklist: DomainBlocklist,
-    private val localeManager: LocaleManager
+    private val localeManager: LocaleManager,
+    private val clock: Clock = SystemClockImpl(),
+    private val random: Random = Random.Default,
 ) {
     private val urlsByLocale = ConcurrentHashMap<SupportedLocale, List<CrawlEntry>>()
     private val lastVisitByDomain = mutableMapOf<String, Long>()
@@ -57,7 +62,7 @@ class CrawlListManager @Inject constructor(
      * @return A [CrawlEntry] to visit, or null if none is currently eligible.
      */
     fun nextUrl(category: CategoryPool? = null): CrawlEntry? {
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         cleanupStaleEntries(now)
         val urls = currentUrls()
         val candidates = if (category != null) {
@@ -72,7 +77,7 @@ class CrawlListManager @Inject constructor(
                 !blocklist.isUrlBlocked(entry.url) &&
                 isEligible(entry.domain, now)
             }
-            .randomOrNull()
+            .randomOrNull(random)
             ?.also { entry ->
                 lastVisitByDomain[entry.domain] = now
             }
@@ -92,7 +97,7 @@ class CrawlListManager @Inject constructor(
         if (immediate != null) return PendingCrawlEntry(immediate, 0L)
 
         // All candidates are rate-limited — find the one with the shortest remaining wait
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         val urls = currentUrls()
         val candidates = if (category != null) {
             urls.filter { it.category == category }
@@ -117,12 +122,12 @@ class CrawlListManager @Inject constructor(
     }
 
     /** Mark a domain as visited at [timestamp]. */
-    fun markVisited(domain: String, timestamp: Long = System.currentTimeMillis()) {
+    fun markVisited(domain: String, timestamp: Long = clock.currentTimeMillis()) {
         lastVisitByDomain[domain] = timestamp
     }
 
     /** Check if a domain can be visited now (rate limit). */
-    fun isEligible(domain: String, now: Long = System.currentTimeMillis()): Boolean {
+    fun isEligible(domain: String, now: Long = clock.currentTimeMillis()): Boolean {
         val last = lastVisitByDomain[domain] ?: return true
         return (now - last) >= MIN_DOMAIN_INTERVAL_MS
     }

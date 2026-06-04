@@ -43,7 +43,10 @@ class CrashReportWriter @Inject constructor(
                 writer.write("Thread: ${Thread.currentThread().name}\n\n")
 
                 writer.write("=== Stack Trace ===\n")
-                writer.write(throwable.stackTraceToString())
+                // Scrub the stack trace too, not just the recent-logs section below: an
+                // exception message can embed user content, and this report is offered for
+                // sharing into a public issue via CrashReportUrlBuilder.
+                writer.write(LogScrubber.scrub(throwable.stackTraceToString()))
                 writer.write("\n\n")
 
                 writer.write("=== Recent Logs ===\n")

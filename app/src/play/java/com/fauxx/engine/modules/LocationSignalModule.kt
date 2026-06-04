@@ -30,7 +30,8 @@ class LocationSignalModule @Inject constructor(
     private val cityDatabase: CityDatabase,
     private val queryBankManager: QueryBankManager,
     private val profileRepo: PoisonProfileRepository,
-    private val httpClient: OkHttpClient
+    private val httpClient: OkHttpClient,
+    private val random: Random = Random.Default,
 ) : Module {
 
     override suspend fun start() {
@@ -43,11 +44,11 @@ class LocationSignalModule @Inject constructor(
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
         val city = cityDatabase.randomCity()
-        val queryTemplate = LOCATION_QUERY_TEMPLATES.random()
+        val queryTemplate = LOCATION_QUERY_TEMPLATES.random(random)
         val query = queryTemplate.replace("{city}", city.name)
 
         val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
-        val engine = SEARCH_ENGINES.random()
+        val engine = SEARCH_ENGINES.random(random)
         val url = "$engine$encodedQuery"
 
         try {

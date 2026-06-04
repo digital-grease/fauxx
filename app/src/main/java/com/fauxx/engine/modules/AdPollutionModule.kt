@@ -31,7 +31,8 @@ private val AD_DASHBOARD_URLS = listOf(
 class AdPollutionModule @Inject constructor(
     private val crawlListManager: CrawlListManager,
     private val webViewPool: PhantomWebViewPool,
-    private val profileRepo: PoisonProfileRepository
+    private val profileRepo: PoisonProfileRepository,
+    private val random: Random = Random.Default,
 ) : Module {
 
     override suspend fun start() {
@@ -45,11 +46,11 @@ class AdPollutionModule @Inject constructor(
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
         // 10% chance: visit an ad dashboard (logged as AD_CLICK);
         // otherwise: plain crawl-list page fetch (logged as PAGE_VISIT).
-        val isDashboardVisit = Random.nextFloat() < 0.10f
+        val isDashboardVisit = random.nextFloat() < 0.10f
         val actionType = if (isDashboardVisit) ActionType.AD_CLICK else ActionType.PAGE_VISIT
 
         val url = if (isDashboardVisit) {
-            AD_DASHBOARD_URLS.random()
+            AD_DASHBOARD_URLS.random(random)
         } else {
             val pending = crawlListManager.nextUrlOrWait(category)
                 ?: crawlListManager.nextUrlOrWait(null)
@@ -72,7 +73,7 @@ class AdPollutionModule @Inject constructor(
             val webView = webViewPool.acquire()
             try {
                 webView.loadUrl(url)
-                delay(Random.nextLong(3_000L, 15_000L))
+                delay(random.nextLong(3_000L, 15_000L))
                 true
             } catch (e: Exception) {
                 Timber.w("Ad page load failed: ${e.message}")

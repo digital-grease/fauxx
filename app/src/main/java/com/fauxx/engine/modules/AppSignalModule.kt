@@ -186,7 +186,8 @@ class AppSignalModule @Inject constructor(
     @ApplicationContext private val context: Context,
     private val profileRepo: PoisonProfileRepository,
     private val webViewPool: PhantomWebViewPool,
-    private val localeManager: LocaleManager
+    private val localeManager: LocaleManager,
+    private val random: Random = Random.Default,
 ) : Module {
 
     override suspend fun start() {
@@ -216,7 +217,7 @@ class AppSignalModule @Inject constructor(
         // user mid-task. PhantomWebViewClient.shouldOverrideUrlLoading also rejects
         // navigations to blocklisted hosts; non-http schemes (market://) fail
         // silently in WebView.
-        val dwellMs = (3_000L..8_000L).random()
+        val dwellMs = (3_000L..8_000L).random(random)
         val success = withContext(Dispatchers.Main) {
             val webView = webViewPool.acquire()
             try {

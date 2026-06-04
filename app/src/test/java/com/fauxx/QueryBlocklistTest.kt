@@ -49,6 +49,17 @@ class QueryBlocklistTest {
         return QueryBlocklist(context, mockLocaleManager())
     }
 
+    /** Map ASCII to the fullwidth block (U+FF01..U+FF5E correspond to U+0021..U+007E); space -> U+3000. */
+    private fun toFullwidth(s: String): String = buildString {
+        for (c in s) append(
+            when {
+                c == ' ' -> '　'
+                c.code in 0x21..0x7E -> (c.code - 0x20 + 0xFF00).toChar()
+                else -> c
+            }
+        )
+    }
+
     private val sampleJson = """
         {
           "class_a_terms": ["bomb making instructions", "how to make ricin"],
@@ -102,6 +113,34 @@ class QueryBlocklistTest {
     }
 
     @Test
+    fun `blocks Unicode-evasion variants that bypass naive substring matching`() {
+        val bl = makeBlocklistWithJson(sampleJson)
+        // Fullwidth letters NFKC-fold to ASCII, so a fullwidth render of a blocked phrase
+        // must still be caught.
+        assertTrue(
+            "fullwidth letters must not evade the phrase guard",
+            bl.isBlocked(toFullwidth("bomb making instructions"))
+        )
+        // Fullwidth digits must still trip the \b988\b regex after normalization.
+        assertTrue(
+            "fullwidth digits must not evade the regex guard",
+            bl.isBlocked("please call " + toFullwidth("988") + " right now")
+        )
+        // Zero-width characters injected inside a blocked phrase are stripped before matching.
+        assertTrue(
+            "zero-width injection must not evade the phrase guard",
+            bl.isBlocked("bo​mb ma‌king instru‍ctions")
+        )
+        // Soft hyphen (U+00AD) injected mid-word is stripped.
+        assertTrue(
+            "soft hyphen must not evade",
+            bl.isBlocked("national suicide­ hotline number")
+        )
+        // Sanity: NFKC must NOT newly block a legitimate accented query (no diacritic stripping).
+        assertFalse(bl.isBlocked("café latte recipe ideas"))
+    }
+
+    @Test
     fun `blocks class-a illegal content phrases`() {
         val bl = makeBlocklistWithJson(sampleJson)
         assertTrue(bl.isBlocked("bomb making instructions please"))
@@ -125,6 +164,49 @@ class QueryBlocklistTest {
         val bl = makeBlocklistWithJson(emptyJson)
         assertTrue("Empty safety list must fail closed", bl.loadFailed)
         assertTrue(bl.isBlocked("anything"))
+    }
+
+    @Test
+    fun `non-English locale fails closed and does NOT fall back to the legacy English list`() {
+        // ES has no harmful_queries/es.json, but the legacy harmful_queries.json IS present.
+        // An English blocklist cannot catch Spanish crisis lines / self-signal phrasing, so
+        // a non-EN locale must NEVER silently fall back to it — it must fail closed instead.
+        val context: Context = mockk()
+        val assetManager: AssetManager = mockk()
+        every { context.assets } returns assetManager
+        every { assetManager.open("harmful_queries/es.json") } throws IOException("missing")
+        every { assetManager.open("harmful_queries.json") } returns
+            ByteArrayInputStream(sampleJson.toByteArray())
+
+        val bl = QueryBlocklist(context, mockLocaleManager(SupportedLocale.ES))
+
+        // loadFailed == true proves it did NOT load the legacy EN list (a fallback would
+        // have produced a working, non-failed blocklist).
+        assertTrue("ES must fail closed when its own file is missing", bl.loadFailed)
+        assertTrue("Fail-closed must block every query", bl.isBlocked("recetas de pasta"))
+    }
+
+    @Test
+    fun `switching from a failed locale to a clean one clears loadFailed`() {
+        val context: Context = mockk()
+        val assetManager: AssetManager = mockk()
+        every { context.assets } returns assetManager
+        every { assetManager.open("harmful_queries/es.json") } throws IOException("missing")
+        every { assetManager.open("harmful_queries/fr.json") } returns
+            ByteArrayInputStream(sampleJson.toByteArray())
+
+        var current = SupportedLocale.ES
+        val localeManager: LocaleManager = mockk(relaxed = true)
+        every { localeManager.currentLocale } answers { current }
+
+        val bl = QueryBlocklist(context, localeManager)
+        assertTrue("ES fails closed (no es.json, no non-EN fallback)", bl.loadFailed)
+
+        // Switch to FR, whose file loads cleanly — loadFailed must flip back to false and
+        // the FR list must be active.
+        current = SupportedLocale.FR
+        assertFalse("FR loads cleanly, so loadFailed must clear on switch", bl.loadFailed)
+        assertTrue("FR blocklist must be active after the switch", bl.isBlocked("call 988 now"))
     }
 
     @Test
@@ -185,5 +267,25 @@ class QueryBlocklistTest {
             emptyList<String>(),
             escaped
         )
+    }
+
+    @Test
+    fun `unicode word-boundary regex fires for non-ASCII (Cyrillic) queries`() {
+        // Regression for the (?U) fix: Java's default \b/\w are ASCII-only, so a
+        // word-boundary pattern never fires before a Cyrillic letter, silently disabling
+        // every non-English self-signal regex. QueryBlocklist compiles patterns with (?U).
+        val json = """
+            {
+              "class_a_terms": ["safe anchor phrase"],
+              "self_signal_terms": [],
+              "regex_patterns": ["\\bдепортаци(я|и)\\b"]
+            }
+        """.trimIndent()
+        val bl = makeBlocklistWithJson(json)
+        assertTrue(
+            "Cyrillic word-boundary regex must match a Cyrillic query",
+            bl.isBlocked("вопрос про депортации сегодня")
+        )
+        assertFalse(bl.isBlocked("обычный безопасный запрос про путешествия"))
     }
 }

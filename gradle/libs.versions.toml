@@ -1,6 +1,7 @@
 [versions]
 agp = "9.1.1"
 kotlin = "2.3.20"
+kover = "0.9.8"
 ksp = "2.3.6"
 coreKtx = "1.18.0"
 lifecycle = "2.10.0"
@@ -27,6 +28,7 @@ mockk = "1.14.9"
 turbine = "1.2.1"
 mockkAndroid = "1.14.9"
 robolectric = "4.16.1"
+kotest = "5.9.1"
 timber = "5.0.1"
 appcompat = "1.7.0"
 
@@ -55,6 +57,8 @@ hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWo
 hilt-work-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
+kotest-property = { group = "io.kotest", name = "kotest-property-jvm", version.ref = "kotest" }
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 sqlcipher = { group = "net.zetetic", name = "sqlcipher-android", version.ref = "sqlcipher" }
@@ -82,3 +86,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

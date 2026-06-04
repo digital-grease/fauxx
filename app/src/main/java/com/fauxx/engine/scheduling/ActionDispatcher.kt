@@ -20,7 +20,8 @@ private const val TAG = "ActionDispatcher"
  */
 @Singleton
 class ActionDispatcher @Inject constructor(
-    private val targetingEngine: TargetingEngine
+    private val targetingEngine: TargetingEngine,
+    private val random: Random = Random.Default,
 ) {
     /**
      * Select the next [CategoryPool] to target using the current weight distribution.
@@ -40,15 +41,15 @@ class ActionDispatcher @Inject constructor(
     fun weightedSample(weights: Map<CategoryPool, Float>): CategoryPool {
         if (weights.isEmpty()) {
             Timber.w("Weight map is empty — falling back to uniform random category selection")
-            return CategoryPool.values().random()
+            return CategoryPool.values().random(random)
         }
         val total = weights.values.sum()
         if (total <= 0f) {
             Timber.w("Weight map sums to zero — falling back to uniform random category selection")
-            return CategoryPool.values().random()
+            return CategoryPool.values().random(random)
         }
 
-        var threshold = Random.nextFloat() * total
+        var threshold = random.nextFloat() * total
         for ((category, weight) in weights) {
             threshold -= weight
             if (threshold <= 0f) return category

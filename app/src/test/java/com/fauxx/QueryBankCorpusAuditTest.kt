@@ -1,5 +1,6 @@
 package com.fauxx
 
+import com.fauxx.safety.CorpusSafetyMatchers
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
@@ -25,12 +26,13 @@ import java.io.File
  *   - en: legacy `harmful_queries.json` audits the legacy `query_banks/<cat>.json`
  *   - es: `harmful_queries/es.json` audits `query_banks/es/<cat>.json`
  *   - fr: `harmful_queries/fr.json` audits `query_banks/fr/<cat>.json`
+ *   - ru: `harmful_queries/ru.json` audits `query_banks/ru/<cat>.json`
  *
- * The blocklist used for each locale is a standalone re-implementation rather
- * than a real [com.fauxx.data.querybank.QueryBlocklist] — that class needs an
- * Android Context and a [com.fauxx.locale.LocaleManager], neither of which we
- * can spin up cleanly in a JVM test that has to switch locales mid-run. The
- * matching logic mirrors `QueryBlocklist.isBlocked` exactly.
+ * The blocklist matcher is [com.fauxx.safety.CorpusSafetyMatchers.harmfulBlocker],
+ * a faithful re-implementation of [com.fauxx.data.querybank.QueryBlocklist.isBlocked]
+ * (that class needs an Android Context + [com.fauxx.locale.LocaleManager], which a
+ * locale-switching JVM test cannot spin up cleanly). Shared with MarkovQuerySanityTest
+ * so the two audits cannot drift from each other or from production.
  *
  * Runs as a standard JVM unit test (not instrumentation). Asset files are read
  * directly from the module's `src/main/assets/` path rather than through Android's
@@ -59,6 +61,7 @@ class QueryBankCorpusAuditTest {
         AuditTarget("en", "harmful_queries.json", "query_banks"),
         AuditTarget("es", "harmful_queries/es.json", "query_banks/es"),
         AuditTarget("fr", "harmful_queries/fr.json", "query_banks/fr"),
+        AuditTarget("ru", "harmful_queries/ru.json", "query_banks/ru"),
     )
 
     @Test
@@ -76,7 +79,7 @@ class QueryBankCorpusAuditTest {
             if (!harmfulFile.exists() || !banksDir.isDirectory) continue
             localesAudited++
 
-            val blocker = makeBlocker(harmfulFile.readText())
+            val blocker = CorpusSafetyMatchers.harmfulBlocker(harmfulFile.readText())
             banksDir.listFiles { f -> f.extension == "json" }
                 ?.sortedBy { it.name }
                 ?.forEach { file ->
@@ -126,24 +129,4 @@ class QueryBankCorpusAuditTest {
         }
     }
 
-    /**
-     * Build a `(query) -> Boolean` blocker from a harmful_queries JSON. Mirrors
-     * [com.fauxx.data.querybank.QueryBlocklist.isBlocked] semantics: case-insensitive
-     * substring match for phrase terms; case-insensitive containsMatchIn for regex
-     * patterns. Malformed regex patterns are dropped silently, same as production.
-     */
-    private fun makeBlocker(harmfulJson: String): (String) -> Boolean {
-        val parsed = gson.fromJson(harmfulJson, HarmfulShape::class.java)
-        val terms = (parsed.classATerms + parsed.selfSignalTerms)
-            .map { it.lowercase().trim() }
-            .filter { it.isNotEmpty() }
-            .toSet()
-        val regexes = parsed.regexPatterns.mapNotNull {
-            runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull()
-        }
-        return { query ->
-            val n = query.lowercase()
-            terms.any { n.contains(it) } || regexes.any { it.containsMatchIn(n) }
-        }
-    }
 }

@@ -13,6 +13,7 @@ import timber.log.Timber
 import com.fauxx.R
 import com.fauxx.engine.EngineState
 import com.fauxx.engine.PoisonEngine
+import com.fauxx.engine.modules.MockLocationProviderCleaner
 import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -44,6 +45,7 @@ class PhantomForegroundService : Service() {
     @Inject lateinit var poisonEngine: PoisonEngine
     @Inject lateinit var webViewPool: PhantomWebViewPool
     @Inject lateinit var resumeScheduler: ResumeScheduler
+    @Inject lateinit var mockLocationProviderCleaner: MockLocationProviderCleaner
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -114,7 +116,26 @@ class PhantomForegroundService : Service() {
         return START_NOT_STICKY
     }
 
+    /**
+     * Swiping Fauxx out of recents can kill the service without a reliable [onDestroy] on some
+     * OEMs, orphaning the system mock-location provider so the device keeps reporting the last
+     * spoofed fix (finding #6 / issue #66). Remove it synchronously here — this runs on the main
+     * thread before the process goes away, unlike the engine's async module teardown.
+     */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        runCatching { mockLocationProviderCleaner.clearOrphanedProvider() }
+            .onFailure { Timber.e(it, "Error clearing mock-location provider on task removal") }
+        runCatching { poisonEngine.stop() }
+            .onFailure { Timber.e(it, "Error stopping engine on task removal") }
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
+        // Remove the mock-location provider synchronously and unconditionally first: the engine's
+        // module teardown below runs async on its own scope and can lose the race to process death,
+        // which is exactly how the provider gets orphaned (finding #6).
+        runCatching { mockLocationProviderCleaner.clearOrphanedProvider() }
+            .onFailure { Timber.e(it, "Error clearing mock-location provider on destroy") }
         // Both teardown calls are now non-blocking:
         // - poisonEngine.destroy() dispatches module stop() onto its own IO scope.
         // - webViewPool.destroy() is a suspend fun that dispatches to Main; we launch it

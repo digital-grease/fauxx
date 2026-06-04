@@ -1,4 +1,6 @@
 import java.util.Properties
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 
 // Version is single-sourced from app/version.properties. F-Droid's checkupdates bot
 // reads the same file via UpdateCheckData; bump both keys together when releasing.
@@ -13,11 +15,23 @@ plugins {
     alias(libs.plugins.kotlin.ksp)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.kover)
 }
 
 android {
     namespace = "com.fauxx"
     compileSdk = 36
+
+    sourceSets {
+        // Shared test support (FakeClock, MainDispatcherRule, seeded Random) lives in
+        // src/sharedTest so unit and instrumented tests use one copy.
+        getByName("test").kotlin.srcDir("src/sharedTest/java")
+        getByName("androidTest").kotlin.srcDir("src/sharedTest/java")
+        // Room exports schema JSONs to app/schemas (see the `ksp { arg("room.schemaLocation") }`
+        // block below). Surfacing them as androidTest assets lets MigrationTestHelper read the
+        // historical schemas on-device when validating migrations.
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
 
     defaultConfig {
         applicationId = "com.fauxx"
@@ -149,6 +163,13 @@ tasks.withType<JavaCompile>().configureEach {
     }
 }
 
+ksp {
+    // Export Room schemas to app/schemas/<database>/<version>.json so migrations can be
+    // validated against the entity history (MigrationTestHelper). Each version is committed;
+    // any future schema change must commit its new JSON or the Room schema-export check fails.
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
@@ -214,6 +235,8 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.work.testing)
+    testImplementation(libs.mockwebserver)
+    testImplementation(libs.kotest.property)
     androidTestImplementation(libs.junit.ext)
     androidTestImplementation(libs.espresso)
     androidTestImplementation(platform(libs.compose.bom))
@@ -223,4 +246,73 @@ dependencies {
     kspAndroidTest(libs.hilt.compiler)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
+}
+
+// ---------------------------------------------------------------------------------------------
+// Code-coverage gate (Kover) — ratcheting line-coverage floor.
+//
+// The floor lives in a committed, hand-maintained file (kover-baseline.properties) so the gate
+// can only ever ratchet UP: raise it as coverage improves, never lower it. It is intentionally
+// NOT machine-written — no CI step or bot updates it — so a coverage drop fails the build instead
+// of being silently rebaselined. `koverVerify` enforces it; `koverHtmlReport` / `koverLog` show
+// where the gaps are. Generated code (Hilt/Dagger/Room) and Compose UI screens are excluded: the
+// former has no hand-written logic to test, the latter is covered by instrumented UI tests that
+// this unit-coverage measurement doesn't observe, so leaving them in would skew the floor.
+// ---------------------------------------------------------------------------------------------
+val koverBaselineFile = file("kover-baseline.properties")
+val koverLineFloor: Int = if (koverBaselineFile.exists()) {
+    Properties().apply { koverBaselineFile.reader().use { load(it) } }
+        .getProperty("line.coverage.min")?.trim()?.toIntOrNull() ?: 0
+} else {
+    0
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                annotatedBy(
+                    "dagger.Module",
+                    "dagger.internal.DaggerGenerated",
+                    "javax.annotation.processing.Generated",
+                    "androidx.compose.runtime.Composable",
+                )
+                classes(
+                    // Hilt / Dagger generated
+                    "*_Factory",
+                    "*_MembersInjector",
+                    "*_HiltModules",
+                    "*_HiltModules*",
+                    "*_GeneratedInjector",
+                    "dagger.hilt.*",
+                    "hilt_aggregated_deps.*",
+                    "*.Hilt_*",
+                    // Room generated DAO/DB implementations
+                    "*_Impl",
+                    // Android / Compose generated
+                    "*.BuildConfig",
+                    "*.R",
+                    "*.R\$*",
+                    "*.databinding.*",
+                    "*ComposableSingletons*",
+                    // DI wiring (no logic) + Compose UI (covered by instrumented tests, invisible here)
+                    "com.fauxx.di.*",
+                    "com.fauxx.ui.screens.*",
+                    "com.fauxx.ui.components.*",
+                    "com.fauxx.ui.theme.*",
+                )
+            }
+        }
+        variant("playDebug") {
+            verify {
+                rule {
+                    bound {
+                        minValue = koverLineFloor
+                        coverageUnits = CoverageUnit.LINE
+                        aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+                    }
+                }
+            }
+        }
+    }
 }

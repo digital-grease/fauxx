@@ -1,6 +1,7 @@
 package com.fauxx.engine.scheduling
 
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.util.Clock
 import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,7 +28,10 @@ import kotlin.random.Random
  * multiple queries on the same subject in quick succession.
  */
 @Singleton
-class PoissonScheduler @Inject constructor() {
+class PoissonScheduler @Inject constructor(
+    private val clock: Clock,
+    private val random: Random = Random.Default,
+) {
 
     companion object {
         /** Default quiet hours: 11pm to 7am. */
@@ -65,7 +69,7 @@ class PoissonScheduler @Inject constructor() {
         allowedStart: Int = DEFAULT_QUIET_END,
         allowedEnd: Int = DEFAULT_QUIET_START
     ): Long {
-        val now = Calendar.getInstance()
+        val now = Calendar.getInstance().apply { timeInMillis = clock.currentTimeMillis() }
         val currentHour = now.get(Calendar.HOUR_OF_DAY)
 
         // If in quiet hours, delay until allowed start
@@ -81,9 +85,9 @@ class PoissonScheduler @Inject constructor() {
 
         // Burst-gap behavior: 30% chance of burst mode, but ONLY for same-topic transitions.
         // Cross-niche bursts are the exact bot signal we are avoiding.
-        return if (sameTopic && Random.nextFloat() < 0.30f) {
+        return if (sameTopic && random.nextFloat() < 0.30f) {
             // Burst: 2-30 seconds (intra-topic only)
-            Random.nextLong(2_000L, 30_000L)
+            random.nextLong(2_000L, 30_000L)
         } else {
             val baseDelay = poissonDelay(effectiveRate)
             if (sameTopic) {
@@ -101,8 +105,8 @@ class PoissonScheduler @Inject constructor() {
      * Uses Box-Muller to generate a standard normal, then exponentiates.
      */
     private fun lognormalMultiplier(): Double {
-        val u1 = Random.nextDouble().coerceAtLeast(1e-12)
-        val u2 = Random.nextDouble()
+        val u1 = random.nextDouble().coerceAtLeast(1e-12)
+        val u2 = random.nextDouble()
         val z = sqrt(-2.0 * ln(u1)) * kotlin.math.cos(2.0 * Math.PI * u2)
         return exp(DWELL_MU + DWELL_SIGMA * z)
     }
@@ -120,7 +124,7 @@ class PoissonScheduler @Inject constructor() {
         val ratePerMs = actionsPerHour / (60f * 60f * 1000f)
         val meanDelayMs = (3_600_000f / actionsPerHour).toLong()
         val maxDelayMs = maxOf(60_000L, meanDelayMs * 3)
-        val u = Random.nextDouble()
+        val u = random.nextDouble()
         val delayMs = (-ln(1.0 - u) / ratePerMs).toLong()
         return delayMs.coerceIn(1_000L, maxDelayMs)
     }

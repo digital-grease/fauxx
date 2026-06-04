@@ -6,8 +6,8 @@ import com.fauxx.data.querybank.QueryBankManager
 import com.fauxx.data.querybank.QueryBlocklist
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
+import com.fauxx.safety.CorpusSafetyMatchers
 import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 import io.mockk.every
 import io.mockk.mockk
@@ -46,12 +46,6 @@ class MarkovQuerySanityTest {
     private val gson = Gson()
     private val stringListType = object : TypeToken<List<String>>() {}.type
 
-    private data class HarmfulShape(
-        @SerializedName("class_a_terms") val classATerms: List<String> = emptyList(),
-        @SerializedName("self_signal_terms") val selfSignalTerms: List<String> = emptyList(),
-        @SerializedName("regex_patterns") val regexPatterns: List<String> = emptyList()
-    )
-
     private data class LocaleTarget(
         val locale: SupportedLocale,
         val harmfulPath: String,
@@ -61,7 +55,8 @@ class MarkovQuerySanityTest {
     private val targets = listOf(
         LocaleTarget(SupportedLocale.EN, "harmful_queries.json", "query_banks"),
         LocaleTarget(SupportedLocale.ES, "harmful_queries/es.json", "query_banks/es"),
-        LocaleTarget(SupportedLocale.FR, "harmful_queries/fr.json", "query_banks/fr")
+        LocaleTarget(SupportedLocale.FR, "harmful_queries/fr.json", "query_banks/fr"),
+        LocaleTarget(SupportedLocale.RU, "harmful_queries/ru.json", "query_banks/ru")
     )
 
     @Test
@@ -77,7 +72,7 @@ class MarkovQuerySanityTest {
             if (!harmfulFile.exists() || !banksDir.isDirectory) continue
             localesExercised++
 
-            val blocker = buildBlocker(harmfulFile.readText())
+            val blocker = CorpusSafetyMatchers.harmfulBlocker(harmfulFile.readText())
             val bankFiles = banksDir.listFiles { f -> f.extension == "json" }
                 ?.sortedBy { it.name }
                 ?: continue
@@ -166,27 +161,6 @@ class MarkovQuerySanityTest {
             every { currentLocaleFlow } returns MutableStateFlow(locale)
         }
         return MarkovQueryGenerator(bankManager, blocklist, localeManager)
-    }
-
-    /**
-     * Standalone blocker mirroring [QueryBlocklist.isBlocked] semantics. Reused (with
-     * trivial naming changes) from [QueryBankCorpusAuditTest] — kept inline rather than
-     * extracted so each sanity-check test stays self-contained and a refactor in one
-     * doesn't silently change the matching used by the other.
-     */
-    private fun buildBlocker(harmfulJson: String): (String) -> Boolean {
-        val parsed = gson.fromJson(harmfulJson, HarmfulShape::class.java)
-        val terms = (parsed.classATerms + parsed.selfSignalTerms)
-            .map { it.lowercase().trim() }
-            .filter { it.isNotEmpty() }
-            .toSet()
-        val regexes = parsed.regexPatterns.mapNotNull {
-            runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull()
-        }
-        return { query ->
-            val n = query.lowercase()
-            terms.any { n.contains(it) } || regexes.any { it.containsMatchIn(n) }
-        }
     }
 
     companion object {

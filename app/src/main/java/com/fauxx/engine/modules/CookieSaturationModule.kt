@@ -24,7 +24,8 @@ import kotlin.random.Random
 class CookieSaturationModule @Inject constructor(
     private val crawlListManager: CrawlListManager,
     private val webViewPool: PhantomWebViewPool,
-    private val profileRepo: PoisonProfileRepository
+    private val profileRepo: PoisonProfileRepository,
+    private val random: Random = Random.Default,
 ) : Module {
 
     override suspend fun start() {
@@ -55,7 +56,7 @@ class CookieSaturationModule @Inject constructor(
 
         val entry = pending.entry
 
-        val dwellMs = Random.nextLong(2_000L, 10_000L) // 2-10 second dwell
+        val dwellMs = random.nextLong(2_000L, 10_000L) // 2-10 second dwell
 
         val success = withContext(Dispatchers.Main) {
             val webView = webViewPool.acquire()

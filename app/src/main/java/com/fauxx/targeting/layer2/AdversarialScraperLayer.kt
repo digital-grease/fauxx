@@ -1,6 +1,8 @@
 package com.fauxx.targeting.layer2
 
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.util.Clock
+import com.fauxx.util.SystemClockImpl
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
@@ -33,7 +35,8 @@ private const val STALE_THRESHOLD_MS = 7L * 24 * 60 * 60 * 1000
  */
 @Singleton
 class AdversarialScraperLayer @Inject constructor(
-    private val dao: PlatformProfileDao
+    private val dao: PlatformProfileDao,
+    private val clock: Clock = SystemClockImpl(),
 ) {
     private val gson = Gson()
     private val _enabled = MutableStateFlow(false)
@@ -51,7 +54,7 @@ class AdversarialScraperLayer @Inject constructor(
         combine(dao.observeAll(), _enabled) { profiles, enabled ->
             if (!enabled || profiles.isEmpty()) return@combine neutralWeights()
 
-            val now = System.currentTimeMillis()
+            val now = clock.currentTimeMillis()
             val confirmedCategories = mutableSetOf<CategoryPool>()
 
             for (profile in profiles) {

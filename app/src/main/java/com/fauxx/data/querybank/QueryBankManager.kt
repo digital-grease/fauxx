@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 /**
  * Loads and serves synthetic search queries from bundled JSON assets, scoped to the
@@ -44,7 +45,8 @@ import javax.inject.Singleton
 class QueryBankManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val queryBlocklist: QueryBlocklist,
-    private val localeManager: LocaleManager
+    private val localeManager: LocaleManager,
+    private val random: Random = Random.Default,
 ) {
     private val cache = ConcurrentHashMap<Pair<SupportedLocale, CategoryPool>, List<String>>()
     private val watcherScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -74,7 +76,7 @@ class QueryBankManager @Inject constructor(
      */
     fun randomQuery(category: CategoryPool): String {
         val queries = getQueries(category)
-        return queries.randomOrNull() ?: fallbackQuery(category)
+        return queries.randomOrNull(random) ?: fallbackQuery(category)
     }
 
     /**

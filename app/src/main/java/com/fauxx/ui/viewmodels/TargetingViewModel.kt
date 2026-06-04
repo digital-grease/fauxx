@@ -7,9 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.di.PreferenceKeys
 import com.fauxx.di.fauxxDataStore
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.logging.EncryptedFileTree
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.layer1.AgeRange
 import com.fauxx.targeting.layer1.CustomInterestMapper
@@ -27,6 +29,8 @@ import com.fauxx.targeting.layer2.importers.ImportResult
 import com.fauxx.targeting.layer2.importers.ImportSource
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaRotationLayer
+import com.fauxx.util.Clock
+import com.fauxx.util.SystemClockImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -88,7 +92,10 @@ class TargetingViewModel @Inject constructor(
     private val personaLayer: PersonaRotationLayer,
     private val googleTakeoutImporter: GoogleTakeoutImporter,
     private val facebookDyiImporter: FacebookDyiImporter,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val encryptedFileTree: EncryptedFileTree,
+    private val markovGenerator: MarkovQueryGenerator,
+    private val clock: Clock = SystemClockImpl(),
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TargetingUiState())
@@ -102,7 +109,7 @@ class TargetingViewModel @Inject constructor(
         val lastImportedAt = platforms.maxOfOrNull { it.lastScraped }
         val customInterests = profile?.getCustomInterests().orEmpty()
         // 90-day reminder visibility derived here so the UI doesn't recompute the date math.
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         val showReminder = lastImportedAt != null &&
             lastImportedAt > 0L &&
             now - lastImportedAt > NINETY_DAYS_MS &&
@@ -194,7 +201,7 @@ class TargetingViewModel @Inject constructor(
         viewModelScope.launch {
             context.fauxxDataStore.edit { prefs ->
                 prefs[PreferenceKeys.IMPORT_REMINDER_MUTED_UNTIL] =
-                    System.currentTimeMillis() + THIRTY_DAYS_MS
+                    clock.currentTimeMillis() + THIRTY_DAYS_MS
             }
         }
     }
@@ -267,6 +274,11 @@ class TargetingViewModel @Inject constructor(
             demographicDao.delete()
             platformDao.deleteAll()
             personaHistoryDao.deleteAll()
+            // The Markov model is seeded from custom interests on this profile, and the
+            // encrypted logs hold persona/profile dumps — clear both so no interest-derived
+            // trail survives a profile wipe.
+            encryptedFileTree.clearLogs()
+            markovGenerator.clearAllState()
             targetingEngine.setLayer1Enabled(false)
             targetingEngine.setLayer2Enabled(false)
             targetingEngine.setLayer3Enabled(false)

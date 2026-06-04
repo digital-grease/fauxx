@@ -33,7 +33,8 @@ import kotlin.random.Random
 class MarkovQueryGenerator @Inject constructor(
     private val queryBankManager: QueryBankManager,
     private val queryBlocklist: QueryBlocklist,
-    private val localeManager: LocaleManager
+    private val localeManager: LocaleManager,
+    private val random: Random = Random.Default,
 ) {
     /** bigram[word] = list of words that follow [word] in the training corpus. */
     private val bigramMap = mutableMapOf<String, MutableList<String>>()
@@ -78,7 +79,7 @@ class MarkovQueryGenerator @Inject constructor(
      * @param targetLength Target number of words in the output (3-8 words).
      */
     @Synchronized
-    fun generate(category: CategoryPool, targetLength: Int = Random.nextInt(3, 9)): String {
+    fun generate(category: CategoryPool, targetLength: Int = random.nextInt(3, 9)): String {
         repeat(MAX_RESAMPLE_ATTEMPTS) { attempt ->
             val candidate = generateOnce(category, targetLength)
             if (candidate.isNotEmpty() && !queryBlocklist.isBlocked(candidate)) {
@@ -109,13 +110,13 @@ class MarkovQueryGenerator @Inject constructor(
 
         // Build seed pool: category queries + any injected seed phrases for this category
         val extraSeeds = seedPhrases[category].orEmpty()
-        val seedPool = if (extraSeeds.isNotEmpty() && Random.nextFloat() < SEED_PHRASE_PROBABILITY) {
+        val seedPool = if (extraSeeds.isNotEmpty() && random.nextFloat() < SEED_PHRASE_PROBABILITY) {
             extraSeeds
         } else {
             queries
         }
 
-        val seedQuery = seedPool.random()
+        val seedQuery = seedPool.random(random)
         val seedWords = seedQuery.split(" ").filter { it.isNotBlank() }
         if (seedWords.isEmpty()) return seedQuery
 
@@ -125,7 +126,7 @@ class MarkovQueryGenerator @Inject constructor(
         val result = seedWords.toMutableList()
         while (result.size < targetLength) {
             val lastWord = result.last().lowercase()
-            val next = bigramMap[lastWord]?.randomOrNull() ?: break
+            val next = bigramMap[lastWord]?.randomOrNull(random) ?: break
             result.add(next)
         }
 
@@ -197,6 +198,19 @@ class MarkovQueryGenerator @Inject constructor(
     @Synchronized
     fun clearSeedPhrases() {
         seedPhrases.clear()
+    }
+
+    /**
+     * Clear ALL trained state: seed phrases, the bigram model, and the trained-category set.
+     * Used by the user-initiated data wipe. The seed phrases are folded into [bigramMap] via
+     * [train] from the user's custom interests, so [clearSeedPhrases] alone leaves
+     * interest-derived bigrams resident; this removes the entire trained surface.
+     */
+    @Synchronized
+    fun clearAllState() {
+        seedPhrases.clear()
+        bigramMap.clear()
+        trainedCategories.clear()
     }
 
     companion object {

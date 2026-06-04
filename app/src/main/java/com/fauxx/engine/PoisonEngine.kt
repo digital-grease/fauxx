@@ -151,7 +151,8 @@ class PoisonEngine @Inject constructor(
      * as [Dispatchers.IO] in production; tests substitute a `TestDispatcher` so `runLoop`
      * runs under the scheduler that controls virtual time.
      */
-    @IoDispatcher private val loopDispatcher: CoroutineDispatcher
+    @IoDispatcher private val loopDispatcher: CoroutineDispatcher,
+    private val random: Random = Random.Default,
 ) {
     private var scope = CoroutineScope(SupervisorJob() + loopDispatcher)
     private var engineJob: Job? = null
@@ -473,7 +474,7 @@ class PoisonEngine @Inject constructor(
                 continue
             }
 
-            val module = availableModules.random()
+            val module = availableModules.random(random)
             val moduleName = module::class.simpleName ?: "Unknown"
 
             // Re-check enable state to avoid acting on a stale snapshot
@@ -493,7 +494,7 @@ class PoisonEngine @Inject constructor(
                 if (count >= MAX_CONSECUTIVE_FAILURES) {
                     val baseBackoff = min(INITIAL_BACKOFF_MS * (1L shl (count - MAX_CONSECUTIVE_FAILURES)), MAX_BACKOFF_MS)
                     // Add 0-25% random jitter to prevent thundering herd on recovery
-                    val jitter = (baseBackoff * Random.nextFloat() * 0.25f).toLong()
+                    val jitter = (baseBackoff * random.nextFloat() * 0.25f).toLong()
                     val backoff = baseBackoff + jitter
                     circuitBreakerUntil[moduleName] = clock.currentTimeMillis() + backoff
                     Timber.w(e, "Circuit breaker: $moduleName disabled for ${backoff / 1000}s after $count failures")

@@ -121,6 +121,58 @@ class HarmfulQueriesLocaleAuditTest {
         )
     }
 
+    @Test
+    fun `every shipped locale ships all four safety asset families present and non-empty`() {
+        // A locale is selectable only if its FULL safety surface shipped. Iterate the
+        // production allowlist and assert each tag has harmful_queries + query_banks +
+        // persona_templates + crawl_urls (en uses the legacy single-file / single-dir paths).
+        // This is the build-time complement to the runtime SHIPPED_LOCALES gate.
+        val gson = Gson()
+        val listType = object : TypeToken<List<Any>>() {}.type
+        val failures = mutableListOf<String>()
+
+        for (tag in com.fauxx.BuildConfig.SHIPPED_LOCALES) {
+            val legacy = tag == "en"
+
+            val harmful = File(assetsRoot, if (legacy) "harmful_queries.json" else "harmful_queries/$tag.json")
+            if (!harmful.exists()) {
+                failures += "[$tag] harmful_queries missing: ${harmful.path}"
+            } else {
+                val hq = gson.fromJson(harmful.readText(), HarmfulQueries::class.java)
+                if (hq.class_a_terms.isEmpty() && hq.self_signal_terms.isEmpty() && hq.regex_patterns.isEmpty()) {
+                    failures += "[$tag] harmful_queries has no terms (would fail closed at runtime)"
+                }
+            }
+
+            val banksDir = File(assetsRoot, if (legacy) "query_banks" else "query_banks/$tag")
+            if ((banksDir.listFiles { f -> f.extension == "json" }?.size ?: 0) == 0) {
+                failures += "[$tag] query_banks dir empty or missing: ${banksDir.path}"
+            }
+
+            val personas = File(assetsRoot, if (legacy) "persona_templates.json" else "persona_templates/$tag.json")
+            if (!personas.exists()) {
+                failures += "[$tag] persona_templates missing: ${personas.path}"
+            } else if ((gson.fromJson(personas.readText(), listType) as List<*>).isEmpty()) {
+                failures += "[$tag] persona_templates is empty"
+            }
+
+            val crawl = File(assetsRoot, if (legacy) "crawl_urls.json" else "crawl_urls/$tag.json")
+            if (!crawl.exists()) {
+                failures += "[$tag] crawl_urls missing: ${crawl.path}"
+            } else if ((gson.fromJson(crawl.readText(), listType) as List<*>).isEmpty()) {
+                failures += "[$tag] crawl_urls is empty"
+            }
+        }
+
+        assertTrue(
+            "A locale in BuildConfig.SHIPPED_LOCALES is missing part of its safety surface. A " +
+                "locale must not be selectable without all four asset families present and " +
+                "non-empty (harmful_queries, query_banks, persona_templates, crawl_urls).\n" +
+                failures.joinToString("\n") { "  $it" },
+            failures.isEmpty()
+        )
+    }
+
     private fun assertNonEmpty(locale: String, parsed: HarmfulQueries) {
         assertTrue(
             "[$locale] class_a_terms must not be empty (would fail-closed at runtime)",

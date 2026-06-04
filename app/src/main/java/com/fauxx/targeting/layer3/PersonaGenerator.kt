@@ -10,6 +10,8 @@ import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer1.UserDemographicProfile
+import com.fauxx.util.Clock
+import com.fauxx.util.SystemClockImpl
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.UUID
@@ -37,7 +39,9 @@ class PersonaGenerator @Inject constructor(
     @ApplicationContext private val context: Context,
     private val historyDao: PersonaHistoryDao,
     private val demographicProfileDao: DemographicProfileDao,
-    private val localeManager: LocaleManager
+    private val localeManager: LocaleManager,
+    private val clock: Clock = SystemClockImpl(),
+    private val random: Random = Random.Default,
 ) {
     private val gson = Gson()
     private val templatesByLocale = ConcurrentHashMap<SupportedLocale, List<PersonaTemplate>>()
@@ -61,7 +65,7 @@ class PersonaGenerator @Inject constructor(
      * [weightHints] can optionally bias interest selection toward high-weight categories.
      */
     suspend fun generate(weightHints: Map<CategoryPool, Float> = emptyMap()): SyntheticPersona {
-        val cutoff = System.currentTimeMillis() - NINETY_DAYS_MS
+        val cutoff = clock.currentTimeMillis() - NINETY_DAYS_MS
         val recentEntries = historyDao.getRecentPersonas(cutoff)
         val recentPersonas = recentEntries.mapNotNull { entry ->
             runCatching {
@@ -89,15 +93,15 @@ class PersonaGenerator @Inject constructor(
 
     /** Calculate the next rotation timestamp with jitter. */
     fun nextRotationTime(): Long {
-        val jitterDays = Random.nextLong(ROTATION_JITTER_DAYS.first, ROTATION_JITTER_DAYS.last + 1)
+        val jitterDays = random.nextLong(ROTATION_JITTER_DAYS.first, ROTATION_JITTER_DAYS.last + 1)
         val totalDays = BASE_ROTATION_DAYS + jitterDays
-        return System.currentTimeMillis() + TimeUnit.DAYS.toMillis(totalDays)
+        return clock.currentTimeMillis() + TimeUnit.DAYS.toMillis(totalDays)
     }
 
     private fun buildPersona(weightHints: Map<CategoryPool, Float>): SyntheticPersona {
-        val template = if (templates.isNotEmpty()) templates.random() else null
+        val template = if (templates.isNotEmpty()) templates.random(random) else null
         val interests = selectInterests(template, weightHints)
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
 
         return SyntheticPersona(
             id = UUID.randomUUID().toString(),
@@ -128,7 +132,7 @@ class PersonaGenerator @Inject constructor(
         val supplementary = if (weightHints.isNotEmpty()) {
             weightedSample(pool, weightHints, 5 - base.size)
         } else {
-            pool.shuffled().take(5 - base.size)
+            pool.shuffled(random).take(5 - base.size)
         }
 
         return base + supplementary
@@ -144,11 +148,11 @@ class PersonaGenerator @Inject constructor(
 
         repeat(minOf(count, remaining.size)) {
             val totalWeight = remaining.sumOf { weights.getOrDefault(it, 1f).toDouble() }
-            var threshold = Random.nextDouble() * totalWeight
+            var threshold = random.nextDouble() * totalWeight
             val chosen = remaining.firstOrNull { cat ->
                 threshold -= weights.getOrDefault(cat, 1f)
                 threshold <= 0
-            } ?: remaining.random()
+            } ?: remaining.random(random)
             result.add(chosen)
             remaining.remove(chosen)
         }
@@ -206,7 +210,7 @@ class PersonaGenerator @Inject constructor(
     }
 
     private fun buildFallbackPersona(): SyntheticPersona {
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         return SyntheticPersona(
             id = UUID.randomUUID().toString(),
             name = "Alex Johnson",
@@ -224,19 +228,19 @@ class PersonaGenerator @Inject constructor(
             "Drew", "Jamie", "Avery", "Peyton", "Sam", "Chris", "Dana", "Pat", "Jesse")
         val lastNames = listOf("Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller",
             "Davis", "Wilson", "Anderson", "Taylor", "Thomas", "Jackson", "White", "Harris")
-        return "${firstNames.random()} ${lastNames.random()}"
+        return "${firstNames.random(random)} ${lastNames.random(random)}"
     }
 
     private fun pickAgeRange(): String =
-        listOf("18-24", "25-34", "35-44", "45-54", "55-64", "65+").random()
+        listOf("18-24", "25-34", "35-44", "45-54", "55-64", "65+").random(random)
 
     private fun pickProfession(): String =
         listOf("Engineer", "Teacher", "Healthcare Worker", "Business Professional",
-            "Retail Worker", "Retired", "Student", "Homemaker", "Creative").random()
+            "Retail Worker", "Retired", "Student", "Homemaker", "Creative").random(random)
 
     private fun pickRegion(): String =
         listOf("US_NORTHEAST", "US_SOUTHEAST", "US_MIDWEST", "US_SOUTHWEST", "US_WEST",
-            "CANADA", "UK", "WESTERN_EUROPE").random()
+            "CANADA", "UK", "WESTERN_EUROPE").random(random)
 
     private fun loadTemplates(locale: SupportedLocale): List<PersonaTemplate> {
         val localePath = "persona_templates/${locale.tag}.json"

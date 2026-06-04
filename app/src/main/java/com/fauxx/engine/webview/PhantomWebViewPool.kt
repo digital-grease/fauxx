@@ -19,11 +19,19 @@ private const val POOL_SIZE = 2
 
 /**
  * Manages a pool of reusable background [WebView] instances with:
- * - Separate cookie stores from the user's real browser
  * - JavaScript enabled for realistic page loading
  * - Third-party cookies accepted (needed for tracker accumulation)
  * - DOM storage enabled
- * - Process isolation via separate data directories
+ * - Local file/content access denied (the pool only ever loads remote http(s) URLs)
+ *
+ * Cookie / storage isolation (finding #4): this pool is the only WebView in the Fauxx process,
+ * and its cookies + DOM storage live in Fauxx's own WebView data directory — set once at app
+ * startup via `WebView.setDataDirectorySuffix("fauxx_phantom")` (API 28+; see
+ * [com.fauxx.FauxxApp]) — separate from the platform-default WebView store. The user's real
+ * browser is a different app in a different process and shares no WebView state with Fauxx. The
+ * two pooled instances intentionally share this store so trackers accumulate across reuse;
+ * per-instance cookie jars are not an Android primitive (`CookieManager` is process-global) and
+ * are not wanted here.
  *
  * All WebViews use [PhantomWebViewClient] which blocks blocklisted domains.
  *
@@ -120,6 +128,9 @@ class PhantomWebViewPool @Inject constructor(
      * a background dispatcher or from a launched cleanup scope.
      */
     suspend fun destroy() = withContext(Dispatchers.Main) {
+        // Persist the accumulated cookie jar to Fauxx's WebView data directory before tearing the
+        // instances down, so tracker state survives the next process start.
+        runCatching { CookieManager.getInstance().flush() }
         pool.forEach { it.destroy() }
         pool.clear()
         initialized = false
@@ -141,6 +152,15 @@ class PhantomWebViewPool @Inject constructor(
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
             safeBrowsingEnabled = true // Google Safe Browsing — real-time malicious URL checks
+
+            // Lock down local-resource access. The phantom pool only ever loads remote http(s)
+            // crawl URLs, never file:// or content://, but allowFileAccess/allowContentAccess
+            // default to true on API 26-28 — leaving a malicious page able to read the app's
+            // private files or content-provider data. Deny all of it explicitly.
+            allowFileAccess = false
+            allowContentAccess = false
+            allowFileAccessFromFileURLs = false
+            allowUniversalAccessFromFileURLs = false
         }
 
         // Enable third-party cookies for realistic tracker accumulation
