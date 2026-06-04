@@ -53,7 +53,7 @@ class LogViewModel @Inject constructor(
                     appendLine(
                         "${fmt.format(Date(e.timestamp))}," +
                         "${e.actionType},${e.category}," +
-                        "${csvCell(LogScrubber.scrub(e.detail))},${e.success}"
+                        "${csvCell(LogScrubber.scrubForExport(e.actionType, e.detail))},${e.success}"
                     )
                 }
             }
@@ -63,7 +63,7 @@ class LogViewModel @Inject constructor(
 
     fun exportJson(onReady: (String) -> Unit) {
         viewModelScope.launch {
-            val entries = dao.getAllForExport().map { it.copy(detail = LogScrubber.scrub(it.detail)) }
+            val entries = dao.getAllForExport().map { it.copy(detail = LogScrubber.scrubForExport(it.actionType, it.detail)) }
             onReady(Gson().toJson(entries))
         }
     }

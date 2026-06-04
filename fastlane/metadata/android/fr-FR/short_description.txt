@@ -1,0 +1,1 @@
+Empoisonne les profils de pistage avec des signaux leurres.

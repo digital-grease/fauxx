@@ -1,0 +1,35 @@
+Fauxx es una herramienta de privacidad de código abierto que te protege generando en segundo plano una actividad de navegación sintética y diversa. Al inundar a los corredores de datos y las plataformas publicitarias con ruido plausible ajeno a tu perfil, Fauxx hace que tu señal de comportamiento real sea estadísticamente indistinguible de los datos falsos.
+
+Esta es la versión COMPLETA distribuida a través de F-Droid y GitHub. Incluye todos los módulos, incluidos la suplantación de ubicación y la contaminación del perfil publicitario, que no están disponibles en la versión de Play Store debido a las políticas de Google.
+
+CÓMO FUNCIONA
+
+Fauxx se ejecuta discretamente en segundo plano y realiza actividades de navegación diversas en muchas categorías temáticas: búsquedas, visitas a páginas, consultas DNS, rotación de huella digital, contaminación del perfil publicitario y suplantación de ubicación GPS. El objetivo es enterrar tus intereses reales bajo una montaña de ruido sintético para que los corredores de datos no puedan crear un perfil preciso de ti.
+
+CARACTERÍSTICAS
+
+• Consultas de búsqueda diversas en Google, Bing, DuckDuckGo y Yahoo sobre temas alejados de tus intereses reales
+• Visitas variadas a sitios web en docenas de categorías de contenido
+• Contaminación del perfil publicitario: carga páginas con muchos anuncios para inyectar señales publicitarias ajenas a tu demografía
+• Suplantación de ubicación GPS: envía coordenadas falsas mediante el proveedor de ubicación simulada (requiere opciones de desarrollador)
+• Rotación de la huella digital del navegador (User-Agent, ruido de canvas, encabezados de idioma)
+• Diversificación de consultas DNS
+• Motor de segmentación inteligente con 3 capas de distanciamiento demográfico
+• Rotación de personas sintéticas: adopta una nueva identidad falsa cada semana
+• Tiempos con distribución de Poisson que imitan los patrones naturales de navegación humana
+• Registro de auditoría completo con exportación CSV/JSON
+• Cifrado en el dispositivo para todos los datos personales (SQLCipher + Android Keystore)
+• Sin cuentas, sin almacenamiento en la nube, sin analíticas, sin telemetría
+
+SEGMENTACIÓN DEMOGRÁFICA OPCIONAL
+
+Cuéntale a Fauxx sobre ti (edad, género, intereses, profesión, región) y generará ruido lo más diferente posible de tu perfil real. Todos los datos demográficos permanecen cifrados en tu dispositivo. Omite la configuración por completo para obtener ruido aleatorio uniforme.
+
+LA PRIVACIDAD ANTE TODO
+
+• Todos los datos permanecen en tu dispositivo
+• Sin analíticas, sin informes de fallos, sin identificadores publicitarios
+• Totalmente de código abierto: inspecciona el código tú mismo
+• Opción de borrar todos los datos para eliminar todo al instante
+
+Fauxx es gratuito, de código abierto y no contiene anuncios.

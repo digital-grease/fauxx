@@ -1,5 +1,7 @@
 package com.fauxx.logging
 
+import com.fauxx.data.model.ActionType
+
 /**
  * Strips sensitive data from log output before export.
  *
@@ -39,5 +41,31 @@ object LogScrubber {
             result = pattern.replace(result, REDACTED)
         }
         return result
+    }
+
+    /**
+     * Matches a SearchPoison action-log detail of the form `[CATEGORY] <query> · via <ENGINE>`.
+     * The `<query>` is the only action-log payload that can echo the user's own custom interests
+     * verbatim (custom interests seed the Markov query generator), so it is coarsened on export.
+     */
+    private val SEARCH_QUERY_DETAIL = Regex("""^(\[[^\]]*] )(.*)( · via \S+)$""")
+
+    /**
+     * Export-time scrub keyed on [actionType]. For [ActionType.SEARCH_QUERY] the free-text query
+     * payload is replaced with a non-reversible word-count summary, keeping the `[CATEGORY]` and
+     * ` · via <ENGINE>` parts so diagnostics (e.g. verifying which SERP fired) still work. The
+     * other action types carry only corpus-derived decoy content (URLs, domains, cities, UA), so
+     * they are left to the generic pattern [scrub]. A SEARCH_QUERY detail that does not match the
+     * query shape (e.g. `[BLOCKED] ...`) is passed through unchanged.
+     */
+    fun scrubForExport(actionType: ActionType, detail: String): String {
+        val coarsened = if (actionType == ActionType.SEARCH_QUERY) coarsenSearchQuery(detail) else detail
+        return scrub(coarsened)
+    }
+
+    private fun coarsenSearchQuery(detail: String): String {
+        val match = SEARCH_QUERY_DETAIL.matchEntire(detail) ?: return detail
+        val wordCount = match.groupValues[2].split(Regex("""\s+""")).count { it.isNotBlank() }
+        return "${match.groupValues[1]}<$wordCount-word query>${match.groupValues[3]}"
     }
 }
