@@ -60,7 +60,7 @@ jobs:
 
       - name: Upload instrumented test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: instrumented-results-api${{ matrix.api-level }}
           path: app/build/reports/androidTests/
