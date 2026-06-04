@@ -94,10 +94,10 @@ class PersonaRotationLayer @Inject constructor(
         _enabled.value = enabled
         if (enabled && _currentPersona.value == null) {
             // Issue #63: `_currentPersona` was in-memory only, so the FGS resume cycle
-            // (Android 14+ kills our process every ~6h to enforce the cumulative
-            // foreground-service runtime cap) caused setEnabled() to fire on a fresh
-            // process with `_currentPersona == null`, generating a brand-new persona
-            // every restart. Users perceived "persona rotates daily" instead of weekly.
+            // (process restarts on reboot/app-update and after long-pause resigns)
+            // caused setEnabled() to fire on a fresh process with `_currentPersona ==
+            // null`, generating a brand-new persona every restart. Users perceived
+            // "persona rotates daily" instead of weekly.
             // Restore the most-recent still-active persona from history before falling
             // back to generation.
             scope.launch {

@@ -53,9 +53,9 @@
             </intent-filter>
         </activity>
 
-        <!-- Foreground Service. The foregroundServiceType attribute is set per-flavor:
-             - play flavor: specialUse + PROPERTY_SPECIAL_USE_FGS_SUBTYPE
-             - full flavor: dataSync -->
+        <!-- Foreground Service. The foregroundServiceType attribute is set per-flavor;
+             both flavors use specialUse + PROPERTY_SPECIAL_USE_FGS_SUBTYPE
+             (set in src/play/AndroidManifest.xml and src/full/AndroidManifest.xml). -->
         <service
             android:name=".service.PhantomForegroundService"
             android:exported="false" />
