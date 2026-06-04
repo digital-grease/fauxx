@@ -132,9 +132,33 @@ jobs:
     needs: gate
     uses: ./.github/workflows/instrumented-tests.yml
 
+  # Lint the actual shipped release variants before signing. Both pass against the committed
+  # lint-baseline.xml (warningsAsErrors is off, so only un-baselined errors fail the build);
+  # this stops a release-only lint regression from reaching a signed artifact.
+  lint:
+    name: Lint (release)
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Lint release variants
+        run: ./gradlew lintPlayRelease lintFullRelease
+
   build:
     name: Build ${{ matrix.flavorName }} Release
-    needs: [gate, unit-tests, instrumented-tests]
+    needs: [gate, unit-tests, instrumented-tests, lint]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

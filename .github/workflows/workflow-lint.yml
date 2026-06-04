@@ -1,0 +1,31 @@
+name: Workflow Lint
+
+# Lints the GitHub Actions workflows themselves with actionlint (which bundles shellcheck for
+# `run:` shell blocks), so a malformed workflow, an invalid ${{ }} expression, a bad runner
+# label, or an unsafe shell snippet is caught in review instead of failing live mid-CI — or,
+# worse, mid-release. Only runs when a workflow file changes.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Pinned image; it ships actionlint + shellcheck + pyflakes so run-block shell is linted too.
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color
