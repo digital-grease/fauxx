@@ -30,7 +30,7 @@ mockkAndroid = "1.14.11"
 robolectric = "4.16.1"
 kotest = "6.1.11"
 timber = "5.0.1"
-appcompat = "1.7.0"
+appcompat = "1.7.1"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
