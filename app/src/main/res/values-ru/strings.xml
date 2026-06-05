@@ -24,25 +24,12 @@
     <string name="notification_paused_wifi">Пауза — ожидание Wi-Fi</string>
     <string name="notification_paused_battery">Пауза — низкий заряд батареи</string>
     <string name="notification_paused_rate_limit">Пауза — достигнут лимит действий в час</string>
-    <string name="notification_paused_quiet_hours">Пауза — вне активных часов</string>
     <string name="notification_stopped">Остановлено</string>
     <string name="notification_initializing">Инициализация…</string>
     <string name="notification_action_open">Открыть</string>
     <string name="notification_action_stop">Остановить</string>
-    <string name="resume_channel_name">Возобновление защиты</string>
-    <string name="resume_channel_desc">Напоминает возобновить Fauxx после перезагрузки устройства</string>
-    <string name="resume_notification_text">Нажмите, чтобы возобновить защиту</string>
 
     <!-- Common actions -->
-    <string name="common_cancel">Отмена</string>
-    <string name="common_clear">Удалить</string>
-    <string name="common_continue">Продолжить</string>
-    <string name="common_not_now">Не сейчас</string>
-    <string name="common_allow">Разрешить</string>
-    <string name="common_open_settings">Открыть настройки</string>
-    <string name="common_back">Назад</string>
-    <string name="common_success">Успешно</string>
-    <string name="common_failed">Ошибка</string>
 
     <!-- Onboarding -->
     <string name="onboarding_title">FAUXX</string>
@@ -163,56 +150,22 @@
     <!-- Settings screen -->
     <string name="settings_title">НАСТРОЙКИ</string>
     <string name="settings_intensity_title">%d действий/час</string>
-    <string name="settings_actions_per_hour">%1$d действий/час</string>
     <string name="settings_theme_title">Следует теме твоего устройства</string>
-    <string name="settings_theme_system_desc">Следует теме устройства</string>
-    <string name="settings_theme_light_desc">Всегда светлая</string>
-    <string name="settings_theme_dark_desc">Всегда темная</string>
     <string name="settings_wifi_only_title">Пауза при мобильном интернете</string>
-    <string name="settings_wifi_only_desc">Пауза при мобильном интернете</string>
-    <string name="settings_resume_reboot_title">Возобновлять после перезагрузки</string>
-    <string name="settings_resume_reboot_desc">После перезагрузки показывать уведомление для возобновления защиты. Android не дает приложениям незаметно запускаться в фоне, поэтому нужен тап.</string>
-    <string name="settings_pause_below_title">Пауза ниже</string>
     <string name="settings_active_hours_title">Начало</string>
-    <string name="settings_active_hours_value">%1$d:00 – %2$d:00</string>
-    <string name="settings_active_hours_start">Начало</string>
-    <string name="settings_active_hours_end">Конец</string>
-    <string name="settings_active_hours_desc">Активность ставится на паузу вне этих часов</string>
-    <string name="settings_active_hours_narrow_warning">Узкое окно активности (%1$d ч) само может стать отслеживаемым сигналом. Более широкие окна (12 ч+) сложнее отличить от обычного поведения.</string>
-    <string name="settings_clear_all_data">Удалить все данные</string>
-    <string name="settings_export_debug_logs">Экспорт debug-логов</string>
-    <string name="settings_about_privacy_policy">О приложении и политика приватности</string>
-    <string name="settings_version_format">Fauxx v%1$s (сборка %2$d)</string>
     <string name="settings_clear_dialog_title">Удалить все данные?</string>
     <string name="settings_clear_dialog_body">Это навсегда удалит:\n• Все журналы действий\n• Твой демографический профиль\n• Кэш профилей рекламных платформ\n• Историю генерации персон\n\nВсе настройки будут сброшены. Движок остановится и вернётся к Layer 0 (равномерный шум).\n\nЭто действие нельзя отменить.</string>
     <string name="settings_clear_dialog_confirm">Удалить все</string>
 
     <!-- Dashboard screen -->
-    <string name="dashboard_notification_denied">Разрешение на уведомления отклонено — индикатор фоновой активности скрыт. Разрешите уведомления в настройках, чтобы видеть статус защиты.</string>
-    <string name="dashboard_battery_optimization_warning">Оптимизация батареи Android ограничивает Fauxx. Фоновая активность будет останавливаться при выключенном экране. Разрешите неограниченную фоновую работу, чтобы движок продолжал работать.</string>
-    <string name="dashboard_engine_generating">Генерируется синтетическая активность</string>
-    <string name="dashboard_engine_waiting_wifi">Ожидание Wi-Fi</string>
-    <string name="dashboard_engine_battery_low">Заряд ниже порога</string>
-    <string name="dashboard_engine_rate_limit">Достигнут лимит действий в час</string>
-    <string name="dashboard_engine_outside_hours">Вне активных часов</string>
-    <string name="dashboard_engine_stopped">Движок остановлен</string>
-    <string name="dashboard_category_distribution">РАСПРЕДЕЛЕНИЕ КАТЕГОРИЙ</string>
     <string name="dashboard_category_distribution_help">Показывает, как твой синтетический шум распределён по тематическим категориям. Чем шире разброс, тем более запутанный профиль видят трекеры. Категории взвешиваются движком таргетинга, чтобы максимально отдалить шум от твоих реальных интересов.</string>
-    <string name="dashboard_active_persona">АКТИВНАЯ ПЕРСОНА</string>
     <string name="dashboard_active_persona_help">%1$s · %2$s</string>
-    <string name="dashboard_persona_meta">%1$s · %2$s</string>
-    <string name="dashboard_noise_ratio">ДОЛЯ ШУМА</string>
     <string name="dashboard_noise_ratio_help">Оценивает, какая часть твоего видимого профиля браузинга является синтетическим шумом, а не реальной активностью. Чем выше, тем лучше: при 80%%+ брокеру данных пришлось бы правильно распознать 4 из 5 сигналов как фальшивые, чтобы построить точный профиль.</string>
     <string name="dashboard_battery_dialog_title">Android агрессивно ставит фоновые приложения на паузу для экономии батареи. Для постоянного зашумления профиля Fauxx нужно исключение из оптимизации батареи.</string>
-    <string name="dashboard_battery_dialog_body">Android агрессивно останавливает фоновые приложения для экономии батареи. Для постоянного отравления профиля Fauxx нужно исключение из оптимизации батареи.</string>
-    <string name="dashboard_battery_dialog_note">На следующем экране выберите «Разрешить», чтобы движок продолжал генерировать синтетическую активность при выключенном экране.</string>
 
     <!-- Targeting screen -->
     <string name="targeting_title">ДВИЖОК ТАРГЕТИНГА</string>
     <string name="targeting_layer1_name">Layer 1 — Самоотчёт</string>
-    <string name="targeting_layer1_desc">Уводит шум от указанных вами демографических признаков</string>
-    <string name="targeting_profile_set">Профиль задан</string>
-    <string name="targeting_no_profile">Профиля нет</string>
     <!-- LLM-DRAFTED 2026-05-24, PENDING NATIVE-SPEAKER REVIEW (post-#52 import retreat) -->
     <string name="targeting_layer2_name">Слой 2 — Импорт рекламного профиля</string>
     <string name="targeting_layer2_description">Импортирует существующий рекламный профиль из Google Takeout / Facebook DYI</string>
@@ -238,44 +191,19 @@
     <string name="targeting_import_mute_button">Не напоминать</string>
 
     <!-- Legacy PR #30 keys (orphan post-#52; absorbed by lint baseline). -->
-    <string name="targeting_layer2_desc">Считывает рекламные профили, чтобы найти подтвержденные интересы</string>
-    <string name="targeting_last_scraped">Последнее считывание: %1$s</string>
-    <string name="targeting_scrape_now">Считать сейчас</string>
     <string name="targeting_layer3_name">Layer 3 — Смена персон</string>
-    <string name="targeting_layer3_desc">Поддерживает связные синтетические персоны с еженедельной ротацией</string>
-    <string name="targeting_persona_status">Персона: %1$s</string>
-    <string name="targeting_no_persona">Персоны пока нет</string>
-    <string name="targeting_rotate_now">Сменить сейчас</string>
-    <string name="targeting_category_weights">ВЕСА КАТЕГОРИЙ</string>
     <string name="targeting_custom_interests_title">Добавь конкретные интересы для подавления (сопоставляются с ближайшей категорией)</string>
-    <string name="targeting_custom_interests_desc">Добавьте конкретные интересы для подавления: они будут сопоставлены с ближайшей категорией</string>
-    <string name="targeting_custom_interest_placeholder">например, деревообработка</string>
-    <string name="targeting_add_interest_cd">Добавить интерес</string>
-    <string name="targeting_remove_cd">Удалить</string>
-    <string name="targeting_unmapped_suffix">не сопоставлено</string>
-    <string name="targeting_interest_mapping">%1$s → %2$s</string>
-    <string name="targeting_interest_unmapped">%1$s (%2$s)</string>
-    <string name="targeting_clear_profile">Удалить мой профиль</string>
     <string name="targeting_clear_dialog_title">Удалить профиль?</string>
     <string name="targeting_clear_dialog_body">Это удалит твой демографический профиль, все данные платформ и историю персон. Движок вернётся к равномерному случайному таргетингу.</string>
 
     <!-- Modules screen -->
     <string name="modules_title">МОДУЛИ</string>
     <string name="module_search_name">Зашумление поиска</string>
-    <string name="module_search_desc">Выполняет поисковые запросы в Google, Bing, DuckDuckGo, Yahoo, а в русском режиме также в Яндексе и Mail.ru</string>
     <string name="module_cookie_name">Насыщение cookie</string>
-    <string name="module_cookie_desc">Посещает 10 000+ URL в фоне, чтобы накопить разнообразные трекерные cookies</string>
     <string name="module_dns_name">Разрешает разные домены, создавая видимый провайдеру шум DNS-запросов</string>
-    <string name="module_dns_desc">Разрешает разные домены, создавая видимый провайдеру шум DNS-запросов</string>
     <string name="module_fingerprint_name">Смена отпечатка</string>
-    <string name="module_fingerprint_desc">Меняет User-Agent, canvas-шум и свойства navigator</string>
     <string name="module_ad_name">Зашумление рекламы</string>
-    <string name="module_ad_desc">Загружает страницы с рекламой и посещает панели рекламных предпочтений</string>
     <string name="module_location_name">Подмена местоположения</string>
-    <string name="module_location_desc">Подает синтетические GPS-маршруты через MockLocationProvider</string>
-    <string name="module_location_warning">Требует включенные параметры разработчика и выбор Fauxx как приложения фиктивной геолокации</string>
-    <string name="module_app_signal_name">Сигналы приложений</string>
-    <string name="module_app_signal_desc">Открывает страницы магазинов приложений вне вашего профиля, чтобы сработали attribution pixels</string>
 
     <!-- Log screen -->
     <string name="log_export_csv">Экспорт CSV</string>
@@ -289,36 +217,10 @@
     <string name="log_export_chooser_title">Экспорт журнала</string>
 
     <!-- Log export sheet -->
-    <string name="log_export_logs_scrubbed">Все личные данные удалены из логов.</string>
-    <string name="log_export_file_issue">Создать issue на GitHub</string>
-    <string name="log_export_file_issue_desc">Логи скопированы в буфер — вставьте их в тело issue</string>
-    <string name="log_export_share">Поделиться через...</string>
-    <string name="log_export_share_desc">Отправить в почту, мессенджер или другое приложение</string>
-    <string name="log_export_save">Сохранить на устройство</string>
-    <string name="log_export_save_desc">Сохраняет файл в папку Downloads</string>
-    <string name="log_export_copy">Скопировать в буфер</string>
-    <string name="log_export_copy_desc">Скопировать полный текст лога</string>
-    <string name="log_export_issue_label_crash">crash report</string>
-    <string name="log_export_issue_label_debug">debug logs</string>
-    <string name="log_export_issue_body">## Описание\n\n[Опишите, что произошло]\n\n## Логи\n\nЛоги скопированы в буфер обмена — вставьте их между блоками ниже.\n\n```\n\n```\n</string>
-    <string name="log_export_toast_issue_copied">Полные логи скопированы — вставьте их в тело issue</string>
-    <string name="log_export_toast_no_browser">Браузер не найден — логи скопированы в буфер</string>
-    <string name="log_export_share_message">Fauxx %1$s — файл во вложении.</string>
-    <string name="log_export_toast_no_share_app">Приложение для отправки не найдено</string>
-    <string name="log_export_toast_downloads_requires_q">Сохранение в Downloads требует Android 10+</string>
-    <string name="log_export_toast_saved">Сохранено в Downloads/%1$s</string>
-    <string name="log_export_toast_failed_save">Не удалось сохранить файл</string>
-    <string name="log_export_clipboard_label">Логи Fauxx</string>
-    <string name="log_export_toast_copied">Скопировано в буфер</string>
 
     <!-- Crash report -->
-    <string name="crash_report_sheet_title">Crash report</string>
 
     <!-- Asset health warnings -->
-    <string name="health_warning_blocklist">Не удалось загрузить safety blocklist — URL-модули отключены</string>
-    <string name="health_warning_query_banks">Не удалось загрузить банки запросов — поисковый шум может быть обобщенным</string>
-    <string name="health_warning_url_corpus">Корпус URL пуст — модули браузинга не будут работать</string>
-    <string name="health_warning_city_database">Не удалось загрузить базу городов — шум локации ограничен одним городом</string>
 
     <!-- Action type labels -->
     <string name="action_type_search_query">ПОИСК</string>
@@ -364,7 +266,6 @@
     <string name="category_military_defense">армия и оборона</string>
     <string name="category_wellness_alternative">здоровье и альтернативные практики</string>
     <string name="category_relationships_dating">отношения и знакомства</string>
-    <string name="category_other">другое</string>
 
     <!-- Demographic enum labels (onboarding pickers) -->
     <string name="age_18_24">18–24</string>
@@ -413,7 +314,6 @@
     <string name="region_quebec">Квебек</string>
     <string name="region_belgium">Бельгия</string>
     <string name="region_switzerland">Швейцария</string>
-    <string name="region_russia">Россия</string>
     <string name="region_other">Другое</string>
 
     <!-- Onboarding misc -->

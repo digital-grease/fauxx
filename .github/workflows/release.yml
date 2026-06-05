@@ -82,7 +82,6 @@ jobs:
       - name: Ensure version bump and changelog stay in sync
         if: steps.detect.outputs.version_touched == 'true' || steps.detect.outputs.changelog_touched == 'true'
         run: |
-          base="${{ steps.range.outputs.base }}"
           head="${{ steps.range.outputs.head }}"
           version_touched="${{ steps.detect.outputs.version_touched }}"
           changelog_touched="${{ steps.detect.outputs.changelog_touched }}"

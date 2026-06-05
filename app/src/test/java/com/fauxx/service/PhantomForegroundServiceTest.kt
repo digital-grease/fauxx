@@ -28,7 +28,7 @@ import org.robolectric.annotation.Config
  *   1. Forwards the [ResumeSpec] to [ResumeScheduler.schedule] so a tap-to-resume
  *      notification is queued for the right wake-up condition.
  *   2. Stops itself (foreground state torn down, service stopped), freeing the
- *      Android 14+ dataSync FGS runtime budget.
+ *      Android 14+ foreground-service slot.
  *
  * Both halves of #1 and #2 are needed: scheduling without stopping leaves the FGS up
  * (the original bug); stopping without scheduling means the user gets no notification

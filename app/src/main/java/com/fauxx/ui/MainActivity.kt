@@ -200,7 +200,7 @@ class MainActivity : ComponentActivity() {
      * running — e.g., after a reboot where BootReceiver couldn't post its tap-to-resume
      * notification (POST_NOTIFICATIONS denied) — start it now. Activity launch from the
      * launcher or from a notification tap is always an allowed FGS-start context on
-     * Android 14+, even for dataSync-type services.
+     * Android 14+, even for specialUse-type services.
      *
      * [PoisonEngine.start] and [PhantomForegroundService.onStartCommand] are idempotent,
      * so re-dispatching `ACTION_START` when the service is already running is a no-op.

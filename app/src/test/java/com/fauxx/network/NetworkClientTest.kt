@@ -1,7 +1,11 @@
 package com.fauxx.network
 
+import android.content.Context
+import com.fauxx.data.model.PoisonProfile
+import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
+import com.fauxx.support.seededRandom
 import io.mockk.every
 import io.mockk.mockk
 import okhttp3.OkHttpClient
@@ -17,6 +21,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
+import java.io.ByteArrayInputStream
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
@@ -97,6 +102,92 @@ class NetworkClientTest {
         client().newCall(Request.Builder().url(server.url("/")).build()).execute().use { resp ->
             assertFalse("5xx must not be treated as success", resp.isSuccessful)
             assertEquals(503, resp.code)
+        }
+    }
+
+    /**
+     * A test pool whose UA list comes from the (mocked) asset stream rather than from a
+     * stubbed [UserAgentPool.random]. Two distinct UAs in the asset, customUserAgent = null,
+     * so [UserAgentPool.random] samples the pool (no override). Seeded [Random] makes the
+     * rotation reproducible across runs.
+     */
+    private fun rotatingUaPool(vararg agents: String): UserAgentPool {
+        val json = agents.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }.toByteArray()
+        val context: Context = mockk {
+            every { assets } returns mockk {
+                every { open("user_agents.json") } answers { ByteArrayInputStream(json) }
+            }
+        }
+        val profileRepo: PoisonProfileRepository = mockk {
+            every { getProfile() } returns PoisonProfile(customUserAgent = null)
+        }
+        return UserAgentPool(context, profileRepo, seededRandom())
+    }
+
+    @Test
+    fun `User-Agent rotates across the pool over the wire`() {
+        // REAL pool (2 UAs from the mocked asset) + REAL interceptor, both seam-injected
+        // with a seeded Random so the rotation is deterministic but still varies per call.
+        val pool = setOf("UA-Alpha/1.0", "UA-Bravo/2.0")
+        val interceptor = HeaderRandomizerInterceptor(
+            uaPool = rotatingUaPool(*pool.toTypedArray()),
+            localeManager = localeManager(SupportedLocale.EN),
+            random = seededRandom(),
+        )
+        val client = OkHttpClient.Builder().addInterceptor(interceptor).build()
+
+        val requestCount = 30
+        repeat(requestCount) { server.enqueue(MockResponse().setResponseCode(200).setBody("ok")) }
+        repeat(requestCount) {
+            client.newCall(Request.Builder().url(server.url("/")).build()).execute().use { resp ->
+                assertTrue(resp.isSuccessful)
+            }
+        }
+
+        val observed = (0 until requestCount)
+            .map { server.takeRequest().getHeader("User-Agent") }
+            .toSet()
+        assertTrue(
+            "every observed UA must come from the pool; saw: $observed",
+            pool.containsAll(observed)
+        )
+        assertTrue(
+            "UA must rotate across the pool (more than one distinct value), not stick; saw: $observed",
+            observed.size > 1
+        )
+    }
+
+    @Test
+    fun `Accept-Language emits the locale primary tag for EN FR and RU over the wire`() {
+        // Guards the RU-fallback regression: without a RU table the interceptor used to fall
+        // back to the EN variants and emit en-* for a Russian install. The ES case is already
+        // covered above; this locks the other three primary tags on the wire.
+        //
+        // The interceptor picks one variant per request via variants.random(). Some pools
+        // mix region forms (e.g. "ru-RU,..." and "ru,en;q=0.7"), so we assert on the PRIMARY
+        // language subtag (the part before the first '-' or ',') rather than a literal "ru-"
+        // prefix — that's region-form-agnostic but still catches the en-fallback regression.
+        val cases = mapOf(
+            SupportedLocale.EN to "en",
+            SupportedLocale.FR to "fr",
+            SupportedLocale.RU to "ru",
+        )
+        for ((locale, expectedLang) in cases) {
+            server.enqueue(MockResponse().setResponseCode(200).setBody("ok"))
+            client(locale).newCall(Request.Builder().url(server.url("/")).build())
+                .execute().use { resp -> assertTrue(resp.isSuccessful) }
+
+            val acceptLanguage = server.takeRequest().getHeader("Accept-Language") ?: ""
+            val primaryLang = acceptLanguage.substringBefore(',').substringBefore('-')
+            assertEquals(
+                "$locale must emit the $expectedLang primary tag on the wire, got: $acceptLanguage",
+                expectedLang,
+                primaryLang
+            )
+            assertTrue(
+                "$locale must emit a $expectedLang- prefixed primary token, got: $acceptLanguage",
+                acceptLanguage.startsWith("$expectedLang-") || acceptLanguage.startsWith("$expectedLang,")
+            )
         }
     }
 }

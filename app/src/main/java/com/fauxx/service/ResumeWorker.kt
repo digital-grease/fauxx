@@ -14,8 +14,6 @@ import timber.log.Timber
  * Triggered by:
  * - Quiet-hours end (initial-delay scheduled at start of next allowed window)
  * - Constraint satisfaction (network/battery, after prolonged wifi-only or battery pause)
- * - 5h FGS-runtime safety-net (after the service stopped itself to stay under the
- *   Android 14+ dataSync 6h budget)
  *
  * Honours [PreferenceKeys.ENABLED] so a user who disabled the engine while paused
  * doesn't get nagged. Plain [CoroutineWorker] — no Hilt deps needed; falls through

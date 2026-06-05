@@ -104,7 +104,7 @@ private const val MODULE_STOP_TIMEOUT_MS = 2_000L
 /**
  * Threshold for a "long pause" — wifi/battery pauses past this duration trigger the
  * engine to resign and switch to a WorkManager-constraint-driven resume notification,
- * freeing the foreground-service runtime budget.
+ * releasing the foreground service rather than spinning idle.
  */
 private const val LONG_PAUSE_THRESHOLD_MS = 30L * 60 * 1000
 
@@ -166,7 +166,7 @@ class PoisonEngine @Inject constructor(
     @Volatile
     private var onLongPause: ((ResumeSpec) -> Unit)? = null
 
-    /** Engine start time on [Clock.elapsedRealtime] for FGS runtime tracking. */
+    /** Engine start time on [Clock.elapsedRealtime] for session-duration logging. */
     private var engineStartElapsedMs: Long = 0L
 
     /** [Clock.elapsedRealtime] timestamp at the moment the current pause began. */

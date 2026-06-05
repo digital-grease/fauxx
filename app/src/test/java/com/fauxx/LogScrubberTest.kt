@@ -1,5 +1,6 @@
 package com.fauxx
 
+import com.fauxx.data.model.ActionType
 import com.fauxx.logging.LogScrubber
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -113,5 +114,43 @@ class LogScrubberTest {
     fun `handles string with no sensitive data`() {
         val input = "Module started successfully with 15 URLs queued"
         assertEquals(input, LogScrubber.scrub(input))
+    }
+
+    // --- scrubForExport: coarsen the SEARCH_QUERY payload ----------------------
+
+    @Test
+    fun `scrubForExport coarsens the search query and drops the verbatim text`() {
+        // A query can echo the user's own custom-interest text verbatim (it seeds the Markov
+        // generator), so on export it must be replaced with a non-reversible summary.
+        val input = "[MEDICAL] vintage synth restoration · via BING"
+        val result = LogScrubber.scrubForExport(ActionType.SEARCH_QUERY, input)
+
+        assertFalse("the verbatim query text must not survive export", result.contains("vintage"))
+        assertFalse(result.contains("synth"))
+        assertTrue("the category is kept for diagnostics", result.contains("[MEDICAL]"))
+        assertTrue("the engine is kept for diagnostics", result.contains("· via BING"))
+        assertEquals("[MEDICAL] <3-word query> · via BING", result)
+    }
+
+    @Test
+    fun `scrubForExport summarizes a single-word query`() {
+        val result = LogScrubber.scrubForExport(ActionType.SEARCH_QUERY, "[FINANCE] crypto · via GOOGLE")
+        assertEquals("[FINANCE] <1-word query> · via GOOGLE", result)
+    }
+
+    @Test
+    fun `scrubForExport leaves a blocked search detail unchanged`() {
+        // The blocked path detail is a fixed safety string, not user content, and has no
+        // ` via ENGINE` suffix, so it is not coarsened.
+        val input = "[BLOCKED] query suppressed by safety guard"
+        assertEquals(input, LogScrubber.scrubForExport(ActionType.SEARCH_QUERY, input))
+    }
+
+    @Test
+    fun `scrubForExport does not coarsen non-search action detail`() {
+        // PAGE_VISIT etc. carry corpus-derived decoy content (URLs/domains/cities) which is safe
+        // to keep; only the generic PII scrub applies.
+        val url = "https://example.com/news/some-article"
+        assertEquals(url, LogScrubber.scrubForExport(ActionType.PAGE_VISIT, url))
     }
 }

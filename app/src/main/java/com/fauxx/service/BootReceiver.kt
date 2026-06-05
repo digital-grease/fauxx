@@ -13,7 +13,7 @@ import timber.log.Timber
 /**
  * Handles post-reboot / post-update resumption of the [PhantomForegroundService].
  *
- * Android 14+ (targetSdk 36) forbids starting a `dataSync` foreground service from any
+ * Android 14+ (targetSdk 36) forbids starting the foreground service from any
  * BOOT_COMPLETED context chain — including WorkManager expedited work triggered by boot.
  * So instead of auto-restarting the FGS, we post a "tap to resume protection" notification.
  * Tapping it opens [com.fauxx.ui.MainActivity] with `EXTRA_RESUME_ENGINE`, and the engine
