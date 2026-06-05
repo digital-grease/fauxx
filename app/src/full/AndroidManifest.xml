@@ -6,9 +6,9 @@
     Fauxx's runtime behavior (generating synthetic privacy-noise traffic) doesn't
     map to any of the categorical FGS types Android defines. dataSync, in particular,
     is documented as "user-initiated transfer of the user's own data to/from the
-    cloud" and is subject to Android 14+'s 6h-per-24h cumulative cap — which drove
-    the entire FgsBudgetTracker machinery and issues #64, #65 (engine appears
-    stopped after the window exhausts). specialUse has no time cap. F-Droid does
+    cloud" and is subject to Android 14+'s 6h-per-24h cumulative cap, which made the
+    engine appear stopped once the daily window exhausted (issues #64, #65).
+    specialUse has no time cap, so switching to it removed that failure mode. F-Droid does
     not enforce Google Play's FGS-type review policy, so we pick by runtime fit
     rather than store rules. The PROPERTY_SPECIAL_USE_FGS_SUBTYPE matches the play
     flavor for consistency, even though F-Droid doesn't require it.

@@ -36,13 +36,14 @@ You optionally tell Fauxx coarse demographics (age range, interests, profession,
 - Skip it? You keep Layer 0 uniform noise.
 - Enable it? Your real profile becomes harder to infer.
 
-### Layer 2: Adversarial Profile Scraping (Opt-in, Advanced)
+### Layer 2: Ad-Profile Import (Opt-in, Advanced)
 
-Fauxx can scrape your existing ad interest profiles from Google Ads Settings and Facebook Ad Preferences. It then sees exactly what ads think they know about you, and aggressively targets the gaps—flooding the gaps with synthetic activity to dilute the confirmed interests.
+Fauxx imports the ad-interest profile the platforms have already built about you, from a data export you provide: Google Takeout ("My Ad Center") or Facebook's "Download Your Information" (JSON). It reads exactly what the ad networks think they know about you, then aggressively suppresses those confirmed categories so the synthetic activity floods everything else instead.
 
-- Requires authentication to ad platforms (read-only, never modifies).
-- Runs on a configurable schedule (default: weekly).
-- On failure, degrades gracefully to Layer 0.
+- You provide an exported file. Fauxx never logs in, reads cookies, or touches the platforms.
+- Reads the file only. Nothing is sent anywhere.
+- Re-import occasionally as your profile drifts (Fauxx reminds you after about 90 days).
+- On a missing or unrecognized file, degrades gracefully to Layer 0.
 
 ### Layer 3: Synthetic Persona Rotation (Active When L1 or L2 Enabled)
 
@@ -52,7 +53,7 @@ To prevent pattern detection, Fauxx generates a coherent synthetic persona every
 
 All layers produce a weight map across content categories. These weights multiply together and normalize, so the final distribution sums to 1.0. Categories are clamped with a minimum weight of 0.001—absence is still a signal.
 
-Example: If you report yourself as a 25-year-old software engineer, Layer 1 drops RETIREMENT and PARENTING to 0.15× (away-from) and boosts GAMING and TECHNOLOGY to 2.5× (toward other interests). When Layer 2 sees Google knows you search for TECH, it further suppresses TECH (0.05×) and boosts categories Google has never seen from you (3.0×). These multiply together, then Layer 3 blends in the weekly persona's preferences. The result: a noise distribution that looks nothing like your real profile.
+Example: If you report yourself as a 25-year-old software engineer, Layer 1 drops RETIREMENT and PARENTING to 0.15× (away-from) and boosts GAMING and TECHNOLOGY to 2.5× (toward other interests). When Layer 2 imports your ad profile and sees Google has tagged you with TECH, it further suppresses TECH (0.05×) and boosts categories Google has never associated with you (3.0×). These multiply together, then Layer 3 blends in the weekly persona's preferences. The result: a noise distribution that looks nothing like your real profile.
 
 ## Modules
 
@@ -103,7 +104,7 @@ Fauxx is built with privacy-first architecture:
 
 - **On-device only:** All demographic data, profile settings, and activity logs stay on your device. Nothing is uploaded.
 - **Encrypted database:** Sensitive tables (UserDemographicProfile, PlatformProfileCache) use SQLCipher encryption with AndroidKeyStore-backed keys. The encryption key is derived from the device's secure key material.
-- **Read-only scrapers:** Adversarial platform scrapers only read your existing profiles. They never modify settings, click ads, or interact beyond reading.
+- **Import reads only your file:** Layer 2 reads the ad-profile export you hand it. It never logs into, modifies, or contacts the ad platforms.
 - **No sensitive attributes:** Demographic distance rules never include or infer race, ethnicity, religion, sexual orientation, gender identity, disability, or political affiliation.
 - **Domain blocklist:** Every URL is checked against a hardcoded blocklist of illegal/harmful domains before loading.
 - **Rate limiting:** Maximum 1 request per 5 seconds per domain. Maximum 200 requests per hour at HIGH intensity. Enforced per-domain to avoid abuse.
@@ -185,7 +186,7 @@ View at a glance:
 
 Fine-tune the Demographic Distancing Engine:
 - **Layer 1 Toggle:** Enable/disable self-report weighting. Edit your profile or clear it entirely.
-- **Layer 2 Toggle:** Enable/disable adversarial scraping. See last scrape dates and scrape now.
+- **Layer 2 Toggle:** Enable/disable ad-profile import. Import a Google Takeout / Facebook export and see when you last imported.
 - **Layer 3 Toggle:** Enable/disable persona rotation. See the current persona and rotate manually.
 - **Weight Visualization:** Live horizontal bar chart showing weight per category. Red = suppressed, green = boosted, gray = neutral.
 
@@ -222,8 +223,7 @@ All configurable values are exposed in the app UI and backed by Room preferences
 - **Cross-niche dwell:** Lognormal dwell-time multiplier on category transitions (e.g., Finance → Legal) with a 30s floor — defeats heuristic bot detection that flags sub-second niche switches
 - **Circadian pattern:** Near-zero activity 11pm–7am local time
 - **Layer 3 rotation:** Every 7 days ± [1, 3] days jitter
-- **Layer 2 scrape interval:** Every 7 days (configurable via WorkManager)
-- **Scraper timeout:** 30 seconds per platform
+- **Layer 2 re-import reminder:** about 90 days (the import is manual, not scheduled)
 
 ## Project Structure
 
@@ -242,7 +242,7 @@ app/src/main/
 │   │   ├── TargetingEngine.kt           # Orchestrator
 │   │   ├── layer0/                      # Uniform entropy
 │   │   ├── layer1/                      # Self-report weighting
-│   │   ├── layer2/                      # Adversarial scraper
+│   │   ├── layer2/                      # Ad-profile import
 │   │   ├── layer3/                      # Persona rotation
 │   │   └── WeightNormalizer.kt
 │   ├── engine/
@@ -334,18 +334,18 @@ If you want to see where the noise is actually going, the **Targeting screen's c
 
 A future release will move Noise Ratio toward a quality-aware metric rather than pure throughput. Tracked as a planned improvement.
 
-### How does the "Adversarial Scraper" (Layer 2) work, and why does it sometimes say "Last scraped: Never"?
+### How does Layer 2 (Ad-Profile Import) work, and what do I import?
 
-Layer 2 reads your existing ad-platform interest profiles from Google Ads Settings and Facebook Ad Preferences. It uses those to find categories the ad networks have already learned about you, and then tells the engine to *suppress* those categories — so the synthetic activity steers away from your real profile.
+Layer 2 reads the ad-interest profile the platforms have already built about you, from a data export you download yourself, and tells the engine to *suppress* those categories so the synthetic activity steers away from your real profile.
 
-A few mechanics worth knowing:
+To use it:
 
-- **Duration**: up to ~60 seconds. Each platform has a 30-second timeout, and Google + Facebook run sequentially.
-- **It does not log you in.** Fauxx reads cookies that are already on your device. You need to be signed into [myadcenter.google.com](https://myadcenter.google.com) and Facebook's ad preferences page in your default browser before tapping "Scrape Now." If you're not signed in, Fauxx surfaces a dialog with direct links to those pages instead of silently failing.
-- **Read-only.** The scraper never modifies, clicks, or interacts with your ad-platform settings — it just reads what's already there.
-- **Runs on a 7-day schedule.** Once Layer 2 is enabled, Fauxx auto-refreshes the scrape every week on WiFi. "Scrape Now" is a manual override for immediate refresh (one-shot, works on cellular too).
+- **Export your ad data.** From Google, use [Google Takeout](https://takeout.google.com) and select **"My Ad Center"**. From Facebook, use **Download Your Information** (accountscenter.facebook.com), choose **JSON** format, and include **"Ads and businesses"**. The platform emails you an archive (a ZIP or JSON file).
+- **Import the file.** On Fauxx's Targeting screen, tap the Google Takeout or Facebook import button and pick the file you downloaded. Fauxx reads the ad-interest categories and applies the away-from weighting.
+- **Nothing leaves your device.** Fauxx never logs in, reads cookies, or contacts the platforms. It only parses the file you give it, on-device.
+- **Re-import occasionally.** Your ad profile drifts over time, so Fauxx reminds you to re-import after about 90 days. There is no background scraping.
 
-If you're on v0.2.6 or older and "Scrape Now" never seems to do anything, that's [issue #22](https://github.com/digital-grease/fauxx/issues/22) — fixed in v0.2.7, with the needs-login dialog added in v0.2.8. Update via F-Droid / Orion / GitHub Releases.
+If the import says it couldn't find an ad-interest file, the most common cause is that personalized ads are turned **off** in your Google or Facebook settings, so the platform keeps no ad profile to export. Turn personalized ads on, let a profile accrue, then export again.
 
 ### Why does Fauxx sometimes stop and show a "Tap to resume protection" notification?
 
