@@ -24,39 +24,49 @@ import timber.log.Timber
  * is declared in the full flavor only; on the play flavor the scheduler falls back to the
  * notification path, so this receiver effectively only fires on full.
  *
- * Honours [PreferenceKeys.ENABLED] (like [ResumeWorker]) so a user who disabled the engine while
- * it was paused is not force-resumed, and falls back to the notification if the FGS start is
- * denied. On a successful start, [PhantomForegroundService] cancels any pending fallback work.
+ * Ordering matters for the FGS-start grant: the start is done SYNCHRONOUSLY in [onReceive], inside
+ * the alarm broadcast, so the grant is unambiguously in scope (deferring it past an async read
+ * could fall outside the grant window). The ENABLED check then runs afterwards — disabling the
+ * engine does NOT cancel the pending alarm, so a user who turned the engine off while it was paused
+ * must not be force-resumed; if disabled, the just-started service is stopped again (stopping needs
+ * no FGS-start grant, so it can safely be async). If the start is denied, falls back to the
+ * tap-to-resume notification.
  */
 class AlarmResumeReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_RESUME) return
         val appContext = context.applicationContext
-        // Reading DataStore + starting the service is async; keep the broadcast alive across it.
+
+        // Start synchronously, within the exact-alarm broadcast, so the Android 14+ alarm-driven
+        // FGS-start grant is in scope.
+        val started = try {
+            ContextCompat.startForegroundService(appContext, PhantomForegroundService.startIntent(appContext))
+            Timber.i("AlarmResumeReceiver: auto-resumed the foreground service")
+            true
+        } catch (e: Exception) {
+            Timber.w(e, "AlarmResumeReceiver: FGS start denied; posting resume notification")
+            postResumeNotification(appContext)
+            false
+        }
+        if (!started) return
+
+        // Then honour ENABLED: if the user disabled the engine while it was paused, stop the
+        // service we just started. Runs async (stopping a running service needs no FGS-start grant).
         val pending = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             try {
                 val enabled = try {
                     appContext.fauxxDataStore.data.first()[PreferenceKeys.ENABLED] ?: false
                 } catch (e: Exception) {
-                    Timber.w(e, "AlarmResumeReceiver: failed to read ENABLED flag")
-                    false
+                    // Fail open: prefer resuming protection over silently dropping it on a read error.
+                    Timber.w(e, "AlarmResumeReceiver: failed to read ENABLED flag; leaving service running")
+                    true
                 }
                 if (!enabled) {
-                    Timber.i("AlarmResumeReceiver: engine disabled by user; not auto-resuming")
-                    return@launch
-                }
-                try {
-                    ContextCompat.startForegroundService(
-                        appContext,
-                        PhantomForegroundService.startIntent(appContext)
-                    )
-                    Timber.i("AlarmResumeReceiver: auto-resumed the foreground service")
-                } catch (e: Exception) {
-                    // FGS start unexpectedly denied — fall back to the tap-to-resume notification.
-                    Timber.w(e, "AlarmResumeReceiver: FGS start denied; posting resume notification")
-                    postResumeNotification(appContext)
+                    Timber.i("AlarmResumeReceiver: engine disabled while paused; stopping the resumed service")
+                    runCatching { appContext.startService(PhantomForegroundService.stopIntent(appContext)) }
+                        .onFailure { Timber.w(it, "AlarmResumeReceiver: failed to stop the resumed service") }
                 }
             } finally {
                 pending.finish()
