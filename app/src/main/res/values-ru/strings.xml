@@ -149,17 +149,17 @@
 
     <!-- Settings screen -->
     <string name="settings_title">НАСТРОЙКИ</string>
-    <string name="settings_intensity_title">%d действий/час</string>
-    <string name="settings_theme_title">Следует теме твоего устройства</string>
-    <string name="settings_wifi_only_title">Пауза при мобильном интернете</string>
-    <string name="settings_active_hours_title">Начало</string>
+    <string name="settings_intensity_title">Интенсивность</string>
+    <string name="settings_theme_title">Тема</string>
+    <string name="settings_wifi_only_title">Только Wi-Fi</string>
+    <string name="settings_active_hours_title">Активные часы</string>
     <string name="settings_clear_dialog_title">Удалить все данные?</string>
     <string name="settings_clear_dialog_body">Это навсегда удалит:\n• Все журналы действий\n• Твой демографический профиль\n• Кэш профилей рекламных платформ\n• Историю генерации персон\n\nВсе настройки будут сброшены. Движок остановится и вернётся к Layer 0 (равномерный шум).\n\nЭто действие нельзя отменить.</string>
     <string name="settings_clear_dialog_confirm">Удалить все</string>
 
     <!-- Dashboard screen -->
     <string name="dashboard_category_distribution_help">Показывает, как твой синтетический шум распределён по тематическим категориям. Чем шире разброс, тем более запутанный профиль видят трекеры. Категории взвешиваются движком таргетинга, чтобы максимально отдалить шум от твоих реальных интересов.</string>
-    <string name="dashboard_active_persona_help">%1$s · %2$s</string>
+    <string name="dashboard_active_persona_help">Синтетическая личность, которую движок принимает примерно на неделю. Активность смещается в сторону интересов этой личности, создавая согласованный во времени шум — из-за этого трекерам сложнее отфильтровать поддельный сигнал. Личности меняются автоматически.</string>
     <string name="dashboard_noise_ratio_help">Оценивает, какая часть твоего видимого профиля браузинга является синтетическим шумом, а не реальной активностью. Чем выше, тем лучше: при 80%%+ брокеру данных пришлось бы правильно распознать 4 из 5 сигналов как фальшивые, чтобы построить точный профиль.</string>
     <string name="dashboard_battery_dialog_title">Android агрессивно ставит фоновые приложения на паузу для экономии батареи. Для постоянного зашумления профиля Fauxx нужно исключение из оптимизации батареи.</string>
 
@@ -192,7 +192,7 @@
 
     <!-- Legacy PR #30 keys (orphan post-#52; absorbed by lint baseline). -->
     <string name="targeting_layer3_name">Layer 3 — Смена персон</string>
-    <string name="targeting_custom_interests_title">Добавь конкретные интересы для подавления (сопоставляются с ближайшей категорией)</string>
+    <string name="targeting_custom_interests_title">Пользовательские интересы</string>
     <string name="targeting_clear_dialog_title">Удалить профиль?</string>
     <string name="targeting_clear_dialog_body">Это удалит твой демографический профиль, все данные платформ и историю персон. Движок вернётся к равномерному случайному таргетингу.</string>
 
@@ -328,7 +328,7 @@
     <string name="dashboard_paused">ПАУЗА</string>
     <string name="dashboard_inactive">НЕАКТИВНО</string>
     <string name="dashboard_today">СЕГОДНЯ</string>
-    <string name="dashboard_this_week">FAQ</string>
+    <string name="dashboard_this_week">НА ЭТОЙ НЕДЕЛЕ</string>
 
     <!-- v0.3.0 RU backfill — LLM-DRAFTED 2026-05-23, PENDING NATIVE-SPEAKER REVIEW -->
     <string name="faq_title">FAQ</string>
