@@ -58,10 +58,19 @@ class DiverseBrowsingModule @Inject constructor(
         val url = pending.entry.url
         val dwellMs = random.nextLong(3_000L, 15_000L)
 
-        val success = withContext(Dispatchers.Main) {
-            val webView = webViewPool.acquire()
+        // #124: acquire/release off the main thread; only loadUrl hops to Main (see
+        // PhantomWebViewPool / CookieSaturationModule for the freeze root cause).
+        val webView = try {
+            webViewPool.acquire()
+        } catch (e: Exception) {
+            Timber.w("WebView acquire failed: ${e.message}")
+            null
+        }
+        val success = if (webView == null) {
+            false
+        } else {
             try {
-                webView.loadUrl(url)
+                withContext(Dispatchers.Main) { webView.loadUrl(url) }
                 delay(dwellMs)
                 true
             } catch (e: Exception) {

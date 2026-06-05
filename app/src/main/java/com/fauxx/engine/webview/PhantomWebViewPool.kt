@@ -8,14 +8,30 @@ import com.fauxx.data.crawllist.DomainBlocklist
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /** Maximum number of WebView instances in the pool. */
 private const val POOL_SIZE = 2
+
+/**
+ * Max time to wait for a free pooled WebView before giving up and failing the action, instead of
+ * blocking forever. Bounds the [Semaphore] wait so a leaked permit can't permanently stall the
+ * engine loop (issue #124).
+ */
+private const val ACQUIRE_TIMEOUT_MS = 30_000L
+
+/**
+ * Max time for a single main-thread WebView operation (the acquire pick/UA-apply, or the release
+ * cleanup). If a wedged WebView provider makes a main-thread op hang, the op is abandoned after
+ * this and the permit is still returned, so the pool can't deadlock subsequent acquires.
+ */
+private const val MAIN_OP_TIMEOUT_MS = 10_000L
 
 /**
  * Manages a pool of reusable background [WebView] instances with:
@@ -82,17 +98,30 @@ class PhantomWebViewPool @Inject constructor(
     }
 
     /**
-     * Acquire a WebView from the pool. Suspends if all instances are in use until
-     * one is released.
+     * Acquire a WebView from the pool. Callers should invoke this OFF the main thread (the engine
+     * loop runs on [Dispatchers.IO]); the permit wait is forced onto [Dispatchers.IO] regardless so
+     * a caller that is already on the main thread can never freeze it (the root cause of issue
+     * #124, where the blocking permit wait ran on the main thread inside a `withContext(Main)`
+     * block). Waits up to [ACQUIRE_TIMEOUT_MS] for a free instance, then throws so the caller can
+     * log a failed action and continue instead of hanging. The brief main-thread pick + UA-apply is
+     * bounded by [MAIN_OP_TIMEOUT_MS] and releases the permit on timeout, so a wedged provider can't
+     * leak it.
      */
     suspend fun acquire(): WebView {
-        poolSemaphore.acquire()
+        val gotPermit = withContext(Dispatchers.IO) {
+            poolSemaphore.tryAcquire(ACQUIRE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        }
+        if (!gotPermit) {
+            throw IllegalStateException("No pooled WebView available within ${ACQUIRE_TIMEOUT_MS}ms")
+        }
         return try {
-            withContext(Dispatchers.Main) {
-                val wv = pool.first { acquired.putIfAbsent(it.tag as String, true) == null }
-                currentUserAgent.get()?.let { wv.settings.userAgentString = it }
-                wv
-            }
+            withTimeoutOrNull(MAIN_OP_TIMEOUT_MS) {
+                withContext(Dispatchers.Main) {
+                    val wv = pool.first { acquired.putIfAbsent(it.tag as String, true) == null }
+                    currentUserAgent.get()?.let { wv.settings.userAgentString = it }
+                    wv
+                }
+            } ?: throw IllegalStateException("Acquiring a pooled WebView timed out after ${MAIN_OP_TIMEOUT_MS}ms")
         } catch (e: Exception) {
             poolSemaphore.release()
             throw e
@@ -100,22 +129,33 @@ class PhantomWebViewPool @Inject constructor(
     }
 
     /**
-     * Release a WebView back to the pool after use. Clears state to prevent
-     * accumulated DOM/JS/cookie data across reuses.
+     * Release a WebView back to the pool after use. Clears state to prevent accumulated
+     * DOM/JS/cookie data across reuses. Call this OFF the main thread (the per-WebView cleanup hops
+     * to the main thread internally and is bounded by [MAIN_OP_TIMEOUT_MS]). The permit is ALWAYS
+     * returned in the `finally`, even if the main-thread cleanup hangs on a wedged WebView provider,
+     * so a stuck teardown can never leak a permit and freeze later acquires (issue #124).
      */
-    suspend fun release(webView: WebView) = withContext(Dispatchers.Main) {
-        val tag = webView.tag as? String ?: return@withContext
-        webView.stopLoading()
-        webView.clearHistory()
-        webView.clearCache(false)
-        webView.evaluateJavascript("document.open();document.close();", null)
-        webView.loadUrl("about:blank")
-        // Note: WebStorage.getInstance().deleteAllData() is intentionally NOT called here
-        // because it's a global singleton that wipes storage for ALL WebView instances.
-        // Per-WebView cleanup (stopLoading + clearHistory + clearCache + about:blank) is
-        // sufficient; accumulated DOM storage/cookies are desired for tracker accumulation.
-        acquired.remove(tag)
-        poolSemaphore.release()
+    suspend fun release(webView: WebView) {
+        val tag = webView.tag as? String ?: return
+        try {
+            withTimeoutOrNull(MAIN_OP_TIMEOUT_MS) {
+                withContext(Dispatchers.Main) {
+                    webView.stopLoading()
+                    webView.clearHistory()
+                    webView.clearCache(false)
+                    webView.evaluateJavascript("document.open();document.close();", null)
+                    webView.loadUrl("about:blank")
+                    // Note: WebStorage.getInstance().deleteAllData() is intentionally NOT called
+                    // here because it's a global singleton that wipes storage for ALL WebView
+                    // instances. Per-WebView cleanup (stopLoading + clearHistory + clearCache +
+                    // about:blank) is sufficient; accumulated DOM storage/cookies are desired for
+                    // tracker accumulation.
+                }
+            }
+        } finally {
+            acquired.remove(tag)
+            poolSemaphore.release()
+        }
     }
 
     /**

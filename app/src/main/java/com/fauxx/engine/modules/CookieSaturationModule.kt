@@ -58,10 +58,21 @@ class CookieSaturationModule @Inject constructor(
 
         val dwellMs = random.nextLong(2_000L, 10_000L) // 2-10 second dwell
 
-        val success = withContext(Dispatchers.Main) {
-            val webView = webViewPool.acquire()
+        // #124: acquire/release run off the main thread (the engine loop is on Dispatchers.IO);
+        // only loadUrl hops to Main. The old code ran the whole block, including the blocking pool
+        // permit wait, inside withContext(Main), so a leaked permit froze Main and stalled every
+        // subsequent action.
+        val webView = try {
+            webViewPool.acquire()
+        } catch (e: Exception) {
+            Timber.w("WebView acquire failed: ${e.message}")
+            null
+        }
+        val success = if (webView == null) {
+            false
+        } else {
             try {
-                webView.loadUrl(entry.url)
+                withContext(Dispatchers.Main) { webView.loadUrl(entry.url) }
                 delay(dwellMs)
                 true
             } catch (e: Exception) {
