@@ -152,8 +152,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Lint release variants
-        run: ./gradlew lintPlayRelease lintFullRelease
+      - name: Lint release variant
+        run: ./gradlew lintFullRelease
 
   build:
     name: Build ${{ matrix.flavorName }} Release
@@ -163,12 +163,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - flavor: play
-            flavorName: Play
-            gradleTask: bundlePlayRelease
-            artifactSrcDir: app/build/outputs/bundle/playRelease
-            artifactSrcName: app-play-release.aab
-            artifactExt: aab
+          # The Google Play build is no longer published. The `play` build flavor stays in the
+          # source (still compiled + unit-tested in ci.yml) so it can be revived, but it is no
+          # longer built, signed, or released here. To revive: re-add a `- flavor: play` entry
+          # with `gradleTask: bundlePlayRelease` (artifact app-play-release.aab).
           - flavor: full
             flavorName: Full
             gradleTask: assembleFullRelease
@@ -246,5 +244,4 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: true
           files: |
-            artifacts/fauxx-play-*.aab
             artifacts/fauxx-full-*.apk

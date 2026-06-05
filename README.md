@@ -13,6 +13,8 @@ Fauxx is an open-source Android privacy tool that poisons data broker and ad-tec
 
 > 💬 **Questions about how Fauxx works, or wishlist ideas?** Use [Discussions](https://github.com/digital-grease/fauxx/discussions). Bug reports and feature requests stay in [Issues](https://github.com/digital-grease/fauxx/issues).
 
+> 📦 **Where to get it:** Fauxx ships via **F-Droid**, **GitHub Releases**, and sideload / Obtainium. **The Google Play build is no longer maintained or published.** Play is too restrictive for Fauxx's full feature set (it disallows the location-spoofing and ad-profile-pollution modules), and it is moving toward requiring the age-verification API, which a no-account privacy tool has no business integrating. The `play` build flavor stays in the source in case that ever changes, but it is no longer built or shipped.
+
 ## The Problem
 
 Every search you make, every link you click, every location you visit is collected by data brokers, ad networks, and analytics platforms. Over time, they build a detailed profile of who you are, what you want, and what you're likely to do next. That profile is sold, traded, and collated with other data and profiles to continue the process.
