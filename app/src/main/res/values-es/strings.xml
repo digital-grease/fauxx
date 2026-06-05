@@ -351,7 +351,7 @@
     <string name="targeting_import_count_many">%d categorías</string>
     <string name="targeting_import_parse_error">No se pudo procesar el archivo de %1$s: %2$s</string>
     <string name="targeting_import_io_error">No se pudo leer el archivo. Es posible que se haya revocado el permiso.</string>
-    <string name="targeting_import_wrong_format_google">No se encontró un archivo de intereses publicitarios dentro del archivo. Prueba a exportar específicamente \"My Ad Center\" desde Google Takeout (no el archivo completo).</string>
+    <string name="targeting_import_wrong_format_google">No se encontró un archivo de intereses publicitarios en el archivo. Exporta específicamente \"My Ad Center\" desde Google Takeout. Si tienes los anuncios personalizados desactivados, Google no guarda ningún perfil publicitario para exportar, así que actívalos primero para crear uno que envenenar.</string>
     <string name="targeting_import_wrong_format_facebook">No se encontró un archivo de intereses publicitarios dentro del archivo. Desde accountscenter.facebook.com, elige Descargar tu información → formato JSON → \"Anuncios y empresas\" específicamente.</string>
     <string name="targeting_import_dismiss_cd">Descartar</string>
     <string name="targeting_import_reminder_body">Tu perfil publicitario de Capa 2 tiene más de 90 días. Reimporta una exportación reciente para mantener la segmentación al día.</string>

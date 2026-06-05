@@ -351,7 +351,7 @@
     <string name="targeting_import_count_many">%d catégories</string>
     <string name="targeting_import_parse_error">Impossible de lire l\'archive %1$s : %2$s</string>
     <string name="targeting_import_io_error">Impossible de lire le fichier. La permission a peut-être été révoquée.</string>
-    <string name="targeting_import_wrong_format_google">Aucun fichier d\'intérêts publicitaires trouvé dans l\'archive. Essaie d\'exporter spécifiquement \"My Ad Center\" depuis Google Takeout (pas l\'archive complète).</string>
+    <string name="targeting_import_wrong_format_google">Aucun fichier d\'intérêts publicitaires dans l\'archive. Exporte spécifiquement \"My Ad Center\" depuis Google Takeout. Si tu as désactivé les publicités personnalisées, Google ne conserve aucun profil publicitaire à exporter, alors active-les d\'abord pour en créer un à empoisonner.</string>
     <string name="targeting_import_wrong_format_facebook">Aucun fichier d\'intérêts publicitaires trouvé dans l\'archive. Sur accountscenter.facebook.com, choisis Télécharger tes informations → format JSON → \"Publicités et entreprises\" spécifiquement.</string>
     <string name="targeting_import_dismiss_cd">Ignorer</string>
     <string name="targeting_import_reminder_body">Ton profil publicitaire de Couche 2 a plus de 90 jours. Réimporte un nouvel export pour garder le ciblage à jour.</string>

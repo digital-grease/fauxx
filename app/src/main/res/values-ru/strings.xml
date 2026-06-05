@@ -183,7 +183,7 @@
     <string name="targeting_import_count_many">%d категорий</string>
     <string name="targeting_import_parse_error">Не удалось разобрать архив %1$s: %2$s</string>
     <string name="targeting_import_io_error">Не удалось прочитать файл. Возможно, разрешение было отозвано.</string>
-    <string name="targeting_import_wrong_format_google">В архиве не найден файл с рекламными интересами. Попробуй экспортировать именно «My Ad Center» из Google Takeout (а не весь архив).</string>
+    <string name="targeting_import_wrong_format_google">В архиве нет файла с рекламными интересами. Экспортируй именно «My Ad Center» из Google Takeout. Если у тебя отключена персонализированная реклама, Google не хранит рекламный профиль для экспорта, поэтому сначала включи её, чтобы создать профиль, который можно отравлять.</string>
     <string name="targeting_import_wrong_format_facebook">В архиве не найден файл с рекламными интересами. На accountscenter.facebook.com выбери Скачать вашу информацию → формат JSON → именно «Реклама и компании».</string>
     <string name="targeting_import_dismiss_cd">Закрыть</string>
     <string name="targeting_import_reminder_body">Твоему рекламному профилю Слоя 2 больше 90 дней. Реимпортируй свежую выгрузку, чтобы поддерживать таргетинг актуальным.</string>

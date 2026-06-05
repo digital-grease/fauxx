@@ -349,7 +349,7 @@
     <string name="targeting_import_count_many">%d categories</string>
     <string name="targeting_import_parse_error">Couldn\'t parse the %1$s archive: %2$s</string>
     <string name="targeting_import_io_error">Couldn\'t read the file. Permission may have been revoked.</string>
-    <string name="targeting_import_wrong_format_google">Couldn\'t find an ad-interest file inside the archive. Try exporting \"My Ad Center\" specifically from Google Takeout (not the full archive).</string>
+    <string name="targeting_import_wrong_format_google">Couldn\'t find an ad-interest file in the archive. Export \"My Ad Center\" specifically from Google Takeout. If you have personalized ads turned off, Google keeps no ad profile to export, so turn them on first to build one worth poisoning.</string>
     <string name="targeting_import_wrong_format_facebook">Couldn\'t find an ad-interest file inside the archive. From accountscenter.facebook.com, choose Download Your Information → JSON format → \"Ads and businesses\" specifically.</string>
     <string name="targeting_import_dismiss_cd">Dismiss</string>
     <string name="targeting_import_reminder_body">Your Layer 2 ad profile is over 90 days old. Re-import a fresh export to keep targeting up to date.</string>
