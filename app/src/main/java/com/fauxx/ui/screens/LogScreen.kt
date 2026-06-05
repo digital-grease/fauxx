@@ -74,13 +74,14 @@ fun LogScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Header. Top padding 4dp matches the global Help overlay (NavGraph.kt) so the
-        // download IconButton and the help icon share a vertical baseline. End padding
-        // 56dp leaves room for the help icon to the right.
+        // Header. Top padding 4dp matches the global overlay (NavGraph.kt) so the download
+        // IconButton and the overlay icons share a vertical baseline. End padding must clear the
+        // global top-right overlay, which is now TWO 48dp IconButtons (language picker + help) plus
+        // the Row's 4dp padding ~= 100dp; 104dp keeps the Download button out from under them.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, top = 4.dp, end = 56.dp, bottom = 8.dp),
+                .padding(start = 16.dp, top = 4.dp, end = 104.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
