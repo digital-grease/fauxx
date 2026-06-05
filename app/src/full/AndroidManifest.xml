@@ -32,6 +32,19 @@
     <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION"
         tools:ignore="MockLocation" />
 
+    <!--
+        Exact-alarm permission for scheduled (quiet-hours) auto-resume (#126). An exact-alarm
+        broadcast is an allowed FGS-start context on Android 14+, so AlarmResumeReceiver can
+        restart the specialUse foreground service at the scheduled time WITHOUT the user tapping a
+        notification (which WorkManager's user-absent context cannot do). USE_EXACT_ALARM is
+        auto-granted and non-revocable.
+
+        Full/F-Droid flavor ONLY: Google Play restricts USE_EXACT_ALARM to alarm/calendar-class
+        apps, so the play flavor omits it and falls back to the tap-to-resume notification
+        (ResumeScheduler checks canScheduleExactAlarms()).
+    -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
     <application>
         <service
             android:name=".service.PhantomForegroundService"

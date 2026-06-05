@@ -71,6 +71,12 @@
             </intent-filter>
         </receiver>
 
+        <!-- Scheduled (quiet-hours) auto-resume alarm receiver (#126). Not exported: only the
+             app's own exact alarm (full flavor, see src/full USE_EXACT_ALARM) targets it. -->
+        <receiver
+            android:name=".service.AlarmResumeReceiver"
+            android:exported="false" />
+
         <!-- FileProvider for sharing crash reports and debug logs -->
         <provider
             android:name="androidx.core.content.FileProvider"

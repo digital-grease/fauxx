@@ -1,5 +1,6 @@
 package com.fauxx.service
 
+import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Context
 import androidx.datastore.preferences.core.edit
@@ -24,6 +25,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowAlarmManager
 import org.robolectric.annotation.Config
 
 /**
@@ -59,6 +61,8 @@ class ResumeLoopTest {
     @After
     fun tearDown() {
         notificationManager().cancelAll()
+        // Reset the global exact-alarm capability so it doesn't leak into other tests.
+        ShadowAlarmManager.setCanScheduleExactAlarms(false)
     }
 
     @Test
@@ -79,6 +83,34 @@ class ResumeLoopTest {
         assertTrue(
             "cancel must cancel the pending resume job",
             afterCancel.all { it.state == WorkInfo.State.CANCELLED },
+        )
+    }
+
+    @Test
+    fun `AtTime resume uses an exact alarm and skips workmanager when exact alarms are allowed`() {
+        // The full flavor declares USE_EXACT_ALARM, so canScheduleExactAlarms() is true and the
+        // AtTime quiet-hours resume auto-starts the FGS via an exact alarm (#126) instead of the
+        // tap-to-resume notification. Force that state here (playDebug has no USE_EXACT_ALARM).
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        ShadowAlarmManager.setCanScheduleExactAlarms(true)
+        val scheduler = ResumeScheduler(context)
+        val workManager = WorkManager.getInstance(context)
+
+        scheduler.schedule(ResumeSpec.AtTime(epochMs = System.currentTimeMillis() + 60_000))
+
+        assertNotNull(
+            "an exact alarm must be scheduled for the AtTime resume",
+            shadowOf(alarmManager).peekNextScheduledAlarm(),
+        )
+        assertTrue(
+            "no WorkManager notification job is enqueued when the exact alarm is used",
+            workManager.getWorkInfosForUniqueWork(RESUME_WORK_NAME).get().isEmpty(),
+        )
+
+        scheduler.cancel()
+        assertNull(
+            "cancel must clear the exact alarm",
+            shadowOf(alarmManager).peekNextScheduledAlarm(),
         )
     }
 

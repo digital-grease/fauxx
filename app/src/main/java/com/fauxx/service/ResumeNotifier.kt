@@ -66,6 +66,10 @@ fun postResumeNotification(context: Context) {
         .setContentText("Tap to resume protection")
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .setContentIntent(pendingIntent)
+        // #121: an explicit "Start" action. Same allowed FGS-start path as tapping the body —
+        // it opens MainActivity, which reconciles ENABLED and starts the service from a
+        // foregrounded Activity (always an allowed FGS-start context on Android 14+).
+        .addAction(R.drawable.ic_notification, "Start", pendingIntent)
         .setAutoCancel(true)
         .build()
 

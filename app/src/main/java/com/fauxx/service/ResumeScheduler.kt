@@ -1,9 +1,14 @@
 package com.fauxx.service
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.fauxx.util.Clock
@@ -32,6 +37,7 @@ sealed class ResumeSpec {
 }
 
 private const val WORK_NAME = "fauxx_resume"
+private const val ALARM_REQUEST_CODE = 4242
 
 /**
  * Schedules a [ResumeWorker] to fire under a given [ResumeSpec].
@@ -47,33 +53,82 @@ class ResumeScheduler @Inject constructor(
     private val clock: Clock = SystemClockImpl(),
 ) {
     fun schedule(spec: ResumeSpec) {
-        val builder = OneTimeWorkRequestBuilder<ResumeWorker>()
-
         when (spec) {
-            is ResumeSpec.AtTime -> {
-                val delayMs = (spec.epochMs - clock.currentTimeMillis()).coerceAtLeast(0L)
-                builder.setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
-                Timber.d("ResumeScheduler: scheduling at ${spec.epochMs} (in ${delayMs / 1000}s)")
-            }
-            is ResumeSpec.WhenConstraintMet -> {
-                val constraintsBuilder = Constraints.Builder()
-                spec.network?.let { constraintsBuilder.setRequiredNetworkType(it) }
-                if (spec.batteryNotLow) constraintsBuilder.setRequiresBatteryNotLow(true)
-                builder.setConstraints(constraintsBuilder.build())
-                Timber.d("ResumeScheduler: scheduling when constraint met (network=${spec.network}, batteryNotLow=${spec.batteryNotLow})")
+            is ResumeSpec.AtTime -> scheduleAtTime(spec.epochMs)
+            is ResumeSpec.WhenConstraintMet -> scheduleWhenConstraintMet(spec)
+        }
+    }
+
+    /**
+     * Time-based (quiet-hours) resume. Prefers an EXACT ALARM that auto-starts the FGS at the
+     * scheduled time with no user interaction (#126) — an exact-alarm broadcast is an allowed
+     * FGS-start context on Android 14+. Falls back to the WorkManager tap-to-resume notification
+     * when exact alarms aren't available (the play flavor, which doesn't declare USE_EXACT_ALARM).
+     */
+    private fun scheduleAtTime(epochMs: Long) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        // canScheduleExactAlarms() is API 31+; before Android 12 exact alarms need no permission
+        // and are always schedulable.
+        val canScheduleExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            alarmManager.canScheduleExactAlarms()
+        if (canScheduleExact) {
+            try {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, epochMs, alarmPendingIntent())
+                Timber.d("ResumeScheduler: exact alarm set for $epochMs")
+                return
+            } catch (e: SecurityException) {
+                Timber.w(e, "ResumeScheduler: exact alarm denied; falling back to notification")
             }
         }
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            WORK_NAME,
-            ExistingWorkPolicy.REPLACE,
-            builder.build()
+        val delayMs = (epochMs - clock.currentTimeMillis()).coerceAtLeast(0L)
+        Timber.d("ResumeScheduler: scheduling resume notification at $epochMs (in ${delayMs / 1000}s)")
+        enqueueResumeWorker(
+            OneTimeWorkRequestBuilder<ResumeWorker>()
+                .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
+                .build()
         )
     }
 
-    /** Cancel any pending resume work. Call when the service is being started or the user disables the engine. */
+    /** Constraint-based (wifi/battery) resume. Stays on WorkManager — only time-based resumes can use an alarm. */
+    private fun scheduleWhenConstraintMet(spec: ResumeSpec.WhenConstraintMet) {
+        val constraintsBuilder = Constraints.Builder()
+        spec.network?.let { constraintsBuilder.setRequiredNetworkType(it) }
+        if (spec.batteryNotLow) constraintsBuilder.setRequiresBatteryNotLow(true)
+        Timber.d("ResumeScheduler: scheduling when constraint met (network=${spec.network}, batteryNotLow=${spec.batteryNotLow})")
+        enqueueResumeWorker(
+            OneTimeWorkRequestBuilder<ResumeWorker>()
+                .setConstraints(constraintsBuilder.build())
+                .build()
+        )
+    }
+
+    private fun enqueueResumeWorker(request: OneTimeWorkRequest) {
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
+    }
+
+    private fun alarmPendingIntent(): PendingIntent {
+        val intent = Intent(context, AlarmResumeReceiver::class.java).apply {
+            action = AlarmResumeReceiver.ACTION_RESUME
+            // Explicit target package — defensive against implicit-PendingIntent flags (CWE-927).
+            setPackage(context.packageName)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            ALARM_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    /**
+     * Cancel any pending resume — both the WorkManager notification and the exact alarm. Call when
+     * the service starts (the user is resuming now) or the user disables the engine.
+     */
     fun cancel() {
         WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+        runCatching {
+            (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(alarmPendingIntent())
+        }
         Timber.d("ResumeScheduler: cancelled")
     }
 }
