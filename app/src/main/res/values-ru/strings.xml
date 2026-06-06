@@ -2,15 +2,14 @@
 <!--
     Russian (ru) translation for UI strings.
 
-    Community-contributed via PR #30 (thestability), pending native-speaker review.
-    INCOMPLETE: this file is missing ~130 keys present in values/strings.xml because
-    they were added on i18n/v0.3.0 after the PR was opened. The locale stays out of
-    BuildConfig.SHIPPED_LOCALES until a native speaker fills the gaps and reviews the
-    safety-critical surfaces (notifications, consent dialog, harmful_queries readme).
+    Community-contributed via PR #30 (thestability). Shipped since v0.3.0: `ru` is in
+    BuildConfig.SHIPPED_LOCALES, and the harmful_queries safety blocklist is audited by
+    HarmfulQueriesLocaleAuditTest. The UI strings are best-effort (LLM-drafted plus
+    community) and PENDING NATIVE-SPEAKER REVIEW, so treat translation issues as bugs to
+    fix rather than deferring to a future reviewer (see project_multilingual_safety_gate).
 
-    Until then, tools:ignore="MissingTranslation" tells lint to allow the incomplete
-    state — selecting `ru` in a debug build falls back to English for un-translated
-    strings, which is acceptable for previewing the locale but is not ship-quality.
+    tools:ignore="MissingTranslation" tolerates keys added in later string waves before
+    their translations land; any untranslated key falls back to English until filled in.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation">
@@ -118,6 +117,7 @@
     <string name="settings_intensity_low">Низкая</string>
     <string name="settings_intensity_medium">Средняя</string>
     <string name="settings_intensity_high">Высокая</string>
+    <string name="settings_intensity_extreme">Макс</string>
     <string name="settings_theme_system">Системная</string>
     <string name="settings_theme_light">Светлая</string>
     <string name="settings_theme_dark">Тёмная</string>
@@ -208,6 +208,10 @@
     <!-- Log screen -->
     <string name="log_export_csv">Экспорт CSV</string>
     <string name="log_export_json">Экспорт JSON</string>
+    <string name="log_export_html">Экспорт HTML</string>
+    <string name="log_entry_share">Поделиться записью</string>
+    <string name="log_day_today">Сегодня</string>
+    <string name="log_day_yesterday">Вчера</string>
     <string name="log_filter_all">Все</string>
     <string name="log_detail_type">Тип</string>
     <string name="log_detail_category">Категория</string>
@@ -364,6 +368,8 @@
     <string name="action_got_it">Понятно</string>
     <string name="action_cancel">Отмена</string>
     <string name="settings_intensity_actions_per_hour">%d действий/час</string>
+    <string name="settings_intensity_actions_per_hour_max">до ~%d действий/час</string>
+    <string name="settings_intensity_detectability_warning">Более высокая интенсивность сокращает паузу между несвязанными темами, из-за чего трекерам легче отличить эту активность от реального просмотра.</string>
     <string name="settings_theme_system_subtitle">Следует теме устройства</string>
     <string name="settings_theme_light_subtitle">Всегда светлая</string>
     <string name="settings_theme_dark_subtitle">Всегда тёмная</string>
@@ -377,6 +383,9 @@
     <string name="settings_active_hours_end_label">Конец</string>
     <string name="settings_active_hours_description">Активность приостановлена вне этих часов</string>
     <string name="settings_active_hours_narrow_window_warning">Узкое окно активности (%dч) само по себе может быть отслеживаемым сигналом. Более широкие окна (12ч+) трекерам сложнее отличить от реального использования.</string>
+    <string name="settings_log_retention_title">Хранение журнала</string>
+    <string name="settings_log_retention_value">%d дн.</string>
+    <string name="settings_log_retention_description">Автоматически удалять записи журнала старше этого срока. Не даёт журналу на устройстве расти без ограничений.</string>
     <string name="settings_custom_ua_title">Подстроить под мой браузер</string>
     <string name="settings_custom_ua_description">По умолчанию Fauxx чередует множество идентификаторов браузера — но реальные люди обычно пользуются одним браузером, поэтому само разнообразие может выглядеть как трафик ботов. Нажми ниже, чтобы вместо этого использовать встроенный идентификатор браузера этого устройства — тогда шум будет сливаться с твоей реальной активностью. Оставь пустым, чтобы оставить чередование по умолчанию.</string>
     <string name="settings_custom_ua_use_device_button">Использовать браузер этого устройства</string>

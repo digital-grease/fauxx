@@ -106,6 +106,7 @@
     <string name="settings_intensity_low">Baja</string>
     <string name="settings_intensity_medium">Media</string>
     <string name="settings_intensity_high">Alta</string>
+    <string name="settings_intensity_extreme">Máx</string>
     <string name="settings_theme_system">Sistema</string>
     <string name="settings_theme_light">Claro</string>
     <string name="settings_theme_dark">Oscuro</string>
@@ -158,6 +159,10 @@
     <string name="log_export_content_desc">Exportar</string>
     <string name="log_export_csv">Exportar CSV</string>
     <string name="log_export_json">Exportar JSON</string>
+    <string name="log_export_html">Exportar HTML</string>
+    <string name="log_entry_share">Compartir entrada</string>
+    <string name="log_day_today">Hoy</string>
+    <string name="log_day_yesterday">Ayer</string>
     <string name="log_export_chooser_title">Exportar registro</string>
     <string name="log_filter_all">Todo</string>
     <string name="log_detail_type">Tipo</string>
@@ -298,6 +303,8 @@
     <string name="settings_title">AJUSTES</string>
     <string name="settings_intensity_title">Intensidad</string>
     <string name="settings_intensity_actions_per_hour">%d acciones/hora</string>
+    <string name="settings_intensity_actions_per_hour_max">hasta ~%d acciones/hora</string>
+    <string name="settings_intensity_detectability_warning">Un volumen más alto acorta la pausa entre temas no relacionados, lo que puede facilitar que los rastreadores distingan esta actividad de la navegación real.</string>
     <string name="settings_theme_title">Tema</string>
     <string name="settings_theme_system_subtitle">Sigue el tema del dispositivo</string>
     <string name="settings_theme_light_subtitle">Siempre claro</string>
@@ -314,6 +321,9 @@
     <string name="settings_active_hours_end_label">Fin</string>
     <string name="settings_active_hours_description">La actividad se pausa fuera de estas horas</string>
     <string name="settings_active_hours_narrow_window_warning">Una ventana de actividad estrecha (%dh) puede ser por sí misma una señal rastreable. Ventanas más amplias (12 h o más) son más difíciles de distinguir del uso real.</string>
+    <string name="settings_log_retention_title">Retención del registro</string>
+    <string name="settings_log_retention_value">%d días</string>
+    <string name="settings_log_retention_description">Elimina automáticamente las entradas del registro más antiguas que esto. Evita que el registro del dispositivo crezca sin límite.</string>
     <string name="settings_custom_ua_title">Imitar mi navegador</string>
     <string name="settings_custom_ua_description">Por defecto, Fauxx alterna entre muchos identificadores de navegador, pero la gente real suele usar un solo navegador, por lo que la variedad en sí puede parecer tráfico automatizado. Pulsa abajo para usar el identificador del navegador integrado del dispositivo, así el ruido se mezcla con tu actividad real. Déjalo en blanco para mantener la rotación por defecto.</string>
     <string name="settings_custom_ua_use_device_button">Usar el navegador de este dispositivo</string>

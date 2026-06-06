@@ -69,20 +69,23 @@ class AdPollutionModule @Inject constructor(
             pending.entry.url
         }
 
-        // #124: acquire/release off the main thread; only loadUrl hops to Main (see
-        // PhantomWebViewPool / CookieSaturationModule for the freeze root cause).
+        // #124: acquire/release off the main thread; only loadUrl + the metadata read hop to Main
+        // (see PhantomWebViewPool / CookieSaturationModule for the freeze root cause).
         val webView = try {
             webViewPool.acquire()
         } catch (e: Exception) {
             Timber.w("WebView acquire failed: ${e.message}")
             null
         }
+        var metadata: String? = null
         val success = if (webView == null) {
             false
         } else {
             try {
                 withContext(Dispatchers.Main) { webView.loadUrl(url) }
                 delay(random.nextLong(3_000L, 15_000L))
+                // #73: read page metadata on Main, before release() wipes the document.
+                metadata = withContext(Dispatchers.Main) { webViewPool.captureMetadata(webView, url) }
                 true
             } catch (e: Exception) {
                 Timber.w("Ad page load failed: ${e.message}")
@@ -96,6 +99,7 @@ class AdPollutionModule @Inject constructor(
             actionType = actionType,
             category = category,
             detail = url,
+            metadata = metadata,
             success = success
         )
     }

@@ -13,6 +13,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.fauxx.data.crawllist.DomainBlocklist
+import java.util.concurrent.atomic.AtomicInteger
 
 /** MIME types that should not be loaded in background WebViews. */
 private val BLOCKED_MIME_TYPES = setOf(
@@ -30,6 +31,9 @@ private val BLOCKED_MIME_TYPES = setOf(
  */
 class PhantomWebViewClient(
     private val blocklist: DomainBlocklist,
+    // Issue #73: incremented for each allowed (non-blocked) resource request so the pool can
+    // report a "resources loaded" count in the action-log metadata. Null = don't count.
+    private val resourceCounter: AtomicInteger? = null,
     private val onPageFinished: ((String) -> Unit)? = null
 ) : WebViewClient() {
 
@@ -67,6 +71,8 @@ class PhantomWebViewClient(
             return WebResourceResponse("text/plain", "utf-8", null)
         }
 
+        // Allowed resource — count it for the "resources loaded" action-log metadata (issue #73).
+        resourceCounter?.incrementAndGet()
         return null
     }
 

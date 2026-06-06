@@ -59,21 +59,24 @@ class CookieSaturationModule @Inject constructor(
         val dwellMs = random.nextLong(2_000L, 10_000L) // 2-10 second dwell
 
         // #124: acquire/release run off the main thread (the engine loop is on Dispatchers.IO);
-        // only loadUrl hops to Main. The old code ran the whole block, including the blocking pool
-        // permit wait, inside withContext(Main), so a leaked permit froze Main and stalled every
-        // subsequent action.
+        // only loadUrl + the metadata read hop to Main. The old code ran the whole block, including
+        // the blocking pool permit wait, inside withContext(Main), so a leaked permit froze Main and
+        // stalled every subsequent action.
         val webView = try {
             webViewPool.acquire()
         } catch (e: Exception) {
             Timber.w("WebView acquire failed: ${e.message}")
             null
         }
+        var metadata: String? = null
         val success = if (webView == null) {
             false
         } else {
             try {
                 withContext(Dispatchers.Main) { webView.loadUrl(entry.url) }
                 delay(dwellMs)
+                // #73: read page metadata on Main, before release() wipes the document.
+                metadata = withContext(Dispatchers.Main) { webViewPool.captureMetadata(webView, entry.url) }
                 true
             } catch (e: Exception) {
                 Timber.w("Failed to load ${entry.url}: ${e.message}")
@@ -87,6 +90,7 @@ class CookieSaturationModule @Inject constructor(
             actionType = ActionType.COOKIE_HARVEST,
             category = category,
             detail = entry.url,
+            metadata = metadata,
             success = success
         )
     }

@@ -6,7 +6,12 @@ import android.util.Log
 import android.webkit.WebView
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.fauxx.engine.modules.MockLocationProviderCleaner
+import com.fauxx.service.RetentionWorker
+import java.util.concurrent.TimeUnit
 import com.fauxx.logging.BootGuard
 import com.fauxx.logging.CrashReportWriter
 import com.fauxx.logging.EncryptedFileTree
@@ -107,6 +112,19 @@ class FauxxApp : Application(), Configuration.Provider {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             crashReportWriter.writeCrashReport(throwable)
             defaultHandler?.uncaughtException(thread, throwable)
+        }
+
+        // Schedule the daily action-log retention prune (issue #73). KEEP so an existing
+        // schedule survives cold starts; the worker re-reads the user's retention setting each
+        // run, so a changed value takes effect on the next daily prune.
+        try {
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                RetentionWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                PeriodicWorkRequestBuilder<RetentionWorker>(1, TimeUnit.DAYS).build()
+            )
+        } catch (e: Exception) {
+            Log.e("FauxxApp", "Failed to schedule log retention worker", e)
         }
     }
 

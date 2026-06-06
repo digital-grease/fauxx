@@ -32,6 +32,7 @@ data class SettingsUiState(
     val ignoreBatteryThresholdWhileCharging: Boolean = false,
     val allowedHoursStart: Int = 7,
     val allowedHoursEnd: Int = 23,
+    val logRetentionDays: Int = 7,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val resumeOnBoot: Boolean = true,
     val customUserAgent: String = ""
@@ -91,6 +92,7 @@ class SettingsViewModel @Inject constructor(
     }
     fun setAllowedHoursStart(v: Int) { update { it.copy(allowedHoursStart = v) } }
     fun setAllowedHoursEnd(v: Int) { update { it.copy(allowedHoursEnd = v) } }
+    fun setLogRetentionDays(v: Int) { update { it.copy(logRetentionDays = v) } }
     fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
     fun setResumeOnBoot(v: Boolean) { update { it.copy(resumeOnBoot = v) } }
     fun setCustomUserAgent(v: String) { update { it.copy(customUserAgent = v) } }
@@ -150,6 +152,7 @@ class SettingsViewModel @Inject constructor(
                     ignoreBatteryThresholdWhileCharging = new.ignoreBatteryThresholdWhileCharging,
                     allowedHoursStart = new.allowedHoursStart,
                     allowedHoursEnd = new.allowedHoursEnd,
+                    logRetentionDays = new.logRetentionDays,
                     themeMode = new.themeMode,
                     resumeOnBoot = new.resumeOnBoot,
                     // Empty string in UI-state collapses to null in profile so the
@@ -169,6 +172,7 @@ class SettingsViewModel @Inject constructor(
             ignoreBatteryThresholdWhileCharging = p.ignoreBatteryThresholdWhileCharging,
             allowedHoursStart = p.allowedHoursStart,
             allowedHoursEnd = p.allowedHoursEnd,
+            logRetentionDays = p.logRetentionDays,
             themeMode = p.themeMode,
             resumeOnBoot = p.resumeOnBoot,
             customUserAgent = p.customUserAgent.orEmpty()

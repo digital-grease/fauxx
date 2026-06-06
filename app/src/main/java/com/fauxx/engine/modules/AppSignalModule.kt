@@ -218,20 +218,23 @@ class AppSignalModule @Inject constructor(
         // navigations to blocklisted hosts; non-http schemes (market://) fail
         // silently in WebView.
         val dwellMs = (3_000L..8_000L).random(random)
-        // #124: acquire/release off the main thread; only loadUrl hops to Main (see
-        // PhantomWebViewPool / CookieSaturationModule for the freeze root cause).
+        // #124: acquire/release off the main thread; only loadUrl + the metadata read hop to Main
+        // (see PhantomWebViewPool / CookieSaturationModule for the freeze root cause).
         val webView = try {
             webViewPool.acquire()
         } catch (e: Exception) {
             Timber.w("WebView acquire failed: ${e.message}")
             null
         }
+        var metadata: String? = null
         val success = if (webView == null) {
             false
         } else {
             try {
                 withContext(Dispatchers.Main) { webView.loadUrl(url) }
                 delay(dwellMs)
+                // #73: read page metadata on Main, before release() wipes the document.
+                metadata = withContext(Dispatchers.Main) { webViewPool.captureMetadata(webView, url) }
                 true
             } catch (e: Exception) {
                 Timber.w("App signal load failed: ${e.message}")
@@ -245,6 +248,7 @@ class AppSignalModule @Inject constructor(
             actionType = ActionType.DEEP_LINK_VISIT,
             category = category,
             detail = url,
+            metadata = metadata,
             success = success
         )
     }

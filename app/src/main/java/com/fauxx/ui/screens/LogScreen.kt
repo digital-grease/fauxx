@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -31,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -47,8 +50,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.R
 import com.fauxx.data.db.ActionLogEntity
+import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.model.ActionType
 import com.fauxx.ui.format.displayNameRes
+import com.fauxx.ui.viewmodels.LogListItem
 import com.fauxx.ui.viewmodels.LogViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -56,10 +61,11 @@ import java.util.Locale
 
 private val DATE_FORMAT = SimpleDateFormat("HH:mm:ss", Locale.US)
 private val FULL_DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+private val DAY_KEY_FORMAT = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
 /**
- * Scrollable, filterable audit log of all synthetic actions.
- * Supports CSV/JSON export via system share sheet.
+ * Scrollable, filterable audit log of all synthetic actions, grouped by day (issue #73).
+ * Supports CSV/JSON/HTML export and per-entry sharing via the system share sheet.
  */
 @Composable
 fun LogScreen(
@@ -68,6 +74,11 @@ fun LogScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showExportMenu by remember { mutableStateOf(false) }
+    val chooserTitle = stringResource(R.string.log_export_chooser_title)
+
+    val onShareEntry: (ActionLogEntity) -> Unit = { entry ->
+        shareText(context, viewModel.formatEntry(entry), "text/plain", "action_log_entry.txt", chooserTitle)
+    }
 
     Column(
         modifier = Modifier
@@ -92,7 +103,6 @@ fun LogScreen(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-            val chooserTitle = stringResource(R.string.log_export_chooser_title)
             IconButton(onClick = { showExportMenu = true }) {
                 Icon(Icons.Default.Download, stringResource(R.string.log_export_content_desc))
                 DropdownMenu(
@@ -114,6 +124,15 @@ fun LogScreen(
                             showExportMenu = false
                             viewModel.exportJson { json ->
                                 shareText(context, json, "application/json", "action_log.json", chooserTitle)
+                            }
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.log_export_html)) },
+                        onClick = {
+                            showExportMenu = false
+                            viewModel.exportHtml { html ->
+                                shareText(context, html, "text/html", "action_log.html", chooserTitle)
                             }
                         }
                     )
@@ -143,17 +162,47 @@ fun LogScreen(
             }
         }
 
-        // Log list
+        // Log list, grouped by day
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(uiState.entries) { entry ->
-                LogEntryRow(entry)
+            items(uiState.items) { item ->
+                when (item) {
+                    is LogListItem.DayHeader -> DayDivider(item.dateKey)
+                    is LogListItem.Entry -> LogEntryRow(item.entity, onShareEntry)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun LogEntryRow(entry: ActionLogEntity) {
+private fun DayDivider(dateKey: String) {
+    Text(
+        text = dayLabel(dateKey),
+        style = MaterialTheme.typography.labelMedium,
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp)
+    )
+}
+
+@Composable
+private fun dayLabel(dateKey: String): String {
+    // Computed per-composition (not remembered) so the Today/Yesterday labels can't go stale if
+    // the screen stays open across midnight; date formatting for a handful of headers is cheap.
+    val today = DAY_KEY_FORMAT.format(Date())
+    val yesterday = DAY_KEY_FORMAT.format(Date(System.currentTimeMillis() - 86_400_000L))
+    return when (dateKey) {
+        today -> stringResource(R.string.log_day_today)
+        yesterday -> stringResource(R.string.log_day_yesterday)
+        else -> dateKey
+    }
+}
+
+@Composable
+private fun LogEntryRow(entry: ActionLogEntity, onShare: (ActionLogEntity) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
     Card(
@@ -208,10 +257,27 @@ private fun LogEntryRow(entry: ActionLogEntity) {
                     DetailRow(stringResource(R.string.log_detail_category), stringResource(entry.category.displayNameRes()))
                     DetailRow(stringResource(R.string.log_detail_detail), entry.detail.removePrefix("[${entry.category}] "))
                     DetailRow(stringResource(R.string.log_detail_time), FULL_DATE_FORMAT.format(Date(entry.timestamp)))
+                    // Richer per-action metadata (issue #73): page title, cookie/resource counts,
+                    // resolved IPs, engine, route summary, UA — whatever the module captured.
+                    LogMetadata.parse(entry.metadata).forEach { (label, value) ->
+                        DetailRow(label, value)
+                    }
                     DetailRow(
                         stringResource(R.string.log_detail_status),
                         stringResource(if (entry.success) R.string.log_detail_status_success else R.string.log_detail_status_failed)
                     )
+                    TextButton(
+                        onClick = { onShare(entry) },
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.log_entry_share))
+                    }
                 }
             }
         }

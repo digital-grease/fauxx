@@ -1,9 +1,11 @@
 {
   "_readme": [
     "Russian (ru) query-content blocklist enforced by QueryBlocklist.kt.",
-    "Status: COMMUNITY-CONTRIBUTED (PR #30, thestability), PENDING NATIVE-SPEAKER REVIEW.",
-    "Do NOT add `ru` to BuildConfig.SHIPPED_LOCALES until reviewed — see",
-    "memory file project_multilingual_safety_gate.md.",
+    "Status: COMMUNITY-CONTRIBUTED (PR #30, thestability). Shipped since v0.3.0:",
+    "`ru` IS in BuildConfig.SHIPPED_LOCALES; this blocklist is enforced by",
+    "QueryBlocklist.kt and audited by HarmfulQueriesLocaleAuditTest. A signed-off",
+    "native-speaker review of the self_signal hotline coverage below is still",
+    "recommended (see memory file project_multilingual_safety_gate.md).",
     "",
     "Scope (per decision_blocklist_scope memory, 2026-05-22):",
     "  class_a_terms = law-enforcement / criminal-attention risk (CSAM, bomb / weapon",

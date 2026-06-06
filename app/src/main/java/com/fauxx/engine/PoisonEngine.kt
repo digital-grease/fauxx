@@ -790,6 +790,7 @@ class PoisonProfileRepository @Inject constructor(
             p.ignoreBatteryThresholdWhileCharging
         prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] = p.allowedHoursStart
         prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] = p.allowedHoursEnd
+        prefs[com.fauxx.di.PreferenceKeys.LOG_RETENTION_DAYS] = p.logRetentionDays
         prefs[com.fauxx.di.PreferenceKeys.MODULE_SEARCH] = p.searchPoisonEnabled
         prefs[com.fauxx.di.PreferenceKeys.MODULE_AD] = p.adPollutionEnabled
         prefs[com.fauxx.di.PreferenceKeys.MODULE_LOCATION] = p.locationSpoofEnabled
@@ -825,6 +826,7 @@ class PoisonProfileRepository @Inject constructor(
                 prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] ?: false,
             allowedHoursStart = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] ?: 7,
             allowedHoursEnd = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] ?: 23,
+            logRetentionDays = prefs[com.fauxx.di.PreferenceKeys.LOG_RETENTION_DAYS] ?: 7,
             searchPoisonEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_SEARCH] ?: true,
             adPollutionEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_AD] ?: true,
             locationSpoofEnabled = prefs[com.fauxx.di.PreferenceKeys.MODULE_LOCATION] ?: false,
