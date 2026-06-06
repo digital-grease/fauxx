@@ -79,10 +79,10 @@ android {
         }
         debug {
             isDebuggable = true
-            // Allow developers to exercise the Settings language picker for ES/FR in
-            // debug builds before native-speaker review of `harmful_queries/<locale>.json`
-            // has signed off the locale for production. Release builds inherit the
-            // defaultConfig allowlist (`["en"]`) so the safety gate remains intact.
+            // Redundant with defaultConfig since v0.3.0, which already ships en/es/fr/ru
+            // (each locale's harmful_queries/<locale>.json blocklist is audited by
+            // HarmfulQueriesLocaleAuditTest; UI strings remain best-effort pending native
+            // review). Kept explicit so debug stays correct if defaultConfig is narrowed.
             buildConfigField(
                 "String[]",
                 "SHIPPED_LOCALES",
