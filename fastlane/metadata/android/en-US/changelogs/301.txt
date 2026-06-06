@@ -1,0 +1,5 @@
+• New: a much better activity Log — choose how long to keep entries, day dividers with full timestamps, richer per-action detail (page titles, cookies, hosts), one-tap share, plus HTML/JSON/CSV export
+• New: a "Max" intensity tier, with honest actions-per-hour numbers that reflect what the engine actually sustains
+• New: the active-hours window can now span a full 24 hours
+• Fix: the dashboard and action log no longer stall on some hardened Android builds, and the engine resumes on its own at the end of quiet hours
+• Fix: clearer guidance when importing Google ad data, and the log download button is no longer hidden behind the language button

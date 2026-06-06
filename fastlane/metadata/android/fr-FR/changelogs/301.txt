@@ -1,0 +1,5 @@
+• Nouveau : un journal d'activité bien meilleur — choisis la durée de conservation des entrées, des séparateurs par jour avec horodatage complet, plus de détails par action (titres de page, cookies, domaines), le partage en un geste et l'export HTML/JSON/CSV
+• Nouveau : un niveau d'intensité « Max », avec des chiffres d'actions par heure honnêtes qui reflètent ce que le moteur tient vraiment
+• Nouveau : la plage d'heures actives peut désormais couvrir 24 heures
+• Correction : le tableau de bord et le journal ne se figent plus sur certaines versions renforcées d'Android, et le moteur reprend tout seul à la fin des heures calmes
+• Correction : des indications plus claires pour l'import des données publicitaires Google, et le bouton de téléchargement du journal n'est plus masqué derrière le bouton de langue

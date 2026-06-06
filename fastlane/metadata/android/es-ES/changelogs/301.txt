@@ -1,0 +1,5 @@
+• Nuevo: un registro de actividad mucho mejor — elige cuánto tiempo conservar las entradas, separadores por día con marca de tiempo completa, más detalle por acción (títulos de página, cookies, dominios), compartir con un toque y exportar a HTML/JSON/CSV
+• Nuevo: un nivel de intensidad «Máx», con cifras de acciones por hora honestas que reflejan lo que el motor realmente mantiene
+• Nuevo: la franja de horas activas ya puede abarcar las 24 horas
+• Corrección: el panel y el registro ya no se quedan bloqueados en algunas versiones reforzadas de Android, y el motor se reanuda solo al terminar las horas de silencio
+• Corrección: instrucciones más claras al importar datos publicitarios de Google, y el botón de descarga del registro ya no queda oculto tras el botón de idioma
