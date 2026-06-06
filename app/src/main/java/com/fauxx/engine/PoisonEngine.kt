@@ -32,6 +32,7 @@ import com.fauxx.engine.modules.FingerprintModule
 import com.fauxx.engine.modules.Module
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
+import com.fauxx.engine.scheduling.AllowedHours
 import com.fauxx.engine.scheduling.PoissonScheduler
 import com.fauxx.targeting.TargetingEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -100,6 +101,15 @@ private const val RATE_LIMIT_PAUSE_MS = 15_000L
 
 /** Maximum time to wait for all modules to finish stop() before giving up. */
 private const val MODULE_STOP_TIMEOUT_MS = 2_000L
+
+/**
+ * Maximum chunk of the inter-action sleep before constraints are re-checked. Bounds how
+ * long the engine can sit in a scheduled delay while a constraint (quiet hours entered,
+ * WiFi dropped, battery sank) goes unnoticed — and, as defense in depth for issue #124,
+ * caps the damage of any future oversized delay to one minute of unwarranted ACTIVE state
+ * instead of hours of silent stall.
+ */
+private const val SLEEP_CONSTRAINT_RECHECK_MS = 60_000L
 
 /**
  * Threshold for a "long pause" — wifi/battery pauses past this duration trigger the
@@ -529,7 +539,26 @@ class PoisonEngine @Inject constructor(
             if (logEntry.success) lastCategory = category
             val effectiveDelay = maxOf(0L, scheduledMs - execElapsed)
             Timber.d("Action: $moduleName/$category exec=${execElapsed}ms scheduled=${scheduledMs}ms effective=${effectiveDelay}ms")
-            delay(effectiveDelay)
+            sleepRespectingConstraints(effectiveDelay)
+        }
+    }
+
+    /**
+     * Sleep [totalMs] in chunks of at most [SLEEP_CONSTRAINT_RECHECK_MS], re-reading the
+     * profile and re-checking constraints between chunks. Returns early when a constraint
+     * trips so the main loop's pause/resign handling reacts within a minute instead of
+     * after the full inter-action delay, which can legitimately reach tens of minutes at
+     * LOW intensity — and reached 9-21 hours when issue #124 made the scheduler return a
+     * quiet-hours-sized delay the engine slept through while reporting ACTIVE. The chunk
+     * sum equals [totalMs] exactly when nothing trips, so the Poisson pacing is preserved.
+     */
+    private suspend fun sleepRespectingConstraints(totalMs: Long) {
+        var remaining = totalMs
+        while (remaining > 0) {
+            val chunk = minOf(remaining, SLEEP_CONSTRAINT_RECHECK_MS)
+            delay(chunk)
+            remaining -= chunk
+            if (remaining > 0 && checkConstraints(profile.getProfile()) != null) return
         }
     }
 
@@ -575,18 +604,10 @@ class PoisonEngine @Inject constructor(
     }
 
     /** Returns true if the current local hour falls within the profile's allowed window.
-     *  Handles midnight-wrap (e.g., start=22, end=6 means 22:00 to 06:00). */
-    internal fun isWithinAllowedHours(profile: PoisonProfile, nowHour: Int = currentHourOfDay()): Boolean {
-        val start = profile.allowedHoursStart
-        val end = profile.allowedHoursEnd
-        return if (start == end) {
-            true // degenerate: treat as always allowed
-        } else if (start < end) {
-            nowHour in start until end
-        } else {
-            nowHour >= start || nowHour < end
-        }
-    }
+     *  Delegates to [AllowedHours], the same predicate [PoissonScheduler] uses, so the
+     *  constraint gate and the delay computation can never disagree (issue #124). */
+    internal fun isWithinAllowedHours(profile: PoisonProfile, nowHour: Int = currentHourOfDay()): Boolean =
+        AllowedHours.isWithin(nowHour, profile.allowedHoursStart, profile.allowedHoursEnd)
 
     /** Returns the constraint-check retry interval scaled by intensity.
      *  HIGH (200/hr) → ~3.6s, MEDIUM (60/hr) → ~12s, LOW (12/hr) → 60s. */

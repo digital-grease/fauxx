@@ -14,9 +14,10 @@ import kotlin.random.Random
  * Generates next-action timestamps following a Poisson process with human-like circadian patterns.
  *
  * Behavioral properties:
- * - Active 7am–11pm local time (configurable via [allowedHoursStart]/[allowedHoursEnd])
+ * - Active 7am–11pm local time by default (configurable via the allowedStart/allowedEnd
+ *   parameters of [nextDelayMs]; window semantics live in [AllowedHours])
  * - Produces bursts of 3-7 actions close together, then gaps of 5-20 minutes
- * - Near-zero activity between 11pm-7am
+ * - Near-zero activity outside the allowed window
  * - Inter-arrival times follow exponential distribution (Poisson process property)
  *
  * Cross-niche dwell time:
@@ -68,7 +69,8 @@ class PoissonScheduler @Inject constructor(
      * @param prev Previously executed category, or null for the first action this run.
      * @param next Category about to be executed.
      * @param allowedStart Hour of day (0-23) when activity may begin.
-     * @param allowedEnd Hour of day (0-23) when activity must stop.
+     * @param allowedEnd Hour of day (0-24) when activity must stop. Equal to [allowedStart]
+     *   means a 24h window — see [AllowedHours] for the shared semantics (issue #124).
      * @return Delay in milliseconds. May be large if currently in quiet hours.
      */
     fun nextDelayMs(
@@ -81,8 +83,11 @@ class PoissonScheduler @Inject constructor(
         val now = Calendar.getInstance().apply { timeInMillis = clock.currentTimeMillis() }
         val currentHour = now.get(Calendar.HOUR_OF_DAY)
 
-        // If in quiet hours, delay until allowed start
-        if (!isWithinAllowedHours(currentHour, allowedStart, allowedEnd)) {
+        // If in quiet hours, delay until allowed start. Uses the SAME predicate as the
+        // engine's constraint gate (AllowedHours) so the two can never disagree about
+        // whether "now" is active — the divergence that caused issue #124, where the
+        // engine executed an action but this branch then slept until local midnight.
+        if (!AllowedHours.isWithin(currentHour, allowedStart, allowedEnd)) {
             return msUntilHour(now, allowedStart)
         }
 
@@ -158,15 +163,6 @@ class PoissonScheduler @Inject constructor(
         val u = random.nextDouble()
         val delayMs = (-ln(1.0 - u) / ratePerMs).toLong()
         return delayMs.coerceIn(1_000L, maxDelayMs)
-    }
-
-    private fun isWithinAllowedHours(currentHour: Int, start: Int, end: Int): Boolean {
-        return if (start <= end) {
-            currentHour in start until end
-        } else {
-            // Wraps midnight: e.g., start=22, end=6 means 22:00 to 06:00
-            currentHour >= start || currentHour < end
-        }
     }
 
     private fun msUntilHour(now: Calendar, targetHour: Int): Long {
