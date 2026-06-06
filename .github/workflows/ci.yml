@@ -55,20 +55,20 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ matrix.flavor }}
           path: app/build/reports/tests/
 
       - name: Upload lint results
         if: always() && matrix.flavor == 'play'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-results-${{ matrix.flavor }}
           path: app/build/reports/lint-results-*.html
 
       - name: Upload debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: debug-apk-${{ matrix.flavor }}
           path: app/build/outputs/apk/${{ matrix.flavor }}/debug/app-${{ matrix.flavor }}-debug.apk

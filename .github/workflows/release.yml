@@ -217,7 +217,7 @@ jobs:
              "${{ matrix.artifactSrcDir }}/fauxx-${{ matrix.flavor }}-${VERSION}.${{ matrix.artifactExt }}"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.flavor }}
           path: ${{ matrix.artifactSrcDir }}/fauxx-${{ matrix.flavor }}-*.${{ matrix.artifactExt }}
@@ -232,7 +232,7 @@ jobs:
 
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: release-*
           merge-multiple: true

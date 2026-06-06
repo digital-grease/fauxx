@@ -8,6 +8,7 @@ import com.fauxx.util.SystemClockImpl
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.double
 import io.kotest.property.arbitrary.element
+import io.kotest.property.arbitrary.filter
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import io.kotest.property.checkAll
@@ -32,8 +33,12 @@ class FakeRouteGeneratorPropertyTest {
 
     @Test
     fun `route points are valid coordinates with monotonic timestamps`() = runBlocking<Unit> {
-        val latArb = Arb.double(-90.0, 90.0)
-        val lngArb = Arb.double(-180.0, 180.0)
+        // Origins always come from CityDatabase (real, finite coordinates), so exclude the
+        // NaN/Infinity edge cases. kotest 6's bounded Arb.double emits non-finite edge cases even
+        // within a range (kotest 5 did not); filtering keeps the meaningful pole/antimeridian edges
+        // while dropping unrealistic NaN/Inf origins. (No-op under kotest 5, required under kotest 6.)
+        val latArb = Arb.double(-90.0, 90.0).filter { it.isFinite() }
+        val lngArb = Arb.double(-180.0, 180.0).filter { it.isFinite() }
         val modeArb = Arb.element(FakeRouteGenerator.MovementMode.values().toList())
         val countArb = Arb.int(2, 40)
 
