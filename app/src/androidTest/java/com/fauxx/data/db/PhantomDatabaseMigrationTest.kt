@@ -18,7 +18,7 @@ import org.junit.runner.RunWith
  * Exercises [PhantomDatabase]'s real migrations under SQLCipher on a device — the path that
  * actually runs on a user's phone when they update the app. A broken migration here is silent
  * data loss or an open-time crash for every existing install, so this verifies both that the
- * 1->2->3 chain applies its schema changes AND that rows written before the update survive it.
+ * 1->2->3->4 chain applies its schema changes AND that rows written before the update survive it.
  *
  * Room's exported schemas only include 3.json, so [androidx.room.testing.MigrationTestHelper]
  * (which needs 1.json/2.json to stand up an old DB) can't be used. Instead we hand-seed an
@@ -47,12 +47,12 @@ class PhantomDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate1To3_preservesSeededRows_andAppliesSchemaChanges() {
+    fun migrate1To4_preservesSeededRows_andAppliesSchemaChanges() {
         seedEncryptedV1Database()
 
         val db = buildRoomDatabase()
         try {
-            // First access runs MIGRATION_1_2 + MIGRATION_2_3 and validates the result against v3.
+            // First access runs the 1->2->3->4 migration chain and validates the result against v4.
             val sdb = db.openHelper.writableDatabase
 
             // Rows written at v1 must survive the migration.
@@ -79,6 +79,15 @@ class PhantomDatabaseMigrationTest {
                 "MIGRATION_2_3 must add user_demographic_profile.customInterestsJson",
                 columnExists(sdb, "user_demographic_profile", "customInterestsJson")
             )
+            // MIGRATION_3_4 added the nullable metadata column (issue #73).
+            assertTrue(
+                "MIGRATION_3_4 must add action_log.metadata",
+                columnExists(sdb, "action_log", "metadata")
+            )
+            sdb.query("SELECT metadata FROM action_log").use { c ->
+                assertTrue(c.moveToFirst())
+                assertTrue("metadata defaults to NULL on pre-existing rows", c.isNull(0))
+            }
         } finally {
             db.close()
         }
@@ -104,6 +113,10 @@ class PhantomDatabaseMigrationTest {
                 assertTrue("fresh v3 create must include the composite index", c.moveToFirst())
             }
             assertTrue(columnExists(sdb, "user_demographic_profile", "customInterestsJson"))
+            assertTrue(
+                "fresh v4 create must include action_log.metadata",
+                columnExists(sdb, "action_log", "metadata")
+            )
         } finally {
             db.close()
         }
@@ -112,7 +125,7 @@ class PhantomDatabaseMigrationTest {
     private fun buildRoomDatabase(): PhantomDatabase =
         Room.databaseBuilder(context, PhantomDatabase::class.java, TEST_DB)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
 
     /**

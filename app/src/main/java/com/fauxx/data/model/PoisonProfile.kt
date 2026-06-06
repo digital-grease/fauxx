@@ -14,6 +14,8 @@ import com.fauxx.ui.theme.ThemeMode
  *   actively charging. Defaults to false to preserve historical behavior.
  * @property allowedHoursStart Hour of day (0-23) when activity is permitted to start.
  * @property allowedHoursEnd Hour of day (0-23) when activity must stop.
+ * @property logRetentionDays Days of action-log history to keep; the retention worker prunes
+ *   entries older than this (1-90, default 7). Keeps the on-device log bounded.
  * @property searchPoisonEnabled Whether the SearchPoisonModule is active.
  * @property adPollutionEnabled Whether the AdPollutionModule is active.
  * @property locationSpoofEnabled Whether the LocationSpoofModule is active.
@@ -42,6 +44,7 @@ data class PoisonProfile(
     val ignoreBatteryThresholdWhileCharging: Boolean = false,
     val allowedHoursStart: Int = 7,
     val allowedHoursEnd: Int = 23,
+    val logRetentionDays: Int = 7,
     val searchPoisonEnabled: Boolean = true,
     val adPollutionEnabled: Boolean = true,
     val locationSpoofEnabled: Boolean = false,

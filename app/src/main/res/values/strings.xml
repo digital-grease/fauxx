@@ -156,7 +156,11 @@
     <string name="log_export_content_desc">Export</string>
     <string name="log_export_csv">Export CSV</string>
     <string name="log_export_json">Export JSON</string>
+    <string name="log_export_html">Export HTML</string>
     <string name="log_export_chooser_title">Export Log</string>
+    <string name="log_entry_share">Share entry</string>
+    <string name="log_day_today">Today</string>
+    <string name="log_day_yesterday">Yesterday</string>
     <string name="log_filter_all">All</string>
     <string name="log_detail_type">Type</string>
     <string name="log_detail_category">Category</string>
@@ -315,6 +319,9 @@
     <string name="settings_active_hours_end_label">End</string>
     <string name="settings_active_hours_description">Activity is paused outside these hours</string>
     <string name="settings_active_hours_narrow_window_warning">A narrow activity window (%dh) can itself be a trackable signal. Wider windows (12h+) are harder for trackers to distinguish from real usage.</string>
+    <string name="settings_log_retention_title">Log retention</string>
+    <string name="settings_log_retention_value">%d days</string>
+    <string name="settings_log_retention_description">Automatically delete action-log entries older than this. Keeps the on-device log from growing without limit.</string>
     <string name="settings_custom_ua_title">Match my browser</string>
     <string name="settings_custom_ua_description">By default, Fauxx rotates between many browser identifiers — but real people usually use one browser, so the variety can itself look like bot traffic. Tap below to use this device\'s built-in browser identifier instead, so the noise blends with your real activity. Leave blank to keep the default rotation.</string>
     <string name="settings_custom_ua_use_device_button">Use this device\'s browser</string>

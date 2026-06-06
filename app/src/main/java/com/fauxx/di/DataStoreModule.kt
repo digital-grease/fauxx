@@ -29,6 +29,7 @@ object PreferenceKeys {
     val IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING = booleanPreferencesKey("ignore_battery_threshold_while_charging")
     val ALLOWED_HOURS_START = intPreferencesKey("allowed_hours_start")
     val ALLOWED_HOURS_END = intPreferencesKey("allowed_hours_end")
+    val LOG_RETENTION_DAYS = intPreferencesKey("log_retention_days")
 
     // Module toggles
     val MODULE_SEARCH = booleanPreferencesKey("module_search")

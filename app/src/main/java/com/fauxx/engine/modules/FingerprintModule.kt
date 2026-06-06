@@ -2,6 +2,7 @@ package com.fauxx.engine.modules
 
 import timber.log.Timber
 import com.fauxx.data.db.ActionLogEntity
+import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
@@ -40,7 +41,8 @@ class FingerprintModule @Inject constructor(
         return ActionLogEntity(
             actionType = ActionType.FINGERPRINT_ROTATE,
             category = category,
-            detail = "UA rotated: ${ua.take(80)}…"
+            detail = "UA rotated: ${ua.take(80)}…",
+            metadata = LogMetadata.toJson(LogMetadata.USER_AGENT to ua)
         )
     }
 }

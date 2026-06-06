@@ -2,6 +2,7 @@ package com.fauxx.engine.modules
 
 import timber.log.Timber
 import com.fauxx.data.db.ActionLogEntity
+import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.MarkovQueryGenerator
@@ -146,9 +147,11 @@ class SearchPoisonModule @Inject constructor(
         val engine = SEARCH_ENGINES.random(random)
         val url = engine.build(encodedQuery, localeManager.currentLocale)
 
+        var httpStatus: Int? = null
         try {
             val request = Request.Builder().url(url).get().build()
             httpClient.newCall(request).execute().use { response ->
+                httpStatus = response.code
                 if (!response.isSuccessful) {
                     Timber.d("Search request to ${engine.name} returned ${response.code}")
                 }
@@ -164,7 +167,11 @@ class SearchPoisonModule @Inject constructor(
             // Without this, the action log shows only the query and the user
             // can't verify that newly-added engines (e.g. Yandex per #24) are
             // actually firing.
-            detail = "[$category] $query · via ${engine.name}"
+            detail = "[$category] $query · via ${engine.name}",
+            metadata = LogMetadata.toJson(
+                LogMetadata.SEARCH_ENGINE to engine.name,
+                LogMetadata.HTTP_STATUS to httpStatus?.toString(),
+            )
         )
     }
 }

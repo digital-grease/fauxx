@@ -6,6 +6,7 @@ import android.location.LocationManager
 import android.os.Process
 import timber.log.Timber
 import com.fauxx.data.db.ActionLogEntity
+import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.location.CityDatabase
 import com.fauxx.data.location.FakeRouteGenerator
 import com.fauxx.data.model.ActionType
@@ -150,10 +151,15 @@ class LocationSpoofModule @Inject constructor(
             }
         }
 
+        val durationMs = (route.lastOrNull()?.time ?: 0L) - (route.firstOrNull()?.time ?: 0L)
         return ActionLogEntity(
             actionType = ActionType.LOCATION_SPOOF,
             category = category,
-            detail = "${mode.name} near ${city.name}"
+            detail = "${mode.name} near ${city.name}",
+            metadata = LogMetadata.toJson(
+                LogMetadata.ROUTE_POINTS to route.size.toString(),
+                LogMetadata.ROUTE_DURATION to if (durationMs > 0) "${durationMs / 1000}s" else null,
+            )
         )
     }
 }

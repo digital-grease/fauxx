@@ -69,11 +69,14 @@ class AdPollutionModule @Inject constructor(
             pending.entry.url
         }
 
+        var metadata: String? = null
         val success = withContext(Dispatchers.Main) {
             val webView = webViewPool.acquire()
             try {
                 webView.loadUrl(url)
                 delay(random.nextLong(3_000L, 15_000L))
+                // Read page metadata before release() wipes the document (issue #73).
+                metadata = webViewPool.captureMetadata(webView, url)
                 true
             } catch (e: Exception) {
                 Timber.w("Ad page load failed: ${e.message}")
@@ -87,6 +90,7 @@ class AdPollutionModule @Inject constructor(
             actionType = actionType,
             category = category,
             detail = url,
+            metadata = metadata,
             success = success
         )
     }

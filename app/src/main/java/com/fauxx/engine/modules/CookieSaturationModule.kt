@@ -58,11 +58,14 @@ class CookieSaturationModule @Inject constructor(
 
         val dwellMs = random.nextLong(2_000L, 10_000L) // 2-10 second dwell
 
+        var metadata: String? = null
         val success = withContext(Dispatchers.Main) {
             val webView = webViewPool.acquire()
             try {
                 webView.loadUrl(entry.url)
                 delay(dwellMs)
+                // Read page metadata synchronously before release() wipes the document (issue #73).
+                metadata = webViewPool.captureMetadata(webView, entry.url)
                 true
             } catch (e: Exception) {
                 Timber.w("Failed to load ${entry.url}: ${e.message}")
@@ -76,6 +79,7 @@ class CookieSaturationModule @Inject constructor(
             actionType = ActionType.COOKIE_HARVEST,
             category = category,
             detail = entry.url,
+            metadata = metadata,
             success = success
         )
     }

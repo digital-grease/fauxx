@@ -7,6 +7,7 @@ import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import com.fauxx.data.crawllist.DomainBlocklist
+import java.util.concurrent.atomic.AtomicInteger
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -41,7 +42,19 @@ class PhantomWebViewClientTest {
     private val view: WebView = mockk(relaxed = true)
 
     private fun client(onPageFinished: ((String) -> Unit)? = null) =
-        PhantomWebViewClient(blocklist, onPageFinished)
+        PhantomWebViewClient(blocklist, onPageFinished = onPageFinished)
+
+    @Test
+    fun `shouldInterceptRequest counts only allowed resource requests`() {
+        val counter = AtomicInteger(0)
+        val c = PhantomWebViewClient(blocklist, resourceCounter = counter)
+        every { blocklist.isBlocked("ok.example") } returns false
+        assertNull(c.shouldInterceptRequest(view, request("https://ok.example/app.js")))
+        assertEquals("an allowed request increments the counter", 1, counter.get())
+        every { blocklist.isBlocked("evil.com") } returns true
+        assertNotNull(c.shouldInterceptRequest(view, request("https://evil.com/track.js")))
+        assertEquals("a blocked request must not be counted", 1, counter.get())
+    }
 
     /** A WebResourceRequest whose url and headers are fully mocked. */
     private fun request(url: String, headers: Map<String, String> = emptyMap()): WebResourceRequest {

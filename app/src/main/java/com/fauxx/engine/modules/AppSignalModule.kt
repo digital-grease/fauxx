@@ -218,11 +218,14 @@ class AppSignalModule @Inject constructor(
         // navigations to blocklisted hosts; non-http schemes (market://) fail
         // silently in WebView.
         val dwellMs = (3_000L..8_000L).random(random)
+        var metadata: String? = null
         val success = withContext(Dispatchers.Main) {
             val webView = webViewPool.acquire()
             try {
                 webView.loadUrl(url)
                 delay(dwellMs)
+                // Read page metadata before release() wipes the document (issue #73).
+                metadata = webViewPool.captureMetadata(webView, url)
                 true
             } catch (e: Exception) {
                 Timber.w("App signal load failed: ${e.message}")
@@ -236,6 +239,7 @@ class AppSignalModule @Inject constructor(
             actionType = ActionType.DEEP_LINK_VISIT,
             category = category,
             detail = url,
+            metadata = metadata,
             success = success
         )
     }

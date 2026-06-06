@@ -209,6 +209,10 @@
     <!-- Log screen -->
     <string name="log_export_csv">Экспорт CSV</string>
     <string name="log_export_json">Экспорт JSON</string>
+    <string name="log_export_html">Экспорт HTML</string>
+    <string name="log_entry_share">Поделиться записью</string>
+    <string name="log_day_today">Сегодня</string>
+    <string name="log_day_yesterday">Вчера</string>
     <string name="log_filter_all">Все</string>
     <string name="log_detail_type">Тип</string>
     <string name="log_detail_category">Категория</string>
@@ -380,6 +384,9 @@
     <string name="settings_active_hours_end_label">Конец</string>
     <string name="settings_active_hours_description">Активность приостановлена вне этих часов</string>
     <string name="settings_active_hours_narrow_window_warning">Узкое окно активности (%dч) само по себе может быть отслеживаемым сигналом. Более широкие окна (12ч+) трекерам сложнее отличить от реального использования.</string>
+    <string name="settings_log_retention_title">Хранение журнала</string>
+    <string name="settings_log_retention_value">%d дн.</string>
+    <string name="settings_log_retention_description">Автоматически удалять записи журнала старше этого срока. Не даёт журналу на устройстве расти без ограничений.</string>
     <string name="settings_custom_ua_title">Подстроить под мой браузер</string>
     <string name="settings_custom_ua_description">По умолчанию Fauxx чередует множество идентификаторов браузера — но реальные люди обычно пользуются одним браузером, поэтому само разнообразие может выглядеть как трафик ботов. Нажми ниже, чтобы вместо этого использовать встроенный идентификатор браузера этого устройства — тогда шум будет сливаться с твоей реальной активностью. Оставь пустым, чтобы оставить чередование по умолчанию.</string>
     <string name="settings_custom_ua_use_device_button">Использовать браузер этого устройства</string>

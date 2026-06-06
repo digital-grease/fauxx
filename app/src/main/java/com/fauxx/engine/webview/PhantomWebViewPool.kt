@@ -5,11 +5,13 @@ import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
 import com.fauxx.data.crawllist.DomainBlocklist
+import com.fauxx.data.db.LogMetadata
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -54,6 +56,9 @@ class PhantomWebViewPool @Inject constructor(
     /** Tracks which WebViews are currently acquired (tag -> true). */
     private val acquired = ConcurrentHashMap<String, Boolean>()
 
+    /** Per-WebView allowed-resource-request counter, reset on [acquire] (issue #73 metadata). */
+    private val resourceCounters = ConcurrentHashMap<String, AtomicInteger>()
+
     /**
      * Current User-Agent string to apply to WebViews on acquire.
      * Updated by [FingerprintModule] on each rotation action.
@@ -90,6 +95,7 @@ class PhantomWebViewPool @Inject constructor(
         return try {
             withContext(Dispatchers.Main) {
                 val wv = pool.first { acquired.putIfAbsent(it.tag as String, true) == null }
+                resourceCounters[wv.tag as String]?.set(0)
                 currentUserAgent.get()?.let { wv.settings.userAgentString = it }
                 wv
             }
@@ -97,6 +103,34 @@ class PhantomWebViewPool @Inject constructor(
             poolSemaphore.release()
             throw e
         }
+    }
+
+    /**
+     * Best-effort, scalar metadata about the page currently loaded in [webView] (issue #73):
+     * page title, the cookie count in the (process-global) jar for [url], and the number of
+     * allowed resource requests since [acquire]. Returns a [LogMetadata] JSON string, or null
+     * if nothing could be read.
+     *
+     * MUST be called on the main thread (i.e. inside the caller's `withContext(Dispatchers.Main)`
+     * block) AFTER the dwell and BEFORE [release] — [release] loads `about:blank`, which would
+     * null out the title and reset the document. Every read is guarded; this never throws, and a
+     * failed read simply omits that field so the action's success is unaffected.
+     */
+    fun captureMetadata(webView: WebView, url: String): String? {
+        val title = runCatching {
+            webView.title?.takeIf { it.isNotBlank() && it != "about:blank" }
+        }.getOrNull()
+        val cookieCount = runCatching {
+            CookieManager.getInstance().getCookie(url)?.split(";")?.count { it.isNotBlank() }
+        }.getOrNull()
+        val resourceCount = runCatching {
+            resourceCounters[webView.tag as? String]?.get()
+        }.getOrNull()
+        return LogMetadata.toJson(
+            LogMetadata.PAGE_TITLE to title,
+            LogMetadata.COOKIES_IN_JAR to cookieCount?.toString(),
+            LogMetadata.RESOURCES_LOADED to resourceCount?.takeIf { it > 0 }?.toString(),
+        )
     }
 
     /**
@@ -167,7 +201,9 @@ class PhantomWebViewPool @Inject constructor(
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
 
-        webView.webViewClient = PhantomWebViewClient(blocklist)
+        val resourceCounter = AtomicInteger(0)
+        resourceCounters[tag] = resourceCounter
+        webView.webViewClient = PhantomWebViewClient(blocklist, resourceCounter = resourceCounter)
         webView.isClickable = false
         webView.isFocusable = false
 

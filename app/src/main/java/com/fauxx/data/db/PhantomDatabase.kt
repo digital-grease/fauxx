@@ -31,7 +31,7 @@ import com.fauxx.targeting.layer3.PersonaHistoryEntity
         PlatformProfileCache::class,
         PersonaHistoryEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(PhantomTypeConverters::class)
@@ -53,6 +53,13 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
 val MIGRATION_2_3 = object : Migration(2, 3) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE `user_demographic_profile` ADD COLUMN `customInterestsJson` TEXT DEFAULT NULL")
+    }
+}
+
+/** Migration from v3 to v4: add nullable metadata column to action_log (issue #73). */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `action_log` ADD COLUMN `metadata` TEXT DEFAULT NULL")
     }
 }
 

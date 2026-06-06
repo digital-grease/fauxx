@@ -30,7 +30,7 @@ import org.junit.runner.RunWith
 
 /**
  * Round-trips every DAO of [PhantomDatabase] through a REAL SQLCipher-encrypted database, built
- * fresh at the current schema version (v3, no migrations). The point is to prove that values
+ * fresh at the current schema version (v4, no migrations). The point is to prove that values
  * survive the full Room <-> SQLCipher <-> Room path with their type-converted columns intact:
  *
  * - [ActionType] and [CategoryPool] persist via the explicit [PhantomTypeConverters] (enum.name).
@@ -144,6 +144,31 @@ class PhantomDatabaseDaoRoundTripTest {
         assertEquals(ActionType.PAGE_VISIT, remaining[0].actionType)
         assertEquals(CategoryPool.TECHNOLOGY, remaining[0].category)
         assertEquals(false, remaining[0].success)
+    }
+
+    @Test
+    fun actionLogDao_roundTripsMetadataColumn() = runBlocking {
+        val dao = db.actionLogDao()
+        dao.insert(
+            ActionLogEntity(
+                timestamp = 1_700_000_000_001L,
+                actionType = ActionType.COOKIE_HARVEST,
+                category = CategoryPool.TECHNOLOGY,
+                detail = "with-metadata",
+                metadata = "{\"Page title\":\"Cart\"}"
+            )
+        )
+        dao.insert(
+            ActionLogEntity(
+                timestamp = 1_700_000_000_002L,
+                actionType = ActionType.DNS_LOOKUP,
+                category = CategoryPool.FINANCE,
+                detail = "no-metadata"
+            )
+        )
+        val byDetail = dao.getAllForExport().associateBy { it.detail }
+        assertEquals("{\"Page title\":\"Cart\"}", byDetail["with-metadata"]?.metadata)
+        assertNull("default metadata column is null", byDetail["no-metadata"]?.metadata)
     }
 
     @Test

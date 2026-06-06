@@ -352,6 +352,31 @@ fun SettingsScreen(
             }
         }
 
+        // Log retention (issue #73)
+        SettingsCard {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(stringResource(R.string.settings_log_retention_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(R.string.settings_log_retention_value, uiState.logRetentionDays),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+            Slider(
+                value = uiState.logRetentionDays.toFloat(),
+                onValueChange = { viewModel.setLogRetentionDays(it.roundToInt()) },
+                valueRange = 1f..90f
+            )
+            Text(
+                stringResource(R.string.settings_log_retention_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
         // Custom User-Agent (issue #7)
         SettingsCard {
             Text(

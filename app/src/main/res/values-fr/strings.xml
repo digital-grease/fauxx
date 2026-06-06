@@ -159,6 +159,10 @@
     <string name="log_export_content_desc">Exporter</string>
     <string name="log_export_csv">Exporter CSV</string>
     <string name="log_export_json">Exporter JSON</string>
+    <string name="log_export_html">Exporter HTML</string>
+    <string name="log_entry_share">Partager l\'entrée</string>
+    <string name="log_day_today">Aujourd\'hui</string>
+    <string name="log_day_yesterday">Hier</string>
     <string name="log_export_chooser_title">Exporter le journal</string>
     <string name="log_filter_all">Tout</string>
     <string name="log_detail_type">Type</string>
@@ -317,6 +321,9 @@
     <string name="settings_active_hours_end_label">Fin</string>
     <string name="settings_active_hours_description">L\'activité est en pause en dehors de ces heures</string>
     <string name="settings_active_hours_narrow_window_warning">Une fenêtre d\'activité étroite (%dh) peut constituer un signal traçable à elle seule. Des fenêtres plus larges (12h ou plus) sont plus difficiles à distinguer d\'une utilisation réelle pour les traqueurs.</string>
+    <string name="settings_log_retention_title">Conservation du journal</string>
+    <string name="settings_log_retention_value">%d jours</string>
+    <string name="settings_log_retention_description">Supprime automatiquement les entrées du journal plus anciennes que cette durée. Empêche le journal local de grossir sans limite.</string>
     <string name="settings_custom_ua_title">Utiliser mon navigateur</string>
     <string name="settings_custom_ua_description">Par défaut, Fauxx alterne entre de nombreux identifiants de navigateur — mais les vraies personnes utilisent généralement un seul navigateur, donc cette variété peut elle-même ressembler à du trafic automatisé. Appuie ci-dessous pour utiliser plutôt l\'identifiant du navigateur intégré de cet appareil, afin que le bruit se fonde dans ton activité réelle. Laisse vide pour conserver la rotation par défaut.</string>
     <string name="settings_custom_ua_use_device_button">Utiliser le navigateur de cet appareil</string>

@@ -3,6 +3,7 @@ package com.fauxx.engine.modules
 import timber.log.Timber
 import com.fauxx.data.crawllist.CrawlListManager
 import com.fauxx.data.db.ActionLogEntity
+import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
@@ -48,9 +49,10 @@ class DnsNoiseModule @Inject constructor(
 
         val entry = pending.entry
 
+        var ipCount: Int? = null
         val success = withContext(Dispatchers.IO) {
             try {
-                InetAddress.getByName(entry.domain)
+                ipCount = InetAddress.getAllByName(entry.domain).size
                 true
             } catch (e: Exception) {
                 Timber.d("DNS lookup failed for ${entry.domain}: ${e.message}")
@@ -62,6 +64,7 @@ class DnsNoiseModule @Inject constructor(
             actionType = ActionType.DNS_LOOKUP,
             category = category,
             detail = entry.domain,
+            metadata = LogMetadata.toJson(LogMetadata.DNS_IPS to ipCount?.toString()),
             success = success
         )
     }
