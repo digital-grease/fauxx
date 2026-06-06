@@ -2,9 +2,8 @@ package com.fauxx.di
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.db.PhantomDatabase
@@ -64,7 +63,12 @@ object TestDatabaseModule {
     @Provides
     @Singleton
     fun provideTestDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
-        PreferenceDataStoreFactory.create {
-            context.preferencesDataStoreFile("fauxx_test_prefs")
-        }
+        context.testDataStore
 }
+
+// Process-level singleton. @HiltAndroidTest recreates the SingletonComponent per test class, so a
+// fresh PreferenceDataStoreFactory.create(...) per @Provides opened a SECOND DataStore on the same
+// file and threw "multiple DataStores active for the same file". The preferencesDataStore delegate
+// caches one instance per process (matching how production's fauxxDataStore works), so every Hilt
+// component shares the same DataStore.
+private val Context.testDataStore: DataStore<Preferences> by preferencesDataStore(name = "fauxx_test_prefs")
