@@ -106,6 +106,7 @@
     <string name="settings_intensity_low">Faible</string>
     <string name="settings_intensity_medium">Moyenne</string>
     <string name="settings_intensity_high">Élevée</string>
+    <string name="settings_intensity_extreme">Max</string>
     <string name="settings_theme_system">Système</string>
     <string name="settings_theme_light">Clair</string>
     <string name="settings_theme_dark">Sombre</string>
@@ -298,6 +299,8 @@
     <string name="settings_title">PARAMÈTRES</string>
     <string name="settings_intensity_title">Intensité</string>
     <string name="settings_intensity_actions_per_hour">%d actions/heure</string>
+    <string name="settings_intensity_actions_per_hour_max">jusqu\'à ~%d actions/heure</string>
+    <string name="settings_intensity_detectability_warning">Un volume plus élevé raccourcit la pause entre des sujets sans rapport, ce qui peut permettre aux traqueurs de distinguer plus facilement cette activité d\'une navigation réelle.</string>
     <string name="settings_theme_title">Thème</string>
     <string name="settings_theme_system_subtitle">Suit le thème de ton appareil</string>
     <string name="settings_theme_light_subtitle">Toujours clair</string>

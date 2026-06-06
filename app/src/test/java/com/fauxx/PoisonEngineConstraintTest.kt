@@ -150,6 +150,17 @@ class PoisonEngineConstraintTest {
         assertTrue(engine.isWithinAllowedHours(p, nowHour = 23))
     }
 
+    @Test
+    fun `isWithinAllowedHours treats a full 0 to 24 window as always allowed`() {
+        // Issue #128: the End slider now reaches 24, letting a user pick a 24h window.
+        // start < end (0 < 24) resolves to `nowHour in 0 until 24`, i.e. every hour is active.
+        engine = createEngine()
+        val p = profile.copy(allowedHoursStart = 0, allowedHoursEnd = 24)
+        (0..23).forEach { hour ->
+            assertTrue("hour $hour should be active in a 0..24 window", engine.isWithinAllowedHours(p, nowHour = hour))
+        }
+    }
+
     // --- shouldPauseForBattery (issue #20: ignore threshold while charging) ---
 
     @Test

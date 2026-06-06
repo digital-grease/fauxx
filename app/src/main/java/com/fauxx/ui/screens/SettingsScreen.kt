@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -88,7 +89,12 @@ fun SettingsScreen(
         SettingsCard {
             Text(stringResource(R.string.settings_intensity_title), style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // FlowRow (not Row) so the four tiers wrap gracefully onto a second line on
+            // narrow screens / large fonts instead of being crushed (issue #76 added Max).
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 IntensityLevel.values().forEach { level ->
                     Button(
                         onClick = { viewModel.setIntensity(level) },
@@ -96,8 +102,7 @@ fun SettingsScreen(
                             containerColor = if (uiState.intensity == level)
                                 MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        modifier = Modifier.weight(1f)
+                        )
                     ) {
                         Text(
                             text = stringResource(level.displayNameRes()),
@@ -110,10 +115,26 @@ fun SettingsScreen(
                 }
             }
             Text(
-                text = stringResource(R.string.settings_intensity_actions_per_hour, uiState.intensity.actionsPerHour),
+                // The top tier is framed "up to ~N" — N is a Poisson target, not a guarantee,
+                // and a soft cap (WebView exec time) keeps it from being literal.
+                text = if (uiState.intensity == IntensityLevel.EXTREME) {
+                    stringResource(R.string.settings_intensity_actions_per_hour_max, uiState.intensity.actionsPerHour)
+                } else {
+                    stringResource(R.string.settings_intensity_actions_per_hour, uiState.intensity.actionsPerHour)
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            // Above MEDIUM the cross-niche dwell floor is lowered to hit the rate, which is a
+            // more distinguishable pattern — surface that trade-off honestly (issue #76).
+            if (uiState.intensity.actionsPerHour > IntensityLevel.MEDIUM.actionsPerHour) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.settings_intensity_detectability_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
 
         // App language
@@ -307,9 +328,12 @@ fun SettingsScreen(
             )
             Slider(
                 value = uiState.allowedHoursEnd.toFloat(),
+                // Issue #128: the End bound reaches 24 (Start stays 0..23) so a user can pick
+                // a full-day window. "0:00 – 24:00" renders for free and the engine already
+                // treats start < end (0 until 24) as always-active, so no engine change.
                 onValueChange = { viewModel.setAllowedHoursEnd(it.roundToInt()) },
-                valueRange = 0f..23f,
-                steps = 22
+                valueRange = 0f..24f,
+                steps = 23
             )
             Text(
                 stringResource(R.string.settings_active_hours_description),

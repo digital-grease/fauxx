@@ -132,6 +132,63 @@ class PoissonSchedulerTest {
         )
     }
 
+    // --- Tier-derived cross-niche floor (issue #76) ---
+    //
+    // The flat 30s floor capped real throughput far below the HIGH/EXTREME targets, making the
+    // displayed actions/hour dishonest. The floor is now half the mean inter-arrival clamped to
+    // [5s, 30s]: LOW/MEDIUM stay 30s, HIGH drops to 9s, EXTREME to 5s.
+
+    @Test
+    fun `cross-niche floor relaxes to 9s at HIGH but never dips below it`() {
+        var sawBelow30s = false
+        repeat(2000) {
+            val delay = scheduler.nextDelayMs(
+                actionsPerHour = 200,
+                prev = CategoryPool.FINANCE,
+                next = CategoryPool.LEGAL,
+                allowedStart = ALL_HOURS_START,
+                allowedEnd = ALL_HOURS_END
+            )
+            assertTrue("HIGH cross-niche must be >=9s, got ${delay}ms", delay >= 9_000L)
+            if (delay < 30_000L) sawBelow30s = true
+        }
+        // The whole point of the relaxation: HIGH must actually be allowed under the old 30s floor.
+        assertTrue("HIGH cross-niche should sometimes dip below the old 30s floor", sawBelow30s)
+    }
+
+    @Test
+    fun `cross-niche floor relaxes to 5s at EXTREME but never dips below it`() {
+        var sawBelow9s = false
+        repeat(2000) {
+            val delay = scheduler.nextDelayMs(
+                actionsPerHour = 500,
+                prev = CategoryPool.FINANCE,
+                next = CategoryPool.LEGAL,
+                allowedStart = ALL_HOURS_START,
+                allowedEnd = ALL_HOURS_END
+            )
+            assertTrue("EXTREME cross-niche must be >=5s, got ${delay}ms", delay >= 5_000L)
+            if (delay < 9_000L) sawBelow9s = true
+        }
+        assertTrue("EXTREME cross-niche should sometimes dip below the 9s HIGH floor", sawBelow9s)
+    }
+
+    @Test
+    fun `cross-niche floor stays 30s at LOW and MEDIUM`() {
+        listOf(12, 60).forEach { aph ->
+            repeat(1000) {
+                val delay = scheduler.nextDelayMs(
+                    actionsPerHour = aph,
+                    prev = CategoryPool.FINANCE,
+                    next = CategoryPool.LEGAL,
+                    allowedStart = ALL_HOURS_START,
+                    allowedEnd = ALL_HOURS_END
+                )
+                assertTrue("aph=$aph cross-niche must stay >=30s, got ${delay}ms", delay >= 30_000L)
+            }
+        }
+    }
+
     @Test
     fun `null previous category behaves like same-topic and allows bursts`() {
         // First action of a session: prev=null. Should be burst-eligible (no artificial dwell).

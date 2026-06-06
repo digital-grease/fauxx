@@ -26,6 +26,11 @@ import kotlin.random.Random
  * lognormal dwell-time multiplier whenever the categories differ. Within-topic activity
  * (same category) still allows the original burst behavior, since real users fire
  * multiple queries on the same subject in quick succession.
+ *
+ * The minimum cross-niche gap (the dwell floor) scales with intensity rather than being a
+ * flat 30s: the calmer tiers stay human-paced while the aggressive tiers trade some of this
+ * separation for throughput so their displayed actions/hour stays honest. See
+ * [crossNicheFloorMs].
  */
 @Singleton
 class PoissonScheduler @Inject constructor(
@@ -38,8 +43,12 @@ class PoissonScheduler @Inject constructor(
         const val DEFAULT_QUIET_START = 23
         const val DEFAULT_QUIET_END = 7
 
-        /** Floor for cross-niche dwell — humans rarely switch topics in under 30 seconds. */
-        private const val CROSS_NICHE_FLOOR_MS = 30_000L
+        /**
+         * Bounds for the per-tier cross-niche dwell floor (see [crossNicheFloorMs]).
+         * The calm tiers sit at the 30s ceiling; the most aggressive tier bottoms out at 5s.
+         */
+        private const val CROSS_NICHE_FLOOR_MIN_MS = 5_000L
+        private const val CROSS_NICHE_FLOOR_MAX_MS = 30_000L
 
         /**
          * Lognormal parameters for the cross-niche dwell multiplier. Tuned so:
@@ -93,11 +102,33 @@ class PoissonScheduler @Inject constructor(
             if (sameTopic) {
                 baseDelay
             } else {
-                // Cross-niche: scale up by a lognormal dwell multiplier and enforce a floor.
+                // Cross-niche: scale up by a lognormal dwell multiplier and enforce a
+                // tier-derived floor (lower for the aggressive tiers — see crossNicheFloorMs).
                 val dwell = (baseDelay * lognormalMultiplier()).toLong()
-                maxOf(CROSS_NICHE_FLOOR_MS, dwell)
+                maxOf(crossNicheFloorMs(actionsPerHour), dwell)
             }
         }
+    }
+
+    /**
+     * Minimum gap to enforce between two different content niches, derived from the
+     * target rate so the displayed actions/hour stays achievable.
+     *
+     * Originally a flat 30s, which silently capped real throughput well below the higher
+     * intensity targets (a sustained 200/hr is impossible if every cross-niche switch waits
+     * 30s). The floor is now half the mean inter-arrival time, clamped to
+     * [[CROSS_NICHE_FLOOR_MIN_MS], [CROSS_NICHE_FLOOR_MAX_MS]]:
+     *  - LOW (12/hr) and MEDIUM (60/hr) → 30s (unchanged, still human-paced)
+     *  - HIGH (200/hr) → 9s
+     *  - EXTREME (500/hr) → 5s
+     *
+     * The shorter floor on the aggressive tiers narrows the gap between unrelated topics,
+     * which is exactly the trade-off surfaced to the user as a detectability warning.
+     */
+    private fun crossNicheFloorMs(actionsPerHour: Int): Long {
+        if (actionsPerHour <= 0) return CROSS_NICHE_FLOOR_MAX_MS
+        val halfMean = (3_600_000L / actionsPerHour) / 2
+        return halfMean.coerceIn(CROSS_NICHE_FLOOR_MIN_MS, CROSS_NICHE_FLOOR_MAX_MS)
     }
 
     /**

@@ -101,6 +101,7 @@
     <string name="settings_intensity_low">Low</string>
     <string name="settings_intensity_medium">Medium</string>
     <string name="settings_intensity_high">High</string>
+    <string name="settings_intensity_extreme">Max</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
@@ -296,6 +297,8 @@
     <string name="settings_title">SETTINGS</string>
     <string name="settings_intensity_title">Intensity</string>
     <string name="settings_intensity_actions_per_hour">%d actions/hour</string>
+    <string name="settings_intensity_actions_per_hour_max">up to ~%d actions/hour</string>
+    <string name="settings_intensity_detectability_warning">Higher volume shortens the pause between unrelated topics, which can make this activity easier for trackers to tell apart from real browsing.</string>
     <string name="settings_theme_title">Theme</string>
     <string name="settings_theme_system_subtitle">Follows your device theme</string>
     <string name="settings_theme_light_subtitle">Always light</string>

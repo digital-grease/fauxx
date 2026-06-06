@@ -118,6 +118,7 @@
     <string name="settings_intensity_low">Низкая</string>
     <string name="settings_intensity_medium">Средняя</string>
     <string name="settings_intensity_high">Высокая</string>
+    <string name="settings_intensity_extreme">Макс</string>
     <string name="settings_theme_system">Системная</string>
     <string name="settings_theme_light">Светлая</string>
     <string name="settings_theme_dark">Тёмная</string>
@@ -364,6 +365,8 @@
     <string name="action_got_it">Понятно</string>
     <string name="action_cancel">Отмена</string>
     <string name="settings_intensity_actions_per_hour">%d действий/час</string>
+    <string name="settings_intensity_actions_per_hour_max">до ~%d действий/час</string>
+    <string name="settings_intensity_detectability_warning">Более высокая интенсивность сокращает паузу между несвязанными темами, из-за чего трекерам легче отличить эту активность от реального просмотра.</string>
     <string name="settings_theme_system_subtitle">Следует теме устройства</string>
     <string name="settings_theme_light_subtitle">Всегда светлая</string>
     <string name="settings_theme_dark_subtitle">Всегда тёмная</string>

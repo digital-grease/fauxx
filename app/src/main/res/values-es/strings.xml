@@ -106,6 +106,7 @@
     <string name="settings_intensity_low">Baja</string>
     <string name="settings_intensity_medium">Media</string>
     <string name="settings_intensity_high">Alta</string>
+    <string name="settings_intensity_extreme">Máx</string>
     <string name="settings_theme_system">Sistema</string>
     <string name="settings_theme_light">Claro</string>
     <string name="settings_theme_dark">Oscuro</string>
@@ -298,6 +299,8 @@
     <string name="settings_title">AJUSTES</string>
     <string name="settings_intensity_title">Intensidad</string>
     <string name="settings_intensity_actions_per_hour">%d acciones/hora</string>
+    <string name="settings_intensity_actions_per_hour_max">hasta ~%d acciones/hora</string>
+    <string name="settings_intensity_detectability_warning">Un volumen más alto acorta la pausa entre temas no relacionados, lo que puede facilitar que los rastreadores distingan esta actividad de la navegación real.</string>
     <string name="settings_theme_title">Tema</string>
     <string name="settings_theme_system_subtitle">Sigue el tema del dispositivo</string>
     <string name="settings_theme_light_subtitle">Siempre claro</string>

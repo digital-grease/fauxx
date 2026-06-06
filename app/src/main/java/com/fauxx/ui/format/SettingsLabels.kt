@@ -21,6 +21,7 @@ fun IntensityLevel.displayNameRes(): Int = when (this) {
     IntensityLevel.LOW -> R.string.settings_intensity_low
     IntensityLevel.MEDIUM -> R.string.settings_intensity_medium
     IntensityLevel.HIGH -> R.string.settings_intensity_high
+    IntensityLevel.EXTREME -> R.string.settings_intensity_extreme
 }
 
 @StringRes
