@@ -20,7 +20,10 @@ concurrency:
 jobs:
   instrumented:
     name: Instrumented (API ${{ matrix.api-level }})
-    runs-on: ubuntu-latest
+    # Pinned to 22.04: on the ubuntu-24.04 runner image the AVD never finishes booting (the
+    # device stays "offline" and getprop sys.boot_completed loops), an android-emulator-runner
+    # regression that was failing every nightly/release-gate run. 22.04 boots the AVD reliably.
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -54,6 +57,8 @@ jobs:
           target: google_apis
           profile: pixel_6
           ram-size: 4096M
+          cores: 4
+          emulator-boot-timeout: 900
           disable-animations: true
           # SQLCipher migration + manifest/DAO tests live in the play debug variant's androidTest.
           script: ./gradlew connectedPlayDebugAndroidTest
