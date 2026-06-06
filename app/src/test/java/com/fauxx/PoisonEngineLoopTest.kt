@@ -3,6 +3,8 @@ package com.fauxx
 import com.fauxx.data.crawllist.CrawlListManager
 import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.db.ActionLogDao
+import com.fauxx.data.db.ActionLogEntity
+import com.fauxx.data.model.ActionType
 import com.fauxx.data.location.CityCoord
 import com.fauxx.data.location.CityDatabase
 import com.fauxx.data.model.IntensityLevel
@@ -24,6 +26,7 @@ import com.fauxx.support.FakeClock
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.util.Clock
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
@@ -40,6 +43,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import kotlin.random.Random
 
 /**
  * Integration test for [PoisonEngine.start] / `runLoop` under virtual time.
@@ -137,6 +141,56 @@ class PoisonEngineLoopTest {
         assertEquals(androidx.work.NetworkType.UNMETERED, whenConstraint.network)
     }
 
+    @Test
+    fun `runLoop keeps executing actions in an always-on window with the real scheduler`() = runTest {
+        // Issue #124 end-to-end regression. Active hours 0-0 is the degenerate
+        // "midnight to midnight" window the engine documents as always allowed. The bug
+        // lived in the REAL PoissonScheduler's divergent copy of that predicate (the
+        // other tests in this file mock the scheduler, which is why it was never caught):
+        // the engine's constraint gate allowed the action, then nextDelayMs treated the
+        // same instant as quiet hours and returned ms-until-local-midnight. Net effect in
+        // the field: exactly ONE action per engine start, at any hour of the day.
+        val clock = FakeClock(threeAmEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val searchModule: SearchPoisonModule = mockk(relaxed = true) {
+            every { isEnabled() } returns true
+            coEvery { onAction(any()) } returns ActionLogEntity(
+                actionType = ActionType.SEARCH_QUERY,
+                category = CategoryPool.GAMING,
+                detail = "ok",
+                success = true
+            )
+        }
+        engine = buildEngine(
+            clock,
+            profile = baseProfile.copy(allowedHoursStart = 0, allowedHoursEnd = 0),
+            loopDispatcher = dispatcher,
+            scheduler = PoissonScheduler(clock, Random(42)),
+            searchModule = searchModule
+        )
+
+        var resignedWith: ResumeSpec? = null
+        engine.setOnLongPause { spec -> resignedWith = spec }
+        engine.start()
+
+        // Two simulated hours starting at 3 AM. LOW (12/hr) bounds same-topic delays to
+        // max(60s, 3x300s) = 15 min, so a healthy loop must fire several actions; the
+        // pre-fix loop fired one and then slept until midnight.
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 2 * 60 * 60 * 1000)
+
+        assertNull("an always-on window must never resign for quiet hours", resignedWith)
+        coVerify(atLeast = 3) { searchModule.onAction(any()) }
+
+        // Unlike the resign tests above, this engine is (by design) still alive and
+        // mid-delay on the test scheduler. Cancel it INSIDE the runTest body and drain
+        // its async cleanup coroutine — a foreign-scope task left pending at body end
+        // would make the post-body drain advance virtual time forever, because an
+        // always-on engine never goes idle.
+        engine.destroy()
+        testScheduler.advanceTimeBy(5_000)
+        testScheduler.runCurrent()
+    }
+
     /**
      * Step time forward in small increments so `runTest`'s scheduler can fire
      * each `delay()` resumption. The fake clock advances together with the
@@ -194,16 +248,17 @@ class PoisonEngineLoopTest {
         clock: Clock,
         profile: PoisonProfile,
         moduleFails: Boolean = false,
-        loopDispatcher: CoroutineDispatcher
+        loopDispatcher: CoroutineDispatcher,
+        scheduler: PoissonScheduler = mockk {
+            every { nextDelayMs(any(), any(), any(), any(), any()) } returns 1000L
+        },
+        searchModule: SearchPoisonModule? = null
     ): PoisonEngine {
         val profileRepo: PoisonProfileRepository = mockk {
             every { getProfile() } returns profile
         }
         val dispatcher: ActionDispatcher = mockk {
             coEvery { selectCategory() } returns CategoryPool.GAMING
-        }
-        val scheduler: PoissonScheduler = mockk {
-            every { nextDelayMs(any(), any(), any(), any(), any()) } returns 1000L
         }
         val actionLogDao: ActionLogDao = mockk(relaxed = true)
         val blocklist: DomainBlocklist = mockk {
@@ -221,7 +276,7 @@ class PoisonEngineLoopTest {
                 CityCoord("B", 1.0, 1.0, "X")
             )
         }
-        val searchModule: SearchPoisonModule = mockk(relaxed = true) {
+        val search: SearchPoisonModule = searchModule ?: mockk(relaxed = true) {
             every { isEnabled() } returns true
             if (moduleFails) {
                 coEvery { onAction(any()) } throws RuntimeException("forced failure")
@@ -243,7 +298,7 @@ class PoisonEngineLoopTest {
         return PoisonEngine(
             context, profileRepo, targetingEngine, dispatcher, scheduler, actionLogDao,
             blocklist, queryBankManager, crawlListManager, cityDatabase,
-            searchModule,
+            search,
             adModule = noopModule,
             locationModule = noopModule,
             fingerprintModule = mockk<FingerprintModule>(relaxed = true) {

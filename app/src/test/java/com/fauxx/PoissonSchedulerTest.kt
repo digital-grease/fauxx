@@ -2,6 +2,7 @@ package com.fauxx
 
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.support.FakeClock
 import com.fauxx.util.SystemClockImpl
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -188,6 +189,79 @@ class PoissonSchedulerTest {
             }
         }
     }
+
+    // --- Degenerate (start == end) allowed-hours window (issue #124) ---
+    //
+    // The scheduler's old private predicate evaluated start==end as `hour in start until
+    // end`, an empty range, so EVERY call fell into the quiet-hours branch and returned
+    // "ms until the next `start` hour boundary". For the 0-0 window users set to mean
+    // "always on" (the engine's constraint gate documents start==end as always allowed),
+    // that meant one action per engine start, then a sleep landing at local midnight —
+    // the field logs in #124 show scheduled delays of 9h-21h, every one expiring at
+    // exactly 24:00:00.
+
+    @Test
+    fun `equal start and end behaves as a 24h window at every hour of the day`() {
+        // Same-topic delays are bounded by the Poisson clamp max(60s, 3x mean) = 180s at
+        // MEDIUM (60/hr), so anything above that means the quiet-hours branch fired.
+        (0..23).forEach { hour ->
+            val pinned = PoissonScheduler(FakeClock(epochAtLocalHour(hour)))
+            repeat(20) {
+                val delay = pinned.nextDelayMs(
+                    actionsPerHour = 60,
+                    prev = CategoryPool.GAMING,
+                    next = CategoryPool.GAMING,
+                    allowedStart = 0,
+                    allowedEnd = 0
+                )
+                assertTrue(
+                    "hour=$hour: a 0-0 window must be always-active; got ${delay}ms " +
+                        "which looks like a delay-until-hour-boundary",
+                    delay <= 180_000L
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `nonzero equal start and end also behaves as a 24h window`() {
+        // 13-13 at 3 AM: pre-fix this returned ~10h (sleep until 13:00).
+        val pinned = PoissonScheduler(FakeClock(epochAtLocalHour(3)))
+        repeat(20) {
+            val delay = pinned.nextDelayMs(
+                actionsPerHour = 60,
+                prev = CategoryPool.GAMING,
+                next = CategoryPool.GAMING,
+                allowedStart = 13,
+                allowedEnd = 13
+            )
+            assertTrue("13-13 window must be always-active at 3 AM, got ${delay}ms", delay <= 180_000L)
+        }
+    }
+
+    @Test
+    fun `outside a normal window still delays until the window opens`() {
+        // The quiet-hours branch itself must keep working for genuinely-outside hours:
+        // at 3 AM with a 7-23 window the next action belongs at 07:00, i.e. 4h out.
+        val pinned = PoissonScheduler(FakeClock(epochAtLocalHour(3)))
+        val delay = pinned.nextDelayMs(
+            actionsPerHour = 60,
+            prev = CategoryPool.GAMING,
+            next = CategoryPool.GAMING,
+            allowedStart = 7,
+            allowedEnd = 23
+        )
+        assertEquals(4 * 60 * 60 * 1000L, delay)
+    }
+
+    /** Epoch ms for today at [hour]:00:00.000 local time. */
+    private fun epochAtLocalHour(hour: Int): Long =
+        java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, hour)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
 
     @Test
     fun `null previous category behaves like same-topic and allows bursts`() {
