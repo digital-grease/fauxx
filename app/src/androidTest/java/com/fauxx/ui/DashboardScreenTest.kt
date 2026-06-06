@@ -3,7 +3,7 @@ package com.fauxx.ui
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.fauxx.ui.screens.DashboardScreen
 import com.fauxx.ui.theme.FauxxTheme
@@ -22,6 +22,10 @@ import org.junit.runner.RunWith
  * - Protection toggle is displayed and starts in inactive state
  * - Action counter labels are visible
  * - Noise ratio card is displayed
+ *
+ * DashboardScreen wraps its content in a verticalScroll [Column], so every node
+ * below the title must be scrolled into view with performScrollTo() before
+ * assertIsDisplayed() — otherwise it reports "not displayed" off-screen.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -45,6 +49,7 @@ class DashboardScreenTest {
                 DashboardScreen()
             }
         }
+        // Title is the first element in the scroll Column — top of screen, no scroll needed.
         composeRule.onNodeWithText("FAUXX").assertIsDisplayed()
     }
 
@@ -55,9 +60,10 @@ class DashboardScreenTest {
                 DashboardScreen()
             }
         }
-        // Default state is disabled — the protection card shows "INACTIVE"
-        composeRule.onNodeWithText("INACTIVE").assertIsDisplayed()
-        composeRule.onNodeWithText("Engine stopped").assertIsDisplayed()
+        // Default state is disabled — the protection card shows "INACTIVE" and the
+        // engine-state subtitle "Engine stopped" (EngineState.STOPPED).
+        composeRule.onNodeWithText("INACTIVE").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Engine stopped").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -67,8 +73,8 @@ class DashboardScreenTest {
                 DashboardScreen()
             }
         }
-        composeRule.onNodeWithText("TODAY").assertIsDisplayed()
-        composeRule.onNodeWithText("THIS WEEK").assertIsDisplayed()
+        composeRule.onNodeWithText("TODAY").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("THIS WEEK").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -78,7 +84,8 @@ class DashboardScreenTest {
                 DashboardScreen()
             }
         }
-        composeRule.onNodeWithText("NOISE RATIO").assertIsDisplayed()
+        // NoiseRatioCard is the last element in the scroll Column — well below the fold.
+        composeRule.onNodeWithText("NOISE RATIO").performScrollTo().assertIsDisplayed()
     }
 
     // toggleProtectionOn_changesStatusToActive removed 2026-05-13: it claimed to

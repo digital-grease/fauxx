@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.fauxx.ui.screens.OnboardingScreen
 import com.fauxx.ui.theme.FauxxTheme
@@ -22,6 +23,11 @@ import org.junit.runner.RunWith
  * - Tapping Skip on every step completes the flow without selecting any field
  * - Next button advances through all steps
  * - The Done step shows the final completion step
+ *
+ * Note: [OnboardingScreen] wraps its content in a verticalScroll Column with the
+ * Skip / Next navigation Row pinned at the bottom (Arrangement.SpaceBetween). On
+ * content-heavy steps (Welcome, Interests) the navigation buttons sit below the
+ * fold, so we call performScrollTo() before asserting/clicking them.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -45,8 +51,8 @@ class OnboardingScreenTest {
                 OnboardingScreen(onFinish = {})
             }
         }
-        composeRule.onNodeWithText("Skip").assertIsDisplayed()
-        composeRule.onNodeWithText("Next").assertIsDisplayed()
+        composeRule.onNodeWithText("Skip").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Next").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -59,17 +65,17 @@ class OnboardingScreenTest {
         }
 
         // Welcome → Age Range step
-        composeRule.onNodeWithText("Skip").performClick()
+        composeRule.onNodeWithText("Skip").performScrollTo().performClick()
         // Age Range → Gender step
-        composeRule.onNodeWithText("Skip").performClick()
+        composeRule.onNodeWithText("Skip").performScrollTo().performClick()
         // Gender → Interests step
-        composeRule.onNodeWithText("Skip").performClick()
+        composeRule.onNodeWithText("Skip").performScrollTo().performClick()
         // Interests → Profession step
-        composeRule.onNodeWithText("Skip").performClick()
+        composeRule.onNodeWithText("Skip").performScrollTo().performClick()
         // Profession → Region step
-        composeRule.onNodeWithText("Skip").performClick()
+        composeRule.onNodeWithText("Skip").performScrollTo().performClick()
         // Region is last step — "Skip All" should finish
-        composeRule.onNodeWithText("Skip All").performClick()
+        composeRule.onNodeWithText("Skip All").performScrollTo().performClick()
 
         assert(finished) { "onFinish was not called after skipping all steps" }
     }
@@ -82,16 +88,16 @@ class OnboardingScreenTest {
             }
         }
 
-        // Welcome step shows FAUXX title
+        // Welcome step shows FAUXX title (top of screen, no scroll needed)
         composeRule.onNodeWithText("FAUXX").assertIsDisplayed()
 
         // Advance through all steps via Next
         repeat(5) {
-            composeRule.onNodeWithText("Next").performClick()
+            composeRule.onNodeWithText("Next").performScrollTo().performClick()
         }
 
         // On the Done step, Next becomes "Done"
-        composeRule.onNodeWithText("Done").assertIsDisplayed()
+        composeRule.onNodeWithText("Done").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -102,8 +108,8 @@ class OnboardingScreenTest {
             }
         }
         // Both buttons must be present at the same time — verified by assertIsDisplayed
-        composeRule.onNodeWithText("Skip").assertIsDisplayed()
-        composeRule.onNodeWithText("Next").assertIsDisplayed()
+        composeRule.onNodeWithText("Skip").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Next").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -117,10 +123,10 @@ class OnboardingScreenTest {
 
         // Advance to the last step via Next
         repeat(5) {
-            composeRule.onNodeWithText("Next").performClick()
+            composeRule.onNodeWithText("Next").performScrollTo().performClick()
         }
         // Click Done
-        composeRule.onNodeWithText("Done").performClick()
+        composeRule.onNodeWithText("Done").performScrollTo().performClick()
 
         assert(finished) { "onFinish was not called after completing all steps" }
     }

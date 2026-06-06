@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.fauxx.ui.screens.TargetingScreen
 import com.fauxx.ui.theme.FauxxTheme
@@ -23,6 +24,12 @@ import org.junit.runner.RunWith
  * - Tapping "Clear My Profile" shows a confirmation dialog
  * - Confirmation dialog has Cancel and Clear actions
  * - Layer labels are displayed
+ *
+ * Note: [TargetingScreen]'s root Column uses `.verticalScroll(...)`, so any element
+ * below the first card (Layer 2/3, "Rotate Now", "Clear My Profile") must be brought
+ * into the viewport with `performScrollTo()` before asserting visibility or clicking.
+ * The confirmation dialog renders in an AlertDialog overlay (outside the scroll
+ * container) so its nodes do not need scrolling.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -46,6 +53,7 @@ class TargetingScreenTest {
                 TargetingScreen()
             }
         }
+        // Title is the first element at the top of the screen — no scroll needed.
         composeRule.onNodeWithText("TARGETING ENGINE").assertIsDisplayed()
     }
 
@@ -56,9 +64,11 @@ class TargetingScreenTest {
                 TargetingScreen()
             }
         }
+        // Layer 1 card sits directly under the title (top of screen).
         composeRule.onNodeWithText("Layer 1 — Self Report").assertIsDisplayed()
-        composeRule.onNodeWithText("Layer 2 — Ad Profile Import").assertIsDisplayed()
-        composeRule.onNodeWithText("Layer 3 — Persona Rotation").assertIsDisplayed()
+        // Layers 2 and 3 are below the fold in the verticalScroll container.
+        composeRule.onNodeWithText("Layer 2 — Ad Profile Import").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Layer 3 — Persona Rotation").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -68,7 +78,8 @@ class TargetingScreenTest {
                 TargetingScreen()
             }
         }
-        composeRule.onNodeWithText("Clear My Profile").assertIsDisplayed()
+        // "Clear My Profile" is the last element in the scroll container.
+        composeRule.onNodeWithText("Clear My Profile").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -78,7 +89,8 @@ class TargetingScreenTest {
                 TargetingScreen()
             }
         }
-        composeRule.onNodeWithText("Clear My Profile").performClick()
+        composeRule.onNodeWithText("Clear My Profile").performScrollTo().performClick()
+        // Dialog is an AlertDialog overlay, not inside the scroll container.
         composeRule.onNodeWithText("Clear Profile?").assertIsDisplayed()
         composeRule.onNodeWithText("Cancel").assertIsDisplayed()
     }
@@ -90,7 +102,7 @@ class TargetingScreenTest {
                 TargetingScreen()
             }
         }
-        composeRule.onNodeWithText("Clear My Profile").performClick()
+        composeRule.onNodeWithText("Clear My Profile").performScrollTo().performClick()
         composeRule.onNodeWithText("Cancel").performClick()
         // Dialog should be dismissed — title no longer visible
         composeRule.onNodeWithText("Clear Profile?").assertDoesNotExist()
@@ -103,6 +115,7 @@ class TargetingScreenTest {
                 TargetingScreen()
             }
         }
-        composeRule.onNodeWithText("Rotate Now").assertIsDisplayed()
+        // "Rotate Now" renders under the Layer 3 card (enabled by default) — below the fold.
+        composeRule.onNodeWithText("Rotate Now").performScrollTo().assertIsDisplayed()
     }
 }

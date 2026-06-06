@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.fauxx.ui.screens.SettingsScreen
 import com.fauxx.ui.theme.FauxxTheme
@@ -17,11 +18,15 @@ import org.junit.runner.RunWith
 /**
  * Instrumented UI tests for [SettingsScreen].
  *
+ * SettingsScreen wraps its content in a verticalScroll, so any element below the
+ * fold must be scrolled into view (performScrollTo) before it can be asserted
+ * displayed or clicked.
+ *
  * Verifies:
  * - Settings title is shown
- * - Intensity buttons (LOW / MEDIUM / HIGH) are displayed
+ * - Intensity buttons (Low / Medium / High / Max) are displayed
  * - Wi-Fi Only toggle label is shown
- * - Battery Threshold slider section is shown
+ * - Battery threshold ("Pause below") section is shown
  * - Active Hours section is shown
  * - "Clear All Data" button is visible
  * - Tapping "Clear All Data" shows a confirmation dialog
@@ -59,9 +64,10 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("LOW").assertIsDisplayed()
-        composeRule.onNodeWithText("MEDIUM").assertIsDisplayed()
-        composeRule.onNodeWithText("HIGH").assertIsDisplayed()
+        composeRule.onNodeWithText("Low").assertIsDisplayed()
+        composeRule.onNodeWithText("Medium").assertIsDisplayed()
+        composeRule.onNodeWithText("High").assertIsDisplayed()
+        composeRule.onNodeWithText("Max").assertIsDisplayed()
     }
 
     @Test
@@ -71,8 +77,8 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Wi-Fi Only").assertIsDisplayed()
-        composeRule.onNodeWithText("Pause when on mobile data").assertIsDisplayed()
+        composeRule.onNodeWithText("Wi-Fi Only").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Pause when on mobile data").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -82,7 +88,7 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Battery Threshold").assertIsDisplayed()
+        composeRule.onNodeWithText("Pause below").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -92,8 +98,8 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Active Hours").assertIsDisplayed()
-        composeRule.onNodeWithText("Activity is paused outside these hours").assertIsDisplayed()
+        composeRule.onNodeWithText("Active Hours").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Activity is paused outside these hours").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -103,7 +109,7 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Clear All Data").assertIsDisplayed()
+        composeRule.onNodeWithText("Clear All Data").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -113,7 +119,8 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Clear All Data").performClick()
+        composeRule.onNodeWithText("Clear All Data").performScrollTo().performClick()
+        // Dialog content lives in an AlertDialog overlay, outside the scroll container.
         composeRule.onNodeWithText("Clear All Data?").assertIsDisplayed()
         composeRule.onNodeWithText("Cancel").assertIsDisplayed()
         composeRule.onNodeWithText("Clear Everything").assertIsDisplayed()
@@ -126,7 +133,7 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Clear All Data").performClick()
+        composeRule.onNodeWithText("Clear All Data").performScrollTo().performClick()
         composeRule.onNodeWithText("Cancel").performClick()
         // Dialog should be gone
         composeRule.onNodeWithText("Clear All Data?").assertDoesNotExist()
@@ -139,9 +146,9 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("LOW").performClick()
-        // After selecting LOW, the actions/hour label should update
-        composeRule.onNodeWithText("LOW").assertIsDisplayed()
+        composeRule.onNodeWithText("Low").performClick()
+        // After selecting Low, the actions/hour label should update
+        composeRule.onNodeWithText("Low").assertIsDisplayed()
     }
 
     @Test
@@ -151,6 +158,6 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Resume after reboot").assertIsDisplayed()
+        composeRule.onNodeWithText("Resume after reboot").performScrollTo().assertIsDisplayed()
     }
 }
