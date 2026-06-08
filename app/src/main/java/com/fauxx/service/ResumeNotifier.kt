@@ -18,7 +18,7 @@ import timber.log.Timber
  * Used by:
  * - [BootReceiver] after device reboot / app update
  * - [ResumeWorker] after the engine was voluntarily stopped during a long constraint
- *   pause (quiet hours, prolonged wifi-only/battery pause). Tapping the notification
+ *   pause (quiet hours, prolonged no-usable-network/battery pause). Tapping the notification
  *   opens [MainActivity], which reconciles state from the
  *   persisted ENABLED flag and re-starts [PhantomForegroundService] from user
  *   interaction — an always-allowed FGS-start context on Android 14+.

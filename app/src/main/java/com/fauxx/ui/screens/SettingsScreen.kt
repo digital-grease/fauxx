@@ -55,7 +55,7 @@ import com.fauxx.ui.viewmodels.SettingsViewModel
 import kotlin.math.roundToInt
 
 /**
- * Global settings screen: intensity, wifi-only, battery threshold, active hours, clear data.
+ * Global settings screen: Wi-Fi/mobile intensity tiers, battery threshold, active hours, clear data.
  */
 @Composable
 fun SettingsScreen(
@@ -207,24 +207,54 @@ fun SettingsScreen(
             )
         }
 
-        // Wi-Fi only toggle
+        // Mobile data intensity (issue #62) — replaces the old all-or-nothing Wi-Fi-only
+        // toggle: Off keeps the legacy pause-on-mobile behavior, the tiers run the engine
+        // on mobile data at a (typically lower) rate of their own.
         SettingsCard {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Text(stringResource(R.string.settings_mobile_intensity_title), style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.height(8.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column {
-                    Text(stringResource(R.string.settings_wifi_only_title), style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        stringResource(R.string.settings_wifi_only_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                // Off first, then the same tier ladder as the Wi-Fi card above.
+                (listOf<IntensityLevel?>(null) + IntensityLevel.values()).forEach { level ->
+                    Button(
+                        onClick = { viewModel.setMobileIntensity(level) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (uiState.mobileIntensity == level)
+                                MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Text(
+                            text = if (level == null) stringResource(R.string.settings_intensity_off)
+                            else stringResource(level.displayNameRes()),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (uiState.mobileIntensity == level)
+                                MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
-                Switch(
-                    checked = uiState.wifiOnly,
-                    onCheckedChange = { viewModel.setWifiOnly(it) }
+            }
+            val mobile = uiState.mobileIntensity
+            Text(
+                text = when {
+                    mobile == null -> stringResource(R.string.settings_mobile_intensity_off_description)
+                    mobile == IntensityLevel.EXTREME ->
+                        stringResource(R.string.settings_intensity_actions_per_hour_max, mobile.actionsPerHour)
+                    else -> stringResource(R.string.settings_intensity_actions_per_hour, mobile.actionsPerHour)
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if ((mobile?.actionsPerHour ?: 0) > IntensityLevel.MEDIUM.actionsPerHour) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.settings_intensity_detectability_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
                 )
             }
         }

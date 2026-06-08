@@ -7,7 +7,6 @@
     <string name="notification_channel_desc">Notifications for Fauxx background browsing diversification</string>
     <string name="notification_title">Fauxx</string>
     <string name="notification_active">Generating diverse browsing activity — %d actions today</string>
-    <string name="notification_paused_wifi">Paused — waiting for WiFi</string>
     <string name="notification_paused_battery">Paused — battery low</string>
     <string name="notification_paused_rate_limit">Paused — hourly limit reached</string>
     <string name="notification_stopped">Stopped</string>
@@ -255,7 +254,7 @@
     <string name="help_menu_help">Help</string>
     <string name="help_menu_contact">Contact us</string>
     <string name="faq_q1_question">Why does Fauxx sometimes stop and show a “Tap to resume protection” notification?</string>
-    <string name="faq_q1_answer">Fauxx voluntarily pauses the engine when one of your configured constraints kicks in:\n\n• Quiet hours: if you have an active-hours window set (default 7am–11pm), Fauxx stops at the end of the window and posts a one-tap notification scheduled for the next start time.\n• WiFi only: if you have “WiFi only” enabled in Settings and lose WiFi for more than 30 minutes, Fauxx releases the foreground-service slot rather than spin idle.\n• Battery threshold: if your battery is below the configured threshold and the device isn\'t charging, Fauxx pauses until the situation changes.\n\nTapping the notification opens Fauxx and restarts protection. Nothing is lost — your settings, profile, persona, and action log are persistent across pauses.\n\nIf you\'re seeing the engine stop outside of these configured constraints, please file an issue from Settings (“File a GitHub issue”) — that\'s a bug, not by design.</string>
+    <string name="faq_q1_answer">Fauxx voluntarily pauses the engine when one of your configured constraints kicks in:\n\n• Quiet hours: if you have an active-hours window set (default 7am–11pm), Fauxx stops at the end of the window and posts a one-tap notification scheduled for the next start time.\n• Network: if your mobile data intensity is set to Off in Settings and Wi-Fi is gone for more than 30 minutes, Fauxx releases the foreground-service slot rather than spin idle.\n• Battery threshold: if your battery is below the configured threshold and the device isn\'t charging, Fauxx pauses until the situation changes.\n\nTapping the notification opens Fauxx and restarts protection. Nothing is lost — your settings, profile, persona, and action log are persistent across pauses.\n\nIf you\'re seeing the engine stop outside of these configured constraints, please file an issue from Settings (“File a GitHub issue”) — that\'s a bug, not by design.</string>
     <string name="faq_q4_question">What does “Noise Ratio” on the Dashboard mean?</string>
     <string name="faq_q4_answer">It\'s a throughput indicator: actions today divided by 500, capped at 100%. 500 actions in a day reads as a saturated 100%.\n\nIt does NOT measure the quality of the noise — whether the synthetic activity is hitting off-profile categories, fooling profiling systems, or covering a diverse range of topics. It\'s just a rate gauge.\n\nFor a view of where the noise is actually going, check the Targeting screen\'s category-weight chart. Red bars are categories Fauxx is suppressing (because they match your real profile), green bars are categories it\'s boosting, gray is neutral.</string>
     <string name="faq_q5_question">How does Layer 2 (Ad Profile Import) work, and where do I get the export file?</string>
@@ -299,7 +298,7 @@
 
     <!-- Settings screen -->
     <string name="settings_title">SETTINGS</string>
-    <string name="settings_intensity_title">Intensity</string>
+    <string name="settings_intensity_title">Wi-Fi intensity</string>
     <string name="settings_intensity_actions_per_hour">%d actions/hour</string>
     <string name="settings_intensity_actions_per_hour_max">up to ~%d actions/hour</string>
     <string name="settings_intensity_detectability_warning">Higher volume shortens the pause between unrelated topics, which can make this activity easier for trackers to tell apart from real browsing.</string>
@@ -307,8 +306,9 @@
     <string name="settings_theme_system_subtitle">Follows your device theme</string>
     <string name="settings_theme_light_subtitle">Always light</string>
     <string name="settings_theme_dark_subtitle">Always dark</string>
-    <string name="settings_wifi_only_title">Wi-Fi Only</string>
-    <string name="settings_wifi_only_description">Pause when on mobile data</string>
+    <string name="settings_mobile_intensity_title">Mobile data intensity</string>
+    <string name="settings_intensity_off">Off</string>
+    <string name="settings_mobile_intensity_off_description">Paused on mobile data</string>
     <string name="settings_resume_on_boot_title">Resume after reboot</string>
     <string name="settings_resume_on_boot_description">After a reboot, show a notification to resume protection. Android blocks apps from silently starting themselves in the background, so a tap is required.</string>
     <string name="settings_battery_threshold_title">Pause below</string>
@@ -398,7 +398,7 @@
     <string name="dashboard_warning_battery_optimized">Android battery optimization is restricting Fauxx. Background activity will pause when the screen is off. Allow unrestricted background usage to keep the engine running.</string>
     <string name="dashboard_warning_action_allow">Allow</string>
     <string name="dashboard_engine_state_active">Generating synthetic activity</string>
-    <string name="dashboard_engine_state_paused_wifi">Wi-Fi only mode — waiting for Wi-Fi</string>
+    <string name="dashboard_engine_state_paused_wifi">Paused — waiting for a usable network</string>
     <string name="dashboard_engine_state_paused_battery">Battery below threshold</string>
     <string name="dashboard_engine_state_paused_rate_limit">Hourly rate limit reached</string>
     <string name="dashboard_engine_state_paused_quiet_hours">Outside active hours</string>

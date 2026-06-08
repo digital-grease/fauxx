@@ -11,7 +11,6 @@
     <string name="notification_channel_desc">Notificaciones sobre la diversificación de navegación en segundo plano de Fauxx</string>
     <string name="notification_title">Fauxx</string>
     <string name="notification_active">Generando actividad de navegación variada — %d acciones hoy</string>
-    <string name="notification_paused_wifi">En pausa — esperando WiFi</string>
     <string name="notification_paused_battery">En pausa — batería baja</string>
     <string name="notification_paused_rate_limit">En pausa — límite por hora alcanzado</string>
     <string name="notification_stopped">Detenido</string>
@@ -258,7 +257,7 @@
     <string name="help_menu_help">Ayuda</string>
     <string name="help_menu_contact">Contáctanos</string>
     <string name="faq_q1_question">¿Por qué Fauxx a veces se detiene y muestra una notificación de “Toca para reanudar la protección”?</string>
-    <string name="faq_q1_answer">Android 14 y versiones posteriores limitan a 6 horas acumuladas cada 24 horas el tipo de servicio en segundo plano que usa Fauxx mientras la app está en segundo plano. Para mantenerse con seguridad por debajo de ese límite, Fauxx se detiene voluntariamente un poco antes y muestra una notificación que puedes tocar para reanudar la protección cuando vuelvas a usar el teléfono.\n\nNormalmente verás esta notificación:\n\n• Por la mañana si tienes configurado un horario de descanso (por defecto, 7:00–23:00). En lugar de consumir el presupuesto diario quedándose inactivo durante la noche, Fauxx se detiene a las 23:00 y reaparece a las 7:00 con una notificación para reanudar.\n• Tras unas 5 horas de funcionamiento continuo en segundo plano. Fauxx se detiene a las 5 h, dejando 1 h de margen de seguridad por debajo del límite del sistema.\n• Tras una pausa prolongada sin WiFi si tienes activado “Solo WiFi”. Las pausas de más de 30 minutos liberan el intervalo en vez de quedarse inactivas.\n\nAl tocar la notificación se abre Fauxx y se reanuda la protección. No se pierde nada: tus ajustes, perfil, persona y registro de acciones se conservan.\n\nEsto afecta específicamente a la compilación de F-Droid o instalación manual. La compilación de Play Store usa un tipo de servicio en primer plano distinto que no tiene el límite de 6 horas; por lo demás, el comportamiento es idéntico.</string>
+    <string name="faq_q1_answer">Android 14 y versiones posteriores limitan a 6 horas acumuladas cada 24 horas el tipo de servicio en segundo plano que usa Fauxx mientras la app está en segundo plano. Para mantenerse con seguridad por debajo de ese límite, Fauxx se detiene voluntariamente un poco antes y muestra una notificación que puedes tocar para reanudar la protección cuando vuelvas a usar el teléfono.\n\nNormalmente verás esta notificación:\n\n• Por la mañana si tienes configurado un horario de descanso (por defecto, 7:00–23:00). En lugar de consumir el presupuesto diario quedándose inactivo durante la noche, Fauxx se detiene a las 23:00 y reaparece a las 7:00 con una notificación para reanudar.\n• Tras unas 5 horas de funcionamiento continuo en segundo plano. Fauxx se detiene a las 5 h, dejando 1 h de margen de seguridad por debajo del límite del sistema.\n• Tras una pausa prolongada sin WiFi si la intensidad con datos móviles está en «Desactivado». Las pausas de más de 30 minutos liberan el intervalo en vez de quedarse inactivas.\n\nAl tocar la notificación se abre Fauxx y se reanuda la protección. No se pierde nada: tus ajustes, perfil, persona y registro de acciones se conservan.\n\nEsto afecta específicamente a la compilación de F-Droid o instalación manual. La compilación de Play Store usa un tipo de servicio en primer plano distinto que no tiene el límite de 6 horas; por lo demás, el comportamiento es idéntico.</string>
     <string name="faq_q4_question">¿Qué significa la “Proporción de ruido” del panel?</string>
     <string name="faq_q4_answer">Es un indicador de volumen: acciones de hoy divididas entre 500, con un máximo del 100%%. 500 acciones en un día se muestran como un 100%% saturado.\n\nNO mide la calidad del ruido: si la actividad sintética está apuntando a categorías fuera de tu perfil, si engaña a los sistemas de perfilado o si cubre una variedad amplia de temas. Es solo un medidor de ritmo.\n\nPara ver hacia dónde va realmente el ruido, mira el gráfico de pesos por categoría en la pantalla de Segmentación. Las barras rojas son las categorías que Fauxx está suprimiendo (porque coinciden con tu perfil real), las verdes son las que está potenciando y las grises son neutrales.</string>
     <string name="faq_q5_question">¿Cómo funciona la Capa 2 (Importación de perfil publicitario) y de dónde obtengo el archivo de exportación?</string>
@@ -301,7 +300,7 @@
 
     <!-- Settings screen — LLM-DRAFTED 2026-05-16, PENDING NATIVE-SPEAKER REVIEW -->
     <string name="settings_title">AJUSTES</string>
-    <string name="settings_intensity_title">Intensidad</string>
+    <string name="settings_intensity_title">Intensidad con Wi-Fi</string>
     <string name="settings_intensity_actions_per_hour">%d acciones/hora</string>
     <string name="settings_intensity_actions_per_hour_max">hasta ~%d acciones/hora</string>
     <string name="settings_intensity_detectability_warning">Un volumen más alto acorta la pausa entre temas no relacionados, lo que puede facilitar que los rastreadores distingan esta actividad de la navegación real.</string>
@@ -309,8 +308,9 @@
     <string name="settings_theme_system_subtitle">Sigue el tema del dispositivo</string>
     <string name="settings_theme_light_subtitle">Siempre claro</string>
     <string name="settings_theme_dark_subtitle">Siempre oscuro</string>
-    <string name="settings_wifi_only_title">Solo Wi-Fi</string>
-    <string name="settings_wifi_only_description">Pausar con datos móviles</string>
+    <string name="settings_mobile_intensity_title">Intensidad con datos móviles</string>
+    <string name="settings_intensity_off">Desactivado</string>
+    <string name="settings_mobile_intensity_off_description">En pausa con datos móviles</string>
     <string name="settings_resume_on_boot_title">Reanudar tras reiniciar</string>
     <string name="settings_resume_on_boot_description">Tras reiniciar el dispositivo, mostrar una notificación para reanudar la protección. Android impide que las apps se inicien solas en segundo plano, así que es necesario un toque.</string>
     <string name="settings_battery_threshold_title">Pausar por debajo de</string>
@@ -400,7 +400,7 @@
     <string name="dashboard_warning_battery_optimized">La optimización de batería de Android está restringiendo Fauxx. La actividad en segundo plano se pausará cuando la pantalla esté apagada. Permite el uso sin restricciones en segundo plano para que el motor siga funcionando.</string>
     <string name="dashboard_warning_action_allow">Permitir</string>
     <string name="dashboard_engine_state_active">Generando actividad sintética</string>
-    <string name="dashboard_engine_state_paused_wifi">Modo solo Wi-Fi — esperando Wi-Fi</string>
+    <string name="dashboard_engine_state_paused_wifi">En pausa — esperando una red utilizable</string>
     <string name="dashboard_engine_state_paused_battery">Batería por debajo del umbral</string>
     <string name="dashboard_engine_state_paused_rate_limit">Límite horario alcanzado</string>
     <string name="dashboard_engine_state_paused_quiet_hours">Fuera de las horas activas</string>

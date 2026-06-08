@@ -6,8 +6,12 @@ import com.fauxx.ui.theme.ThemeMode
  * Runtime configuration for the Fauxx poison engine. Persisted via Jetpack DataStore.
  *
  * @property enabled Whether the engine is actively running.
- * @property intensity Action rate setting.
- * @property wifiOnly Only execute actions when connected to Wi-Fi.
+ * @property intensity Action rate while on Wi-Fi (or other unmetered transports like ethernet).
+ * @property mobileIntensity Action rate while on mobile data, or null to pause on mobile
+ *   (the legacy "Wi-Fi only" behavior, and still the default). Issue #62: lets users run
+ *   e.g. HIGH on Wi-Fi but LOW on mobile instead of the old all-or-nothing toggle. The
+ *   legacy `wifi_only` preference key migrates lazily: true → null, false → mirror
+ *   [intensity] (see PoisonProfileRepository.prefsToProfile).
  * @property batteryThreshold Pause when battery level drops below this percentage (0-100).
  * @property ignoreBatteryThresholdWhileCharging When true, [batteryThreshold] is bypassed while
  *   the device is plugged in — the engine keeps running even at low charge as long as it's
@@ -39,7 +43,7 @@ import com.fauxx.ui.theme.ThemeMode
 data class PoisonProfile(
     val enabled: Boolean = false,
     val intensity: IntensityLevel = IntensityLevel.MEDIUM,
-    val wifiOnly: Boolean = true,
+    val mobileIntensity: IntensityLevel? = null,
     val batteryThreshold: Int = 20,
     val ignoreBatteryThresholdWhileCharging: Boolean = false,
     val allowedHoursStart: Int = 7,

@@ -208,8 +208,8 @@ Scrollable audit log of all actions with timestamps, types, and details. Export 
 ### Settings
 
 Global controls:
-- **Intensity:** Low (light noise) / Medium (balanced) / High (aggressive)
-- **Wifi-only:** Only run poison actions on WiFi
+- **Wi-Fi intensity:** Low (light noise) / Medium (balanced) / High (aggressive) / Max (highest volume)
+- **Mobile data intensity:** a separate Off / Low / Medium / High / Max ladder for mobile data — Off (the default) never touches mobile data; any tier runs the engine on mobile at its own rate
 - **Battery threshold:** Minimum battery % to run actions
 - **Active hours:** Time range when actions should run (e.g., 7am–11pm)
 - **Clear all data:** Destructive button to reset everything
@@ -354,7 +354,7 @@ When Fauxx pauses for a long stretch, it releases its foreground service rather 
 You'll typically see this notification:
 
 - **In the morning,** if you have quiet hours configured (default 7am to 11pm). Rather than spin idle overnight, Fauxx steps down at the start of quiet hours and reappears as a tap-to-resume at the start of your next active window.
-- **After a long no-WiFi pause,** if you have "WiFi only" enabled, or after a long low-battery pause. Sustained pauses past 30 minutes release the service rather than spinning idle.
+- **After a long no-network pause,** if your mobile data intensity is Off and Wi-Fi is gone, or after a long low-battery pause. Sustained pauses past 30 minutes release the service rather than spinning idle.
 - **After a reboot or an app update,** because Android won't let Fauxx restart its own foreground service from a boot or update event. Fauxx posts the resume notification instead.
 
 Tapping the notification opens Fauxx and restarts protection. Nothing is lost. Your settings, profile, persona, and action log are all persistent. This behavior is identical on the Play Store and F-Droid builds.

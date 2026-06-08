@@ -218,7 +218,11 @@ fun DashboardScreen(
                 }
                 viewModel.toggleEngine(enabled)
             },
-            onUseMobileData = { viewModel.setWifiOnly(false) }
+            onUseMobileData = { viewModel.enableMobileData() },
+            // The one-tap escape hatch only helps when the pause is caused by mobile
+            // being Off; with a tier already set, PAUSED_WIFI means "no network at all"
+            // and the button could only downgrade the user's chosen tier (issue #62).
+            showUseMobileData = uiState.mobileIntensity == null
         )
 
         // Action counters
@@ -254,7 +258,8 @@ private fun ProtectionCard(
     enabled: Boolean,
     engineState: EngineState,
     onToggle: (Boolean) -> Unit,
-    onUseMobileData: () -> Unit
+    onUseMobileData: () -> Unit,
+    showUseMobileData: Boolean
 ) {
     val isPaused = enabled && engineState != EngineState.ACTIVE && engineState != EngineState.STOPPED
 
@@ -303,9 +308,10 @@ private fun ProtectionCard(
                 }
                 Switch(checked = enabled, onCheckedChange = onToggle)
             }
-            // One-tap "opt into mobile data" for users who didn't realise Wi-Fi-only
-            // was a setting they could toggle (issue #38).
-            if (engineState == EngineState.PAUSED_WIFI) {
+            // One-tap "opt into mobile data" for users who didn't realise the mobile-data
+            // tier was a setting they could change (issue #38; tier ladder since #62).
+            // Only shown when mobile is actually Off — see the call site.
+            if (engineState == EngineState.PAUSED_WIFI && showUseMobileData) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = onUseMobileData,

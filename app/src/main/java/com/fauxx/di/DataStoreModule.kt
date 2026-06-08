@@ -24,7 +24,15 @@ object PreferenceKeys {
     // Engine state
     val ENABLED = booleanPreferencesKey("enabled")
     val INTENSITY = stringPreferencesKey("intensity")
+
+    // Legacy (pre-0.3.2) on/off mobile toggle. Superseded by MOBILE_INTENSITY (issue #62) but
+    // still READ for lazy migration and still WRITTEN (derived) so a downgrade to an older
+    // build keeps a sane setting. Never delete the key.
     val WIFI_ONLY = booleanPreferencesKey("wifi_only")
+
+    // IntensityLevel name while on mobile data, or the literal "OFF" sentinel for "pause on
+    // mobile". Absent = legacy profile, derive from WIFI_ONLY (issue #62).
+    val MOBILE_INTENSITY = stringPreferencesKey("mobile_intensity")
     val BATTERY_THRESHOLD = intPreferencesKey("battery_threshold")
     val IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING = booleanPreferencesKey("ignore_battery_threshold_while_charging")
     val ALLOWED_HOURS_START = intPreferencesKey("allowed_hours_start")

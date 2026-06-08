@@ -29,6 +29,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -66,7 +67,9 @@ class PoisonEngineLoopTest {
     private val baseProfile = PoisonProfile(
         enabled = true,
         intensity = IntensityLevel.LOW,
-        wifiOnly = false,
+        // The relaxed ConnectivityManager mock classifies as CELLULAR (no transport bits
+        // set), so engine tests must allow mobile for the loop to dispatch (issue #62).
+        mobileIntensity = IntensityLevel.LOW,
         batteryThreshold = 0,
         allowedHoursStart = 7,
         allowedHoursEnd = 23,
@@ -115,7 +118,9 @@ class PoisonEngineLoopTest {
     fun `runLoop continues looping during a brief wifi pause and only resigns after 30 minutes`() = runTest {
         val clock = FakeClock(noonEpochMs())
         val dispatcher = StandardTestDispatcher(testScheduler)
-        val wifiProfile = baseProfile.copy(wifiOnly = true)
+        // mobileIntensity null + CELLULAR transport (relaxed CM mock) = paused waiting for
+        // Wi-Fi, the same situation the old wifiOnly=true flag produced (issue #62).
+        val wifiProfile = baseProfile.copy(mobileIntensity = null)
         engine = buildEngine(clock, profile = wifiProfile, loopDispatcher = dispatcher)
 
         var resignedWith: ResumeSpec? = null
@@ -186,6 +191,48 @@ class PoisonEngineLoopTest {
         // its async cleanup coroutine — a foreign-scope task left pending at body end
         // would make the post-body drain advance virtual time forever, because an
         // always-on engine never goes idle.
+        engine.destroy()
+        testScheduler.advanceTimeBy(5_000)
+        testScheduler.runCurrent()
+    }
+
+    @Test
+    fun `runLoop schedules at the mobile rate when on cellular`() = runTest {
+        // Issue #62 end-to-end: Wi-Fi tier HIGH (200/hr), mobile tier LOW (12/hr). The
+        // relaxed ConnectivityManager mock classifies the transport as CELLULAR, so every
+        // scheduling call must use the MOBILE rate — the core promise of the feature.
+        val clock = FakeClock(noonEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val schedulerMock: PoissonScheduler = mockk {
+            every { nextDelayMs(any(), any(), any(), any(), any()) } returns 1000L
+        }
+        engine = buildEngine(
+            clock,
+            profile = baseProfile.copy(
+                intensity = IntensityLevel.HIGH,
+                mobileIntensity = IntensityLevel.LOW
+            ),
+            loopDispatcher = dispatcher,
+            scheduler = schedulerMock
+        )
+        engine.start()
+
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 30_000)
+
+        verify(atLeast = 1) {
+            schedulerMock.nextDelayMs(
+                actionsPerHour = IntensityLevel.LOW.actionsPerHour,
+                prev = any(), next = any(), allowedStart = any(), allowedEnd = any()
+            )
+        }
+        verify(exactly = 0) {
+            schedulerMock.nextDelayMs(
+                actionsPerHour = IntensityLevel.HIGH.actionsPerHour,
+                prev = any(), next = any(), allowedStart = any(), allowedEnd = any()
+            )
+        }
+
+        // Same drain as the always-on test: this engine never resigns on its own.
         engine.destroy()
         testScheduler.advanceTimeBy(5_000)
         testScheduler.runCurrent()

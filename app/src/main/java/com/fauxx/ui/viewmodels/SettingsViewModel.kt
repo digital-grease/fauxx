@@ -27,7 +27,8 @@ import javax.inject.Inject
 
 data class SettingsUiState(
     val intensity: IntensityLevel = IntensityLevel.MEDIUM,
-    val wifiOnly: Boolean = true,
+    /** Action rate on mobile data; null = paused on mobile (issue #62). */
+    val mobileIntensity: IntensityLevel? = null,
     val batteryThreshold: Int = 20,
     val ignoreBatteryThresholdWhileCharging: Boolean = false,
     val allowedHoursStart: Int = 7,
@@ -85,7 +86,8 @@ class SettingsViewModel @Inject constructor(
         )
 
     fun setIntensity(level: IntensityLevel) { update { it.copy(intensity = level) } }
-    fun setWifiOnly(v: Boolean) { update { it.copy(wifiOnly = v) } }
+    /** Null pauses on mobile data — the legacy "Wi-Fi only" behavior (issue #62). */
+    fun setMobileIntensity(level: IntensityLevel?) { update { it.copy(mobileIntensity = level) } }
     fun setBatteryThreshold(v: Int) { update { it.copy(batteryThreshold = v) } }
     fun setIgnoreBatteryThresholdWhileCharging(v: Boolean) {
         update { it.copy(ignoreBatteryThresholdWhileCharging = v) }
@@ -147,7 +149,7 @@ class SettingsViewModel @Inject constructor(
             profileRepo.updateProfile { current ->
                 current.copy(
                     intensity = new.intensity,
-                    wifiOnly = new.wifiOnly,
+                    mobileIntensity = new.mobileIntensity,
                     batteryThreshold = new.batteryThreshold,
                     ignoreBatteryThresholdWhileCharging = new.ignoreBatteryThresholdWhileCharging,
                     allowedHoursStart = new.allowedHoursStart,
@@ -167,7 +169,7 @@ class SettingsViewModel @Inject constructor(
         val p = profileRepo.getProfile()
         return SettingsUiState(
             intensity = p.intensity,
-            wifiOnly = p.wifiOnly,
+            mobileIntensity = p.mobileIntensity,
             batteryThreshold = p.batteryThreshold,
             ignoreBatteryThresholdWhileCharging = p.ignoreBatteryThresholdWhileCharging,
             allowedHoursStart = p.allowedHoursStart,

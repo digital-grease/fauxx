@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fauxx.data.db.ActionLogDao
+import com.fauxx.data.model.IntensityLevel
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
@@ -45,7 +46,10 @@ data class DashboardUiState(
     val categoryDistribution: Map<CategoryPool, Float> = emptyMap(),
     val currentPersona: SyntheticPersona? = null,
     val estimatedNoiseRatio: Float = 0f,
-    val healthWarnings: List<String> = emptyList()
+    val healthWarnings: List<String> = emptyList(),
+    /** Mobile-data tier (issue #62); gates the "use mobile data" one-tap action — the
+     *  button only helps when this is null (mobile off), not when there's no network. */
+    val mobileIntensity: IntensityLevel? = null
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -86,7 +90,8 @@ class DashboardViewModel @Inject constructor(
         targetingEngine.getWeights(),
         personaLayer.currentPersona,
         poisonEngine.healthWarnings,
-        poisonEngine.engineState
+        poisonEngine.engineState,
+        profileRepo.profiles
     ) { flows ->
         @Suppress("UNCHECKED_CAST")
         val enabled = flows[0] as Boolean
@@ -98,6 +103,7 @@ class DashboardViewModel @Inject constructor(
         @Suppress("UNCHECKED_CAST")
         val warnings = flows[5] as List<String>
         val state = flows[6] as EngineState
+        val profile = flows[7] as PoisonProfile
         DashboardUiState(
             engineEnabled = enabled,
             engineState = state,
@@ -106,7 +112,8 @@ class DashboardViewModel @Inject constructor(
             categoryDistribution = weights,
             currentPersona = persona,
             estimatedNoiseRatio = computeNoiseRatio(today),
-            healthWarnings = warnings
+            healthWarnings = warnings,
+            mobileIntensity = profile.mobileIntensity
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
@@ -142,14 +149,18 @@ class DashboardViewModel @Inject constructor(
     }
 
     /**
-     * Toggle the wifi-only constraint. Exposed on the Dashboard so a user who sees
-     * the engine paused on "Wi-Fi only mode" can opt into mobile data with one tap
-     * — the Settings toggle is the same action, but discoverability there is poor
-     * (see issue #38).
+     * One-tap opt-in to mobile data, exposed on the Dashboard for a user who sees the
+     * engine paused waiting for a network — the Settings control is the same action, but
+     * discoverability there is poor (see issue #38). Sets the mobile tier to LOW (issue
+     * #62 replaced the old wifi-only toggle with a per-network rate): conservative on
+     * data, and adjustable upward in Settings.
      */
-    fun setWifiOnly(value: Boolean) {
+    fun enableMobileData() {
         viewModelScope.launch {
-            profileRepo.saveProfile(profileRepo.getProfile().copy(wifiOnly = value))
+            // Never clobber an already-configured tier: the button is only SHOWN when the
+            // tier is null, but a stale tap (state changed under the user's finger) must
+            // not downgrade a deliberate HIGH/EXTREME mobile choice to LOW.
+            profileRepo.updateProfile { it.copy(mobileIntensity = it.mobileIntensity ?: IntensityLevel.LOW) }
         }
     }
 

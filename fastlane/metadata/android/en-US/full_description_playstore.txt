@@ -30,9 +30,9 @@ PRIVACY FIRST
 
 BATTERY & DATA CONSCIOUS
 
-• WiFi-only mode to avoid mobile data usage
+• Separate Wi-Fi and mobile data intensity controls — keep mobile data off entirely, or cap it at a lower rate
 • Configurable battery threshold — pauses automatically when battery is low
-• Adjustable intensity (Low / Medium / High)
+• Adjustable intensity (Low / Medium / High / Max)
 • Active hours scheduling — runs only when you want it to
 
 Fauxx is free, open-source, and contains no ads. Your privacy is not for sale.

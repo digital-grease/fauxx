@@ -20,7 +20,6 @@
     <string name="notification_channel_desc">Уведомления о фоновой диверсификации активности в браузере Fauxx</string>
     <string name="notification_title">Fauxx</string>
     <string name="notification_active">Генерируется разнообразная активность — действий сегодня: %d</string>
-    <string name="notification_paused_wifi">Пауза — ожидание Wi-Fi</string>
     <string name="notification_paused_battery">Пауза — низкий заряд батареи</string>
     <string name="notification_paused_rate_limit">Пауза — достигнут лимит действий в час</string>
     <string name="notification_stopped">Остановлено</string>
@@ -149,9 +148,11 @@
 
     <!-- Settings screen -->
     <string name="settings_title">НАСТРОЙКИ</string>
-    <string name="settings_intensity_title">Интенсивность</string>
+    <string name="settings_intensity_title">Интенсивность по Wi-Fi</string>
     <string name="settings_theme_title">Тема</string>
-    <string name="settings_wifi_only_title">Только Wi-Fi</string>
+    <string name="settings_mobile_intensity_title">Интенсивность на мобильных данных</string>
+    <string name="settings_intensity_off">Выкл.</string>
+    <string name="settings_mobile_intensity_off_description">Приостановлено на мобильных данных</string>
     <string name="settings_active_hours_title">Активные часы</string>
     <string name="settings_clear_dialog_title">Удалить все данные?</string>
     <string name="settings_clear_dialog_body">Это навсегда удалит:\n• Все журналы действий\n• Твой демографический профиль\n• Кэш профилей рекламных платформ\n• Историю генерации персон\n\nВсе настройки будут сброшены. Движок остановится и вернётся к Layer 0 (равномерный шум).\n\nЭто действие нельзя отменить.</string>
@@ -339,7 +340,7 @@
     <string name="faq_back">Назад</string>
     <string name="help_menu_faq">FAQ</string>
     <string name="faq_q1_question">Почему Fauxx иногда останавливается и показывает уведомление «Нажми, чтобы возобновить защиту»?</string>
-    <string name="faq_q1_answer">Fauxx добровольно ставит движок на паузу, когда срабатывает одно из настроенных ограничений:\n\n• Тихие часы: если задано окно активных часов (по умолчанию 7:00–23:00), Fauxx останавливается в конце окна и публикует уведомление в один клик, запланированное на ближайшее время старта.\n• Только Wi-Fi: если в Настройках включено «Только Wi-Fi» и Wi-Fi пропал более чем на 30 минут, Fauxx освобождает слот foreground-сервиса, а не работает вхолостую.\n• Порог батареи: если заряд ниже настроенного порога и устройство не заряжается, Fauxx стоит на паузе до изменения ситуации.\n\nКасание уведомления открывает Fauxx и перезапускает защиту. Ничего не теряется — настройки, профиль, персона и журнал действий сохраняются между паузами.\n\nЕсли движок останавливается вне этих ограничений, открой issue из Настроек («Открыть issue на GitHub») — это баг, а не штатное поведение.</string>
+    <string name="faq_q1_answer">Fauxx добровольно ставит движок на паузу, когда срабатывает одно из настроенных ограничений:\n\n• Тихие часы: если задано окно активных часов (по умолчанию 7:00–23:00), Fauxx останавливается в конце окна и публикует уведомление в один клик, запланированное на ближайшее время старта.\n• Сеть: если интенсивность на мобильных данных в Настройках установлена в «Выкл.» и Wi-Fi пропал более чем на 30 минут, Fauxx освобождает слот foreground-сервиса, а не работает вхолостую.\n• Порог батареи: если заряд ниже настроенного порога и устройство не заряжается, Fauxx стоит на паузе до изменения ситуации.\n\nКасание уведомления открывает Fauxx и перезапускает защиту. Ничего не теряется — настройки, профиль, персона и журнал действий сохраняются между паузами.\n\nЕсли движок останавливается вне этих ограничений, открой issue из Настроек («Открыть issue на GitHub») — это баг, а не штатное поведение.</string>
     <string name="faq_q4_question">Что означает «Коэффициент шума» на Панели?</string>
     <string name="faq_q4_answer">Это индикатор пропускной способности: действия за сегодня поделены на 500, с максимумом в 100%%. 500 действий за день дают полную загрузку 100%%.\n\nОн НЕ измеряет качество шума — попадает ли синтетическая активность в категории вне твоего профиля, обманывает ли системы профилирования и охватывает ли разнообразные темы. Это просто датчик частоты.\n\nЧтобы увидеть, куда на самом деле уходит шум, посмотри график весов по категориям на экране Таргетинга. Красные полосы — категории, которые Fauxx подавляет (потому что они совпадают с твоим реальным профилем), зелёные — которые усиливает, серые — нейтральные.</string>
     <string name="faq_q5_question">Как работает Слой 2 (Импорт рекламного профиля) и где взять файл экспорта?</string>
@@ -373,7 +374,6 @@
     <string name="settings_theme_system_subtitle">Следует теме устройства</string>
     <string name="settings_theme_light_subtitle">Всегда светлая</string>
     <string name="settings_theme_dark_subtitle">Всегда тёмная</string>
-    <string name="settings_wifi_only_description">Пауза при использовании мобильных данных</string>
     <string name="settings_resume_on_boot_title">Возобновлять после перезагрузки</string>
     <string name="settings_resume_on_boot_description">После перезагрузки показать уведомление для возобновления защиты. Android запрещает приложениям молча запускаться в фоне, так что нужно касание.</string>
     <string name="settings_battery_threshold_title">Пауза при заряде ниже</string>
@@ -425,7 +425,7 @@
     <string name="dashboard_warning_battery_optimized">Оптимизация батареи Android ограничивает Fauxx. Фоновая активность будет на паузе, когда экран выключен. Разреши неограниченное фоновое использование, чтобы движок продолжал работу.</string>
     <string name="dashboard_warning_action_allow">Разрешить</string>
     <string name="dashboard_engine_state_active">Генерирует синтетическую активность</string>
-    <string name="dashboard_engine_state_paused_wifi">Режим «только Wi-Fi» — ожидание Wi-Fi</string>
+    <string name="dashboard_engine_state_paused_wifi">Пауза — ожидание подходящей сети</string>
     <string name="dashboard_engine_state_paused_battery">Батарея ниже порога</string>
     <string name="dashboard_engine_state_paused_rate_limit">Достигнут часовой лимит</string>
     <string name="dashboard_engine_state_paused_quiet_hours">Вне активных часов</string>

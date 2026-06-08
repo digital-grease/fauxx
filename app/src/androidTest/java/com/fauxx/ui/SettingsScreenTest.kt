@@ -2,6 +2,7 @@ package com.fauxx.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -25,7 +26,7 @@ import org.junit.runner.RunWith
  * Verifies:
  * - Settings title is shown
  * - Intensity buttons (Low / Medium / High / Max) are displayed
- * - Wi-Fi Only toggle label is shown
+ * - Mobile data intensity section (issue #62) is shown with its Off tier
  * - Battery threshold ("Pause below") section is shown
  * - Active Hours section is shown
  * - "Clear All Data" button is visible
@@ -64,21 +65,26 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Low").assertIsDisplayed()
-        composeRule.onNodeWithText("Medium").assertIsDisplayed()
-        composeRule.onNodeWithText("High").assertIsDisplayed()
-        composeRule.onNodeWithText("Max").assertIsDisplayed()
+        // Each tier label appears twice since issue #62 (Wi-Fi row + mobile data row);
+        // index 0 is the Wi-Fi card at the top of the screen.
+        composeRule.onAllNodesWithText("Low")[0].assertIsDisplayed()
+        composeRule.onAllNodesWithText("Medium")[0].assertIsDisplayed()
+        composeRule.onAllNodesWithText("High")[0].assertIsDisplayed()
+        composeRule.onAllNodesWithText("Max")[0].assertIsDisplayed()
     }
 
     @Test
-    fun wifiOnlyToggle_isDisplayed() {
+    fun mobileIntensitySection_isDisplayed() {
+        // Issue #62: the old Wi-Fi Only switch is now a tier row with an Off option.
         composeRule.setContent {
             FauxxTheme {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Wi-Fi Only").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Pause when on mobile data").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Mobile data intensity").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Off").performScrollTo().assertIsDisplayed()
+        // Fresh profile defaults to Off, whose caption explains the pause behavior.
+        composeRule.onNodeWithText("Paused on mobile data").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -146,9 +152,10 @@ class SettingsScreenTest {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Low").performClick()
+        // Index 0 = the Wi-Fi intensity row (the mobile row reuses the tier labels).
+        composeRule.onAllNodesWithText("Low")[0].performClick()
         // After selecting Low, the actions/hour label should update
-        composeRule.onNodeWithText("Low").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Low")[0].assertIsDisplayed()
     }
 
     @Test

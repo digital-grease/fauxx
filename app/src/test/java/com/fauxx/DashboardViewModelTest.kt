@@ -49,6 +49,9 @@ class DashboardViewModelTest {
     private val context: Context = mockk(relaxed = true)
     private val profileRepo: PoisonProfileRepository = mockk(relaxed = true) {
         every { getProfile() } returns PoisonProfile()
+        // Must actually emit: a relaxed-mock Flow never emits, and combine() in uiState
+        // only produces values once ALL source flows have emitted (issue #62 added this).
+        every { profiles } returns MutableStateFlow(PoisonProfile())
     }
     private val poisonEngine: PoisonEngine = mockk(relaxed = true) {
         every { healthWarnings } returns MutableStateFlow(emptyList())

@@ -20,6 +20,7 @@ import com.fauxx.data.crawllist.CrawlListManager
 import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.location.CityDatabase
+import com.fauxx.data.model.IntensityLevel
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.QueryBankManager
@@ -47,6 +48,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -63,7 +65,9 @@ import kotlin.random.Random
 enum class EngineState {
     /** Actively dispatching noise actions. */
     ACTIVE,
-    /** Running but paused due to WiFi/battery/time constraints. */
+    /** Running but paused because no usable network is available for the current
+     *  settings: no connectivity at all, or on mobile data with the mobile intensity
+     *  set to Off (issue #62). Name kept from the legacy wifi-only toggle era. */
     PAUSED_WIFI,
     PAUSED_BATTERY,
     PAUSED_RATE_LIMIT,
@@ -197,7 +201,13 @@ class PoisonEngine @Inject constructor(
     // --- Cached constraint state (updated via BroadcastReceivers) ---
     private val cachedBatteryLevel = AtomicInteger(100)
     private val cachedIsCharging = AtomicBoolean(false)
-    private val cachedOnWifi = AtomicBoolean(false)
+
+    /**
+     * Transport class of the active network, kept fresh by [networkCallback]. Replaces the
+     * old boolean `cachedOnWifi`: per-network intensity (issue #62) needs to distinguish
+     * Wi-Fi from mobile data from no-network, not just "on Wi-Fi or not".
+     */
+    private val cachedTransport = java.util.concurrent.atomic.AtomicReference(NetworkTransport.NONE)
 
     /** Today's successful action count, incremented on each action. Reset on day rollover. */
     private val todayActionCount = AtomicInteger(0)
@@ -233,17 +243,17 @@ class PoisonEngine @Inject constructor(
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-            cachedOnWifi.set(isWifiActive(caps, lookupUnderlyingCaps()))
+            cachedTransport.set(classifyTransport(caps, lookupUnderlyingCaps()))
         }
 
         override fun onLost(network: Network) {
-            cachedOnWifi.set(false)
+            cachedTransport.set(NetworkTransport.NONE)
         }
     }
 
     /**
      * Returns a callable that resolves the VPN underlying-network caps. Looked up lazily —
-     * only the VPN branch in [isWifiActive] invokes it, so the legacy non-VPN path stays
+     * only the VPN branch in [classifyTransport] invokes it, so the non-VPN path stays
      * cheap. Falls back to scanning `cm.allNetworks` on API < 31 where
      * `NetworkCapabilities.underlyingNetworks` is unavailable.
      */
@@ -392,8 +402,8 @@ class PoisonEngine @Inject constructor(
             if (level >= 0 && scale > 0) cachedBatteryLevel.set(level * 100 / scale)
             cachedIsCharging.set(batteryIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0)
         }
-        // Seed WiFi state
-        cachedOnWifi.set(checkWifiNow())
+        // Seed network transport state
+        cachedTransport.set(checkTransportNow())
 
         // Register ongoing receivers. Battery still uses a broadcast; connectivity uses
         // NetworkCallback (CONNECTIVITY_ACTION was deprecated in API 28).
@@ -405,6 +415,10 @@ class PoisonEngine @Inject constructor(
         runCatching {
             context.getSystemService(ConnectivityManager::class.java)
                 .registerDefaultNetworkCallback(networkCallback)
+        }.onFailure {
+            // Without the callback, cachedTransport freezes at its seed value and a later
+            // WiFi→mobile move would keep the engine acting at the WiFi tier. Surface it.
+            Timber.w(it, "registerDefaultNetworkCallback failed; transport tracking degraded")
         }
     }
 
@@ -424,7 +438,15 @@ class PoisonEngine @Inject constructor(
         while (scope.isActive) {
             val currentProfile = profile.getProfile()
 
-            val constraintRetryMs = constraintCheckMs(currentProfile.intensity.actionsPerHour)
+            // Per-network intensity (issue #62): the rate everything below keys off depends
+            // on the current transport — Wi-Fi runs `intensity`, mobile runs `mobileIntensity`.
+            // Null means "may not act right now" (no network, or mobile with mobile set to
+            // Off); checkConstraints reports that as PAUSED_WIFI. The retry cadence falls
+            // back to the Wi-Fi rate while paused so the pause is noticed promptly.
+            val effectiveIntensity = effectiveIntensity(currentProfile)
+            val constraintRetryMs = constraintCheckMs(
+                (effectiveIntensity ?: currentProfile.intensity).actionsPerHour
+            )
 
             // Constraint checks
             val constraintState = checkConstraints(currentProfile)
@@ -455,15 +477,25 @@ class PoisonEngine @Inject constructor(
             lastPauseState = EngineState.ACTIVE
             pauseEnteredAtElapsedMs = 0L
 
-            // Per-hour rate limit: prune stale timestamps and check cap
+            // checkConstraints re-evaluated the transport freshly and passed; this is the
+            // loop-top SNAPSHOT, which a mid-iteration transport flip can have left null.
+            // The elvis re-enters the loop so the pause branch can handle that flip; when
+            // non-null-but-stale (flip between tiers), the wrong tier governs for at most
+            // this one iteration before the loop-top recompute corrects it.
+            val activeIntensity = effectiveIntensity ?: continue
+
+            // Per-hour rate limit: prune stale timestamps and check cap. The window is
+            // deliberately network-agnostic: after a HIGH-on-WiFi hour, dropping to mobile
+            // LOW keeps the engine paused until the window drains below the mobile cap —
+            // the whole point of a lower mobile tier is not to burn mobile data.
             val rateLimitNow = clock.currentTimeMillis()
             val cutoff = rateLimitNow - RATE_LIMIT_WINDOW_MS
             while (recentActionTimestamps.peek()?.let { it < cutoff } == true) {
                 recentActionTimestamps.poll()
             }
-            if (recentActionTimestamps.size >= currentProfile.intensity.actionsPerHour) {
+            if (recentActionTimestamps.size >= activeIntensity.actionsPerHour) {
                 _engineState.value = EngineState.PAUSED_RATE_LIMIT
-                Timber.d("Rate limit reached: ${recentActionTimestamps.size}/${currentProfile.intensity.actionsPerHour} actions/hour")
+                Timber.d("Rate limit reached: ${recentActionTimestamps.size}/${activeIntensity.actionsPerHour} actions/hour")
                 delay(RATE_LIMIT_PAUSE_MS)
                 continue
             }
@@ -528,7 +560,7 @@ class PoisonEngine @Inject constructor(
             // inter-action interval (not post-action gap) matches the target rate.
             val execElapsed = clock.currentTimeMillis() - execStart
             val scheduledMs = scheduler.nextDelayMs(
-                actionsPerHour = currentProfile.intensity.actionsPerHour,
+                actionsPerHour = activeIntensity.actionsPerHour,
                 prev = lastCategory,
                 next = category,
                 allowedStart = currentProfile.allowedHoursStart,
@@ -563,11 +595,22 @@ class PoisonEngine @Inject constructor(
     }
 
     /**
+     * The action rate for the current network transport, or null when the engine must
+     * pause: no network at all, or on mobile data with [PoisonProfile.mobileIntensity]
+     * set to Off (issue #62).
+     */
+    private fun effectiveIntensity(p: PoisonProfile): IntensityLevel? = when (cachedTransport.get()) {
+        NetworkTransport.WIFI -> p.intensity
+        NetworkTransport.CELLULAR -> p.mobileIntensity
+        NetworkTransport.NONE -> null
+    }
+
+    /**
      * Returns null if all constraints pass, or the specific [EngineState] pause reason.
      */
     private fun checkConstraints(currentProfile: PoisonProfile): EngineState? {
-        if (currentProfile.wifiOnly && !cachedOnWifi.get()) {
-            Timber.d("Paused: wifi-only mode, no wifi")
+        if (effectiveIntensity(currentProfile) == null) {
+            Timber.d("Paused: no usable network (transport=${cachedTransport.get()}, mobile=${currentProfile.mobileIntensity})")
             return EngineState.PAUSED_WIFI
         }
         if (shouldPauseForBattery(
@@ -659,7 +702,15 @@ class PoisonEngine @Inject constructor(
                 PauseDecision.Resign(ResumeSpec.AtTime(nextAllowedHoursStartMs(currentProfile, nowMs)))
             EngineState.PAUSED_WIFI ->
                 if (pauseElapsedMs >= LONG_PAUSE_THRESHOLD_MS)
-                    PauseDecision.Resign(ResumeSpec.WhenConstraintMet(network = NetworkType.UNMETERED))
+                    // When the user allows mobile data (mobileIntensity set), this pause can
+                    // only mean "no network at all", so ANY connection should resume us.
+                    // With mobile Off, only an unmetered network ends the pause (issue #62).
+                    PauseDecision.Resign(
+                        ResumeSpec.WhenConstraintMet(
+                            network = if (currentProfile.mobileIntensity != null) NetworkType.CONNECTED
+                            else NetworkType.UNMETERED
+                        )
+                    )
                 else PauseDecision.Continue
             EngineState.PAUSED_BATTERY ->
                 if (pauseElapsedMs >= LONG_PAUSE_THRESHOLD_MS)
@@ -714,43 +765,70 @@ class PoisonEngine @Inject constructor(
         return warnings
     }
 
-    /** One-shot WiFi check used to seed the cache. */
-    private fun checkWifiNow(): Boolean {
+    /** One-shot transport check used to seed the cache. */
+    private fun checkTransportNow(): NetworkTransport {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = cm.activeNetwork ?: return false
-        val caps = cm.getNetworkCapabilities(network) ?: return false
-        return isWifiActive(caps, lookupUnderlyingCaps())
+        val network = cm.activeNetwork ?: return NetworkTransport.NONE
+        val caps = cm.getNetworkCapabilities(network) ?: return NetworkTransport.NONE
+        return classifyTransport(caps, lookupUnderlyingCaps())
     }
 
     companion object {
         /**
-         * Pure decision function for "is the device currently on WiFi for the engine's
-         * purposes?" Extracted so the VPN-on-WiFi case (issue #59 — TrackerControl /
-         * other per-app VPNs make the active network appear as `TRANSPORT_VPN`, so a
-         * plain `hasTransport(TRANSPORT_WIFI)` check returns false even when the user
-         * is physically on WiFi) can be exercised without standing up a real
-         * ConnectivityManager.
+         * Pure classifier for "what kind of network is the engine on right now?", the
+         * basis of per-network intensity (issue #62). Extracted so the VPN cases
+         * (issue #59 — TrackerControl / other per-app VPNs make the active network appear
+         * as `TRANSPORT_VPN`, so plain `hasTransport` checks miss the physical transport)
+         * can be exercised without standing up a real ConnectivityManager.
          *
-         * Returns true when:
-         *  - the active network is itself WiFi, OR
-         *  - the active network is a VPN AND any of its underlying networks is WiFi.
+         * Mapping:
+         *  - WiFi or ethernet → [NetworkTransport.WIFI] (unmetered bucket)
+         *  - VPN whose underlying networks include non-VPN WiFi → [NetworkTransport.WIFI]
+         *  - VPN otherwise (tunneled over cellular, or underlying unknown) →
+         *    [NetworkTransport.CELLULAR] — when in doubt, bill it as mobile data so the
+         *    engine never exceeds the user's mobile budget
+         *  - cellular, or any other connected transport → [NetworkTransport.CELLULAR]
+         *  - no capabilities → [NetworkTransport.NONE]
+         */
+        internal fun classifyTransport(
+            activeCaps: NetworkCapabilities?,
+            underlyingCaps: () -> List<NetworkCapabilities>
+        ): NetworkTransport {
+            if (activeCaps == null) return NetworkTransport.NONE
+            if (activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            ) {
+                return NetworkTransport.WIFI
+            }
+            if (activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                // Same unmetered bucket as the direct branch: WiFi or ethernet underneath.
+                val unmeteredUnderneath = underlyingCaps().any {
+                    (it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                        it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) &&
+                        !it.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+                }
+                return if (unmeteredUnderneath) NetworkTransport.WIFI else NetworkTransport.CELLULAR
+            }
+            return NetworkTransport.CELLULAR
+        }
+
+        /**
+         * Legacy boolean view of [classifyTransport], kept because "is this WiFi for the
+         * engine's purposes" remains a meaningful question (issue #59 test surface).
          */
         internal fun isWifiActive(
             activeCaps: NetworkCapabilities?,
             underlyingCaps: () -> List<NetworkCapabilities>
-        ): Boolean {
-            if (activeCaps == null) return false
-            if (activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return true
-            if (activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-                return underlyingCaps().any {
-                    it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
-                        !it.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
-                }
-            }
-            return false
-        }
+        ): Boolean = classifyTransport(activeCaps, underlyingCaps) == NetworkTransport.WIFI
     }
 }
+
+/**
+ * Transport class the engine is currently running on, as cached from the default-network
+ * callback. Drives per-network intensity (issue #62): WIFI runs [PoisonProfile.intensity],
+ * CELLULAR runs [PoisonProfile.mobileIntensity] (null = pause), NONE always pauses.
+ */
+internal enum class NetworkTransport { WIFI, CELLULAR, NONE }
 
 /**
  * Repository providing the current [PoisonProfile] backed by Jetpack DataStore.
@@ -782,6 +860,10 @@ class PoisonProfileRepository @Inject constructor(
     /** Returns the latest cached profile (non-blocking). */
     fun getProfile(): PoisonProfile = cached.get()
 
+    /** Cold flow of the persisted profile; emits on every DataStore change. */
+    val profiles: kotlinx.coroutines.flow.Flow<PoisonProfile>
+        get() = dataStore.data.map { prefsToProfile(it) }
+
     /** Persists [p] to DataStore. */
     suspend fun saveProfile(p: PoisonProfile) {
         dataStore.edit { prefs ->
@@ -805,7 +887,12 @@ class PoisonProfileRepository @Inject constructor(
     private fun profileToPrefs(p: PoisonProfile, prefs: androidx.datastore.preferences.core.MutablePreferences) {
         prefs[com.fauxx.di.PreferenceKeys.ENABLED] = p.enabled
         prefs[com.fauxx.di.PreferenceKeys.INTENSITY] = p.intensity.name
-        prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] = p.wifiOnly
+        // The "OFF" sentinel (not key removal) distinguishes a user-chosen pause-on-mobile
+        // from a legacy profile that has never written the key (which migrates from
+        // WIFI_ONLY on read). WIFI_ONLY itself keeps being written, derived, so a
+        // downgrade to a pre-0.3.2 build lands on the equivalent on/off behavior.
+        prefs[com.fauxx.di.PreferenceKeys.MOBILE_INTENSITY] = p.mobileIntensity?.name ?: MOBILE_INTENSITY_OFF
+        prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] = (p.mobileIntensity == null)
         prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] = p.batteryThreshold
         prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] =
             p.ignoreBatteryThresholdWhileCharging
@@ -834,14 +921,12 @@ class PoisonProfileRepository @Inject constructor(
         }
     }
 
-    private fun prefsToProfile(prefs: androidx.datastore.preferences.core.Preferences): PoisonProfile =
-        PoisonProfile(
+    private fun prefsToProfile(prefs: androidx.datastore.preferences.core.Preferences): PoisonProfile {
+        val intensity = readIntensity(prefs)
+        return PoisonProfile(
             enabled = prefs[com.fauxx.di.PreferenceKeys.ENABLED] ?: false,
-            intensity = com.fauxx.data.model.IntensityLevel.valueOf(
-                prefs[com.fauxx.di.PreferenceKeys.INTENSITY]
-                    ?: com.fauxx.data.model.IntensityLevel.MEDIUM.name
-            ),
-            wifiOnly = prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] ?: true,
+            intensity = intensity,
+            mobileIntensity = readMobileIntensity(prefs, intensity),
             batteryThreshold = prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] ?: 20,
             ignoreBatteryThresholdWhileCharging =
                 prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] ?: false,
@@ -867,4 +952,38 @@ class PoisonProfileRepository @Inject constructor(
             resumeOnBoot = prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] ?: true,
             customUserAgent = prefs[com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT]?.takeIf { it.isNotBlank() }
         )
+    }
+
+    /** Wi-Fi intensity, hardened like THEME_MODE: a corrupt enum name falls back to the
+     *  default instead of crashing the read (the old bare `valueOf` was a latent crash). */
+    private fun readIntensity(prefs: androidx.datastore.preferences.core.Preferences): com.fauxx.data.model.IntensityLevel =
+        runCatching {
+            com.fauxx.data.model.IntensityLevel.valueOf(
+                prefs[com.fauxx.di.PreferenceKeys.INTENSITY]
+                    ?: com.fauxx.data.model.IntensityLevel.MEDIUM.name
+            )
+        }.getOrDefault(com.fauxx.data.model.IntensityLevel.MEDIUM)
+
+    /**
+     * Mobile-data intensity with lazy migration from the legacy WIFI_ONLY toggle (issue #62):
+     * - key present: "OFF" sentinel → null (pause on mobile); otherwise the enum name, with a
+     *   corrupt value failing safe to null so the engine never burns mobile data by accident.
+     * - key absent (pre-0.3.2 profile): legacy `wifiOnly == true` (or unset — the old default)
+     *   → null; `wifiOnly == false` meant "run the single intensity on any network" → mirror
+     *   the Wi-Fi [intensity].
+     */
+    private fun readMobileIntensity(
+        prefs: androidx.datastore.preferences.core.Preferences,
+        intensity: com.fauxx.data.model.IntensityLevel
+    ): com.fauxx.data.model.IntensityLevel? {
+        val raw = prefs[com.fauxx.di.PreferenceKeys.MOBILE_INTENSITY]
+            ?: return if (prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] != false) null else intensity
+        if (raw == MOBILE_INTENSITY_OFF) return null
+        return runCatching { com.fauxx.data.model.IntensityLevel.valueOf(raw) }.getOrNull()
+    }
+
+    private companion object {
+        /** Stored sentinel for "paused on mobile data" in the MOBILE_INTENSITY pref. */
+        const val MOBILE_INTENSITY_OFF = "OFF"
+    }
 }

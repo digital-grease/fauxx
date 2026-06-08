@@ -13,7 +13,7 @@ import timber.log.Timber
  *
  * Triggered by:
  * - Quiet-hours end (initial-delay scheduled at start of next allowed window)
- * - Constraint satisfaction (network/battery, after prolonged wifi-only or battery pause)
+ * - Constraint satisfaction (network/battery, after a prolonged no-usable-network or battery pause)
  *
  * Honours [PreferenceKeys.ENABLED] so a user who disabled the engine while paused
  * doesn't get nagged. Plain [CoroutineWorker] — no Hilt deps needed; falls through

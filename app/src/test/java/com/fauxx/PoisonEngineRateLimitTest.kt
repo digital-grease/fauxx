@@ -52,7 +52,7 @@ import org.robolectric.annotation.Config
  *
  * Only the Dns module is enabled, so it is the sole selectable module and the action count is
  * unambiguous. LOW intensity gives a cap of 12 actions/hour, and the constraint window covers
- * noon (allowed 7-23, wifiOnly=false, batteryThreshold=0) so no constraint pause masks the
+ * noon (allowed 7-23, mobileIntensity=LOW, batteryThreshold=0) so no constraint pause masks the
  * rate-limit pause. The scheduler returns a fixed 1s inter-action delay, so virtual time
  * advanced ~1s at a time dispatches roughly one action per iteration until the cap is hit.
  *
@@ -71,7 +71,7 @@ class PoisonEngineRateLimitTest {
     private val baseProfile = PoisonProfile(
         enabled = true,
         intensity = IntensityLevel.LOW,
-        wifiOnly = false,
+        mobileIntensity = IntensityLevel.LOW,
         batteryThreshold = 0,
         allowedHoursStart = 7,
         allowedHoursEnd = 23,

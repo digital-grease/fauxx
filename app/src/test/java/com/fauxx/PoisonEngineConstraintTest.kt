@@ -49,7 +49,7 @@ class PoisonEngineConstraintTest {
     private val profile = PoisonProfile(
         enabled = true,
         intensity = IntensityLevel.LOW,
-        wifiOnly = false,
+        mobileIntensity = IntensityLevel.LOW,
         batteryThreshold = 20,
         allowedHoursStart = 0,
         allowedHoursEnd = 24,
@@ -226,11 +226,32 @@ class PoisonEngineConstraintTest {
     }
 
     @Test
-    fun `decidePauseAction resigns on prolonged wifi pause`() {
+    fun `decidePauseAction resigns on prolonged network pause waiting for ANY connection when mobile is allowed`() {
+        // mobileIntensity set (issue #62): the pause can only mean "no network at all",
+        // so any connection — including cellular — should wake the engine.
         engine = createEngine()
         val decision = engine.decidePauseAction(
             state = EngineState.PAUSED_WIFI,
-            currentProfile = profile,
+            currentProfile = profile, // base profile has mobileIntensity = LOW
+            pauseElapsedMs = ms30Min + 1000,
+            totalRuntimeMs = 45 * 60 * 1000,
+            nowMs = nowMs
+        )
+        assertTrue(decision is PauseDecision.Resign)
+        val spec = (decision as PauseDecision.Resign).resumeSpec
+        assertTrue(spec is ResumeSpec.WhenConstraintMet)
+        assertEquals(NetworkType.CONNECTED, (spec as ResumeSpec.WhenConstraintMet).network)
+        assertFalse(spec.batteryNotLow)
+    }
+
+    @Test
+    fun `decidePauseAction resigns on prolonged network pause waiting for UNMETERED when mobile is off`() {
+        // mobileIntensity null = legacy Wi-Fi-only behavior: only an unmetered network
+        // ends the pause; resuming on cellular would burn data the user opted out of.
+        engine = createEngine()
+        val decision = engine.decidePauseAction(
+            state = EngineState.PAUSED_WIFI,
+            currentProfile = profile.copy(mobileIntensity = null),
             pauseElapsedMs = ms30Min + 1000,
             totalRuntimeMs = 45 * 60 * 1000,
             nowMs = nowMs

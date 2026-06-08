@@ -3,12 +3,15 @@ package com.fauxx.engine
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import com.fauxx.data.model.IntensityLevel
 import com.fauxx.data.model.PoisonProfile
+import com.fauxx.di.PreferenceKeys
 import com.fauxx.ui.theme.ThemeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
@@ -85,7 +88,7 @@ class PoisonProfileRepositoryTest {
         val input = PoisonProfile(
             enabled = true,                                  // default false
             intensity = IntensityLevel.HIGH,                 // default MEDIUM
-            wifiOnly = false,                                // default true
+            mobileIntensity = IntensityLevel.LOW,            // default null (paused on mobile)
             batteryThreshold = 73,                           // default 20
             ignoreBatteryThresholdWhileCharging = true,      // default false
             allowedHoursStart = 3,                           // default 7
@@ -172,12 +175,109 @@ class PoisonProfileRepositoryTest {
     }
 
     @Test
+    fun `all IntensityLevel values survive the mobileIntensity round-trip`() {
+        for (level in IntensityLevel.values()) {
+            runBlocking { repo.saveProfile(PoisonProfile(mobileIntensity = level)) }
+
+            assertEquals(
+                "mobileIntensity $level must survive the enum-name round-trip",
+                level,
+                readBack().mobileIntensity,
+            )
+        }
+    }
+
+    // --- mobile_intensity persistence + lazy wifi_only migration (issue #62) ---
+
+    /** Writes raw preference keys, simulating a store written by an older app version. */
+    private fun seedRawPrefs(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) =
+        runBlocking { dataStore.edit { block(it) } }
+
+    @Test
+    fun `null mobileIntensity persists as the OFF sentinel plus derived legacy wifi_only`() {
+        runBlocking { repo.saveProfile(PoisonProfile(mobileIntensity = null)) }
+
+        val prefs = runBlocking { dataStore.data.first() }
+        assertEquals("OFF", prefs[PreferenceKeys.MOBILE_INTENSITY])
+        assertEquals(
+            "wifi_only must be derived true for downgrade safety",
+            true,
+            prefs[PreferenceKeys.WIFI_ONLY],
+        )
+        assertNull(readBack().mobileIntensity)
+    }
+
+    @Test
+    fun `non-null mobileIntensity derives legacy wifi_only false`() {
+        runBlocking { repo.saveProfile(PoisonProfile(mobileIntensity = IntensityLevel.HIGH)) }
+
+        val prefs = runBlocking { dataStore.data.first() }
+        assertEquals("HIGH", prefs[PreferenceKeys.MOBILE_INTENSITY])
+        assertEquals(false, prefs[PreferenceKeys.WIFI_ONLY])
+    }
+
+    @Test
+    fun `legacy wifi_only true migrates to paused-on-mobile`() {
+        seedRawPrefs { it[PreferenceKeys.WIFI_ONLY] = true }
+
+        assertNull(readBack().mobileIntensity)
+    }
+
+    @Test
+    fun `legacy wifi_only false migrates to mirroring the wifi intensity`() {
+        // Pre-0.3.2, wifiOnly=false meant "run the single intensity on any network".
+        seedRawPrefs {
+            it[PreferenceKeys.WIFI_ONLY] = false
+            it[PreferenceKeys.INTENSITY] = IntensityLevel.HIGH.name
+        }
+
+        assertEquals(IntensityLevel.HIGH, readBack().mobileIntensity)
+    }
+
+    @Test
+    fun `explicit OFF sentinel wins over legacy wifi_only false`() {
+        seedRawPrefs {
+            it[PreferenceKeys.MOBILE_INTENSITY] = "OFF"
+            it[PreferenceKeys.WIFI_ONLY] = false
+        }
+
+        assertNull(readBack().mobileIntensity)
+    }
+
+    @Test
+    fun `explicit mobile tier wins over legacy wifi_only true`() {
+        seedRawPrefs {
+            it[PreferenceKeys.MOBILE_INTENSITY] = IntensityLevel.LOW.name
+            it[PreferenceKeys.WIFI_ONLY] = true
+        }
+
+        assertEquals(IntensityLevel.LOW, readBack().mobileIntensity)
+    }
+
+    @Test
+    fun `corrupt mobile_intensity value fails safe to paused-on-mobile`() {
+        seedRawPrefs { it[PreferenceKeys.MOBILE_INTENSITY] = "TURBO" }
+
+        assertNull(
+            "an unknown stored tier must never burn mobile data",
+            readBack().mobileIntensity,
+        )
+    }
+
+    @Test
+    fun `corrupt intensity value falls back to MEDIUM instead of crashing the read`() {
+        seedRawPrefs { it[PreferenceKeys.INTENSITY] = "LUDICROUS" }
+
+        assertEquals(IntensityLevel.MEDIUM, readBack().intensity)
+    }
+
+    @Test
     fun `updateProfile applies a transform atomically without clobbering unrelated fields`() {
         val seeded = PoisonProfile(
             intensity = IntensityLevel.HIGH,
             batteryThreshold = 42,
             customUserAgent = "Mozilla/5.0 (seeded)",
-            wifiOnly = false,
+            mobileIntensity = IntensityLevel.MEDIUM,
         )
         runBlocking { repo.saveProfile(seeded) }
 

@@ -67,7 +67,7 @@ class PoisonEngineFailClosedTest {
     private val baseProfile = PoisonProfile(
         enabled = true,
         intensity = IntensityLevel.LOW,
-        wifiOnly = false,
+        mobileIntensity = IntensityLevel.LOW,
         batteryThreshold = 0,
         allowedHoursStart = 7,
         allowedHoursEnd = 23,
