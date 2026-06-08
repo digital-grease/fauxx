@@ -77,6 +77,12 @@
             android:name=".service.AlarmResumeReceiver"
             android:exported="false" />
 
+        <!-- Headless "Start" action on the resume notification (#121). Not exported: only the
+             app's own notification action targets it. -->
+        <receiver
+            android:name=".service.StartEngineReceiver"
+            android:exported="false" />
+
         <!-- FileProvider for sharing crash reports and debug logs -->
         <provider
             android:name="androidx.core.content.FileProvider"

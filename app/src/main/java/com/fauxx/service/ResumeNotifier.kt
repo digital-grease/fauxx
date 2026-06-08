@@ -63,18 +63,28 @@ fun postResumeNotification(context: Context) {
         putExtra(MainActivity.EXTRA_RESUME_ENGINE, true)
     }
     val pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    val pendingIntent = PendingIntent.getActivity(context, 0, tapIntent, pendingFlags)
+    val bodyPendingIntent = PendingIntent.getActivity(context, 0, tapIntent, pendingFlags)
+
+    // #121: the "Start" action starts the service HEADLESSLY via a broadcast to
+    // StartEngineReceiver — a notification-action tap is an allowed FGS-start context on
+    // Android 14+, so it doesn't open the app the way the body tap does. (The v0.3.1 Start
+    // action reused the body's getActivity intent and merely reopened the app, which is the
+    // bug this fixes.)
+    val startActionIntent = Intent(context, StartEngineReceiver::class.java).apply {
+        action = StartEngineReceiver.ACTION_START_ENGINE
+        // Explicit target package — defensive against implicit-PendingIntent flags (CWE-927).
+        setPackage(context.packageName)
+    }
+    val startActionPendingIntent =
+        PendingIntent.getBroadcast(context, 1, startActionIntent, pendingFlags)
 
     val notification = NotificationCompat.Builder(context, RESUME_CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_notification)
         .setContentTitle("Fauxx")
         .setContentText("Tap to resume protection")
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        .setContentIntent(pendingIntent)
-        // #121: an explicit "Start" action. Same allowed FGS-start path as tapping the body —
-        // it opens MainActivity, which reconciles ENABLED and starts the service from a
-        // foregrounded Activity (always an allowed FGS-start context on Android 14+).
-        .addAction(R.drawable.ic_notification, "Start", pendingIntent)
+        .setContentIntent(bodyPendingIntent)
+        .addAction(R.drawable.ic_notification, "Start", startActionPendingIntent)
         .setAutoCancel(true)
         // The reconcile watchdog (#156) can re-post this every few hours while the engine
         // stays stopped; alert only on the first post so repeats update silently.
