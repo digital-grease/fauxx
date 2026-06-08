@@ -212,6 +212,22 @@ class PoisonEngine @Inject constructor(
     private val cachedIsCharging = AtomicBoolean(false)
     private val cachedOnWifi = AtomicBoolean(false)
 
+    /**
+     * Seed the cached constraint state directly. Mirrors what the battery/connectivity
+     * BroadcastReceivers do, for tests that drive constraint transitions without a live
+     * broadcast (e.g. a wifi↔battery flicker exercising the cumulative resign clock).
+     */
+    @VisibleForTesting
+    internal fun setCachedConstraintStateForTest(
+        onWifi: Boolean? = null,
+        batteryLevel: Int? = null,
+        charging: Boolean? = null,
+    ) {
+        onWifi?.let { cachedOnWifi.set(it) }
+        batteryLevel?.let { cachedBatteryLevel.set(it) }
+        charging?.let { cachedIsCharging.set(it) }
+    }
+
     /** Today's successful action count, incremented on each action. Reset on day rollover. */
     private val todayActionCount = AtomicInteger(0)
     @Volatile
@@ -455,11 +471,18 @@ class PoisonEngine @Inject constructor(
             // Constraint checks
             val constraintState = checkConstraints(currentProfile)
             if (constraintState != null) {
-                // Track pause-entry time on state transition so [decidePauseAction] can
-                // measure how long we've been stuck on the same constraint.
                 if (lastPauseState != constraintState) {
-                    pauseEnteredAtElapsedMs = clock.elapsedRealtime()
+                    // Start the cumulative pause clock only on the ACTIVE→pause edge. Keeping
+                    // it running across pause→pause transitions (e.g. a wifi↔battery flicker)
+                    // means the resign threshold measures total time paused, not time in the
+                    // current state — otherwise a flicker resets the clock every few seconds
+                    // and the engine never resigns (#158).
+                    if (lastPauseState == EngineState.ACTIVE) {
+                        pauseEnteredAtElapsedMs = clock.elapsedRealtime()
+                    }
                     lastPauseState = constraintState
+                    // Log the reason once per transition, not on every retry tick (#158).
+                    logPauseReason(constraintState, currentProfile)
                 }
                 _engineState.value = constraintState
 
@@ -602,8 +625,9 @@ class PoisonEngine @Inject constructor(
      * Returns null if all constraints pass, or the specific [EngineState] pause reason.
      */
     private fun checkConstraints(currentProfile: PoisonProfile): EngineState? {
+        // No logging here — this runs every retry tick (and again per 60s sleep chunk).
+        // The reason is logged once per transition by [logPauseReason] from runLoop (#158).
         if (currentProfile.wifiOnly && !cachedOnWifi.get()) {
-            Timber.d("Paused: wifi-only mode, no wifi")
             return EngineState.PAUSED_WIFI
         }
         if (shouldPauseForBattery(
@@ -613,14 +637,28 @@ class PoisonEngine @Inject constructor(
                 ignoreThresholdWhileCharging = currentProfile.ignoreBatteryThresholdWhileCharging
             )
         ) {
-            Timber.d("Paused: battery below threshold")
             return EngineState.PAUSED_BATTERY
         }
         if (!isWithinAllowedHours(currentProfile)) {
-            Timber.d("Paused: outside allowed hours (${currentProfile.allowedHoursStart}-${currentProfile.allowedHoursEnd})")
             return EngineState.PAUSED_QUIET_HOURS
         }
         return null
+    }
+
+    /**
+     * Log the reason for a constraint pause. Called once per pause-state transition from
+     * [runLoop], NOT from [checkConstraints] (which runs every few seconds), so a long pause
+     * produces a single log line instead of one per retry tick (#158). A wifi↔battery flicker
+     * still logs each genuine state change.
+     */
+    private fun logPauseReason(state: EngineState, profile: PoisonProfile) {
+        when (state) {
+            EngineState.PAUSED_WIFI -> Timber.d("Paused: wifi-only mode, no wifi")
+            EngineState.PAUSED_BATTERY -> Timber.d("Paused: battery below threshold")
+            EngineState.PAUSED_QUIET_HOURS ->
+                Timber.d("Paused: outside allowed hours (${profile.allowedHoursStart}-${profile.allowedHoursEnd})")
+            else -> { /* ACTIVE / PAUSED_RATE_LIMIT / STOPPED log via their own paths */ }
+        }
     }
 
     /**
@@ -645,8 +683,8 @@ class PoisonEngine @Inject constructor(
     internal fun isWithinAllowedHours(profile: PoisonProfile, nowHour: Int = currentHourOfDay()): Boolean =
         AllowedHours.isWithin(nowHour, profile.allowedHoursStart, profile.allowedHoursEnd)
 
-    /** Returns the constraint-check retry interval scaled by intensity.
-     *  HIGH (200/hr) → ~3.6s, MEDIUM (60/hr) → ~12s, LOW (12/hr) → 60s. */
+    /** Returns the constraint-check retry interval scaled by intensity (integer-divided).
+     *  HIGH (200/hr) → 3.75s, MEDIUM (60/hr) → 12s, LOW (12/hr) → 60s. */
     private fun constraintCheckMs(actionsPerHour: Int): Long =
         maxOf(CONSTRAINT_CHECK_MIN_MS, CONSTRAINT_CHECK_BASE_MS / maxOf(1, actionsPerHour / 12).toLong())
 

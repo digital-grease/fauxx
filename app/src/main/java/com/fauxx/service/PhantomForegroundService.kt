@@ -15,6 +15,7 @@ import com.fauxx.engine.EngineState
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.modules.MockLocationProviderCleaner
 import com.fauxx.engine.webview.PhantomWebViewPool
+import com.fauxx.logging.EncryptedFileTree
 import com.fauxx.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +47,7 @@ class PhantomForegroundService : Service() {
     @Inject lateinit var webViewPool: PhantomWebViewPool
     @Inject lateinit var resumeScheduler: ResumeScheduler
     @Inject lateinit var mockLocationProviderCleaner: MockLocationProviderCleaner
+    @Inject lateinit var encryptedFileTree: EncryptedFileTree
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -143,6 +145,13 @@ class PhantomForegroundService : Service() {
             .onFailure { Timber.e(it, "Error clearing mock-location provider on task removal") }
         runCatching { poisonEngine.stop() }
             .onFailure { Timber.e(it, "Error stopping engine on task removal") }
+        // Swipe-away is a common kill on aggressive OEMs and may not reach onDestroy, so make a
+        // best-effort attempt to persist buffered logs. Off the main thread — flush() does file
+        // I/O + encryption and onTaskRemoved runs on Main (#158).
+        cleanupScope.launch(NonCancellable) {
+            runCatching { encryptedFileTree.flush() }
+                .onFailure { Timber.e(it, "Error flushing logs on task removal") }
+        }
         super.onTaskRemoved(rootIntent)
     }
 
@@ -164,6 +173,9 @@ class PhantomForegroundService : Service() {
         cleanupScope.launch(NonCancellable) {
             runCatching { webViewPool.destroy() }
                 .onFailure { Timber.e(it, "Error destroying WebView pool") }
+            // Best-effort flush of any remaining buffered log lines off the main thread.
+            runCatching { encryptedFileTree.flush() }
+                .onFailure { Timber.e(it, "Error flushing logs on destroy") }
         }
         scope.cancel()
         super.onDestroy()
@@ -182,6 +194,11 @@ class PhantomForegroundService : Service() {
         Timber.i("Engine resigned; scheduling resume ($spec) and stopping FGS")
         runCatching { resumeScheduler.schedule(spec) }
             .onFailure { Timber.e(it, "Failed to schedule resume notification") }
+        // Persist buffered log lines now, on this (engine IO) thread, before the FGS stops
+        // and the OEM possibly kills the process — otherwise up to a flush-threshold of
+        // diagnostic lines covering the resign are lost (#158).
+        runCatching { encryptedFileTree.flush() }
+            .onFailure { Timber.e(it, "Failed to flush logs on resign") }
         notificationJob?.cancel()
         notificationJob = null
         try {

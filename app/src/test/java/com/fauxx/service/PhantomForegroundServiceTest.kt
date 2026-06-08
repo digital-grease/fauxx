@@ -4,6 +4,7 @@ import androidx.work.NetworkType
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.modules.MockLocationProviderCleaner
 import com.fauxx.engine.webview.PhantomWebViewPool
+import com.fauxx.logging.EncryptedFileTree
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -50,14 +51,18 @@ class PhantomForegroundServiceTest {
     fun `onEngineResigned schedules the resume spec and stops the service`() {
         val service = Robolectric.buildService(PhantomForegroundService::class.java).get()
         val resumeScheduler: ResumeScheduler = mockk(relaxed = true)
+        val encryptedFileTree: EncryptedFileTree = mockk(relaxed = true)
         service.poisonEngine = mockk(relaxed = true)
         service.webViewPool = mockk(relaxed = true)
         service.resumeScheduler = resumeScheduler
+        service.encryptedFileTree = encryptedFileTree
 
         val spec = ResumeSpec.WhenConstraintMet(network = NetworkType.UNMETERED)
         service.onEngineResigned(spec)
 
         verify(exactly = 1) { resumeScheduler.schedule(spec) }
+        // Logs are flushed before the FGS tears down so a post-resign kill can't drop them (#158).
+        verify(exactly = 1) { encryptedFileTree.flush() }
         val shadow = Shadows.shadowOf(service)
         assertTrue("service must have called stopSelf", shadow.isStoppedBySelf)
     }
@@ -73,6 +78,7 @@ class PhantomForegroundServiceTest {
         service.poisonEngine = engine
         service.webViewPool = mockk<PhantomWebViewPool>(relaxed = true)
         service.resumeScheduler = resumeScheduler
+        service.encryptedFileTree = mockk(relaxed = true)
 
         // Capture both callbacks the service registers with the engine.
         val resignCb = slot<(ResumeSpec) -> Unit>()
@@ -113,6 +119,7 @@ class PhantomForegroundServiceTest {
         service.poisonEngine = mockk(relaxed = true)
         service.webViewPool = mockk(relaxed = true)
         service.resumeScheduler = resumeScheduler
+        service.encryptedFileTree = mockk(relaxed = true)
 
         // Start first so notificationJob is non-null and stopForeground is meaningful. The
         // relaxed engine mock never fires onActive, so start() alone cancels nothing.
@@ -137,6 +144,7 @@ class PhantomForegroundServiceTest {
         service.poisonEngine = engine
         service.webViewPool = mockk(relaxed = true)
         service.resumeScheduler = mockk(relaxed = true)
+        service.encryptedFileTree = mockk(relaxed = true)
         service.mockLocationProviderCleaner = cleaner
 
         service.onTaskRemoved(null)
@@ -154,6 +162,7 @@ class PhantomForegroundServiceTest {
         service.poisonEngine = mockk(relaxed = true)
         service.webViewPool = mockk(relaxed = true)
         service.resumeScheduler = mockk(relaxed = true)
+        service.encryptedFileTree = mockk(relaxed = true)
         service.mockLocationProviderCleaner = cleaner
 
         service.onDestroy()
