@@ -20,8 +20,13 @@ import javax.inject.Singleton
  *
  * Mechanism:
  * - [recordBootStart] increments a counter in a dedicated SharedPreferences file (separate
- *   from DataStore so this guard does not depend on DataStore being healthy). Call as
- *   early as possible in [com.fauxx.FauxxApp.onCreate].
+ *   from DataStore so this guard does not depend on DataStore being healthy). Call it at
+ *   the top of [com.fauxx.ui.MainActivity.onCreate], before anything that can hang Main.
+ *   INTERACTIVE starts only: background process starts (BootReceiver, WorkManager
+ *   workers, AlarmResumeReceiver) must never feed the counter, because no Activity
+ *   follows them, [recordBootSuccess] can never run, and healthy installs would
+ *   accumulate "failures" — a reboot plus one idle day used to safe-mode the app
+ *   (issue #157). Repeat calls in the same process (activity recreation) are ignored.
  * - [recordBootSuccess] resets the counter to zero. Schedule it via the main-thread
  *   handler with a few seconds of delay; if the main thread is hung, the callback never
  *   fires and the counter survives to the next boot.
@@ -38,9 +43,27 @@ class BootGuard @Inject constructor(@ApplicationContext context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun recordBootStart() {
+    /**
+     * Process-level guard: activity recreation (rotation, config change) re-runs
+     * MainActivity.onCreate in the same process, and three quick rotations inside the
+     * success-delay window must not read as a hang loop.
+     */
+    @Volatile
+    private var startRecordedThisProcess = false
+
+    /**
+     * Count an interactive process start.
+     *
+     * @return true when this call actually counted (first call in this process); false on
+     *   repeat calls (activity recreation), so callers can skip once-per-process work
+     *   like arming the safe-mode recovery notice.
+     */
+    fun recordBootStart(): Boolean {
+        if (startRecordedThisProcess) return false
+        startRecordedThisProcess = true
         val next = prefs.getInt(KEY_BOOT_COUNTER, 0) + 1
         prefs.edit().putInt(KEY_BOOT_COUNTER, next).commit()
+        return true
     }
 
     fun recordBootSuccess() {
@@ -73,10 +96,14 @@ class BootGuard @Inject constructor(@ApplicationContext context: Context) {
         const val KEY_RECOVERY_PENDING = "recovery_pending"
 
         /**
-         * Two consecutive starts without [recordBootSuccess] in between trip safe mode.
-         * With the 4-second post-onCreate reset delay in [com.fauxx.ui.MainActivity], a
-         * single accidental swipe-away inside 4 seconds will not trip safe mode; an ANR
-         * loop trips it on the second boot.
+         * Two consecutive interactive starts without [recordBootSuccess] in between trip
+         * safe mode. Because the counter is incremented on arrival, a single process
+         * death inside the 4-second success window (ANR, OEM kill, a swipe-away that
+         * takes the process with it) arms the counter, and the NEXT interactive start
+         * lands in safe mode regardless of its own health. That is the intended hang-loop
+         * signature, and also the residual false-positive case (unchanged from the
+         * original design). The cost is bounded: one notice toast, two toggles to
+         * re-enable, and the counter self-resets on the next clean start.
          */
         const val SAFE_MODE_THRESHOLD = 2
 

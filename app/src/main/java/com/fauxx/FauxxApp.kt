@@ -12,7 +12,6 @@ import androidx.work.WorkManager
 import com.fauxx.engine.modules.MockLocationProviderCleaner
 import com.fauxx.service.RetentionWorker
 import java.util.concurrent.TimeUnit
-import com.fauxx.logging.BootGuard
 import com.fauxx.logging.CrashReportWriter
 import com.fauxx.logging.EncryptedFileTree
 import dagger.hilt.android.HiltAndroidApp
@@ -34,9 +33,6 @@ class FauxxApp : Application(), Configuration.Provider {
 
     @Inject
     lateinit var crashReportWriter: CrashReportWriter
-
-    @Inject
-    lateinit var bootGuard: BootGuard
 
     @Inject
     lateinit var mockLocationProviderCleaner: MockLocationProviderCleaner
@@ -89,23 +85,10 @@ class FauxxApp : Application(), Configuration.Provider {
             Log.e("FauxxApp", "Failed to initialize encrypted file logging", e)
         }
 
-        // Boot-hang guard: increment the boot counter as early as possible. MainActivity
-        // schedules BootGuard.recordBootSuccess() a few seconds after onCreate; if the
-        // main thread is hung before then (e.g., WebView constructor stuck in
-        // PhantomWebViewPool.initialize() on a broken WebView provider) the success
-        // callback never fires and the counter survives. Issue #52 retired the
-        // ScrapeWorker that was the primary cold-boot hang vector — the guard now
-        // covers the remaining AdPollution / Cookie / DiverseBrowsing WebView paths
-        // that can still hang on certain device + WebView-provider combinations.
-        try {
-            bootGuard.recordBootStart()
-            if (bootGuard.isInSafeMode()) {
-                bootGuard.markRecoveryTriggered()
-                Timber.w("BootGuard: entering safe mode after repeated startup failures")
-            }
-        } catch (e: Exception) {
-            Log.e("FauxxApp", "BootGuard recordBootStart failed", e)
-        }
+        // NOTE: the boot-hang guard counter is incremented in MainActivity.onCreate, not
+        // here. Counting every process start safe-moded healthy installs, because
+        // background starts (BootReceiver, RetentionWorker, AlarmResumeReceiver) can
+        // never reach the success callback that resets the counter (issue #157).
 
         // Install crash handler that writes stack trace + recent logs to a file.
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
