@@ -18,13 +18,18 @@ import timber.log.Timber
  * Used by:
  * - [BootReceiver] after device reboot / app update
  * - [ResumeWorker] after the engine was voluntarily stopped during a long constraint
- *   pause (quiet hours, prolonged wifi-only/battery pause). Tapping the notification
- *   opens [MainActivity], which reconciles state from the
- *   persisted ENABLED flag and re-starts [PhantomForegroundService] from user
- *   interaction — an always-allowed FGS-start context on Android 14+.
+ *   pause (quiet hours, prolonged wifi-only/battery pause).
+ * - [PhantomForegroundService] when an FGS start is denied, as a recovery prompt (#156).
+ * - [EngineReconcileWorker] when the engine should be running but isn't (a dropped
+ *   resume alarm/work), as the watchdog recovery prompt (#156).
+ *
+ * Tapping the notification opens [MainActivity], which reconciles state from the persisted
+ * ENABLED flag and re-starts [PhantomForegroundService] from user interaction — an
+ * always-allowed FGS-start context on Android 14+.
  *
  * Centralised here so the channel ID, notification ID, copy, and PendingIntent flags
- * stay consistent across all entry points.
+ * stay consistent across all entry points. A single [RESUME_NOTIFICATION_ID] means
+ * re-posts replace rather than stack.
  */
 internal const val RESUME_CHANNEL_ID = "fauxx_resume"
 internal const val RESUME_NOTIFICATION_ID = 42
@@ -71,6 +76,9 @@ fun postResumeNotification(context: Context) {
         // foregrounded Activity (always an allowed FGS-start context on Android 14+).
         .addAction(R.drawable.ic_notification, "Start", pendingIntent)
         .setAutoCancel(true)
+        // The reconcile watchdog (#156) can re-post this every few hours while the engine
+        // stays stopped; alert only on the first post so repeats update silently.
+        .setOnlyAlertOnce(true)
         .build()
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&

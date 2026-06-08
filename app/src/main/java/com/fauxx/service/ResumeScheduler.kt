@@ -36,7 +36,9 @@ sealed class ResumeSpec {
     ) : ResumeSpec()
 }
 
-private const val WORK_NAME = "fauxx_resume"
+/** Unique WorkManager name for the tap-to-resume job. Shared so [EngineReconcileWorker]
+ *  can tell whether a constraint-based resume is already pending. */
+internal const val RESUME_WORK_NAME = "fauxx_resume"
 private const val ALARM_REQUEST_CODE = 4242
 
 /**
@@ -103,7 +105,7 @@ class ResumeScheduler @Inject constructor(
     }
 
     private fun enqueueResumeWorker(request: OneTimeWorkRequest) {
-        WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
+        WorkManager.getInstance(context).enqueueUniqueWork(RESUME_WORK_NAME, ExistingWorkPolicy.REPLACE, request)
     }
 
     private fun alarmPendingIntent(): PendingIntent {
@@ -121,11 +123,13 @@ class ResumeScheduler @Inject constructor(
     }
 
     /**
-     * Cancel any pending resume — both the WorkManager notification and the exact alarm. Call when
-     * the service starts (the user is resuming now) or the user disables the engine.
+     * Cancel any pending resume — both the WorkManager notification and the exact alarm. Called
+     * once the engine clears its constraint gate (it has taken over from the pending resume) or
+     * when the user disables the engine — NOT merely on service start, so a death during engine
+     * init can't wipe a still-needed resume (#156).
      */
     fun cancel() {
-        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+        WorkManager.getInstance(context).cancelUniqueWork(RESUME_WORK_NAME)
         runCatching {
             (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(alarmPendingIntent())
         }

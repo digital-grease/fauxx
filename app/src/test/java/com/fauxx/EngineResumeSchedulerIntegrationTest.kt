@@ -183,9 +183,62 @@ class EngineResumeSchedulerIntegrationTest {
         scheduler.runCurrent()
     }
 
-    private fun threeAmEpochMs(): Long {
+    @Test
+    fun `engine reaching active fires onActive exactly once so the FGS retires the stale resume`() = runTest {
+        // Noon local — inside the 7-23 window. The loop clears the constraint gate and
+        // signals onActive, which is how PhantomForegroundService learns it may now cancel
+        // a stale pending resume (#156). It must fire exactly once, not every iteration.
+        val clock = FakeClock(noonEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        var activeCount = 0
+        var resigned = false
+
+        engine = buildEngine(clock, dispatcher)
+        engine.setOnActive { activeCount++ }
+        engine.setOnLongPause { resigned = true }
+        engine.start()
+
+        // Several loop iterations (nextDelayMs is 1000ms in the fake scheduler).
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 3500)
+        val countWhileActive = activeCount
+        // Stop the engine so runLoop returns; an in-window engine never resigns on its
+        // own, and leaving it looping would make runTest's end-of-body drain spin forever
+        // on the endless virtual delays.
+        engine.stop()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
+
+        assertEquals("onActive must fire exactly once per run", 1, countWhileActive)
+        assertTrue("engine must not resign while active in-window", !resigned)
+    }
+
+    @Test
+    fun `engine resigning during quiet hours never fires onActive so the resume survives`() = runTest {
+        // 3am — outside the window. The engine resigns on the first constraint check and
+        // never clears the gate, so onActive must NOT fire: the pending resume that will
+        // restart the engine at 7am must not be cancelled (#156).
+        val clock = FakeClock(threeAmEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        var activeFired = false
+        var resigned = false
+
+        engine = buildEngine(clock, dispatcher)
+        engine.setOnActive { activeFired = true }
+        engine.setOnLongPause { resigned = true }
+        engine.start()
+
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 500)
+
+        assertTrue("engine must resign during quiet hours", resigned)
+        assertTrue("onActive must not fire when the engine immediately resigns", !activeFired)
+    }
+
+    private fun threeAmEpochMs(): Long = atHour(3)
+
+    private fun noonEpochMs(): Long = atHour(12)
+
+    private fun atHour(hour: Int): Long {
         val cal = java.util.Calendar.getInstance().apply {
-            set(java.util.Calendar.HOUR_OF_DAY, 3)
+            set(java.util.Calendar.HOUR_OF_DAY, hour)
             set(java.util.Calendar.MINUTE, 0)
             set(java.util.Calendar.SECOND, 0)
             set(java.util.Calendar.MILLISECOND, 0)

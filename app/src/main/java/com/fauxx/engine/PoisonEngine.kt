@@ -176,6 +176,19 @@ class PoisonEngine @Inject constructor(
     @Volatile
     private var onLongPause: ((ResumeSpec) -> Unit)? = null
 
+    /**
+     * Invoked once per [start], the first time the loop clears its constraint gate and is
+     * about to actually run (issue #156). The FGS uses this to cancel any stale pending
+     * resume — but only now that the engine has committed to running, not at start, so a
+     * process death during engine init can no longer wipe a still-needed resume before it
+     * fires.
+     */
+    @Volatile
+    private var onActive: (() -> Unit)? = null
+
+    /** Set true once [runLoop] has invoked [onActive] for the current run. */
+    private var hasSignaledActive: Boolean = false
+
     /** Engine start time on [Clock.elapsedRealtime] for session-duration logging. */
     private var engineStartElapsedMs: Long = 0L
 
@@ -285,6 +298,16 @@ class PoisonEngine @Inject constructor(
         onLongPause = handler
     }
 
+    /**
+     * Register a handler invoked once per [start], the first time the loop confirms the
+     * engine is running (constraint gate cleared). Used by the FGS to retire a stale
+     * pending resume only after the engine has actually committed to running. Safe to call
+     * before or after [start].
+     */
+    fun setOnActive(handler: (() -> Unit)?) {
+        onActive = handler
+    }
+
     /** Start the engine main loop. */
     fun start() {
         if (engineJob?.isActive == true) return
@@ -296,6 +319,7 @@ class PoisonEngine @Inject constructor(
         pauseEnteredAtElapsedMs = 0L
         lastPauseState = EngineState.ACTIVE
         hasResigned = false
+        hasSignaledActive = false
         registerConstraintReceivers()
         engineJob = scope.launch {
             // Sync targeting layer enable flags from persisted profile
@@ -351,6 +375,7 @@ class PoisonEngine @Inject constructor(
         engineJob = null
         _engineState.value = EngineState.STOPPED
         onLongPause = null
+        onActive = null
         unregisterConstraintReceivers()
         val modules = allModules
         scope.launch {
@@ -370,6 +395,7 @@ class PoisonEngine @Inject constructor(
         engineJob = null
         _engineState.value = EngineState.STOPPED
         onLongPause = null
+        onActive = null
         unregisterConstraintReceivers()
         val modules = allModules
         // Fire-and-forget teardown; scope is cancelled after a short grace period so the
@@ -454,6 +480,16 @@ class PoisonEngine @Inject constructor(
             // Reset pause tracking on a successful constraint check
             lastPauseState = EngineState.ACTIVE
             pauseEnteredAtElapsedMs = 0L
+
+            // First time we clear the constraint gate this run, tell the FGS the engine
+            // has committed to running so it can retire any stale pending resume (#156).
+            // Fires after the gate, never at start, so a still-needed resume is never
+            // cancelled before the engine actually takes over from it.
+            if (!hasSignaledActive) {
+                hasSignaledActive = true
+                runCatching { onActive?.invoke() }
+                    .onFailure { Timber.e(it, "onActive handler failed") }
+            }
 
             // Per-hour rate limit: prune stale timestamps and check cap
             val rateLimitNow = clock.currentTimeMillis()

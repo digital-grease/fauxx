@@ -10,6 +10,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.fauxx.engine.modules.MockLocationProviderCleaner
+import com.fauxx.service.EngineReconcileWorker
 import com.fauxx.service.RetentionWorker
 import java.util.concurrent.TimeUnit
 import com.fauxx.logging.CrashReportWriter
@@ -108,6 +109,23 @@ class FauxxApp : Application(), Configuration.Provider {
             )
         } catch (e: Exception) {
             Log.e("FauxxApp", "Failed to schedule log retention worker", e)
+        }
+
+        // Schedule the engine-reconcile watchdog (issue #156). If the auto-resume alarm/work was
+        // dropped (alarm-blocking OEM, force-stop, a kill before re-arming), the engine can stay
+        // off while ENABLED=true with nothing to revive it. This periodic check posts the
+        // tap-to-resume notification when the engine should be running but isn't, bounding
+        // "silently off forever" to a few hours. KEEP so it survives cold starts — note that
+        // KEEP also means a future change to the 6h period won't take effect on existing
+        // installs until the work is cleared; switch to UPDATE if the cadence is ever retuned.
+        try {
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                EngineReconcileWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                PeriodicWorkRequestBuilder<EngineReconcileWorker>(6, TimeUnit.HOURS).build()
+            )
+        } catch (e: Exception) {
+            Log.e("FauxxApp", "Failed to schedule engine reconcile worker", e)
         }
     }
 

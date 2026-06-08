@@ -56,6 +56,9 @@ class ResumeLoopTest {
             .setExecutor(SynchronousExecutor())
             .build()
         WorkManagerTestInitHelper.initializeTestWorkManager(context, config)
+        // ResumeWorker now consults the process-global running flag; clear any leak from a
+        // sibling test in the shared fork so the "enabled → posts" case isn't suppressed.
+        PhantomForegroundService.setRunningForTest(false)
     }
 
     @After
@@ -63,6 +66,7 @@ class ResumeLoopTest {
         notificationManager().cancelAll()
         // Reset the global exact-alarm capability so it doesn't leak into other tests.
         ShadowAlarmManager.setCanScheduleExactAlarms(false)
+        PhantomForegroundService.setRunningForTest(false)
     }
 
     @Test
@@ -123,6 +127,22 @@ class ResumeLoopTest {
         assertTrue("worker must succeed", result is ListenableWorker.Result.Success)
         assertNotNull(
             "an enabled engine must get the tap-to-resume notification",
+            shadowOf(notificationManager()).getNotification(RESUME_NOTIFICATION_ID),
+        )
+    }
+
+    @Test
+    fun `worker posts nothing when the engine is already running`() = runBlocking {
+        // A constraint-met resume from a prior session must not double-notify over a live
+        // engine (#156): if the service is already running, the prompt is suppressed.
+        setEngineEnabled(true)
+        PhantomForegroundService.setRunningForTest(true)
+
+        val result = TestListenableWorkerBuilder<ResumeWorker>(context).build().doWork()
+
+        assertTrue("worker must succeed", result is ListenableWorker.Result.Success)
+        assertNull(
+            "no tap-to-resume nag while the engine is already running",
             shadowOf(notificationManager()).getNotification(RESUME_NOTIFICATION_ID),
         )
     }

@@ -68,30 +68,39 @@ class PhantomForegroundService : Service() {
         when (action) {
             ACTION_START -> {
                 Timber.i("Starting Phantom service")
-                // The user is opening / resuming the engine right now, so any previously
-                // scheduled tap-to-resume notification is stale — cancel it before starting.
-                runCatching { resumeScheduler.cancel() }
+                // NOTE: a stale pending resume is NOT cancelled here. It is cancelled only
+                // once the engine clears its constraint gate (setOnActive below), so a
+                // process death during engine init can't wipe a still-needed resume before
+                // it fires (#156). If the engine resigns instead, it reschedules — which
+                // replaces the stale entry anyway.
                 // startForeground() throws ForegroundServiceStartNotAllowedException (a subclass of
                 // IllegalStateException, API 31+) when the FGS-start is blocked — e.g., from a
                 // BOOT_COMPLETED context chain on Android 14+, or when the flavor-declared FGS
                 // type is not permitted in the current launch context. We catch that here so a
-                // denial never kills the process; BootReceiver's tap-to-resume notification is
-                // the sanctioned recovery path.
+                // denial never kills the process, and post the tap-to-resume notification so the
+                // user can recover (BootReceiver only covers boot/update; #156).
                 try {
                     startForeground(NOTIFICATION_ID, buildNotification("Initializing…", 0))
+                    isRunning = true
                 } catch (e: IllegalStateException) {
-                    Timber.e(e, "startForeground denied (${e.javaClass.simpleName}); stopping service")
+                    Timber.e(e, "startForeground denied (${e.javaClass.simpleName}); posting resume notification and stopping")
+                    runCatching { postResumeNotification(this) }
                     stopSelf()
                     return START_NOT_STICKY
                 } catch (e: SecurityException) {
-                    Timber.e(e, "startForeground denied (SecurityException); stopping service")
+                    Timber.e(e, "startForeground denied (SecurityException); posting resume notification and stopping")
+                    runCatching { postResumeNotification(this) }
                     stopSelf()
                     return START_NOT_STICKY
                 }
                 try {
-                    // Wire long-pause handler before starting so a same-tick resign
+                    // Wire handlers before starting so a same-tick resign or active pass
                     // (e.g., engine started during quiet hours) sees the callback.
                     poisonEngine.setOnLongPause { spec -> onEngineResigned(spec) }
+                    poisonEngine.setOnActive {
+                        runCatching { resumeScheduler.cancel() }
+                            .onFailure { Timber.e(it, "Failed to cancel stale resume on engine active") }
+                    }
                     poisonEngine.start()
                     startNotificationUpdates()
                 } catch (e: Exception) {
@@ -102,6 +111,9 @@ class PhantomForegroundService : Service() {
             }
             ACTION_STOP -> {
                 Timber.i("Stopping Phantom service")
+                // The user is disabling the engine, so any pending resume is now stale.
+                runCatching { resumeScheduler.cancel() }
+                    .onFailure { Timber.e(it, "Error cancelling resume on stop") }
                 notificationJob?.cancel()
                 notificationJob = null
                 // poisonEngine.stop() is non-blocking (module teardown runs async on the
@@ -123,6 +135,10 @@ class PhantomForegroundService : Service() {
      * thread before the process goes away, unlike the engine's async module teardown.
      */
     override fun onTaskRemoved(rootIntent: Intent?) {
+        // The engine is stopped here, so the watchdog must see "not running" — otherwise a
+        // swipe-away that survives as a foregrounded-but-engineless service (isRunning still
+        // true) would hide the stopped engine from EngineReconcileWorker (#156).
+        isRunning = false
         runCatching { mockLocationProviderCleaner.clearOrphanedProvider() }
             .onFailure { Timber.e(it, "Error clearing mock-location provider on task removal") }
         runCatching { poisonEngine.stop() }
@@ -131,6 +147,7 @@ class PhantomForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        isRunning = false
         // Remove the mock-location provider synchronously and unconditionally first: the engine's
         // module teardown below runs async on its own scope and can lose the race to process death,
         // which is exactly how the provider gets orphaned (finding #6).
@@ -246,6 +263,27 @@ class PhantomForegroundService : Service() {
     companion object {
         const val ACTION_START = "com.fauxx.START"
         const val ACTION_STOP = "com.fauxx.STOP"
+
+        /**
+         * True while the service is foregrounded (set after a successful startForeground,
+         * cleared in onDestroy). Read by [EngineReconcileWorker] to tell "engine should be
+         * running but isn't" from "already running". Process-scoped: a fresh process (after
+         * a kill) correctly reads false (#156). WorkManager runs in the same process as the
+         * service, so the read is consistent.
+         */
+        @Volatile
+        var isRunning: Boolean = false
+            private set
+
+        /**
+         * Reset the running flag. The flag is a process-global companion field, so in the
+         * shared unit-test JVM fork one test starting the service would otherwise leak
+         * `isRunning = true` into the next test. Tests that read it call this in setup.
+         */
+        @androidx.annotation.VisibleForTesting
+        internal fun setRunningForTest(value: Boolean) {
+            isRunning = value
+        }
 
         fun startIntent(context: Context) =
             Intent(context, PhantomForegroundService::class.java).apply { action = ACTION_START }
