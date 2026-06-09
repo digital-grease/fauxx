@@ -16,8 +16,10 @@ import timber.log.Timber
  * - Constraint satisfaction (network/battery, after a prolonged no-usable-network or battery pause)
  *
  * Honours [PreferenceKeys.ENABLED] so a user who disabled the engine while paused
- * doesn't get nagged. Plain [CoroutineWorker] — no Hilt deps needed; falls through
- * the [androidx.hilt.work.HiltWorkerFactory] to WorkManager's default factory.
+ * doesn't get nagged, and skips the prompt when the service is already running so a
+ * constraint-met resume from a prior session can't double-notify over a live engine
+ * (#156). Plain [CoroutineWorker] — no Hilt deps needed; falls through the
+ * [androidx.hilt.work.HiltWorkerFactory] to WorkManager's default factory.
  */
 class ResumeWorker(
     context: Context,
@@ -33,6 +35,10 @@ class ResumeWorker(
         }
         if (!enabled) {
             Timber.i("ResumeWorker: engine disabled by user; no notification posted")
+            return Result.success()
+        }
+        if (PhantomForegroundService.isRunning) {
+            Timber.i("ResumeWorker: engine already running; no notification posted")
             return Result.success()
         }
         Timber.i("ResumeWorker: posting tap-to-resume notification")

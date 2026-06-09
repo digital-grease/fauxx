@@ -93,12 +93,28 @@ class BootGuardTest {
 
     @Test
     fun `isInSafeMode true at threshold`() {
+        // Two consecutive interactive starts without a success in between. Each process
+        // start gets a fresh BootGuard instance; the counter lives in SharedPreferences.
+        BootGuard(context).recordBootStart()
         val guard = BootGuard(context)
-        guard.recordBootStart()
         guard.recordBootStart()
 
         assertTrue(guard.isInSafeMode())
         assertEquals(BootGuard.SAFE_MODE_THRESHOLD, store[BootGuard.KEY_BOOT_COUNTER])
+    }
+
+    @Test
+    fun `recordBootStart counts only once per process`() {
+        // Activity recreation (rotation, config change) re-runs MainActivity.onCreate in
+        // the same process; repeat calls on the same instance must not deepen the counter
+        // (issue #157), or three quick rotations would read as a hang loop.
+        val guard = BootGuard(context)
+        assertTrue(guard.recordBootStart())
+        assertFalse(guard.recordBootStart())
+        assertFalse(guard.recordBootStart())
+
+        assertEquals(1, store[BootGuard.KEY_BOOT_COUNTER])
+        assertFalse(guard.isInSafeMode())
     }
 
     @Test
@@ -111,16 +127,17 @@ class BootGuardTest {
 
     @Test
     fun `successful boot after near-miss recovers normal state`() {
-        val guard = BootGuard(context)
-        // First boot trips counter to 1 but main thread is responsive long enough
-        // for recordBootSuccess to fire.
-        guard.recordBootStart()
-        guard.recordBootSuccess()
-        // Next boot starts from zero again.
-        guard.recordBootStart()
+        // First process start trips counter to 1 but main thread is responsive long
+        // enough for recordBootSuccess to fire.
+        val firstProcess = BootGuard(context)
+        firstProcess.recordBootStart()
+        firstProcess.recordBootSuccess()
+        // Next process start counts from zero again.
+        val secondProcess = BootGuard(context)
+        secondProcess.recordBootStart()
 
         assertEquals(1, store[BootGuard.KEY_BOOT_COUNTER])
-        assertFalse(guard.isInSafeMode())
+        assertFalse(secondProcess.isInSafeMode())
     }
 
     @Test

@@ -10,9 +10,9 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.fauxx.engine.modules.MockLocationProviderCleaner
+import com.fauxx.service.EngineReconcileWorker
 import com.fauxx.service.RetentionWorker
 import java.util.concurrent.TimeUnit
-import com.fauxx.logging.BootGuard
 import com.fauxx.logging.CrashReportWriter
 import com.fauxx.logging.EncryptedFileTree
 import dagger.hilt.android.HiltAndroidApp
@@ -34,9 +34,6 @@ class FauxxApp : Application(), Configuration.Provider {
 
     @Inject
     lateinit var crashReportWriter: CrashReportWriter
-
-    @Inject
-    lateinit var bootGuard: BootGuard
 
     @Inject
     lateinit var mockLocationProviderCleaner: MockLocationProviderCleaner
@@ -89,23 +86,10 @@ class FauxxApp : Application(), Configuration.Provider {
             Log.e("FauxxApp", "Failed to initialize encrypted file logging", e)
         }
 
-        // Boot-hang guard: increment the boot counter as early as possible. MainActivity
-        // schedules BootGuard.recordBootSuccess() a few seconds after onCreate; if the
-        // main thread is hung before then (e.g., WebView constructor stuck in
-        // PhantomWebViewPool.initialize() on a broken WebView provider) the success
-        // callback never fires and the counter survives. Issue #52 retired the
-        // ScrapeWorker that was the primary cold-boot hang vector — the guard now
-        // covers the remaining AdPollution / Cookie / DiverseBrowsing WebView paths
-        // that can still hang on certain device + WebView-provider combinations.
-        try {
-            bootGuard.recordBootStart()
-            if (bootGuard.isInSafeMode()) {
-                bootGuard.markRecoveryTriggered()
-                Timber.w("BootGuard: entering safe mode after repeated startup failures")
-            }
-        } catch (e: Exception) {
-            Log.e("FauxxApp", "BootGuard recordBootStart failed", e)
-        }
+        // NOTE: the boot-hang guard counter is incremented in MainActivity.onCreate, not
+        // here. Counting every process start safe-moded healthy installs, because
+        // background starts (BootReceiver, RetentionWorker, AlarmResumeReceiver) can
+        // never reach the success callback that resets the counter (issue #157).
 
         // Install crash handler that writes stack trace + recent logs to a file.
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
@@ -125,6 +109,23 @@ class FauxxApp : Application(), Configuration.Provider {
             )
         } catch (e: Exception) {
             Log.e("FauxxApp", "Failed to schedule log retention worker", e)
+        }
+
+        // Schedule the engine-reconcile watchdog (issue #156). If the auto-resume alarm/work was
+        // dropped (alarm-blocking OEM, force-stop, a kill before re-arming), the engine can stay
+        // off while ENABLED=true with nothing to revive it. This periodic check posts the
+        // tap-to-resume notification when the engine should be running but isn't, bounding
+        // "silently off forever" to a few hours. KEEP so it survives cold starts — note that
+        // KEEP also means a future change to the 6h period won't take effect on existing
+        // installs until the work is cleared; switch to UPDATE if the cadence is ever retuned.
+        try {
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                EngineReconcileWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                PeriodicWorkRequestBuilder<EngineReconcileWorker>(6, TimeUnit.HOURS).build()
+            )
+        } catch (e: Exception) {
+            Log.e("FauxxApp", "Failed to schedule engine reconcile worker", e)
         }
     }
 

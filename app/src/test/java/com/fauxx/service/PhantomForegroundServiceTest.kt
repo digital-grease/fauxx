@@ -4,13 +4,14 @@ import androidx.work.NetworkType
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.modules.MockLocationProviderCleaner
 import com.fauxx.engine.webview.PhantomWebViewPool
+import com.fauxx.logging.EncryptedFileTree
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import org.junit.Assert.assertEquals
+import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -39,24 +40,35 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], application = android.app.Application::class)
 class PhantomForegroundServiceTest {
 
+    @After
+    fun tearDown() {
+        // Starting the service flips the process-global isRunning flag; reset it so it
+        // can't leak into other tests in the shared JVM fork (e.g. EngineReconcileWorkerTest).
+        PhantomForegroundService.setRunningForTest(false)
+    }
+
     @Test
     fun `onEngineResigned schedules the resume spec and stops the service`() {
         val service = Robolectric.buildService(PhantomForegroundService::class.java).get()
         val resumeScheduler: ResumeScheduler = mockk(relaxed = true)
+        val encryptedFileTree: EncryptedFileTree = mockk(relaxed = true)
         service.poisonEngine = mockk(relaxed = true)
         service.webViewPool = mockk(relaxed = true)
         service.resumeScheduler = resumeScheduler
+        service.encryptedFileTree = encryptedFileTree
 
         val spec = ResumeSpec.WhenConstraintMet(network = NetworkType.UNMETERED)
         service.onEngineResigned(spec)
 
         verify(exactly = 1) { resumeScheduler.schedule(spec) }
+        // Logs are flushed before the FGS tears down so a post-resign kill can't drop them (#158).
+        verify(exactly = 1) { encryptedFileTree.flush() }
         val shadow = Shadows.shadowOf(service)
         assertTrue("service must have called stopSelf", shadow.isStoppedBySelf)
     }
 
     @Test
-    fun `ACTION_START wires the engine callback to onEngineResigned and cancels stale resume`() {
+    fun `ACTION_START wires resign and active callbacks and only the active signal cancels the stale resume`() {
         val service = Robolectric.buildService(PhantomForegroundService::class.java).get()
         val engine: PoisonEngine = mockk(relaxed = true)
         val resumeScheduler: ResumeScheduler = mockk(relaxed = true) {
@@ -66,51 +78,60 @@ class PhantomForegroundServiceTest {
         service.poisonEngine = engine
         service.webViewPool = mockk<PhantomWebViewPool>(relaxed = true)
         service.resumeScheduler = resumeScheduler
+        service.encryptedFileTree = mockk(relaxed = true)
 
-        // Capture the callback the service registers with the engine.
-        val captured = slot<(ResumeSpec) -> Unit>()
-        every { engine.setOnLongPause(capture(captured)) } just Runs
+        // Capture both callbacks the service registers with the engine.
+        val resignCb = slot<(ResumeSpec) -> Unit>()
+        val activeCb = slot<() -> Unit>()
+        every { engine.setOnLongPause(capture(resignCb)) } just Runs
+        every { engine.setOnActive(capture(activeCb)) } just Runs
 
         val startIntent = PhantomForegroundService.startIntent(service)
         service.onStartCommand(startIntent, 0, 1)
 
-        // Cancellation of stale resume happens before startForeground (so a fresh
-        // launch never leaves a redundant notification queued for later).
-        verify(exactly = 1) { resumeScheduler.cancel() }
+        // The stale resume is NOT cancelled on start anymore (#156): cancelling before the
+        // engine confirms it is running could wipe a still-needed resume if the process is
+        // killed during engine init.
+        verify(exactly = 0) { resumeScheduler.cancel() }
         verify(exactly = 1) { engine.setOnLongPause(any()) }
+        verify(exactly = 1) { engine.setOnActive(any()) }
         verify(exactly = 1) { engine.start() }
 
-        // Now exercise the captured callback — this is the actual wire being tested:
-        // does the engine's resignation signal reach the service's resign handler?
-        assertNotNull("engine callback must have been captured", captured.captured)
-        val spec = ResumeSpec.AtTime(System.currentTimeMillis() + 60_000)
-        captured.captured(spec)
+        // The active callback is what retires the stale resume — once the engine has
+        // committed to running.
+        assertNotNull("active callback must have been captured", activeCb.captured)
+        activeCb.captured()
+        verify(exactly = 1) { resumeScheduler.cancel() }
 
+        // The resign callback still schedules a fresh resume and stops the service.
+        assertNotNull("resign callback must have been captured", resignCb.captured)
+        val spec = ResumeSpec.AtTime(System.currentTimeMillis() + 60_000)
+        resignCb.captured(spec)
         verify(exactly = 1) { resumeScheduler.schedule(spec) }
         val shadow = Shadows.shadowOf(service)
-        assertTrue("invoking the engine callback must stop the service", shadow.isStoppedBySelf)
+        assertTrue("invoking the resign callback must stop the service", shadow.isStoppedBySelf)
     }
 
     @Test
-    fun `ACTION_STOP path runs without invoking the resume scheduler`() {
+    fun `ACTION_STOP cancels the pending resume and never schedules a new one`() {
         val service = Robolectric.buildService(PhantomForegroundService::class.java).get()
         val resumeScheduler: ResumeScheduler = mockk(relaxed = true)
         service.poisonEngine = mockk(relaxed = true)
         service.webViewPool = mockk(relaxed = true)
         service.resumeScheduler = resumeScheduler
+        service.encryptedFileTree = mockk(relaxed = true)
 
-        // Start first so notificationJob is non-null and stopForeground is meaningful.
+        // Start first so notificationJob is non-null and stopForeground is meaningful. The
+        // relaxed engine mock never fires onActive, so start() alone cancels nothing.
         service.onStartCommand(PhantomForegroundService.startIntent(service), 0, 1)
         // Then issue the user-initiated stop.
         val stopIntent = PhantomForegroundService.stopIntent(service)
         service.onStartCommand(stopIntent, 0, 2)
 
-        // A user-initiated stop must not enqueue a tap-to-resume notification — the
-        // user explicitly turned the engine off; nagging them later would be wrong.
+        // Disabling the engine retires any pending resume (so a dropped-but-armed resume
+        // can't fire later) and must never queue a new tap-to-resume nag.
+        verify(exactly = 1) { resumeScheduler.cancel() }
         verify(exactly = 0) { resumeScheduler.schedule(any()) }
-        // It's fine for cancel() to be called (ACTION_START calls it; the test
-        // double-counts that). Just assert it isn't a schedule.
-        assertEquals(Unit, Unit) // explicit pass after the negative verify
     }
 
     @Test
@@ -123,6 +144,7 @@ class PhantomForegroundServiceTest {
         service.poisonEngine = engine
         service.webViewPool = mockk(relaxed = true)
         service.resumeScheduler = mockk(relaxed = true)
+        service.encryptedFileTree = mockk(relaxed = true)
         service.mockLocationProviderCleaner = cleaner
 
         service.onTaskRemoved(null)
@@ -140,6 +162,7 @@ class PhantomForegroundServiceTest {
         service.poisonEngine = mockk(relaxed = true)
         service.webViewPool = mockk(relaxed = true)
         service.resumeScheduler = mockk(relaxed = true)
+        service.encryptedFileTree = mockk(relaxed = true)
         service.mockLocationProviderCleaner = cleaner
 
         service.onDestroy()

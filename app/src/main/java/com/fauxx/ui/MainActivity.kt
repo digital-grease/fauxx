@@ -86,12 +86,27 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        // Boot-hang guard (#157): count this interactive start before anything below can
+        // hang Main (reconcileEngineState → FGS → WebView pool; setContent inflation).
+        // Counting here instead of FauxxApp.onCreate keeps background process starts
+        // (BootReceiver, RetentionWorker, AlarmResumeReceiver) out of the counter — they
+        // can never run the recordBootSuccess handler below, so counting them safe-moded
+        // healthy installs (a reboot plus one idle day was enough). Repeat onCreate calls
+        // in the same process (activity recreation) are ignored by the guard.
+        val counted = runCatching { bootGuard.recordBootStart() }
+            .onFailure { Timber.e(it, "BootGuard recordBootStart failed") }
+            .getOrDefault(false)
+
         val inSafeMode = bootGuard.isInSafeMode()
         if (inSafeMode) {
-            // Two boots in a row failed to reach the success callback — the most likely
-            // cause is that PhantomWebViewPool's WebView constructor is hanging Main when
-            // a Layer 2 scrape kicks off. Force-disable Layer 2 + the engine before
-            // anything tries to start them, then let startup proceed normally.
+            // Two interactive starts in a row failed to reach the success callback — the
+            // most likely cause is that PhantomWebViewPool's WebView constructor is
+            // hanging Main during engine startup. Force-disable Layer 2 + the engine
+            // before anything tries to start them, then let startup proceed normally.
+            // Arm the recovery notice only when this start actually counted: an activity
+            // recreation inside the 4s success window must not re-arm the notice that
+            // this same launch already consumed (duplicate toast).
+            if (counted) bootGuard.markRecoveryTriggered()
             Timber.w("BootGuard: safe mode active — disabling Layer 2 and engine")
             lifecycleScope.launch {
                 runCatching {

@@ -11,6 +11,7 @@ import com.fauxx.data.model.IntensityLevel
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.QueryBankManager
+import com.fauxx.engine.NetworkTransport
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.modules.AppSignalModule
@@ -44,6 +45,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import timber.log.Timber
 import kotlin.random.Random
 
 /**
@@ -144,6 +146,76 @@ class PoisonEngineLoopTest {
         )
         val whenConstraint = resignedWith as ResumeSpec.WhenConstraintMet
         assertEquals(androidx.work.NetworkType.UNMETERED, whenConstraint.network)
+    }
+
+    @Test
+    fun `a sustained pause logs its reason once, not on every retry tick`() = runTest {
+        // #158 headline behavior: a long pause must produce ONE "Paused: ..." line, not one
+        // per constraint-check tick. Pre-fix, checkConstraints logged every tick (~10 lines
+        // over 10 minutes at LOW intensity's 60s cadence); post-fix, logging is per-transition.
+        val tree = CountingPauseTree()
+        Timber.plant(tree)
+        try {
+            val clock = FakeClock(noonEpochMs())
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            engine = buildEngine(clock, profile = baseProfile, loopDispatcher = dispatcher)
+            engine.setOnLongPause { }
+            engine.start()
+            engine.setCachedConstraintStateForTest(transport = NetworkTransport.NONE) // -> PAUSED_WIFI every tick
+
+            advanceVirtualTime(clock, scheduler = testScheduler, by = 10 * 60 * 1000)
+            val pauseLogs = tree.messages.count { it.contains("no usable network") }
+            // Stop so runTest's end-of-body drain doesn't spin the never-resigning loop.
+            engine.stop()
+            advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
+
+            assertEquals("a sustained no-network pause must log its reason once, not per tick", 1, pauseLogs)
+        } finally {
+            Timber.uproot(tree)
+        }
+    }
+
+    private class CountingPauseTree : Timber.Tree() {
+        val messages = mutableListOf<String>()
+        override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+            if (message.startsWith("Paused:")) messages.add(message)
+        }
+    }
+
+    @Test
+    fun `cumulative pause across a network-battery flicker still resigns at the threshold`() = runTest {
+        // #158: a no-network to battery flicker must not reset the resign clock. 20 min no-network
+        // + 15 min battery is 35 min total, over the 30-min threshold, so the engine must resign
+        // even though neither single state lasted 30 min. Pre-fix, the per-transition clock reset
+        // counted only the 15-min battery leg and the engine never resigned.
+        val clock = FakeClock(noonEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val profile = baseProfile.copy(batteryThreshold = 20)
+        engine = buildEngine(clock, profile = profile, loopDispatcher = dispatcher)
+
+        var resignedWith: ResumeSpec? = null
+        engine.setOnLongPause { spec -> resignedWith = spec }
+        engine.start()
+        // Seed AFTER start() so registerConstraintReceivers (which re-reads transport/battery on
+        // start) can't overwrite it. Begin with no usable network, battery full -> PAUSED_WIFI.
+        engine.setCachedConstraintStateForTest(transport = NetworkTransport.NONE, batteryLevel = 100)
+
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 20 * 60 * 1000)
+        assertNull("must not resign mid-flicker before the cumulative threshold", resignedWith)
+
+        // Flicker to a battery pause (Wi-Fi back, battery now low) without going active.
+        engine.setCachedConstraintStateForTest(transport = NetworkTransport.WIFI, batteryLevel = 5)
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 15 * 60 * 1000)
+
+        assertNotNull("cumulative 35-min pause must cross the 30-min resign threshold", resignedWith)
+        assertTrue(
+            "battery-pause resign uses a battery-constraint spec",
+            resignedWith is ResumeSpec.WhenConstraintMet
+        )
+        assertTrue(
+            "battery-pause resign requires batteryNotLow",
+            (resignedWith as ResumeSpec.WhenConstraintMet).batteryNotLow
+        )
     }
 
     @Test

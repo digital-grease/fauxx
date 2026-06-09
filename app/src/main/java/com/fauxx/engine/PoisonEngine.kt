@@ -180,6 +180,19 @@ class PoisonEngine @Inject constructor(
     @Volatile
     private var onLongPause: ((ResumeSpec) -> Unit)? = null
 
+    /**
+     * Invoked once per [start], the first time the loop clears its constraint gate and is
+     * about to actually run (issue #156). The FGS uses this to cancel any stale pending
+     * resume — but only now that the engine has committed to running, not at start, so a
+     * process death during engine init can no longer wipe a still-needed resume before it
+     * fires.
+     */
+    @Volatile
+    private var onActive: (() -> Unit)? = null
+
+    /** Set true once [runLoop] has invoked [onActive] for the current run. */
+    private var hasSignaledActive: Boolean = false
+
     /** Engine start time on [Clock.elapsedRealtime] for session-duration logging. */
     private var engineStartElapsedMs: Long = 0L
 
@@ -208,6 +221,22 @@ class PoisonEngine @Inject constructor(
      * Wi-Fi from mobile data from no-network, not just "on Wi-Fi or not".
      */
     private val cachedTransport = java.util.concurrent.atomic.AtomicReference(NetworkTransport.NONE)
+
+    /**
+     * Seed the cached constraint state directly. Mirrors what the battery/connectivity
+     * BroadcastReceivers do, for tests that drive constraint transitions without a live
+     * broadcast (e.g. a no-network↔battery flicker exercising the cumulative resign clock).
+     */
+    @VisibleForTesting
+    internal fun setCachedConstraintStateForTest(
+        transport: NetworkTransport? = null,
+        batteryLevel: Int? = null,
+        charging: Boolean? = null,
+    ) {
+        transport?.let { cachedTransport.set(it) }
+        batteryLevel?.let { cachedBatteryLevel.set(it) }
+        charging?.let { cachedIsCharging.set(it) }
+    }
 
     /** Today's successful action count, incremented on each action. Reset on day rollover. */
     private val todayActionCount = AtomicInteger(0)
@@ -295,6 +324,16 @@ class PoisonEngine @Inject constructor(
         onLongPause = handler
     }
 
+    /**
+     * Register a handler invoked once per [start], the first time the loop confirms the
+     * engine is running (constraint gate cleared). Used by the FGS to retire a stale
+     * pending resume only after the engine has actually committed to running. Safe to call
+     * before or after [start].
+     */
+    fun setOnActive(handler: (() -> Unit)?) {
+        onActive = handler
+    }
+
     /** Start the engine main loop. */
     fun start() {
         if (engineJob?.isActive == true) return
@@ -306,6 +345,7 @@ class PoisonEngine @Inject constructor(
         pauseEnteredAtElapsedMs = 0L
         lastPauseState = EngineState.ACTIVE
         hasResigned = false
+        hasSignaledActive = false
         registerConstraintReceivers()
         engineJob = scope.launch {
             // Sync targeting layer enable flags from persisted profile
@@ -361,6 +401,7 @@ class PoisonEngine @Inject constructor(
         engineJob = null
         _engineState.value = EngineState.STOPPED
         onLongPause = null
+        onActive = null
         unregisterConstraintReceivers()
         val modules = allModules
         scope.launch {
@@ -380,6 +421,7 @@ class PoisonEngine @Inject constructor(
         engineJob = null
         _engineState.value = EngineState.STOPPED
         onLongPause = null
+        onActive = null
         unregisterConstraintReceivers()
         val modules = allModules
         // Fire-and-forget teardown; scope is cancelled after a short grace period so the
@@ -451,11 +493,18 @@ class PoisonEngine @Inject constructor(
             // Constraint checks
             val constraintState = checkConstraints(currentProfile)
             if (constraintState != null) {
-                // Track pause-entry time on state transition so [decidePauseAction] can
-                // measure how long we've been stuck on the same constraint.
                 if (lastPauseState != constraintState) {
-                    pauseEnteredAtElapsedMs = clock.elapsedRealtime()
+                    // Start the cumulative pause clock only on the ACTIVE→pause edge. Keeping
+                    // it running across pause→pause transitions (e.g. a wifi↔battery flicker)
+                    // means the resign threshold measures total time paused, not time in the
+                    // current state — otherwise a flicker resets the clock every few seconds
+                    // and the engine never resigns (#158).
+                    if (lastPauseState == EngineState.ACTIVE) {
+                        pauseEnteredAtElapsedMs = clock.elapsedRealtime()
+                    }
                     lastPauseState = constraintState
+                    // Log the reason once per transition, not on every retry tick (#158).
+                    logPauseReason(constraintState, currentProfile)
                 }
                 _engineState.value = constraintState
 
@@ -483,6 +532,16 @@ class PoisonEngine @Inject constructor(
             // non-null-but-stale (flip between tiers), the wrong tier governs for at most
             // this one iteration before the loop-top recompute corrects it.
             val activeIntensity = effectiveIntensity ?: continue
+
+            // First time we clear the constraint gate this run (with a usable network),
+            // tell the FGS the engine has committed to running so it can retire any stale
+            // pending resume (#156). Fires after the gate, never at start, so a still-needed
+            // resume is never cancelled before the engine actually takes over from it.
+            if (!hasSignaledActive) {
+                hasSignaledActive = true
+                runCatching { onActive?.invoke() }
+                    .onFailure { Timber.e(it, "onActive handler failed") }
+            }
 
             // Per-hour rate limit: prune stale timestamps and check cap. The window is
             // deliberately network-agnostic: after a HIGH-on-WiFi hour, dropping to mobile
@@ -609,8 +668,9 @@ class PoisonEngine @Inject constructor(
      * Returns null if all constraints pass, or the specific [EngineState] pause reason.
      */
     private fun checkConstraints(currentProfile: PoisonProfile): EngineState? {
+        // No logging here — this runs every retry tick (and again per 60s sleep chunk).
+        // The reason is logged once per transition by [logPauseReason] from runLoop (#158).
         if (effectiveIntensity(currentProfile) == null) {
-            Timber.d("Paused: no usable network (transport=${cachedTransport.get()}, mobile=${currentProfile.mobileIntensity})")
             return EngineState.PAUSED_WIFI
         }
         if (shouldPauseForBattery(
@@ -620,14 +680,29 @@ class PoisonEngine @Inject constructor(
                 ignoreThresholdWhileCharging = currentProfile.ignoreBatteryThresholdWhileCharging
             )
         ) {
-            Timber.d("Paused: battery below threshold")
             return EngineState.PAUSED_BATTERY
         }
         if (!isWithinAllowedHours(currentProfile)) {
-            Timber.d("Paused: outside allowed hours (${currentProfile.allowedHoursStart}-${currentProfile.allowedHoursEnd})")
             return EngineState.PAUSED_QUIET_HOURS
         }
         return null
+    }
+
+    /**
+     * Log the reason for a constraint pause. Called once per pause-state transition from
+     * [runLoop], NOT from [checkConstraints] (which runs every few seconds), so a long pause
+     * produces a single log line instead of one per retry tick (#158). A wifi↔battery flicker
+     * still logs each genuine state change.
+     */
+    private fun logPauseReason(state: EngineState, profile: PoisonProfile) {
+        when (state) {
+            EngineState.PAUSED_WIFI ->
+                Timber.d("Paused: no usable network (transport=${cachedTransport.get()}, mobile=${profile.mobileIntensity})")
+            EngineState.PAUSED_BATTERY -> Timber.d("Paused: battery below threshold")
+            EngineState.PAUSED_QUIET_HOURS ->
+                Timber.d("Paused: outside allowed hours (${profile.allowedHoursStart}-${profile.allowedHoursEnd})")
+            else -> { /* ACTIVE / PAUSED_RATE_LIMIT / STOPPED log via their own paths */ }
+        }
     }
 
     /**
@@ -652,8 +727,8 @@ class PoisonEngine @Inject constructor(
     internal fun isWithinAllowedHours(profile: PoisonProfile, nowHour: Int = currentHourOfDay()): Boolean =
         AllowedHours.isWithin(nowHour, profile.allowedHoursStart, profile.allowedHoursEnd)
 
-    /** Returns the constraint-check retry interval scaled by intensity.
-     *  HIGH (200/hr) → ~3.6s, MEDIUM (60/hr) → ~12s, LOW (12/hr) → 60s. */
+    /** Returns the constraint-check retry interval scaled by intensity (integer-divided).
+     *  HIGH (200/hr) → 3.75s, MEDIUM (60/hr) → 12s, LOW (12/hr) → 60s. */
     private fun constraintCheckMs(actionsPerHour: Int): Long =
         maxOf(CONSTRAINT_CHECK_MIN_MS, CONSTRAINT_CHECK_BASE_MS / maxOf(1, actionsPerHour / 12).toLong())
 
