@@ -41,6 +41,29 @@ class UserAgentPool @Inject constructor(
         return if (agents.isNotEmpty()) agents.random(random) else DEFAULT_UA
     }
 
+    /**
+     * Returns an Android-Chromium-family User-Agent (Chrome or Samsung Browser on
+     * Android) for the WebView path. The System WebView always performs an
+     * Android-Chromium TLS handshake, so applying a non-Chromium UA there would
+     * recreate the "Chrome UA over non-Chrome TLS" contradiction that issue #168
+     * closes. A custom UA is honored only when it is itself Chromium-on-Android;
+     * otherwise a pool string is used. Falls back to [DEFAULT_UA] (a Pixel Chrome UA).
+     */
+    fun randomChromiumAndroid(): String {
+        profileRepo.getProfile().customUserAgent
+            ?.takeIf { it.isNotBlank() && isChromiumAndroid(it) }
+            ?.let { return it }
+        return if (chromiumAndroidAgents.isNotEmpty()) chromiumAndroidAgents.random(random) else DEFAULT_UA
+    }
+
+    /** Android + Chrome/Samsung only; excludes Firefox, Opera, Edge, and iOS browsers. */
+    private fun isChromiumAndroid(ua: String): Boolean =
+        ua.contains("Android") && ua.contains("Chrome/") &&
+            !ua.contains("Firefox") && !ua.contains("OPR/") &&
+            !ua.contains("EdgA") && !ua.contains("CriOS") && !ua.contains("FxiOS")
+
+    private val chromiumAndroidAgents: List<String> by lazy { agents.filter(::isChromiumAndroid) }
+
     private fun loadAgents(): List<String> {
         return try {
             val json = context.assets.open("user_agents.json")

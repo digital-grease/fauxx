@@ -119,6 +119,15 @@
                 android:value="true" />
         </service>
 
+        <!-- Safe Browsing disabled app-wide. The app's only WebViews are the phantom pool,
+             which would otherwise disclose every synthetic destination (including SERP URLs,
+             now that search routes through it) to Google Safe Browsing in real time. The pool
+             only loads curated, blocklist-gated URLs. Dynamic / on-device malware avoidance is
+             tracked as a follow-up. (#168/#169 M1) -->
+        <meta-data
+            android:name="android.webkit.WebView.EnableSafeBrowsing"
+            android:value="false" />
+
     </application>
 
 </manifest>

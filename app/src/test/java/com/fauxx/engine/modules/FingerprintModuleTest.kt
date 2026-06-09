@@ -36,7 +36,7 @@ class FingerprintModuleTest {
     @Test
     fun `onAction pushes the rotated user agent to the webview pool exactly once`() = runTest {
         val theUA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) FauxxTest/1.0"
-        every { userAgentPool.random() } returns theUA
+        every { userAgentPool.randomChromiumAndroid() } returns theUA
 
         newModule().onAction(CategoryPool.GAMING)
 
@@ -46,7 +46,7 @@ class FingerprintModuleTest {
     @Test
     fun `onAction returns a FINGERPRINT_ROTATE entry whose detail records the rotated UA`() = runTest {
         val theUA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) FauxxTest/1.0"
-        every { userAgentPool.random() } returns theUA
+        every { userAgentPool.randomChromiumAndroid() } returns theUA
 
         val result = newModule().onAction(CategoryPool.GAMING)
 

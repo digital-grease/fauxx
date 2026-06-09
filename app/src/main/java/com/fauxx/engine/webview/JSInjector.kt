@@ -145,4 +145,12 @@ object JSInjector {
         FONT_SPOOF_SCRIPT,
         GPC_SCRIPT
     ).joinToString("\n\n")
+
+    /**
+     * Reduced script set for high-scrutiny endpoints (search engines). Drops the
+     * automation-shaped overrides (per-load navigator randomization, WebAssembly/Worker
+     * removal, eval blocking) that a SERP's bot-detection can flag, keeping only the
+     * benign Global Privacy Control signal. Gated by host in PhantomWebViewClient (#168/#169).
+     */
+    val MINIMAL_SCRIPTS = GPC_SCRIPT
 }

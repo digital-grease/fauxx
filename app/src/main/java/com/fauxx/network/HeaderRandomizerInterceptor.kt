@@ -1,7 +1,7 @@
 package com.fauxx.network
 
+import com.fauxx.locale.AcceptLanguageVariants
 import com.fauxx.locale.LocaleManager
-import com.fauxx.locale.SupportedLocale
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
@@ -44,14 +44,8 @@ class HeaderRandomizerInterceptor @Inject constructor(
 
     private fun randomAccept(): String = ACCEPT_VARIANTS.random(random)
 
-    private fun randomAcceptLanguage(): String {
-        val locale = localeManager.currentLocale
-        // Fall back to EN if a locale somehow has no variants table (shouldn't happen
-        // since the enum and the table are co-defined, but a missing entry should not
-        // emit an empty header).
-        val variants = LANGUAGE_VARIANTS[locale] ?: LANGUAGE_VARIANTS.getValue(SupportedLocale.EN)
-        return variants.random(random)
-    }
+    private fun randomAcceptLanguage(): String =
+        AcceptLanguageVariants.forLocale(localeManager.currentLocale, random)
 
     companion object {
         private val ACCEPT_VARIANTS = listOf(
@@ -60,42 +54,5 @@ class HeaderRandomizerInterceptor @Inject constructor(
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"
         )
 
-        /**
-         * Per-locale Accept-Language pools. Primary language always matches the active
-         * locale; secondary languages mirror the regional default browser preference
-         * sets so a profile inspecting these headers sees plausible language ordering.
-         */
-        private val LANGUAGE_VARIANTS: Map<SupportedLocale, List<String>> = mapOf(
-            SupportedLocale.EN to listOf(
-                "en-US,en;q=0.9",
-                "en-US,en;q=0.8",
-                "en-GB,en;q=0.9",
-                "en-US,en;q=0.9,es;q=0.8",
-                "en-US,en;q=0.9,fr;q=0.7"
-            ),
-            SupportedLocale.ES to listOf(
-                "es-ES,es;q=0.9,en;q=0.6",
-                "es-MX,es;q=0.9,en;q=0.6",
-                "es-AR,es;q=0.9",
-                "es-ES,es;q=0.9,en-US;q=0.7,en;q=0.5",
-                "es-419,es;q=0.9,en;q=0.6"
-            ),
-            SupportedLocale.FR to listOf(
-                "fr-FR,fr;q=0.9,en;q=0.6",
-                "fr-CA,fr;q=0.9,en;q=0.6",
-                "fr-FR,fr;q=0.9",
-                "fr-FR,fr;q=0.9,en-US;q=0.7,en;q=0.5",
-                "fr-BE,fr;q=0.9,en;q=0.6"
-            ),
-            // Without a RU entry, a Russian install fell back to the EN variants (getValue(EN))
-            // and emitted en-US — the locale/language mismatch the interceptor exists to avoid.
-            SupportedLocale.RU to listOf(
-                "ru-RU,ru;q=0.9,en;q=0.6",
-                "ru-RU,ru;q=0.9",
-                "ru,en;q=0.7",
-                "ru-RU,ru;q=0.9,en-US;q=0.7,en;q=0.5",
-                "ru-RU,ru;q=0.8,en;q=0.6"
-            )
-        )
     }
 }
