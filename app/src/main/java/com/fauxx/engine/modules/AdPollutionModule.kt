@@ -7,6 +7,7 @@ import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.webview.PhantomWebViewPool
+import com.fauxx.engine.webview.SYNTHETIC_WEBVIEW_HEADERS
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -25,7 +26,8 @@ private val AD_DASHBOARD_URLS = listOf(
  * Loads ad-heavy pages in a background WebView and visits ad preference dashboards
  * to populate the user's ad profile with off-demographic signals.
  *
- * Sub-1% CTR simulation: only "clicks" (loads ad landing page) on ~0.8% of page loads.
+ * No ad clicks or conversions are generated: every load is a plain page visit,
+ * including the occasional ad-preference dashboard visit.
  */
 @Singleton
 class AdPollutionModule @Inject constructor(
@@ -44,10 +46,10 @@ class AdPollutionModule @Inject constructor(
     override fun isEnabled(): Boolean = profileRepo.getProfile().adPollutionEnabled
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
-        // 10% chance: visit an ad dashboard (logged as AD_CLICK);
-        // otherwise: plain crawl-list page fetch (logged as PAGE_VISIT).
+        // 10% chance: visit an ad-preference dashboard; otherwise a plain crawl-list
+        // page fetch. Both are logged as PAGE_VISIT: no ad clicks or conversions occur.
         val isDashboardVisit = random.nextFloat() < 0.10f
-        val actionType = if (isDashboardVisit) ActionType.AD_CLICK else ActionType.PAGE_VISIT
+        val actionType = ActionType.PAGE_VISIT
 
         val url = if (isDashboardVisit) {
             AD_DASHBOARD_URLS.random(random)
@@ -82,7 +84,7 @@ class AdPollutionModule @Inject constructor(
             false
         } else {
             try {
-                withContext(Dispatchers.Main) { webView.loadUrl(url) }
+                withContext(Dispatchers.Main) { webView.loadUrl(url, SYNTHETIC_WEBVIEW_HEADERS) }
                 delay(random.nextLong(3_000L, 15_000L))
                 // #73: read page metadata on Main, before release() wipes the document.
                 metadata = withContext(Dispatchers.Main) { webViewPool.captureMetadata(webView, url) }

@@ -7,6 +7,7 @@ import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.webview.PhantomWebViewPool
+import com.fauxx.engine.webview.SYNTHETIC_WEBVIEW_HEADERS
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -73,7 +74,7 @@ class CookieSaturationModule @Inject constructor(
             false
         } else {
             try {
-                withContext(Dispatchers.Main) { webView.loadUrl(entry.url) }
+                withContext(Dispatchers.Main) { webView.loadUrl(entry.url, SYNTHETIC_WEBVIEW_HEADERS) }
                 delay(dwellMs)
                 // #73: read page metadata on Main, before release() wipes the document.
                 metadata = withContext(Dispatchers.Main) { webViewPool.captureMetadata(webView, entry.url) }

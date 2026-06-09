@@ -36,6 +36,8 @@ class HeaderRandomizerInterceptor @Inject constructor(
             .header("Accept-Language", randomAcceptLanguage())
             .header("Accept-Encoding", "gzip, deflate, br")
             .header("DNT", "1")
+            // Global Privacy Control opt-out signal. Fixed value, never randomized.
+            .header("Sec-GPC", "1")
             .build()
         return chain.proceed(request)
     }

@@ -8,9 +8,6 @@ enum class ActionType {
     /** Executes search queries on search engines. */
     SEARCH_QUERY,
 
-    /** Loads ad-heavy pages and simulates ad interactions. */
-    AD_CLICK,
-
     /** Visits URLs from the crawl corpus to accumulate tracker cookies. */
     PAGE_VISIT,
 

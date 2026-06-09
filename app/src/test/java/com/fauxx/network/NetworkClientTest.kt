@@ -63,7 +63,7 @@ class NetworkClientTest {
         .build()
 
     @Test
-    fun `interceptor puts all five anti-fingerprint headers on the wire`() {
+    fun `interceptor puts all anti-fingerprint and GPC headers on the wire`() {
         server.enqueue(MockResponse().setResponseCode(200).setBody("ok"))
 
         client().newCall(Request.Builder().url(server.url("/")).build()).execute().use { resp ->
@@ -74,6 +74,7 @@ class NetworkClientTest {
         assertEquals("UA must come from the pool", "TestUA/1.0", recorded.getHeader("User-Agent"))
         assertEquals("gzip, deflate, br", recorded.getHeader("Accept-Encoding"))
         assertEquals("1", recorded.getHeader("DNT"))
+        assertEquals("Sec-GPC opt-out must be on the wire", "1", recorded.getHeader("Sec-GPC"))
         assertNotNull("Accept header must be set", recorded.getHeader("Accept"))
         val acceptLanguage = recorded.getHeader("Accept-Language") ?: ""
         assertTrue(

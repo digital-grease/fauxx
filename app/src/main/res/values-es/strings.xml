@@ -145,7 +145,6 @@
     <string name="category_relationships_dating">Relaciones y citas</string>
 
     <string name="action_type_search_query">BÚSQUEDA</string>
-    <string name="action_type_ad_click">CLIC EN ANUNCIO</string>
     <string name="action_type_page_visit">VISITA</string>
     <string name="action_type_location_spoof">UBICACIÓN</string>
     <string name="action_type_dns_lookup">DNS</string>

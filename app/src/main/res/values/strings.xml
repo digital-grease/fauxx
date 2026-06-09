@@ -141,7 +141,6 @@
 
     <!-- Action type labels — shown on Log screen filter chips and entries -->
     <string name="action_type_search_query">SEARCH</string>
-    <string name="action_type_ad_click">AD CLICK</string>
     <string name="action_type_page_visit">PAGE VISIT</string>
     <string name="action_type_location_spoof">LOCATION</string>
     <string name="action_type_dns_lookup">DNS</string>
