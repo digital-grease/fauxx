@@ -1,0 +1,4 @@
+• Nuevo: niveles de actividad independientes para Wi-Fi y datos móviles, para reducir el uso en red móvil
+• Mejorado: funcionamiento en segundo plano más fiable. El motor se recupera solo si el sistema lo detiene, y ya no se desactiva tras reiniciar en algunos dispositivos
+• Nuevo: el botón "Iniciar" de la notificación de reanudación puede reactivar la protección sin abrir la app en Android 14 y posteriores
+• Mejorado: registros de depuración más limpios y útiles

@@ -1,0 +1,4 @@
+• Nouveau : des niveaux d'activité distincts pour le Wi-Fi et les données mobiles, pour réduire l'usage des données mobiles
+• Amélioré : fonctionnement en arrière-plan plus fiable. Le moteur se relance seul si le système l'arrête, et ne se désactive plus après un redémarrage sur certains appareils
+• Nouveau : le bouton « Démarrer » de la notification de reprise relance la protection sans ouvrir l'app sur Android 14 et versions ultérieures
+• Amélioré : journaux de débogage plus clairs et utiles
