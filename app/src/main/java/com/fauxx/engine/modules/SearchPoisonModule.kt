@@ -13,8 +13,15 @@ import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicProfileDao
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import com.fauxx.data.crawllist.DomainBlocklist
+import com.fauxx.engine.webview.PhantomWebViewPool
+import com.fauxx.engine.webview.SYNTHETIC_WEBVIEW_HEADERS
+import com.fauxx.locale.AcceptLanguageVariants
+import com.fauxx.network.UserAgentPool
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -81,7 +88,9 @@ class SearchPoisonModule @Inject constructor(
     private val queryBankManager: QueryBankManager,
     private val markovGenerator: MarkovQueryGenerator,
     private val profileRepo: PoisonProfileRepository,
-    private val httpClient: OkHttpClient,
+    private val webViewPool: PhantomWebViewPool,
+    private val userAgentPool: UserAgentPool,
+    private val blocklist: DomainBlocklist,
     private val demographicDao: DemographicProfileDao,
     private val customInterestMapper: CustomInterestMapper,
     private val queryBlocklist: QueryBlocklist,
@@ -91,6 +100,10 @@ class SearchPoisonModule @Inject constructor(
 
     override suspend fun start() {
         Timber.d("SearchPoisonModule started")
+        webViewPool.initialize()
+        // Guarantee a coherent Android-Chromium UA on the search path even when
+        // FingerprintModule (the usual UA source) is disabled (issue #168).
+        webViewPool.setUserAgentIfUnset(userAgentPool.randomChromiumAndroid())
         injectCustomInterestSeeds()
     }
 
@@ -146,32 +159,72 @@ class SearchPoisonModule @Inject constructor(
         val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
         val engine = SEARCH_ENGINES.random(random)
         val url = engine.build(encodedQuery, localeManager.currentLocale)
+        // Engine name suffix surfaces which SERP each search actually hit, so the user
+        // can verify newly-added engines (e.g. Yandex per #24) are actually firing.
+        val detail = "[$category] $query · via ${engine.name}"
 
-        var httpStatus: Int? = null
-        try {
-            val request = Request.Builder().url(url).get().build()
-            httpClient.newCall(request).execute().use { response ->
-                httpStatus = response.code
-                if (!response.isSuccessful) {
-                    Timber.d("Search request to ${engine.name} returned ${response.code}")
-                }
-            }
+        // Defensive blocklist gate. The search path now runs through the WebView, so the
+        // OkHttp BlocklistInterceptor no longer covers it (#165), and Android does NOT fire
+        // shouldOverrideUrlLoading for a programmatic main-frame loadUrl (only
+        // shouldInterceptRequest gates subresources). isUrlBlocked fails closed on an
+        // unparseable URL or a failed blocklist load. SERP hosts are not blocklisted today;
+        // this is defense-in-depth.
+        if (blocklist.isUrlBlocked(url)) {
+            Timber.w("Search URL gated by blocklist (engine=${engine.name})")
+            return ActionLogEntity(
+                actionType = ActionType.SEARCH_QUERY,
+                category = category,
+                detail = detail,
+                success = false,
+            )
+        }
+
+        // Route the search through the real Chromium WebView so the TLS handshake (JA3/JA4),
+        // HTTP/2 SETTINGS, and header order are genuinely Chrome's and coherent with the
+        // Chromium UA (#168/#169). Accept-Language is locale-coherent with the SERP hl/gl
+        // params; Sec-GPC rides along via SYNTHETIC_WEBVIEW_HEADERS.
+        val headers = SYNTHETIC_WEBVIEW_HEADERS +
+            ("Accept-Language" to AcceptLanguageVariants.forLocale(localeManager.currentLocale, random))
+
+        val webView = try {
+            webViewPool.acquire()
         } catch (e: Exception) {
-            Timber.w("Search request failed: ${e.message}")
+            Timber.w("WebView acquire failed for search: ${e.message}")
+            null
+        }
+        var metadata: String? = null
+        val success = if (webView == null) {
+            false
+        } else {
+            try {
+                withTimeoutOrNull(SEARCH_LOAD_TIMEOUT_MS) {
+                    withContext(Dispatchers.Main) { webView.loadUrl(url, headers) }
+                    delay(random.nextLong(2_000L, 8_000L))
+                    // Read metadata on Main before release() wipes the document (issue #73).
+                    metadata = withContext(Dispatchers.Main) {
+                        webViewPool.captureMetadata(webView, url, LogMetadata.SEARCH_ENGINE to engine.name)
+                    }
+                    true
+                } ?: false
+            } catch (e: Exception) {
+                Timber.w("Search WebView load failed: ${e.message}")
+                false
+            } finally {
+                webViewPool.release(webView)
+            }
         }
 
         return ActionLogEntity(
             actionType = ActionType.SEARCH_QUERY,
             category = category,
-            // Engine name suffix surfaces which SERP each search actually hit.
-            // Without this, the action log shows only the query and the user
-            // can't verify that newly-added engines (e.g. Yandex per #24) are
-            // actually firing.
-            detail = "[$category] $query · via ${engine.name}",
-            metadata = LogMetadata.toJson(
-                LogMetadata.SEARCH_ENGINE to engine.name,
-                LogMetadata.HTTP_STATUS to httpStatus?.toString(),
-            )
+            detail = detail,
+            metadata = metadata ?: LogMetadata.toJson(LogMetadata.SEARCH_ENGINE to engine.name),
+            success = success,
         )
+    }
+
+    companion object {
+        /** Bounds a wedged SERP render so it can't hold a pool slot (replaces the OkHttp readTimeout). */
+        private const val SEARCH_LOAD_TIMEOUT_MS = 30_000L
     }
 }

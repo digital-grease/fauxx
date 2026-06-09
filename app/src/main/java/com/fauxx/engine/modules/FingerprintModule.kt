@@ -15,8 +15,10 @@ import javax.inject.Singleton
  * Rotates User-Agent and injects canvas noise to reduce fingerprinting consistency.
  * The actual JS injection happens at the WebView layer via [com.fauxx.engine.webview.JSInjector].
  *
- * On each action, a new random User-Agent is pushed to [PhantomWebViewPool] so that
- * subsequent WebView requests use the rotated UA string.
+ * On each action, a new Android-Chromium User-Agent is pushed to [PhantomWebViewPool]
+ * so that subsequent WebView requests use the rotated UA string. The UA is constrained
+ * to Android-Chromium strings because the System WebView's TLS handshake is always
+ * Android-Chromium; a mismatched UA over that handshake is the leak issue #168 closes.
  */
 @Singleton
 class FingerprintModule @Inject constructor(
@@ -26,8 +28,8 @@ class FingerprintModule @Inject constructor(
 ) : Module {
 
     override suspend fun start() {
-        // Seed the WebView pool with an initial random UA on start
-        webViewPool.setUserAgent(userAgentPool.random())
+        // Seed the WebView pool with an initial Android-Chromium UA on start
+        webViewPool.setUserAgent(userAgentPool.randomChromiumAndroid())
         Timber.d("FingerprintModule started")
     }
 
@@ -36,7 +38,7 @@ class FingerprintModule @Inject constructor(
     override fun isEnabled(): Boolean = profileRepo.getProfile().fingerprintEnabled
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
-        val ua = userAgentPool.random()
+        val ua = userAgentPool.randomChromiumAndroid()
         webViewPool.setUserAgent(ua)
         return ActionLogEntity(
             actionType = ActionType.FINGERPRINT_ROTATE,

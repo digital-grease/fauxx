@@ -90,6 +90,16 @@ class PhantomWebViewPool @Inject constructor(
     }
 
     /**
+     * Seed the User-Agent only if none has been set yet. Lets a module (e.g.
+     * SearchPoisonModule) guarantee a coherent Android-Chromium UA on the WebView
+     * path even when FingerprintModule (the usual UA source) is disabled, without
+     * clobbering a UA that Fingerprint has already rotated in.
+     */
+    fun setUserAgentIfUnset(ua: String) {
+        currentUserAgent.compareAndSet(null, ua)
+    }
+
+    /**
      * Initialize the WebView pool on the main thread.
      * Must be called before [acquire].
      */
@@ -145,7 +155,7 @@ class PhantomWebViewPool @Inject constructor(
      * null out the title and reset the document. Every read is guarded; this never throws, and a
      * failed read simply omits that field so the action's success is unaffected.
      */
-    fun captureMetadata(webView: WebView, url: String): String? {
+    fun captureMetadata(webView: WebView, url: String, vararg extra: Pair<String, String?>): String? {
         val title = runCatching {
             webView.title?.takeIf { it.isNotBlank() && it != "about:blank" }
         }.getOrNull()
@@ -156,6 +166,7 @@ class PhantomWebViewPool @Inject constructor(
             resourceCounters[webView.tag as? String]?.get()
         }.getOrNull()
         return LogMetadata.toJson(
+            *extra,
             LogMetadata.PAGE_TITLE to title,
             LogMetadata.COOKIES_IN_JAR to cookieCount?.toString(),
             LogMetadata.RESOURCES_LOADED to resourceCount?.takeIf { it > 0 }?.toString(),
@@ -225,7 +236,9 @@ class PhantomWebViewPool @Inject constructor(
             loadsImagesAutomatically = false
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
-            safeBrowsingEnabled = true // Google Safe Browsing — real-time malicious URL checks
+            // Safe Browsing is configured app-wide via the AndroidManifest WebView meta-data
+            // (see EnableSafeBrowsing there). Intentionally not set per-WebView, so the manifest
+            // configuration is authoritative (a per-WebView setter would override the manifest).
 
             // Lock down local-resource access. The phantom pool only ever loads remote http(s)
             // crawl URLs, never file:// or content://, but allowFileAccess/allowContentAccess

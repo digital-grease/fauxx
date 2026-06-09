@@ -39,12 +39,19 @@ class PhantomWebViewClient(
 
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
-        // Inject fingerprint noise scripts
-        view.evaluateJavascript(JSInjector.ALL_SCRIPTS) { result ->
+        // On high-scrutiny endpoints (search engines) inject only the benign GPC signal;
+        // the automation-shaped overrides are themselves a detection tell there (#168/#169).
+        val scripts = if (isHighScrutiny(url)) JSInjector.MINIMAL_SCRIPTS else JSInjector.ALL_SCRIPTS
+        view.evaluateJavascript(scripts) { result ->
             if (result != null && result != "null" && result.contains("error", ignoreCase = true)) {
                 Timber.w("JS injection may have failed on $url: $result")
             }
         }
+    }
+
+    private fun isHighScrutiny(url: String): Boolean {
+        val host = runCatching { android.net.Uri.parse(url).host }.getOrNull() ?: return false
+        return HIGH_SCRUTINY_HOST_SUFFIXES.any { host == it || host.endsWith(".$it") }
     }
 
     override fun onPageFinished(view: WebView, url: String) {
@@ -114,5 +121,16 @@ class PhantomWebViewClient(
             return true
         }
         return false
+    }
+
+    companion object {
+        /**
+         * Hosts where the automation-shaped JSInjector overrides are suppressed because the
+         * endpoint runs aggressive bot-detection (search engines, #168/#169). Mirrors the
+         * SEARCH_ENGINES in SearchPoisonModule.
+         */
+        val HIGH_SCRUTINY_HOST_SUFFIXES = setOf(
+            "google.com", "bing.com", "duckduckgo.com", "yahoo.com", "yandex.com"
+        )
     }
 }
