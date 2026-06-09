@@ -2,6 +2,7 @@ package com.fauxx.di
 
 import android.content.Context
 import com.fauxx.locale.LocaleManager
+import com.fauxx.network.BlocklistInterceptor
 import com.fauxx.network.HeaderRandomizerInterceptor
 import com.fauxx.network.UserAgentPool
 import dagger.Module
@@ -38,9 +39,14 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(interceptor: HeaderRandomizerInterceptor): OkHttpClient =
+    fun provideOkHttpClient(
+        blocklistInterceptor: BlocklistInterceptor,
+        headerInterceptor: HeaderRandomizerInterceptor,
+    ): OkHttpClient =
         OkHttpClient.Builder()
-            .addInterceptor(interceptor)
+            // Fail-closed blocklist gate first, so no request reaches a blocked host.
+            .addInterceptor(blocklistInterceptor)
+            .addInterceptor(headerInterceptor)
             .connectionPool(ConnectionPool(20, 2, TimeUnit.MINUTES))
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
