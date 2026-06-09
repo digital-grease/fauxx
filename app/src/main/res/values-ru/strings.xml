@@ -161,7 +161,6 @@
     <!-- Dashboard screen -->
     <string name="dashboard_category_distribution_help">Показывает, как твой синтетический шум распределён по тематическим категориям. Чем шире разброс, тем более запутанный профиль видят трекеры. Категории взвешиваются движком таргетинга, чтобы максимально отдалить шум от твоих реальных интересов.</string>
     <string name="dashboard_active_persona_help">Синтетическая личность, которую движок использует примерно неделю. Активность смещается в сторону интересов этой персоны, чтобы создавать согласованный во времени шум — так трекерам сложнее отфильтровать поддельный сигнал. Персоны меняются автоматически.</string>
-    <string name="dashboard_noise_ratio_help">Оценивает, какая часть твоего видимого профиля браузинга является синтетическим шумом, а не реальной активностью. Чем выше, тем лучше: при 80%%+ брокеру данных пришлось бы правильно распознать 4 из 5 сигналов как фальшивые, чтобы построить точный профиль.</string>
     <string name="dashboard_battery_dialog_title">Пусть Fauxx работает в фоне</string>
 
     <!-- Targeting screen -->
@@ -435,8 +434,6 @@
     <string name="dashboard_chart_legend_entry">%1$s %2$d%%</string>
     <string name="dashboard_active_persona_title">АКТИВНАЯ ПЕРСОНА</string>
     <string name="dashboard_persona_subtitle">%1$s · %2$s</string>
-    <string name="dashboard_noise_ratio_title">КОЭФФИЦИЕНТ ШУМА</string>
-    <string name="dashboard_noise_ratio_value">%d%%</string>
     <string name="dashboard_battery_dialog_body_intro">Android агрессивно ставит фоновые приложения на паузу для экономии батареи. Для непрерывного отравления профиля Fauxx должен быть исключён из оптимизации батареи.</string>
     <string name="dashboard_battery_dialog_body_action">На следующем экране выбери «Разрешить», чтобы движок мог продолжать генерировать синтетическую активность с выключенным экраном.</string>
     <string name="dashboard_battery_dialog_continue">Продолжить</string>
@@ -461,4 +458,9 @@
     <string name="log_export_toast_save_failed">Не удалось сохранить файл</string>
     <string name="log_export_toast_copied_to_clipboard">Скопировано в буфер</string>
 
+    <string name="dashboard_drift_title">ДРЕЙФ ПРОФИЛЯ</string>
+    <string name="dashboard_drift_help">Насколько ваш импортированный профиль рекламных интересов отдалился от первого (базового) импорта, в виде KL-дивергенции. Большее значение означает большее движение. Дрейф также может отражать переобучение модели самой платформой, а не только работу Fauxx, поэтому воспринимайте его как индикатор, а не доказательство.</string>
+    <string name="dashboard_drift_collecting">сбор данных…</string>
+    <string name="dashboard_synthetic_activity_title">СИНТЕТИЧЕСКАЯ АКТИВНОСТЬ</string>
+    <string name="dashboard_synthetic_activity_help">Среднее число синтетических действий, которые Fauxx генерировал в час за последние 24 часа. Показывает, сколько маскирующего трафика добавляет Fauxx. Это не соотношение с вашей реальной активностью, которую приложение в Android измерить не может.</string>
 </resources>
