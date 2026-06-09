@@ -59,7 +59,7 @@ class ModuleSilentFailureTest {
     fun `AdPollutionModule reports failure when WebView throws`() = runTest(testDispatcher) {
         every { profileRepo.getProfile() } returns PoisonProfile(adPollutionEnabled = true)
         every { crawlListManager.nextUrlOrWait(any()) } returns testEntry
-        every { webView.loadUrl(any<String>()) } throws RuntimeException("WebView crashed")
+        every { webView.loadUrl(any<String>(), any()) } throws RuntimeException("WebView crashed")
 
         val module = AdPollutionModule(crawlListManager, webViewPool, profileRepo)
         val result = module.onAction(CategoryPool.GAMING)
@@ -82,7 +82,7 @@ class ModuleSilentFailureTest {
     fun `CookieSaturationModule reports failure when WebView throws`() = runTest(testDispatcher) {
         every { profileRepo.getProfile() } returns PoisonProfile(cookieSaturationEnabled = true)
         every { crawlListManager.nextUrlOrWait(any()) } returns testEntry
-        every { webView.loadUrl(any<String>()) } throws RuntimeException("WebView crashed")
+        every { webView.loadUrl(any<String>(), any()) } throws RuntimeException("WebView crashed")
 
         val module = CookieSaturationModule(crawlListManager, webViewPool, profileRepo)
         val result = module.onAction(CategoryPool.GAMING)
@@ -102,7 +102,7 @@ class ModuleSilentFailureTest {
     }
 
     @Test
-    fun `AdPollutionModule visits ad dashboard as AD_CLICK without consulting crawl list`() =
+    fun `AdPollutionModule visits ad dashboard as PAGE_VISIT without consulting crawl list`() =
         runTest(testDispatcher) {
             every { profileRepo.getProfile() } returns PoisonProfile(adPollutionEnabled = true)
 
@@ -116,7 +116,7 @@ class ModuleSilentFailureTest {
             val module = AdPollutionModule(crawlListManager, webViewPool, profileRepo, dashboardRandom)
             val result = module.onAction(CategoryPool.GAMING)
 
-            assertEquals(ActionType.AD_CLICK, result.actionType)
+            assertEquals(ActionType.PAGE_VISIT, result.actionType)
             assertTrue("Dashboard URL should be an https link", result.detail.startsWith("https://"))
             assertTrue("Dashboard visit should report success", result.success)
             verify(exactly = 0) { crawlListManager.nextUrlOrWait(any()) }

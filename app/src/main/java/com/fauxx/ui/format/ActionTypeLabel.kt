@@ -14,7 +14,6 @@ import com.fauxx.data.model.ActionType
 @StringRes
 fun ActionType.displayNameRes(): Int = when (this) {
     ActionType.SEARCH_QUERY -> R.string.action_type_search_query
-    ActionType.AD_CLICK -> R.string.action_type_ad_click
     ActionType.PAGE_VISIT -> R.string.action_type_page_visit
     ActionType.LOCATION_SPOOF -> R.string.action_type_location_spoof
     ActionType.DNS_LOOKUP -> R.string.action_type_dns_lookup

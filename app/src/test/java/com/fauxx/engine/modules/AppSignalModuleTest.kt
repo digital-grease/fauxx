@@ -87,7 +87,7 @@ class AppSignalModuleTest {
 
     @Test
     fun `onAction reports failure when the WebView throws`() = runTest(testDispatcher) {
-        every { webView.loadUrl(any<String>()) } throws RuntimeException("WebView crashed")
+        every { webView.loadUrl(any<String>(), any()) } throws RuntimeException("WebView crashed")
 
         val result = newModule().onAction(CategoryPool.GAMING)
 

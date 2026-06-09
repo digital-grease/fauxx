@@ -69,7 +69,10 @@ class PhantomTypeConverters {
     fun fromActionType(value: ActionType): String = value.name
 
     @TypeConverter
-    fun toActionType(value: String): ActionType = ActionType.valueOf(value)
+    fun toActionType(value: String): ActionType =
+        // Tolerate values from retired enum members (e.g. the former AD_CLICK) on
+        // existing rows so an upgrade never crashes on deserialization.
+        runCatching { ActionType.valueOf(value) }.getOrDefault(ActionType.PAGE_VISIT)
 
     @TypeConverter
     fun fromCategoryPool(value: CategoryPool): String = value.name

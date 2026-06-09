@@ -120,12 +120,29 @@ object JSInjector {
         })();
     """.trimIndent()
 
+    /**
+     * Global Privacy Control DOM signal: exposes `navigator.globalPrivacyControl === true`
+     * so scripts that read the GPC property (the in-page counterpart to the Sec-GPC header)
+     * see the opt-out. Fixed value, not randomized.
+     */
+    val GPC_SCRIPT = """
+        (function() {
+            try {
+                Object.defineProperty(navigator, 'globalPrivacyControl', {
+                    get: function() { return true; },
+                    configurable: false
+                });
+            } catch (e) {}
+        })();
+    """.trimIndent()
+
     /** Combined script injected on every page load. */
     val ALL_SCRIPTS = listOf(
         WASM_WORKER_BLOCK_SCRIPT,
         EVAL_BLOCK_SCRIPT,
         CANVAS_NOISE_SCRIPT,
         NAVIGATOR_OVERRIDE_SCRIPT,
-        FONT_SPOOF_SCRIPT
+        FONT_SPOOF_SCRIPT,
+        GPC_SCRIPT
     ).joinToString("\n\n")
 }
