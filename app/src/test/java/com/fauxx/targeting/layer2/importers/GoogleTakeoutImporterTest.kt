@@ -62,7 +62,7 @@ class GoogleTakeoutImporterTest {
             """.trimIndent().toByteArray()
         )
         val mapper = CategoryMapper(context)
-        importer = GoogleTakeoutImporter(context, mapper, dao, clock)
+        importer = GoogleTakeoutImporter(context, mapper, dao, mockk(relaxed = true), clock)
     }
 
     @Test

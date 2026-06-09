@@ -78,14 +78,14 @@ class DashboardScreenTest {
     }
 
     @Test
-    fun noiseRatioCard_isDisplayed() {
+    fun syntheticActivityCard_isDisplayed() {
         composeRule.setContent {
             FauxxTheme {
                 DashboardScreen()
             }
         }
-        // NoiseRatioCard is the last element in the scroll Column — well below the fold.
-        composeRule.onNodeWithText("NOISE RATIO").performScrollTo().assertIsDisplayed()
+        // SyntheticActivityCard sits near the bottom of the scroll Column, below the fold.
+        composeRule.onNodeWithText("SYNTHETIC ACTIVITY").performScrollTo().assertIsDisplayed()
     }
 
     // toggleProtectionOn_changesStatusToActive removed 2026-05-13: it claimed to

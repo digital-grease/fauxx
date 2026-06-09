@@ -47,12 +47,12 @@ class PhantomDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate1To4_preservesSeededRows_andAppliesSchemaChanges() {
+    fun migrate1To5_preservesSeededRows_andAppliesSchemaChanges() {
         seedEncryptedV1Database()
 
         val db = buildRoomDatabase()
         try {
-            // First access runs the 1->2->3->4 migration chain and validates the result against v4.
+            // First access runs the 1->2->3->4->5 migration chain and validates the result against v5.
             val sdb = db.openHelper.writableDatabase
 
             // Rows written at v1 must survive the migration.
@@ -87,6 +87,12 @@ class PhantomDatabaseMigrationTest {
             sdb.query("SELECT metadata FROM action_log").use { c ->
                 assertTrue(c.moveToFirst())
                 assertTrue("metadata defaults to NULL on pre-existing rows", c.isNull(0))
+            }
+            // MIGRATION_4_5 created the profile_snapshot history table (issue #170 E1).
+            sdb.query(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='profile_snapshot'"
+            ).use { c ->
+                assertTrue("MIGRATION_4_5 must create profile_snapshot", c.moveToFirst())
             }
         } finally {
             db.close()
@@ -125,7 +131,7 @@ class PhantomDatabaseMigrationTest {
     private fun buildRoomDatabase(): PhantomDatabase =
         Room.databaseBuilder(context, PhantomDatabase::class.java, TEST_DB)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
 
     /**

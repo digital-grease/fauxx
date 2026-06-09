@@ -76,7 +76,11 @@ class DashboardViewModelTest {
 
         val vm = DashboardViewModel(
             context, actionLogDao, profileRepo, poisonEngine, targetingEngine,
-            personaLayer, dataStore, clock
+            personaLayer, dataStore,
+            mockk<com.fauxx.targeting.layer2.ProfileSnapshotDao>(relaxed = true) {
+                every { observeAll() } returns MutableStateFlow(emptyList<com.fauxx.targeting.layer2.ProfileSnapshot>())
+            },
+            com.fauxx.targeting.layer2.ProfileDriftMetric(), clock
         )
         val job = launch { vm.uiState.collect {} }
         testScheduler.runCurrent()

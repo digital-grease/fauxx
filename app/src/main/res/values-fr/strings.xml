@@ -412,9 +412,6 @@
     <string name="dashboard_active_persona_title">PERSONA ACTIVE</string>
     <string name="dashboard_active_persona_help">Une identité synthétique que le moteur adopte pendant environ une semaine. L\'activité est pondérée vers les centres d\'intérêt de cette persona pour créer un bruit cohérent dans le temps — ce qui complique le filtrage du faux signal par les traqueurs. Les personas tournent automatiquement.</string>
     <string name="dashboard_persona_subtitle">%1$s · %2$s</string>
-    <string name="dashboard_noise_ratio_title">TAUX DE BRUIT</string>
-    <string name="dashboard_noise_ratio_help">Estime quelle part de ton profil de navigation visible correspond à du bruit synthétique plutôt qu\'à de l\'activité réelle. Plus c\'est élevé, mieux c\'est — à 80 %% ou plus, un courtier en données devrait identifier correctement 4 signaux sur 5 comme faux pour construire un profil précis.</string>
-    <string name="dashboard_noise_ratio_value">%d%%</string>
     <string name="dashboard_battery_dialog_title">Garder Fauxx actif en arrière-plan</string>
     <string name="dashboard_battery_dialog_body_intro">Android met fortement en pause les apps en arrière-plan pour économiser la batterie. Pour empoisonner les profils en continu, Fauxx doit être exempté de l\'optimisation de la batterie.</string>
     <string name="dashboard_battery_dialog_body_action">Sur l\'écran suivant, choisis \"Autoriser\" pour que le moteur puisse continuer à générer une activité synthétique quand ton écran est éteint.</string>
@@ -441,4 +438,9 @@
     <string name="log_export_toast_saved_to_downloads">Enregistré dans Téléchargements/%s</string>
     <string name="log_export_toast_save_failed">Impossible d\'enregistrer le fichier</string>
     <string name="log_export_toast_copied_to_clipboard">Copié dans le presse-papiers</string>
+    <string name="dashboard_drift_title">DÉRIVE DU PROFIL</string>
+    <string name="dashboard_drift_help">À quel point votre profil d\'intérêts publicitaires importé s\'est éloigné de votre premier import (de référence), exprimé en divergence KL. Plus la valeur est élevée, plus le mouvement est important. La dérive peut aussi refléter le réentraînement du modèle par la plateforme, pas seulement Fauxx, considérez-la donc comme un indicateur, pas une preuve.</string>
+    <string name="dashboard_drift_collecting">collecte…</string>
+    <string name="dashboard_synthetic_activity_title">ACTIVITÉ SYNTHÉTIQUE</string>
+    <string name="dashboard_synthetic_activity_help">Le nombre moyen d\'actions synthétiques générées par Fauxx par heure au cours des dernières 24 heures. Cela indique la quantité de trafic de couverture ajoutée par Fauxx. Ce n\'est pas un ratio par rapport à votre activité réelle, qu\'Android ne permet pas à une application de mesurer.</string>
 </resources>

@@ -12,6 +12,9 @@ import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer1.UserDemographicProfile
 import com.fauxx.targeting.layer2.PlatformProfileCache
 import com.fauxx.targeting.layer2.PlatformProfileDao
+import com.fauxx.targeting.layer2.ProfileSnapshot
+import com.fauxx.targeting.layer2.ProfileSnapshotDao
+import com.fauxx.targeting.layer2.SnapshotSource
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaHistoryEntity
 
@@ -29,9 +32,10 @@ import com.fauxx.targeting.layer3.PersonaHistoryEntity
         ActionLogEntity::class,
         UserDemographicProfile::class,
         PlatformProfileCache::class,
+        ProfileSnapshot::class,
         PersonaHistoryEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(PhantomTypeConverters::class)
@@ -39,6 +43,7 @@ abstract class PhantomDatabase : RoomDatabase() {
     abstract fun actionLogDao(): ActionLogDao
     abstract fun demographicProfileDao(): DemographicProfileDao
     abstract fun platformProfileDao(): PlatformProfileDao
+    abstract fun profileSnapshotDao(): ProfileSnapshotDao
     abstract fun personaHistoryDao(): PersonaHistoryDao
 }
 
@@ -63,6 +68,24 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+/** Migration from v4 to v5: add the append-only profile_snapshot history table (issue #170 E1). */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `profile_snapshot` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`platformName` TEXT NOT NULL, " +
+                "`source` TEXT NOT NULL, " +
+                "`scrapedCategoriesJson` TEXT NOT NULL, " +
+                "`capturedAt` INTEGER NOT NULL)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_profile_snapshot_platformName_capturedAt` " +
+                "ON `profile_snapshot` (`platformName`, `capturedAt`)"
+        )
+    }
+}
+
 /** Room type converters for enum types. */
 class PhantomTypeConverters {
     @TypeConverter
@@ -79,4 +102,11 @@ class PhantomTypeConverters {
 
     @TypeConverter
     fun toCategoryPool(value: String): CategoryPool = CategoryPool.valueOf(value)
+
+    @TypeConverter
+    fun fromSnapshotSource(value: SnapshotSource): String = value.name
+
+    @TypeConverter
+    fun toSnapshotSource(value: String): SnapshotSource =
+        runCatching { SnapshotSource.valueOf(value) }.getOrDefault(SnapshotSource.IMPORT)
 }

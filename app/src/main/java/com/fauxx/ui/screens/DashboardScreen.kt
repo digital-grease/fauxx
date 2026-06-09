@@ -248,8 +248,11 @@ fun DashboardScreen(
             )
         }
 
-        // Noise ratio indicator
-        NoiseRatioCard(ratio = uiState.estimatedNoiseRatio)
+        // Synthetic-activity rate (issue #160)
+        SyntheticActivityCard(actionsPerHour = uiState.syntheticActionsPerHour)
+
+        // Profile-drift indicator (issue #171 E2)
+        DriftCard(driftState = uiState.driftState, kl = uiState.driftKlDivergence)
     }
 }
 
@@ -548,13 +551,35 @@ private fun SectionHeaderWithHelp(
 }
 
 @Composable
-private fun NoiseRatioCard(ratio: Float) {
-    val animated by animateFloatAsState(
-        targetValue = ratio.coerceIn(0f, 1f),
-        animationSpec = tween(durationMillis = 1000),
-        label = "noise_ratio"
-    )
+private fun SyntheticActivityCard(actionsPerHour: Float) {
+    // A plain rate read-out, deliberately NOT a fill bar: the old bar read like a slider and was
+    // mistaken for a control (issues #149/#150), and the percentage implied a real-vs-fake ratio
+    // Android cannot measure (issue #160).
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            SectionHeaderWithHelp(
+                title = stringResource(R.string.dashboard_synthetic_activity_title),
+                help = stringResource(R.string.dashboard_synthetic_activity_help)
+            )
+            Text(
+                text = stringResource(R.string.dashboard_synthetic_activity_value, actionsPerHour),
+                style = MaterialTheme.typography.labelMedium,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
 
+@Composable
+private fun DriftCard(driftState: com.fauxx.targeting.layer2.DriftState, kl: Double?) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -564,30 +589,18 @@ private fun NoiseRatioCard(ratio: Float) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 SectionHeaderWithHelp(
-                    title = stringResource(R.string.dashboard_noise_ratio_title),
-                    help = stringResource(R.string.dashboard_noise_ratio_help)
+                    title = stringResource(R.string.dashboard_drift_title),
+                    help = stringResource(R.string.dashboard_drift_help)
                 )
                 Text(
-                    text = stringResource(R.string.dashboard_noise_ratio_value, (animated * 100).toInt()),
+                    text = if (driftState == com.fauxx.targeting.layer2.DriftState.AVAILABLE && kl != null) {
+                        stringResource(R.string.dashboard_drift_value, kl)
+                    } else {
+                        stringResource(R.string.dashboard_drift_collecting)
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.primary
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.outline)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(animated)
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.primary)
                 )
             }
         }

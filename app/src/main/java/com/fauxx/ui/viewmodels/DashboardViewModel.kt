@@ -17,6 +17,10 @@ import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.service.PhantomForegroundService
 import com.fauxx.targeting.TargetingEngine
+import com.fauxx.targeting.layer2.DriftResult
+import com.fauxx.targeting.layer2.DriftState
+import com.fauxx.targeting.layer2.ProfileDriftMetric
+import com.fauxx.targeting.layer2.ProfileSnapshotDao
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import com.fauxx.util.Clock
 import com.fauxx.util.SystemClockImpl
@@ -45,8 +49,11 @@ data class DashboardUiState(
     val actionsThisWeek: Int = 0,
     val categoryDistribution: Map<CategoryPool, Float> = emptyMap(),
     val currentPersona: SyntheticPersona? = null,
-    val estimatedNoiseRatio: Float = 0f,
+    val syntheticActionsPerHour: Float = 0f,
     val healthWarnings: List<String> = emptyList(),
+    /** Profile-drift (issue #171 E2): KL divergence of the latest import from the baseline. */
+    val driftState: DriftState = DriftState.COLLECTING,
+    val driftKlDivergence: Double? = null,
     /** Mobile-data tier (issue #62); gates the "use mobile data" one-tap action — the
      *  button only helps when this is null (mobile off), not when there's no network. */
     val mobileIntensity: IntensityLevel? = null
@@ -62,6 +69,8 @@ class DashboardViewModel @Inject constructor(
     private val targetingEngine: TargetingEngine,
     private val personaLayer: PersonaRotationLayer,
     private val dataStore: DataStore<Preferences>,
+    private val profileSnapshotDao: ProfileSnapshotDao,
+    private val profileDriftMetric: ProfileDriftMetric,
     private val clock: Clock = SystemClockImpl(),
 ) : ViewModel() {
 
@@ -91,7 +100,8 @@ class DashboardViewModel @Inject constructor(
         personaLayer.currentPersona,
         poisonEngine.healthWarnings,
         poisonEngine.engineState,
-        profileRepo.profiles
+        profileRepo.profiles,
+        profileSnapshotDao.observeAll().map { profileDriftMetric.compute(it) }
     ) { flows ->
         @Suppress("UNCHECKED_CAST")
         val enabled = flows[0] as Boolean
@@ -104,6 +114,7 @@ class DashboardViewModel @Inject constructor(
         val warnings = flows[5] as List<String>
         val state = flows[6] as EngineState
         val profile = flows[7] as PoisonProfile
+        val drift = flows[8] as DriftResult
         DashboardUiState(
             engineEnabled = enabled,
             engineState = state,
@@ -111,8 +122,10 @@ class DashboardViewModel @Inject constructor(
             actionsThisWeek = week,
             categoryDistribution = weights,
             currentPersona = persona,
-            estimatedNoiseRatio = computeNoiseRatio(today),
+            syntheticActionsPerHour = computeSyntheticActionRate(today),
             healthWarnings = warnings,
+            driftState = drift.state,
+            driftKlDivergence = drift.klDivergence,
             mobileIntensity = profile.mobileIntensity
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
@@ -180,9 +193,11 @@ class DashboardViewModel @Inject constructor(
         context.startService(PhantomForegroundService.stopIntent(context))
     }
 
-    private fun computeNoiseRatio(actionsToday: Int): Float {
-        // Simple heuristic: 0% at 0 actions, 100% at 500+ actions per day
-        return (actionsToday / 500f).coerceIn(0f, 1f)
+    private fun computeSyntheticActionRate(actionsToday: Int): Float {
+        // Average synthetic actions per hour over the last 24h: an honest measure of how much
+        // cover traffic Fauxx adds. NOT a ratio against the user's real traffic, which Android
+        // exposes no per-app provenance for (issue #160).
+        return actionsToday / 24f
     }
 
     /**

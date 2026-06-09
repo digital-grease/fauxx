@@ -410,9 +410,6 @@
     <string name="dashboard_active_persona_title">ACTIVE PERSONA</string>
     <string name="dashboard_active_persona_help">A synthetic identity the engine adopts for about a week. Activity is weighted toward this persona\'s interests to create temporally coherent noise — making it harder for trackers to filter out the fake signal. Personas rotate automatically.</string>
     <string name="dashboard_persona_subtitle">%1$s · %2$s</string>
-    <string name="dashboard_noise_ratio_title">NOISE RATIO</string>
-    <string name="dashboard_noise_ratio_help">Estimates how much of your visible browsing profile is synthetic noise vs real activity. Higher is better — at 80%%+, a data broker would need to correctly identify 4 out of 5 signals as fake to build an accurate profile.</string>
-    <string name="dashboard_noise_ratio_value">%d%%</string>
     <string name="dashboard_battery_dialog_title">Keep Fauxx running in the background</string>
     <string name="dashboard_battery_dialog_body_intro">Android aggressively pauses background apps to save battery. For continuous profile poisoning, Fauxx needs to be exempt from battery optimization.</string>
     <string name="dashboard_battery_dialog_body_action">On the next screen, choose \"Allow\" so the engine can keep generating synthetic activity while your screen is off.</string>
@@ -439,4 +436,11 @@
     <string name="log_export_toast_saved_to_downloads">Saved to Downloads/%s</string>
     <string name="log_export_toast_save_failed">Failed to save file</string>
     <string name="log_export_toast_copied_to_clipboard">Copied to clipboard</string>
+    <string name="dashboard_drift_title">PROFILE DRIFT</string>
+    <string name="dashboard_drift_help">How far your imported ad-interest profile has moved from its first (baseline) import, shown as a KL divergence. Higher means more movement. Drift can also reflect the platform retraining its own model, not only Fauxx, so treat it as an indicator, not proof.</string>
+    <string name="dashboard_drift_value" translatable="false">%.2f</string>
+    <string name="dashboard_drift_collecting">collecting…</string>
+    <string name="dashboard_synthetic_activity_title">SYNTHETIC ACTIVITY</string>
+    <string name="dashboard_synthetic_activity_help">The average number of synthetic actions Fauxx generated per hour over the last 24 hours. It shows how much cover traffic Fauxx is adding. It is not a ratio against your real activity, which Android does not let an app measure.</string>
+    <string name="dashboard_synthetic_activity_value" translatable="false">%.1f/h</string>
 </resources>
