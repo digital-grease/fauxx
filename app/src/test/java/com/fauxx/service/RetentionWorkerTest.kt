@@ -41,7 +41,7 @@ class RetentionWorkerTest {
                     appContext: Context,
                     workerClassName: String,
                     workerParameters: WorkerParameters
-                ): RetentionWorker = RetentionWorker(appContext, workerParameters, dao, dataStore)
+                ): RetentionWorker = RetentionWorker(appContext, workerParameters, dao, mockk(relaxed = true), dataStore)
             })
             .build()
 

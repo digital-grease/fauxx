@@ -57,8 +57,11 @@ object TargetingModule {
 
     @Provides
     @Singleton
-    fun provideAdversarialScraperLayer(dao: PlatformProfileDao): AdversarialScraperLayer =
-        AdversarialScraperLayer(dao)
+    fun provideAdversarialScraperLayer(
+        dao: PlatformProfileDao,
+        snapshotDao: com.fauxx.targeting.layer2.ProfileSnapshotDao,
+        driftCalculator: com.fauxx.targeting.layer2.ProfileDriftCalculator,
+    ): AdversarialScraperLayer = AdversarialScraperLayer(dao, snapshotDao, driftCalculator)
 
     @Provides
     @Singleton

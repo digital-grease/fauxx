@@ -8,6 +8,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.di.PreferenceKeys
+import com.fauxx.targeting.layer2.ProfileSnapshotDao
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
@@ -27,6 +28,7 @@ class RetentionWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val actionLogDao: ActionLogDao,
+    private val profileSnapshotDao: ProfileSnapshotDao,
     private val dataStore: DataStore<Preferences>,
 ) : CoroutineWorker(context, params) {
 
@@ -39,7 +41,9 @@ class RetentionWorker @AssistedInject constructor(
                 .coerceIn(MIN_RETENTION_DAYS, MAX_RETENTION_DAYS)
             val cutoff = System.currentTimeMillis() - days * MILLIS_PER_DAY
             actionLogDao.deleteOlderThan(cutoff)
-            Timber.i("RetentionWorker: pruned action-log entries older than $days day(s)")
+            // Prune old profile snapshots too, but keep each platform's earliest (E2 KL baseline).
+            profileSnapshotDao.deleteOlderThanKeepingBaseline(cutoff)
+            Timber.i("RetentionWorker: pruned action-log + profile-snapshot entries older than $days day(s)")
             Result.success()
         } catch (e: Exception) {
             Timber.w(e, "RetentionWorker: prune failed; will retry")

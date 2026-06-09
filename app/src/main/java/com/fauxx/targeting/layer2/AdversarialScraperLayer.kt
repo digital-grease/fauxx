@@ -14,6 +14,9 @@ import javax.inject.Singleton
 /** Weight for categories the platform has explicitly assigned to the user — suppress these. */
 private const val CONFIRMED_WEIGHT = 0.05f
 
+/** Weight for confirmed categories not moving across snapshots ("won't budge"): push harder. */
+private const val STICKY_CONFIRMED_WEIGHT = 0.02f
+
 /** Weight for categories absent from the platform profile — boost these. */
 private const val ABSENT_WEIGHT = 3.0f
 
@@ -36,6 +39,8 @@ private const val STALE_THRESHOLD_MS = 7L * 24 * 60 * 60 * 1000
 @Singleton
 class AdversarialScraperLayer @Inject constructor(
     private val dao: PlatformProfileDao,
+    private val snapshotDao: ProfileSnapshotDao,
+    private val driftCalculator: ProfileDriftCalculator,
     private val clock: Clock = SystemClockImpl(),
 ) {
     private val gson = Gson()
@@ -51,7 +56,7 @@ class AdversarialScraperLayer @Inject constructor(
      * platform profiles change OR the enabled flag is toggled.
      */
     fun getWeights(): Flow<Map<CategoryPool, Float>> =
-        combine(dao.observeAll(), _enabled) { profiles, enabled ->
+        combine(dao.observeAll(), snapshotDao.observeAll(), _enabled) { profiles, snapshots, enabled ->
             if (!enabled || profiles.isEmpty()) return@combine neutralWeights()
 
             val now = clock.currentTimeMillis()
@@ -59,14 +64,22 @@ class AdversarialScraperLayer @Inject constructor(
 
             for (profile in profiles) {
                 if (now - profile.lastScraped > STALE_THRESHOLD_MS) continue
-                val categories = parseCategories(profile.scrapedCategoriesJson)
-                confirmedCategories.addAll(categories)
+                confirmedCategories.addAll(parseCategories(profile.scrapedCategoriesJson))
             }
 
             if (confirmedCategories.isEmpty()) return@combine neutralWeights()
 
+            // Confirmed categories not budging across the two most recent import snapshots: the
+            // current noise is not moving them, so push harder (#170 E1). Empty until a platform
+            // has >=2 snapshots, so this is a no-op on a fresh install (falls back to static weights).
+            val sticky = driftCalculator.stickyConfirmed(snapshots, ::parseCategories)
+
             CategoryPool.values().associateWith { category ->
-                if (confirmedCategories.contains(category)) CONFIRMED_WEIGHT else ABSENT_WEIGHT
+                when {
+                    category in confirmedCategories && category in sticky -> STICKY_CONFIRMED_WEIGHT
+                    category in confirmedCategories -> CONFIRMED_WEIGHT
+                    else -> ABSENT_WEIGHT
+                }
             }
         }
 

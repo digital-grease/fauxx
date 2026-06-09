@@ -47,6 +47,7 @@ class GoogleTakeoutImporter @Inject constructor(
     @ApplicationContext private val context: Context,
     private val categoryMapper: CategoryMapper,
     private val platformProfileDao: PlatformProfileDao,
+    private val profileSnapshotDao: com.fauxx.targeting.layer2.ProfileSnapshotDao,
     private val clock: Clock
 ) : AdProfileImporter {
 
@@ -231,11 +232,21 @@ class GoogleTakeoutImporter @Inject constructor(
 
     private suspend fun persistCategories(mapped: Set<com.fauxx.data.querybank.CategoryPool>) {
         val json = gson.toJson(mapped.map { it.name })
+        val now = clock.currentTimeMillis()
         platformProfileDao.upsert(
             PlatformProfileCache(
                 platformName = source.platformId,
                 scrapedCategoriesJson = json,
-                lastScraped = clock.currentTimeMillis()
+                lastScraped = now
+            )
+        )
+        // Append an immutable IMPORT snapshot so Layer 2 can compute drift over time (#170 E1).
+        profileSnapshotDao.insert(
+            com.fauxx.targeting.layer2.ProfileSnapshot(
+                platformName = source.platformId,
+                source = com.fauxx.targeting.layer2.SnapshotSource.IMPORT,
+                scrapedCategoriesJson = json,
+                capturedAt = now,
             )
         )
     }

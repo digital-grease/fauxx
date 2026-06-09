@@ -55,7 +55,7 @@ class FacebookDyiImporterTest {
             """.trimIndent().toByteArray()
         )
         val mapper = CategoryMapper(context)
-        importer = FacebookDyiImporter(context, mapper, dao, clock)
+        importer = FacebookDyiImporter(context, mapper, dao, mockk(relaxed = true), clock)
     }
 
     @Test

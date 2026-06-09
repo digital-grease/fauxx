@@ -14,6 +14,7 @@ import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.db.MIGRATION_1_2
 import com.fauxx.data.db.MIGRATION_2_3
 import com.fauxx.data.db.MIGRATION_3_4
+import com.fauxx.data.db.MIGRATION_4_5
 import com.fauxx.data.db.PhantomDatabase
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer2.PlatformProfileDao
@@ -76,7 +77,7 @@ object AppModule {
             "phantom.db"
         )
             .openHelperFactory(factory)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
     }
 
@@ -193,6 +194,11 @@ object AppModule {
     @Singleton
     fun providePlatformProfileDao(db: PhantomDatabase): PlatformProfileDao =
         db.platformProfileDao()
+
+    @Provides
+    @Singleton
+    fun provideProfileSnapshotDao(db: PhantomDatabase): com.fauxx.targeting.layer2.ProfileSnapshotDao =
+        db.profileSnapshotDao()
 
     @Provides
     @Singleton
