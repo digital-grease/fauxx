@@ -379,12 +379,24 @@ Fauxx operates within the terms of service of search engines and ad platforms, b
 
 ## Threat Model
 
-Fauxx assumes:
+- **Adversaries:** Data brokers, ad networks, analytics platforms, ISPs.
+- **Data in scope:** The weak, low-confidence signals these adversaries infer from search queries, URL visits, location history, device fingerprints, app-store interest signals, and DNS queries.
+- **Goal:** Dilution at the edge of the identity graph. Fauxx adds plausible synthetic activity so that low-confidence behavioral inferences become noisier and less certain. It does not replace or overwrite a profile.
 
-- **Adversaries:** Data brokers, ad networks, analytics platforms, ISPs
-- **Data in scope:** Search queries, URL visits, location history, device fingerprints, app installations, DNS queries
-- **Goal:** Make your behavioral signal indistinguishable from synthetic noise
-- **Out of scope:** Nation-state surveillance, SIM swaps, device compromise, subpoenas
+### What Fauxx does not reach
+
+Fauxx jams weak signals. It deliberately does not attempt to defeat the strong, deterministic mechanisms modern profiling anchors on, and it makes no claim to affect the following:
+
+- **Deterministic identity joins** from your real email address or phone number.
+- **Google Privacy Sandbox Topics.** Fauxx runs in isolated WebViews that do not influence the Topics your real browser computes.
+- **Server-side and Conversions API (CAPI) events** sent directly between businesses and ad platforms.
+- **Device and Play Integrity attestation** and attested in-app telemetry.
+- **Public records and offline data** that brokers buy and sell.
+- **Connected-TV (CTV) and household-IP** graph linking.
+
+Also out of scope, as for any app: nation-state surveillance, SIM swaps, device compromise, and subpoenas.
+
+Realistically, Fauxx dilutes at the edge of the identity graph. It is not profile replacement, and it works best as one layer in a broader privacy strategy.
 
 ## Feedback & Security
 
