@@ -58,6 +58,44 @@ class PersonaRotationLayer @Inject constructor(
 
     val currentPersona: Flow<SyntheticPersona?> = _currentPersona.asStateFlow()
 
+    /** Persona that was current before the last rotation; in-memory only (see below). */
+    private val _previousPersona = MutableStateFlow<SyntheticPersona?>(null)
+
+    /**
+     * The persona a given engine channel should BIND to (E8 #174): non-null only while
+     * Layer 3 is enabled. The user's Layer 3 toggle is the single persona kill switch —
+     * when off, location spoofing, app signals, and rate modulation must all fall back
+     * to their unbound behavior, not keep following a stale persona.
+     *
+     * STAGGERED ADOPTION: if every channel switched personas at the same instant,
+     * rotation would be a synchronized multi-channel change-point (region, interest
+     * mix, and daily rhythm all stepping together) — a clean segmentation boundary no
+     * real human produces. Each channel therefore keeps serving the PREVIOUS persona
+     * for a deterministic per-(persona, channel) lag of up to [CHANNEL_MAX_LAG_MS]
+     * after rotation, so the new identity phases in channel by channel over hours to
+     * days. The previous persona is held in memory only: after a process restart a
+     * channel still inside its lag window adopts the current persona early, which
+     * degrades smoothly (one fewer staggered step) rather than incoherently.
+     */
+    fun personaForChannel(channel: PersonaChannel): SyntheticPersona? {
+        if (!_enabled.value) return null
+        val current = _currentPersona.value ?: return null
+        val previous = _previousPersona.value ?: return current
+        val sinceRotation = clock.currentTimeMillis() - current.createdAt
+        return if (sinceRotation < adoptionLagMs(current.id, channel)) previous else current
+    }
+
+    /** Deterministic adoption lag in 0..[CHANNEL_MAX_LAG_MS] per (persona, channel). */
+    @androidx.annotation.VisibleForTesting
+    internal fun adoptionLagMs(personaId: String, channel: PersonaChannel): Long =
+        "$personaId:${channel.name}".hashCode().mod(CHANNEL_MAX_LAG_MS.toInt()).toLong()
+
+    @androidx.annotation.VisibleForTesting
+    internal fun setPersonasForTest(current: SyntheticPersona?, previous: SyntheticPersona?) {
+        _currentPersona.value = current
+        _previousPersona.value = previous
+    }
+
     /**
      * Stable [StateFlow] emitting the current Layer 3 weight map.
      * Recomputes reactively whenever the current persona or enabled flag changes.
@@ -174,6 +212,9 @@ class PersonaRotationLayer @Inject constructor(
         scope.launch {
             try {
                 val newPersona = generator.generate()
+                // Keep the outgoing persona so channels can phase the new one in
+                // (see personaForChannel).
+                _previousPersona.value = _currentPersona.value
                 _currentPersona.value = newPersona
                 historyDao.insert(
                     PersonaHistoryEntity(
@@ -193,5 +234,15 @@ class PersonaRotationLayer @Inject constructor(
     companion object {
         /** 90 days in milliseconds. */
         private const val HISTORY_RETENTION_MS = 90L * 24 * 60 * 60 * 1000
+
+        /** Upper bound for per-channel persona adoption lag: 48 hours. */
+        internal const val CHANNEL_MAX_LAG_MS = 48L * 60 * 60 * 1000
     }
 }
+
+/**
+ * Engine channels that bind to the active persona (E8 #174). Each adopts a freshly
+ * rotated persona after its own deterministic lag — see
+ * [PersonaRotationLayer.personaForChannel].
+ */
+enum class PersonaChannel { LOCATION, APP_SIGNAL, RHYTHM }

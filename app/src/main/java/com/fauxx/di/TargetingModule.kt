@@ -11,9 +11,11 @@ import com.fauxx.targeting.layer1.SelfReportLayer
 import com.fauxx.targeting.layer2.AdversarialScraperLayer
 import com.fauxx.targeting.layer2.CategoryMapper
 import com.fauxx.targeting.layer2.PlatformProfileDao
+import com.fauxx.engine.scheduling.RateModulator
 import com.fauxx.locale.LocaleManager
 import com.fauxx.targeting.layer3.PersonaDistribution
 import com.fauxx.targeting.layer3.PersonaGenerator
+import com.fauxx.targeting.layer3.PersonaRateModulator
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import dagger.Module
@@ -86,6 +88,12 @@ object TargetingModule {
         generator: PersonaGenerator,
         historyDao: PersonaHistoryDao
     ): PersonaRotationLayer = PersonaRotationLayer(generator, historyDao)
+
+    /** E8: the single scheduler rate-modulation seam; E10 composes into this binding. */
+    @Provides
+    @Singleton
+    fun provideRateModulator(personaLayer: PersonaRotationLayer): RateModulator =
+        PersonaRateModulator(personaLayer)
 
     @Provides
     @Singleton

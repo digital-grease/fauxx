@@ -617,17 +617,22 @@ class PoisonEngine @Inject constructor(
 
             // Schedule next action, subtracting module execution time so the
             // inter-action interval (not post-action gap) matches the target rate.
+            // The dwell/burst state machine keys off what the module actually emitted
+            // (logEntry.category), not what was planned — a module may redirect the
+            // action (E8: AppSignal's persona-interest swap), and cross-niche pacing
+            // only protects against bot signals if it tracks the visible stream.
+            val executedCategory = logEntry.category
             val execElapsed = clock.currentTimeMillis() - execStart
             val scheduledMs = scheduler.nextDelayMs(
                 actionsPerHour = activeIntensity.actionsPerHour,
                 prev = lastCategory,
-                next = category,
+                next = executedCategory,
                 allowedStart = currentProfile.allowedHoursStart,
                 allowedEnd = currentProfile.allowedHoursEnd
             )
             // Update lastCategory only on success — failed actions shouldn't poison the
             // dwell signal (a circuit-broken module isn't really "browsing" anything).
-            if (logEntry.success) lastCategory = category
+            if (logEntry.success) lastCategory = executedCategory
             val effectiveDelay = maxOf(0L, scheduledMs - execElapsed)
             Timber.d("Action: $moduleName/$category exec=${execElapsed}ms scheduled=${scheduledMs}ms effective=${effectiveDelay}ms")
             sleepRespectingConstraints(effectiveDelay)
