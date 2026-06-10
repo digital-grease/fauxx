@@ -25,6 +25,9 @@ object LogMetadata {
     const val ROUTE_DISTANCE = "Route distance"
     const val ROUTE_DURATION = "Route duration"
     const val USER_AGENT = "User-Agent"
+    // E5 (#175) intent-chain search sessions: counts only, never query/link text.
+    const val SESSION_QUERIES = "Session queries"
+    const val SESSION_LINKS = "Links followed"
 
     private val gson = Gson()
     private val mapType = object : TypeToken<LinkedHashMap<String, String>>() {}.type
@@ -44,6 +47,15 @@ object LogMetadata {
     }
 
     /** Parse a metadata JSON object back to ordered pairs. Null/blank/malformed -> empty list. */
+    /**
+     * Merge extra pairs into an existing metadata JSON, preserving order; null/blank
+     * values are dropped (E5: appends session counts after the fact, since they are
+     * only known once the session finishes but the page snapshot must be captured
+     * earlier, before the document changes).
+     */
+    fun append(json: String?, vararg pairs: Pair<String, String?>): String? =
+        toJson(*(parse(json) + pairs.toList()).toTypedArray())
+
     fun parse(json: String?): List<Pair<String, String>> {
         if (json.isNullOrBlank()) return emptyList()
         return runCatching {

@@ -137,6 +137,30 @@ class CrawlListManager @Inject constructor(
         return urlsByLocale.getOrPut(locale) { loadUrls(locale) }
     }
 
+    private val hostsByLocale = ConcurrentHashMap<SupportedLocale, Set<String>>()
+
+    /**
+     * True if [host] belongs to the curated crawl corpus for the active locale (exact
+     * host or subdomain, www-insensitive). E5 (#175) uses this as the ALLOW-list for
+     * following SERP result links: the corpus is the project's only reviewed set of
+     * safe-to-visit destinations, whereas the blocklist is a finite named denylist
+     * that cannot vouch for arbitrary live-SERP results (a visited URL IS the profile
+     * entry per the QueryBlocklist threat model). Empty corpus means nothing is
+     * allowed — fail closed.
+     */
+    fun isCuratedHost(host: String): Boolean {
+        val normalized = host.lowercase().removePrefix("www.")
+        return curatedHosts().any { normalized == it || normalized.endsWith(".$it") }
+    }
+
+    private fun curatedHosts(): Set<String> =
+        hostsByLocale.getOrPut(localeManager.currentLocale) {
+            currentUrls().mapNotNullTo(mutableSetOf()) { entry ->
+                runCatching { java.net.URI(entry.url).host }.getOrNull()
+                    ?.lowercase()?.removePrefix("www.")
+            }
+        }
+
     /** Evicts entries older than 24h to prevent unbounded map growth. */
     private fun cleanupStaleEntries(now: Long) {
         if (lastVisitByDomain.size < CLEANUP_THRESHOLD) return
