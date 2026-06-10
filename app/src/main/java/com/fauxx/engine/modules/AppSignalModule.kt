@@ -201,8 +201,14 @@ class AppSignalModule @Inject constructor(
          * highest-value identity signals brokers ingest, so they get concentrated on
          * the persona beyond the engine-wide Layer 3 category weighting — while most
          * actions still follow the engine distribution so Layer 0's entropy survives.
+         *
+         * Lowered 0.35 -> 0.25 with E9 (#176): the rebalanced engine distribution
+         * already lands ~half the stream on persona interests, so the old swap rate
+         * would have pushed the joint app-store concentration to ~57-66% of actions
+         * hitting 3-5 fixed search URLs. 0.25 keeps the joint concentration within
+         * the pre-E9 envelope.
          */
-        internal const val PERSONA_INTEREST_SWAP_FRACTION = 0.35f
+        internal const val PERSONA_INTEREST_SWAP_FRACTION = 0.25f
     }
 
     override suspend fun start() {

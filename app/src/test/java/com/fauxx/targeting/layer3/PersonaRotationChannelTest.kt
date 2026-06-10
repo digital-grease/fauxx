@@ -5,6 +5,9 @@ import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.support.FakeClock
 import io.mockk.mockk
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -26,9 +29,13 @@ class PersonaRotationChannelTest {
     private fun layer(): PersonaRotationLayer =
         PersonaRotationLayer(mockk(relaxed = true), mockk(relaxed = true), clock)
 
-    private fun persona(id: String, createdAt: Long) = SyntheticPersona(
+    private fun persona(
+        id: String,
+        createdAt: Long,
+        interests: Set<CategoryPool> = setOf(CategoryPool.COOKING),
+    ) = SyntheticPersona(
         id = id, name = "Test", ageRange = "AGE_25_34", profession = "ENGINEER",
-        region = "US_WEST", interests = setOf(CategoryPool.COOKING),
+        region = "US_WEST", interests = interests,
         createdAt = createdAt, activeUntil = createdAt + TimeUnit.DAYS.toMillis(7)
     )
 
@@ -97,6 +104,44 @@ class PersonaRotationChannelTest {
         assertEquals(lags, PersonaChannel.entries.map { layer.adoptionLagMs(id, it) })
         lags.forEach { assertTrue("lag $it out of bounds", it in 0 until PersonaRotationLayer.CHANNEL_MAX_LAG_MS) }
         assertEquals("channels must not adopt simultaneously", lags.size, lags.toSet().size)
+    }
+
+    @Test
+    fun `weights flow staggers adoption and emits the live E9 blend`() = runBlocking {
+        // Pins two review findings at once: the Layer 3 category distribution honors
+        // staggered adoption like every other bound channel (no synchronized
+        // change-point at rotation), and the REAL getWeights() flow emits values from
+        // weightsFor — severing the computeWeights delegation turns this red.
+        val layer = layer()
+        val id = staggeredId(layer)
+        val rotatedAt = clock.nowMs
+        val old = persona("old", rotatedAt - TimeUnit.DAYS.toMillis(8),
+            interests = setOf(CategoryPool.COOKING))
+        val fresh = persona(id, rotatedAt, interests = setOf(CategoryPool.GAMING))
+        layer.setPersonasForTest(current = fresh, previous = old)
+        layer.setEnabled(true)
+
+        val aligned = PersonaRotationLayer
+            .weightsFor(setOf(CategoryPool.COOKING)).getValue(CategoryPool.COOKING)
+        val neutral = 1.0f
+
+        // Inside the WEIGHTS lag: the blend still follows the PREVIOUS persona.
+        val during = withTimeout(5_000) {
+            layer.getWeights().first { it.getValue(CategoryPool.COOKING) != neutral }
+        }
+        assertEquals(aligned, during.getValue(CategoryPool.COOKING), 1e-6f)
+        assertTrue(
+            "new persona's interest must still be misaligned during the lag",
+            during.getValue(CategoryPool.GAMING) < 1f
+        )
+
+        // Past every lag: the blend follows the NEW persona.
+        clock.nowMs = rotatedAt + PersonaRotationLayer.CHANNEL_MAX_LAG_MS
+        layer.reevaluateWeightsForTest()
+        val after = withTimeout(5_000) {
+            layer.getWeights().first { it.getValue(CategoryPool.GAMING) == aligned }
+        }
+        assertTrue(after.getValue(CategoryPool.COOKING) < 1f)
     }
 
     @Test

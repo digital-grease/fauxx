@@ -30,7 +30,13 @@ data class SyntheticPersona(
     val activeUntil: Long
 ) {
     companion object {
-        /** Fraction of actions that follow persona interest weights vs uniform noise. */
-        const val PERSONA_FOLLOW_FRACTION = 0.70f
+        /**
+         * Fraction of actions that follow persona interest weights vs uniform noise.
+         * Raised 0.70 -> 0.85 by E9 (#176): with credible joint-sampled personas (E7)
+         * bound across modules (E8), the persona leads and the uniform spray — the
+         * most anomalous shape, since no real person is equally interested in
+         * everything — recedes to a baseline.
+         */
+        const val PERSONA_FOLLOW_FRACTION = 0.85f
     }
 }
