@@ -17,6 +17,9 @@ object LogScrubber {
         Regex("""UserDemographicProfile\([^)]*\)"""),
         Regex("""SyntheticPersona\([^)]*\)"""),
         Regex("""PlatformProfileCache\([^)]*\)"""),
+        // E7: carries (age, profession, region) at generation time; its `age` field
+        // would also slip past the ageRange field pattern below.
+        Regex("""DemographicCell\([^)]*\)"""),
         // Demographic profile fields
         Regex("""(?i)(ageRange|gender|profession|region|interests)\s*[=:]\s*\S+"""),
         // Persona data

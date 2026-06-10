@@ -11,6 +11,7 @@ import com.fauxx.targeting.layer1.Gender
 import com.fauxx.targeting.layer1.Profession
 import com.fauxx.targeting.layer1.Region
 import com.fauxx.targeting.layer1.UserDemographicProfile
+import com.fauxx.targeting.layer3.PersonaDistribution
 import com.fauxx.targeting.layer3.PersonaGenerator
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import io.mockk.coEvery
@@ -30,13 +31,16 @@ class PersonaGeneratorDemographicTest {
 
     private val context: Context = mockk(relaxed = true) {
         every { assets } returns mockk {
-            // Both the locale-keyed path and the legacy fallback are missing — the
+            // Templates, and the E7 joint distribution, are all missing — the
             // generator falls back to its built-in random pickers, which is what
             // these tests want to exercise.
             every { open("persona_templates/en.json") } throws java.io.FileNotFoundException()
             every { open("persona_templates.json") } throws java.io.FileNotFoundException()
+            every { open(PersonaDistribution.ASSET_PATH) } throws java.io.FileNotFoundException()
         }
     }
+
+    private val distribution = PersonaDistribution(context)
 
     private val localeManager: LocaleManager = mockk(relaxed = true) {
         every { currentLocale } returns SupportedLocale.EN
@@ -53,7 +57,7 @@ class PersonaGeneratorDemographicTest {
             coEvery { get() } returns userProfile
         }
 
-        val generator = PersonaGenerator(context, historyDao, demographicDao, localeManager)
+        val generator = PersonaGenerator(context, historyDao, demographicDao, localeManager, distribution)
 
         // Generate many personas and verify none match user on 2+ traits
         repeat(20) {
@@ -78,7 +82,7 @@ class PersonaGeneratorDemographicTest {
             coEvery { get() } returns userProfile
         }
 
-        val generator = PersonaGenerator(context, historyDao, demographicDao, localeManager)
+        val generator = PersonaGenerator(context, historyDao, demographicDao, localeManager, distribution)
         val persona = generator.generate()
         assertNotNull(persona)
         assertTrue(persona.name.isNotBlank())
@@ -90,7 +94,7 @@ class PersonaGeneratorDemographicTest {
             coEvery { get() } returns null
         }
 
-        val generator = PersonaGenerator(context, historyDao, demographicDao, localeManager)
+        val generator = PersonaGenerator(context, historyDao, demographicDao, localeManager, distribution)
         val persona = generator.generate()
         assertNotNull(persona)
         assertTrue(persona.name.isNotBlank())
@@ -101,38 +105,11 @@ class PersonaGeneratorDemographicTest {
         persona: SyntheticPersona,
         profile: UserDemographicProfile
     ): Int {
+        // SyntheticPersona stores demographics as enum names (E7 canonicalization).
         var count = 0
-        if (profile.ageRange != null) {
-            val userAge = when (profile.ageRange) {
-                AgeRange.AGE_18_24 -> "18-24"
-                AgeRange.AGE_25_34 -> "25-34"
-                AgeRange.AGE_35_44 -> "35-44"
-                AgeRange.AGE_45_54 -> "45-54"
-                AgeRange.AGE_55_64 -> "55-64"
-                AgeRange.AGE_65_PLUS -> "65+"
-            }
-            if (persona.ageRange == userAge) count++
-        }
-        if (profile.profession != null) {
-            val userProf = when (profile.profession) {
-                Profession.STUDENT -> "Student"
-                Profession.TEACHER -> "Teacher"
-                Profession.ENGINEER -> "Engineer"
-                Profession.HEALTHCARE -> "Healthcare Worker"
-                Profession.LEGAL -> "Legal"
-                Profession.FINANCE_PROF -> "Business Professional"
-                Profession.RETAIL -> "Retail Worker"
-                Profession.TRADES -> "Trades"
-                Profession.CREATIVE -> "Creative"
-                Profession.RETIRED -> "Retired"
-                Profession.HOMEMAKER -> "Homemaker"
-                Profession.OTHER -> "Professional"
-            }
-            if (persona.profession == userProf) count++
-        }
-        if (profile.region != null && persona.region == profile.region.name) {
-            count++
-        }
+        if (profile.ageRange != null && persona.ageRange == profile.ageRange.name) count++
+        if (profile.profession != null && persona.profession == profile.profession.name) count++
+        if (profile.region != null && persona.region == profile.region.name) count++
         return count
     }
 }

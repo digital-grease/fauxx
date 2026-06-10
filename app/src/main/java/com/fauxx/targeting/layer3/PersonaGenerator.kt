@@ -8,7 +8,9 @@ import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
+import com.fauxx.targeting.layer1.AgeRange
 import com.fauxx.targeting.layer1.DemographicProfileDao
+import com.fauxx.targeting.layer1.Profession
 import com.fauxx.targeting.layer1.UserDemographicProfile
 import com.fauxx.util.Clock
 import com.fauxx.util.SystemClockImpl
@@ -24,11 +26,22 @@ import kotlin.random.Random
 private val NINETY_DAYS_MS = TimeUnit.DAYS.toMillis(90)
 
 /**
- * Generates coherent [SyntheticPersona] instances by sampling from persona templates
- * and validating against consistency rules and recent history.
+ * Generates coherent [SyntheticPersona] instances and validates them against consistency
+ * rules and recent history.
+ *
+ * Demographics (E7 #173, hybrid scope): for the EN locale, (ageRange, profession, region)
+ * are JOINTLY multinomial-sampled from the bundled ACS PUMS distribution via
+ * [PersonaDistribution], so traits co-occur per real US population data. Non-EN locales
+ * (and EN when the distribution asset is unusable) keep the hand-authored template path.
+ * Interests are still sampled from templates/weight hints independently of the joint
+ * demographics — P(interests | age, profession) is a tracked follow-up.
+ *
+ * All demographic fields are stored as layer-1 enum NAMES ("AGE_35_44", "FINANCE_PROF",
+ * "US_MIDWEST"); display labels are resolved only in the UI via DemographicLabels.
  *
  * A persona is rejected if:
  * - It fails [PersonaConsistencyRules.isValid]
+ * - It matches the user's own demographics on 2+ traits
  * - It shares >60% trait overlap with any persona from the past 90 days
  *
  * Falls back to a built-in generic persona if no valid persona can be generated after
@@ -40,6 +53,7 @@ class PersonaGenerator @Inject constructor(
     private val historyDao: PersonaHistoryDao,
     private val demographicProfileDao: DemographicProfileDao,
     private val localeManager: LocaleManager,
+    private val distribution: PersonaDistribution,
     private val clock: Clock = SystemClockImpl(),
     private val random: Random = Random.Default,
 ) {
@@ -103,12 +117,20 @@ class PersonaGenerator @Inject constructor(
         val interests = selectInterests(template, weightHints)
         val now = clock.currentTimeMillis()
 
+        // US personas joint-sample all three demographics from the same ACS PUMS cell;
+        // null for non-EN locales (hand-authored templates) or when the asset is unusable.
+        val cell = if (localeManager.currentLocale == SupportedLocale.EN) {
+            distribution.sample(random)
+        } else {
+            null
+        }
+
         return SyntheticPersona(
             id = UUID.randomUUID().toString(),
             name = generateName(),
-            ageRange = template?.ageRange ?: pickAgeRange(),
-            profession = template?.profession ?: pickProfession(),
-            region = template?.region ?: pickRegion(),
+            ageRange = cell?.age ?: template?.ageRange ?: pickAgeRange(),
+            profession = cell?.profession ?: template?.profession ?: pickProfession(),
+            region = cell?.region ?: template?.region ?: pickRegion(),
             interests = interests,
             createdAt = now,
             activeUntil = nextRotationTime()
@@ -163,6 +185,10 @@ class PersonaGenerator @Inject constructor(
      * Returns true if the candidate persona matches the user's self-reported demographics
      * on 2 or more traits (ageRange, profession, region). Gender is intentionally excluded.
      * Returns false if the user has no profile (skipped onboarding).
+     *
+     * Candidates store demographics as enum names, so this compares against `enum.name`
+     * directly. Before that canonicalization this method compared display strings, which
+     * NEVER matched template-sourced candidates — the gate was silently inert.
      */
     private fun matchesUserDemographics(
         candidate: SyntheticPersona,
@@ -171,41 +197,9 @@ class PersonaGenerator @Inject constructor(
         if (userProfile == null) return false
 
         var matchCount = 0
-
-        if (userProfile.ageRange != null) {
-            val userAge = when (userProfile.ageRange) {
-                com.fauxx.targeting.layer1.AgeRange.AGE_18_24 -> "18-24"
-                com.fauxx.targeting.layer1.AgeRange.AGE_25_34 -> "25-34"
-                com.fauxx.targeting.layer1.AgeRange.AGE_35_44 -> "35-44"
-                com.fauxx.targeting.layer1.AgeRange.AGE_45_54 -> "45-54"
-                com.fauxx.targeting.layer1.AgeRange.AGE_55_64 -> "55-64"
-                com.fauxx.targeting.layer1.AgeRange.AGE_65_PLUS -> "65+"
-            }
-            if (candidate.ageRange == userAge) matchCount++
-        }
-
-        if (userProfile.profession != null) {
-            val userProf = when (userProfile.profession) {
-                com.fauxx.targeting.layer1.Profession.STUDENT -> "Student"
-                com.fauxx.targeting.layer1.Profession.TEACHER -> "Teacher"
-                com.fauxx.targeting.layer1.Profession.ENGINEER -> "Engineer"
-                com.fauxx.targeting.layer1.Profession.HEALTHCARE -> "Healthcare Worker"
-                com.fauxx.targeting.layer1.Profession.LEGAL -> "Legal"
-                com.fauxx.targeting.layer1.Profession.FINANCE_PROF -> "Business Professional"
-                com.fauxx.targeting.layer1.Profession.RETAIL -> "Retail Worker"
-                com.fauxx.targeting.layer1.Profession.TRADES -> "Trades"
-                com.fauxx.targeting.layer1.Profession.CREATIVE -> "Creative"
-                com.fauxx.targeting.layer1.Profession.RETIRED -> "Retired"
-                com.fauxx.targeting.layer1.Profession.HOMEMAKER -> "Homemaker"
-                com.fauxx.targeting.layer1.Profession.OTHER -> "Professional"
-            }
-            if (candidate.profession == userProf) matchCount++
-        }
-
-        if (userProfile.region != null && candidate.region == userProfile.region.name) {
-            matchCount++
-        }
-
+        if (userProfile.ageRange != null && candidate.ageRange == userProfile.ageRange.name) matchCount++
+        if (userProfile.profession != null && candidate.profession == userProfile.profession.name) matchCount++
+        if (userProfile.region != null && candidate.region == userProfile.region.name) matchCount++
         return matchCount >= MIN_DEMOGRAPHIC_MATCHES
     }
 
@@ -214,8 +208,8 @@ class PersonaGenerator @Inject constructor(
         return SyntheticPersona(
             id = UUID.randomUUID().toString(),
             name = "Alex Johnson",
-            ageRange = "35-44",
-            profession = "Professional",
+            ageRange = AgeRange.AGE_35_44.name,
+            profession = Profession.OTHER.name,
             region = "US_MIDWEST",
             interests = setOf(CategoryPool.COOKING, CategoryPool.TRAVEL, CategoryPool.FITNESS),
             createdAt = now,
@@ -231,12 +225,13 @@ class PersonaGenerator @Inject constructor(
         return "${firstNames.random(random)} ${lastNames.random(random)}"
     }
 
-    private fun pickAgeRange(): String =
-        listOf("18-24", "25-34", "35-44", "45-54", "55-64", "65+").random(random)
+    private fun pickAgeRange(): String = AgeRange.entries.random(random).name
 
     private fun pickProfession(): String =
-        listOf("Engineer", "Teacher", "Healthcare Worker", "Business Professional",
-            "Retail Worker", "Retired", "Student", "Homemaker", "Creative").random(random)
+        listOf(Profession.ENGINEER, Profession.TEACHER, Profession.HEALTHCARE,
+            Profession.FINANCE_PROF, Profession.RETAIL, Profession.RETIRED,
+            Profession.STUDENT, Profession.HOMEMAKER, Profession.CREATIVE)
+            .random(random).name
 
     private fun pickRegion(): String =
         listOf("US_NORTHEAST", "US_SOUTHEAST", "US_MIDWEST", "US_SOUTHWEST", "US_WEST",

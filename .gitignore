@@ -61,4 +61,7 @@ Thumbs.db
 CLAUDE.md
 .devloop
 .claude/
-scripts/
+# Local one-off dev/AI-review tools stay ignored; the E7 persona-distribution
+# builder is committed (it regenerates a shipped asset and must be reviewable).
+scripts/*
+!scripts/build_persona_distribution.py
