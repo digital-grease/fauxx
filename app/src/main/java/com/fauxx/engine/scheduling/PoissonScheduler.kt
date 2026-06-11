@@ -37,6 +37,7 @@ import kotlin.random.Random
 class PoissonScheduler @Inject constructor(
     private val clock: Clock,
     private val random: Random = Random.Default,
+    private val rateModulator: RateModulator = RateModulator.NEUTRAL,
 ) {
 
     companion object {
@@ -92,8 +93,13 @@ class PoissonScheduler @Inject constructor(
         }
 
         // Use the target rate directly — actionsPerHour already represents the desired
-        // rate during active hours, no need to scale by active fraction.
-        val effectiveRate = actionsPerHour.toFloat()
+        // rate during active hours, no need to scale by active fraction. The rate
+        // modulator (E8 persona rhythm, later composed with E10's circadian histogram)
+        // softly reshapes WHEN actions cluster; its 24h mean stays ~1.0 and the clamp
+        // bounds the worst case, so the displayed rate stays honest (issue #76).
+        val modulation = rateModulator.multiplier(currentHour)
+            .coerceIn(RateModulator.MIN_MULTIPLIER, RateModulator.MAX_MULTIPLIER)
+        val effectiveRate = actionsPerHour.toFloat() * modulation
 
         val sameTopic = prev == null || next == null || prev == next
 

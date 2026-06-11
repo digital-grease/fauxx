@@ -35,6 +35,7 @@ import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.AllowedHours
 import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.engine.scheduling.UsageObserver
 import com.fauxx.targeting.TargetingEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
 import androidx.datastore.preferences.core.edit
@@ -167,6 +168,12 @@ class PoisonEngine @Inject constructor(
      */
     @IoDispatcher private val loopDispatcher: CoroutineDispatcher,
     private val random: Random = Random.Default,
+    /**
+     * Observes local screen-on events to learn the user's daily rhythm (E10 #177). Registered
+     * and unregistered alongside the constraint receivers so it only runs while the engine is
+     * active. Defaults to a no-op so engine tests need not stand one up.
+     */
+    private val usageObserver: UsageObserver = UsageObserver.NONE,
 ) {
     private var scope = CoroutineScope(SupervisorJob() + loopDispatcher)
     private var engineJob: Job? = null
@@ -462,6 +469,9 @@ class PoisonEngine @Inject constructor(
             // WiFi→mobile move would keep the engine acting at the WiFi tier. Surface it.
             Timber.w(it, "registerDefaultNetworkCallback failed; transport tracking degraded")
         }
+        // Start learning the user's daily rhythm while the engine runs (E10 #177).
+        runCatching { usageObserver.start() }
+            .onFailure { Timber.w(it, "usageObserver.start failed; circadian rhythm degraded") }
     }
 
     private fun unregisterConstraintReceivers() {
@@ -470,6 +480,7 @@ class PoisonEngine @Inject constructor(
             context.getSystemService(ConnectivityManager::class.java)
                 .unregisterNetworkCallback(networkCallback)
         }
+        runCatching { usageObserver.stop() }
     }
 
     private suspend fun runLoop() {
@@ -617,17 +628,22 @@ class PoisonEngine @Inject constructor(
 
             // Schedule next action, subtracting module execution time so the
             // inter-action interval (not post-action gap) matches the target rate.
+            // The dwell/burst state machine keys off what the module actually emitted
+            // (logEntry.category), not what was planned — a module may redirect the
+            // action (E8: AppSignal's persona-interest swap), and cross-niche pacing
+            // only protects against bot signals if it tracks the visible stream.
+            val executedCategory = logEntry.category
             val execElapsed = clock.currentTimeMillis() - execStart
             val scheduledMs = scheduler.nextDelayMs(
                 actionsPerHour = activeIntensity.actionsPerHour,
                 prev = lastCategory,
-                next = category,
+                next = executedCategory,
                 allowedStart = currentProfile.allowedHoursStart,
                 allowedEnd = currentProfile.allowedHoursEnd
             )
             // Update lastCategory only on success — failed actions shouldn't poison the
             // dwell signal (a circuit-broken module isn't really "browsing" anything).
-            if (logEntry.success) lastCategory = category
+            if (logEntry.success) lastCategory = executedCategory
             val effectiveDelay = maxOf(0L, scheduledMs - execElapsed)
             Timber.d("Action: $moduleName/$category exec=${execElapsed}ms scheduled=${scheduledMs}ms effective=${effectiveDelay}ms")
             sleepRespectingConstraints(effectiveDelay)

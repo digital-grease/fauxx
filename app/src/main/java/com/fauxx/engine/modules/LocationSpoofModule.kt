@@ -12,6 +12,8 @@ import com.fauxx.data.location.FakeRouteGenerator
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.targeting.layer3.PersonaChannel
+import com.fauxx.targeting.layer3.PersonaRotationLayer
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +38,7 @@ class LocationSpoofModule @Inject constructor(
     private val routeGenerator: FakeRouteGenerator,
     private val cityDatabase: CityDatabase,
     private val profileRepo: PoisonProfileRepository,
+    private val personaLayer: PersonaRotationLayer,
     private val random: Random = Random.Default,
 ) : Module, LocationDiagnostics {
 
@@ -135,7 +138,12 @@ class LocationSpoofModule @Inject constructor(
         }
 
         val mode = FakeRouteGenerator.MovementMode.values().random(random)
-        val city = cityDatabase.randomCity()
+        // E8 (#174): bind spoofed locations to the active persona's region so the
+        // location story corroborates the demographic one. Null persona (Layer 3 off,
+        // or none generated yet) keeps the unbound any-city behavior; an unmatched
+        // region hint falls back to the full list inside randomCity.
+        val persona = personaLayer.personaForChannel(PersonaChannel.LOCATION)
+        val city = cityDatabase.randomCity(regionHint = persona?.region)
         val route = routeGenerator.generateRoute(origin = city, mode = mode, count = 5)
 
         var lastTime = route.firstOrNull()?.time ?: 0L

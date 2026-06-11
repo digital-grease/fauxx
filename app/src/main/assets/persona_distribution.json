@@ -1,0 +1,1928 @@
+{
+ "version": 1,
+ "source": "US Census ACS PUMS 2022 1-Year, states=['ny', 'ma', 'fl', 'ga', 'il', 'oh', 'tx', 'az', 'ca', 'wa']",
+ "note": "Joint P(AgeRange, Profession, Region) over US adults, PWGTP-weighted, region marginals post-stratified to Census state population estimates. Within-region composition reflects only the sampled states. US-only by design (hybrid: es/fr/ru keep hand-authored templates).",
+ "dimensions": {
+  "age": [
+   "AGE_18_24",
+   "AGE_25_34",
+   "AGE_35_44",
+   "AGE_45_54",
+   "AGE_55_64",
+   "AGE_65_PLUS"
+  ],
+  "profession": [
+   "STUDENT",
+   "TEACHER",
+   "ENGINEER",
+   "HEALTHCARE",
+   "LEGAL",
+   "FINANCE_PROF",
+   "RETAIL",
+   "TRADES",
+   "CREATIVE",
+   "RETIRED",
+   "HOMEMAKER",
+   "OTHER"
+  ],
+  "region": [
+   "US_NORTHEAST",
+   "US_SOUTHEAST",
+   "US_MIDWEST",
+   "US_SOUTHWEST",
+   "US_WEST"
+  ]
+ },
+ "cells": [
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "RETIRED",
+   "region": "US_SOUTHEAST",
+   "weight": 0.05775716387156617
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "RETIRED",
+   "region": "US_MIDWEST",
+   "weight": 0.038137498133561994
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "RETIRED",
+   "region": "US_WEST",
+   "weight": 0.03424453653490644
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "RETIRED",
+   "region": "US_NORTHEAST",
+   "weight": 0.030614352605378772
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "RETIRED",
+   "region": "US_SOUTHWEST",
+   "weight": 0.02020452599102781
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "STUDENT",
+   "region": "US_SOUTHEAST",
+   "weight": 0.015135260040088938
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "OTHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.013686682458378781
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "OTHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.01360642619652561
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "OTHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.01264198274374179
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "STUDENT",
+   "region": "US_WEST",
+   "weight": 0.012232543124521319
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "OTHER",
+   "region": "US_WEST",
+   "weight": 0.011249048155731321
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "STUDENT",
+   "region": "US_MIDWEST",
+   "weight": 0.01122965280851974
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "STUDENT",
+   "region": "US_NORTHEAST",
+   "weight": 0.010928416097511318
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "OTHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.010780617115262861
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "OTHER",
+   "region": "US_WEST",
+   "weight": 0.01057422575217191
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "OTHER",
+   "region": "US_MIDWEST",
+   "weight": 0.009816144455855253
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "HOMEMAKER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.009712365220680771
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "OTHER",
+   "region": "US_WEST",
+   "weight": 0.009566095237517383
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "OTHER",
+   "region": "US_MIDWEST",
+   "weight": 0.009425946545368007
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "OTHER",
+   "region": "US_MIDWEST",
+   "weight": 0.008829616960061413
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "OTHER",
+   "region": "US_MIDWEST",
+   "weight": 0.008505236607651194
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "OTHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.008014400012449867
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "HOMEMAKER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.008008581561038532
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "OTHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.007771415026306418
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "OTHER",
+   "region": "US_WEST",
+   "weight": 0.007628200973383091
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHEAST",
+   "weight": 0.007586053728967671
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "STUDENT",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0075736689109697775
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "HOMEMAKER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.007541567475082351
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "OTHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.007415435207444663
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHEAST",
+   "weight": 0.007378964776211621
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "OTHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.006914337796396543
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "OTHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.006838880752292195
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "OTHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.006809752387761404
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "RETIRED",
+   "region": "US_SOUTHEAST",
+   "weight": 0.006720031668589371
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "HOMEMAKER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.006605406031610462
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "OTHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.006456685634184281
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "HOMEMAKER",
+   "region": "US_WEST",
+   "weight": 0.006376457950209451
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "HOMEMAKER",
+   "region": "US_MIDWEST",
+   "weight": 0.006356480551785539
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "HOMEMAKER",
+   "region": "US_WEST",
+   "weight": 0.006223068098732731
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "FINANCE_PROF",
+   "region": "US_WEST",
+   "weight": 0.006126872157737908
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHEAST",
+   "weight": 0.006091600034628865
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "HOMEMAKER",
+   "region": "US_WEST",
+   "weight": 0.0060435182105155775
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "FINANCE_PROF",
+   "region": "US_MIDWEST",
+   "weight": 0.0058425581852814094
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "OTHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.005748373981780303
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHEAST",
+   "weight": 0.005668145630062451
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "HOMEMAKER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0054744573494743785
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "HOMEMAKER",
+   "region": "US_MIDWEST",
+   "weight": 0.005461482964938675
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "OTHER",
+   "region": "US_WEST",
+   "weight": 0.005361396385959268
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "FINANCE_PROF",
+   "region": "US_MIDWEST",
+   "weight": 0.005359153002890601
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "FINANCE_PROF",
+   "region": "US_WEST",
+   "weight": 0.005305426601979955
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "OTHER",
+   "region": "US_MIDWEST",
+   "weight": 0.005303929885681282
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "HOMEMAKER",
+   "region": "US_MIDWEST",
+   "weight": 0.005266194630006405
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "HOMEMAKER",
+   "region": "US_WEST",
+   "weight": 0.00509647500869145
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "FINANCE_PROF",
+   "region": "US_NORTHEAST",
+   "weight": 0.0048445081508220475
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "STUDENT",
+   "region": "US_SOUTHEAST",
+   "weight": 0.004814362945904476
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "TRADES",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0047815127187074945
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "STUDENT",
+   "region": "US_WEST",
+   "weight": 0.004774665752567379
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "FINANCE_PROF",
+   "region": "US_WEST",
+   "weight": 0.004674451729672868
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "TRADES",
+   "region": "US_SOUTHEAST",
+   "weight": 0.004622734824905616
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "RETIRED",
+   "region": "US_MIDWEST",
+   "weight": 0.004593388115576109
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "OTHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.004524965515002229
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "FINANCE_PROF",
+   "region": "US_MIDWEST",
+   "weight": 0.004460346178877819
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "OTHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.004418328622747154
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "HOMEMAKER",
+   "region": "US_MIDWEST",
+   "weight": 0.004382657219746778
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "HOMEMAKER",
+   "region": "US_NORTHEAST",
+   "weight": 0.004371709552082948
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "FINANCE_PROF",
+   "region": "US_NORTHEAST",
+   "weight": 0.004324242904014477
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "FINANCE_PROF",
+   "region": "US_MIDWEST",
+   "weight": 0.004306883700895191
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "RETIRED",
+   "region": "US_WEST",
+   "weight": 0.004270716673912814
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "FINANCE_PROF",
+   "region": "US_NORTHEAST",
+   "weight": 0.004267484946182223
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "HOMEMAKER",
+   "region": "US_NORTHEAST",
+   "weight": 0.004231554272876551
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "HOMEMAKER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.004208710797633
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "TRADES",
+   "region": "US_SOUTHEAST",
+   "weight": 0.004110555716840629
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "FINANCE_PROF",
+   "region": "US_WEST",
+   "weight": 0.004013621772108283
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "TRADES",
+   "region": "US_MIDWEST",
+   "weight": 0.003968878832598917
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "TRADES",
+   "region": "US_MIDWEST",
+   "weight": 0.003907714604014345
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "TRADES",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0039013227184262647
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "HOMEMAKER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0038931606388752055
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0038757308719191285
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "OTHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0038550776341917813
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "HOMEMAKER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0038077156386453464
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "FINANCE_PROF",
+   "region": "US_NORTHEAST",
+   "weight": 0.0037830782227339277
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "HOMEMAKER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00374031746977635
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "RETIRED",
+   "region": "US_NORTHEAST",
+   "weight": 0.003711112659533343
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "TRADES",
+   "region": "US_WEST",
+   "weight": 0.003680132308938712
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0035742857002647593
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0035565084608951986
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "HOMEMAKER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0035394759537157503
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "TRADES",
+   "region": "US_MIDWEST",
+   "weight": 0.0035213259306930153
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "OTHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0034915764059688975
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "OTHER",
+   "region": "US_MIDWEST",
+   "weight": 0.0034895534297863795
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "STUDENT",
+   "region": "US_MIDWEST",
+   "weight": 0.0034595448654082804
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "TRADES",
+   "region": "US_MIDWEST",
+   "weight": 0.0034070055289294942
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "RETAIL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0033809014247903725
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0033729393657878897
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "RETAIL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0033535783102703505
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "TRADES",
+   "region": "US_WEST",
+   "weight": 0.0033439849044278784
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "HOMEMAKER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.003292489170156579
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "STUDENT",
+   "region": "US_NORTHEAST",
+   "weight": 0.0032213347734088306
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "RETAIL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.003182593362544503
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "RETAIL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.00313435772228183
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "TRADES",
+   "region": "US_WEST",
+   "weight": 0.0031050705480876687
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "HEALTHCARE",
+   "region": "US_MIDWEST",
+   "weight": 0.0030653104621287384
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0030240309507183344
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "OTHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0029830074671383404
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "HEALTHCARE",
+   "region": "US_MIDWEST",
+   "weight": 0.0029356016079506273
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "ENGINEER",
+   "region": "US_WEST",
+   "weight": 0.0028815257800576958
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHWEST",
+   "weight": 0.002859025165869574
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "OTHER",
+   "region": "US_WEST",
+   "weight": 0.0028386133454392916
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "HEALTHCARE",
+   "region": "US_WEST",
+   "weight": 0.0028309512202934805
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "TRADES",
+   "region": "US_SOUTHWEST",
+   "weight": 0.002736832598847245
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "TRADES",
+   "region": "US_WEST",
+   "weight": 0.0026613926979284466
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "TRADES",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0026395022013878918
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "RETIRED",
+   "region": "US_SOUTHWEST",
+   "weight": 0.002612448071700453
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.002590836760849831
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "ENGINEER",
+   "region": "US_WEST",
+   "weight": 0.002572955225368991
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "HEALTHCARE",
+   "region": "US_WEST",
+   "weight": 0.002505985304623391
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0025029237448092123
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "HEALTHCARE",
+   "region": "US_NORTHEAST",
+   "weight": 0.002483288921732474
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "STUDENT",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0024597937058896293
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "HEALTHCARE",
+   "region": "US_NORTHEAST",
+   "weight": 0.0024501640796755707
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "HOMEMAKER",
+   "region": "US_WEST",
+   "weight": 0.0024422457177040576
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "HEALTHCARE",
+   "region": "US_NORTHEAST",
+   "weight": 0.0024287114956135494
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "TRADES",
+   "region": "US_NORTHEAST",
+   "weight": 0.002343807042025781
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.00233014666663593
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "RETAIL",
+   "region": "US_WEST",
+   "weight": 0.0023090709552769733
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "HEALTHCARE",
+   "region": "US_MIDWEST",
+   "weight": 0.002306774468072295
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "HEALTHCARE",
+   "region": "US_WEST",
+   "weight": 0.002297623105576871
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "TRADES",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0022721508673358
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "TRADES",
+   "region": "US_NORTHEAST",
+   "weight": 0.0022601772374910255
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "HEALTHCARE",
+   "region": "US_NORTHEAST",
+   "weight": 0.0022306919593968124
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "HOMEMAKER",
+   "region": "US_MIDWEST",
+   "weight": 0.0022258931084754986
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "TRADES",
+   "region": "US_NORTHEAST",
+   "weight": 0.002185437909684514
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "RETAIL",
+   "region": "US_WEST",
+   "weight": 0.00217917186469477
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "TRADES",
+   "region": "US_NORTHEAST",
+   "weight": 0.002173364818654094
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "RETAIL",
+   "region": "US_MIDWEST",
+   "weight": 0.00214971918685363
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "TEACHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0021354371533844167
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0021310197728823628
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "TEACHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0020998179827995617
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "HEALTHCARE",
+   "region": "US_MIDWEST",
+   "weight": 0.0020970499900169145
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "RETAIL",
+   "region": "US_MIDWEST",
+   "weight": 0.00207219255317
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHEAST",
+   "weight": 0.002065394737179897
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "RETAIL",
+   "region": "US_MIDWEST",
+   "weight": 0.0019802947065422237
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "TRADES",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0019622758377038987
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "RETAIL",
+   "region": "US_WEST",
+   "weight": 0.001954402970162212
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "HEALTHCARE",
+   "region": "US_WEST",
+   "weight": 0.0019395547690660392
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "TEACHER",
+   "region": "US_MIDWEST",
+   "weight": 0.0019129296458665404
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "ENGINEER",
+   "region": "US_MIDWEST",
+   "weight": 0.00190050633829133
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "RETAIL",
+   "region": "US_MIDWEST",
+   "weight": 0.0018993484167664628
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "HOMEMAKER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0018923477261901195
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "TEACHER",
+   "region": "US_MIDWEST",
+   "weight": 0.0018839924294413552
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "ENGINEER",
+   "region": "US_MIDWEST",
+   "weight": 0.001860206340547355
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "TEACHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0018159740675072428
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "ENGINEER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0018157736509894738
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "TEACHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0017916755688928982
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "TRADES",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0017854896701225429
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0017784625038411758
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "RETAIL",
+   "region": "US_NORTHEAST",
+   "weight": 0.0017666074708503194
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "OTHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.001759517705622602
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "TRADES",
+   "region": "US_MIDWEST",
+   "weight": 0.0017578763784992808
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "RETAIL",
+   "region": "US_WEST",
+   "weight": 0.0017384523202501289
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "ENGINEER",
+   "region": "US_WEST",
+   "weight": 0.0017302688078902533
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0017268617792407755
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "RETAIL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0016795096150785133
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "RETAIL",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0016474882814462605
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0016392592210630343
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "RETAIL",
+   "region": "US_NORTHEAST",
+   "weight": 0.0016260433419476728
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "TEACHER",
+   "region": "US_WEST",
+   "weight": 0.0016046484928147716
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "RETAIL",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0015658976312671903
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "HOMEMAKER",
+   "region": "US_NORTHEAST",
+   "weight": 0.001562727755654009
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "TEACHER",
+   "region": "US_WEST",
+   "weight": 0.0015622007728871635
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "ENGINEER",
+   "region": "US_MIDWEST",
+   "weight": 0.0015327850914222982
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "TEACHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0015066930705591312
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "RETAIL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.00150526011542066
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "RETAIL",
+   "region": "US_NORTHEAST",
+   "weight": 0.0014951873891657693
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "FINANCE_PROF",
+   "region": "US_WEST",
+   "weight": 0.0014878067515934773
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "RETAIL",
+   "region": "US_NORTHEAST",
+   "weight": 0.0014647561451076852
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "FINANCE_PROF",
+   "region": "US_MIDWEST",
+   "weight": 0.0014641322488638186
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "TEACHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0014636397718122828
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "FINANCE_PROF",
+   "region": "US_NORTHEAST",
+   "weight": 0.0014327376022288687
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "TEACHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0014187725792707067
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "ENGINEER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0014151570652901492
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "RETAIL",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0014041714977143659
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0013888968512167942
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0013855306267399402
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "TEACHER",
+   "region": "US_MIDWEST",
+   "weight": 0.001355839532047503
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0013470855711507693
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "TRADES",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0013184962495722732
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "TRADES",
+   "region": "US_WEST",
+   "weight": 0.00130821152535771
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0013050958210802824
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "TEACHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0012622793455357596
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "ENGINEER",
+   "region": "US_WEST",
+   "weight": 0.0012564241735955627
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "TEACHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.001248404180130145
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "TEACHER",
+   "region": "US_WEST",
+   "weight": 0.0012160336662625773
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "RETAIL",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0012139867222094784
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "TEACHER",
+   "region": "US_MIDWEST",
+   "weight": 0.0012061862912307918
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "RETAIL",
+   "region": "US_MIDWEST",
+   "weight": 0.0011592850586254243
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "ENGINEER",
+   "region": "US_MIDWEST",
+   "weight": 0.0011498268958895935
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "RETAIL",
+   "region": "US_WEST",
+   "weight": 0.001146218784848932
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "TEACHER",
+   "region": "US_WEST",
+   "weight": 0.0011338755092811976
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "ENGINEER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0011133378061903582
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "TRADES",
+   "region": "US_SOUTHEAST",
+   "weight": 0.001094616114310203
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.001089284452943804
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "TEACHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0010560366544172838
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "CREATIVE",
+   "region": "US_WEST",
+   "weight": 0.0010403375096276369
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.001010208109966324
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "TEACHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.001009941022388133
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "RETAIL",
+   "region": "US_MIDWEST",
+   "weight": 0.0009876096654432489
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0009764027024357232
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "CREATIVE",
+   "region": "US_WEST",
+   "weight": 0.0009372558570557728
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "HEALTHCARE",
+   "region": "US_NORTHEAST",
+   "weight": 0.0009279765772359272
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "RETAIL",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0009195963465859446
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "HEALTHCARE",
+   "region": "US_WEST",
+   "weight": 0.0009099907061116177
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0008893156619525458
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0008886153455314884
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "CREATIVE",
+   "region": "US_NORTHEAST",
+   "weight": 0.0008860173750757554
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0008821304063073062
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "RETAIL",
+   "region": "US_NORTHEAST",
+   "weight": 0.0008697034705293379
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "TRADES",
+   "region": "US_MIDWEST",
+   "weight": 0.0008586475083232297
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "TRADES",
+   "region": "US_NORTHEAST",
+   "weight": 0.0008583999789271517
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "ENGINEER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0008443467727011714
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "RETAIL",
+   "region": "US_WEST",
+   "weight": 0.0008425390689182411
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0008122593074386667
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "FINANCE_PROF",
+   "region": "US_MIDWEST",
+   "weight": 0.0008022556478925491
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "HEALTHCARE",
+   "region": "US_MIDWEST",
+   "weight": 0.000784811073144083
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "HEALTHCARE",
+   "region": "US_MIDWEST",
+   "weight": 0.0007506469773122543
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "CREATIVE",
+   "region": "US_NORTHEAST",
+   "weight": 0.0007496860430283957
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "RETAIL",
+   "region": "US_NORTHEAST",
+   "weight": 0.0007357210200702337
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "TRADES",
+   "region": "US_WEST",
+   "weight": 0.0007133597193815393
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "TEACHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0007090806804308374
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0006986366351319248
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "FINANCE_PROF",
+   "region": "US_NORTHEAST",
+   "weight": 0.0006951406835523146
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0006810307842313055
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "CREATIVE",
+   "region": "US_WEST",
+   "weight": 0.0006702432636793708
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "TRADES",
+   "region": "US_NORTHEAST",
+   "weight": 0.0006284580997601272
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0006184332702875643
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "FINANCE_PROF",
+   "region": "US_WEST",
+   "weight": 0.0006013634788996449
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "CREATIVE",
+   "region": "US_MIDWEST",
+   "weight": 0.0005604773048216864
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "TEACHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0005582060580766325
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "HEALTHCARE",
+   "region": "US_WEST",
+   "weight": 0.0005555777473515614
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "TEACHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0005472894100635778
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "CREATIVE",
+   "region": "US_NORTHEAST",
+   "weight": 0.000538976132906509
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "HEALTHCARE",
+   "region": "US_NORTHEAST",
+   "weight": 0.0005369158511038411
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "RETAIL",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0005360171396796345
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "LEGAL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0005097657099370351
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "TEACHER",
+   "region": "US_MIDWEST",
+   "weight": 0.0005038149019786537
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "CREATIVE",
+   "region": "US_MIDWEST",
+   "weight": 0.0005029167011696445
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "CREATIVE",
+   "region": "US_WEST",
+   "weight": 0.0004977434373567364
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "FINANCE_PROF",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0004941903039432932
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "TEACHER",
+   "region": "US_WEST",
+   "weight": 0.0004887325061571507
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "TRADES",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00048315682398906285
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "ENGINEER",
+   "region": "US_WEST",
+   "weight": 0.00047178742170006814
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0004711297916922406
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "LEGAL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0004624889644662715
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00045493303490747803
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "CREATIVE",
+   "region": "US_NORTHEAST",
+   "weight": 0.0004497426825349248
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "LEGAL",
+   "region": "US_WEST",
+   "weight": 0.0004421476920309908
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "LEGAL",
+   "region": "US_NORTHEAST",
+   "weight": 0.00044116485557440057
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "CREATIVE",
+   "region": "US_MIDWEST",
+   "weight": 0.0004316125429701139
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "ENGINEER",
+   "region": "US_MIDWEST",
+   "weight": 0.0004296321725116962
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "HEALTHCARE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00042562247568015093
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.00041937102112670995
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "ENGINEER",
+   "region": "US_NORTHEAST",
+   "weight": 0.00041668197376370803
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "LEGAL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.00041340217039954424
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "LEGAL",
+   "region": "US_NORTHEAST",
+   "weight": 0.00040166676825243526
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "TEACHER",
+   "region": "US_MIDWEST",
+   "weight": 0.00039607409168353647
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0003941383761613394
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "TEACHER",
+   "region": "US_NORTHEAST",
+   "weight": 0.00039361804089882186
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0003915953944576971
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "LEGAL",
+   "region": "US_NORTHEAST",
+   "weight": 0.0003845431809742299
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "LEGAL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0003842474590859877
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "LEGAL",
+   "region": "US_MIDWEST",
+   "weight": 0.0003801878412302187
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "TEACHER",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0003749925082292452
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "ENGINEER",
+   "region": "US_WEST",
+   "weight": 0.0003726388422429918
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "LEGAL",
+   "region": "US_WEST",
+   "weight": 0.00036195040435467826
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "LEGAL",
+   "region": "US_NORTHEAST",
+   "weight": 0.00034895722407912055
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0003410892571827364
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "CREATIVE",
+   "region": "US_MIDWEST",
+   "weight": 0.0003223242300763425
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "LEGAL",
+   "region": "US_MIDWEST",
+   "weight": 0.0003179306212997437
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "TEACHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.000303512797906226
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "LEGAL",
+   "region": "US_MIDWEST",
+   "weight": 0.00029889525716664695
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "LEGAL",
+   "region": "US_WEST",
+   "weight": 0.00029655597975592406
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "LEGAL",
+   "region": "US_WEST",
+   "weight": 0.0002919428363619223
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0002833911203549443
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "ENGINEER",
+   "region": "US_MIDWEST",
+   "weight": 0.00028237052662017807
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "ENGINEER",
+   "region": "US_NORTHEAST",
+   "weight": 0.0002810721411803176
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "LEGAL",
+   "region": "US_SOUTHEAST",
+   "weight": 0.00027883367656867877
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "CREATIVE",
+   "region": "US_WEST",
+   "weight": 0.0002713877121726788
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "LEGAL",
+   "region": "US_MIDWEST",
+   "weight": 0.0002688650493955591
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "CREATIVE",
+   "region": "US_NORTHEAST",
+   "weight": 0.0002655198194014232
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "LEGAL",
+   "region": "US_NORTHEAST",
+   "weight": 0.0002462798336955745
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00024403515721806312
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00024049394432791157
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "TEACHER",
+   "region": "US_WEST",
+   "weight": 0.00023589371085003407
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "TEACHER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.0002296492676617128
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHEAST",
+   "weight": 0.0002273227102752146
+  },
+  {
+   "age": "AGE_35_44",
+   "profession": "LEGAL",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00022232277909444215
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "CREATIVE",
+   "region": "US_MIDWEST",
+   "weight": 0.00020260380176227244
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00019146495389690582
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "ENGINEER",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00018990847801020723
+  },
+  {
+   "age": "AGE_45_54",
+   "profession": "LEGAL",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00018752771459771262
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "LEGAL",
+   "region": "US_WEST",
+   "weight": 0.00018356230286451576
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "CREATIVE",
+   "region": "US_WEST",
+   "weight": 0.00018288789983762852
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "LEGAL",
+   "region": "US_MIDWEST",
+   "weight": 0.0001818910746725924
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "CREATIVE",
+   "region": "US_NORTHEAST",
+   "weight": 0.00017186117231749376
+  },
+  {
+   "age": "AGE_55_64",
+   "profession": "LEGAL",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00015839214378368302
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "CREATIVE",
+   "region": "US_MIDWEST",
+   "weight": 0.00014790012598466922
+  },
+  {
+   "age": "AGE_25_34",
+   "profession": "LEGAL",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00014715604566668727
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00010571142146465367
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "CREATIVE",
+   "region": "US_SOUTHWEST",
+   "weight": 0.00010284713743646869
+  },
+  {
+   "age": "AGE_65_PLUS",
+   "profession": "LEGAL",
+   "region": "US_SOUTHWEST",
+   "weight": 8.345565826816163e-05
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "LEGAL",
+   "region": "US_NORTHEAST",
+   "weight": 5.4016259869170303e-05
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "LEGAL",
+   "region": "US_MIDWEST",
+   "weight": 2.9012968300643754e-05
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "LEGAL",
+   "region": "US_SOUTHEAST",
+   "weight": 2.614873775240276e-05
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "LEGAL",
+   "region": "US_WEST",
+   "weight": 2.3615440445706613e-05
+  },
+  {
+   "age": "AGE_18_24",
+   "profession": "LEGAL",
+   "region": "US_SOUTHWEST",
+   "weight": 9.868425518328663e-06
+  }
+ ]
+}

@@ -10,6 +10,8 @@ import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.engine.webview.SYNTHETIC_WEBVIEW_HEADERS
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
+import com.fauxx.targeting.layer3.PersonaChannel
+import com.fauxx.targeting.layer3.PersonaRotationLayer
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -188,8 +190,26 @@ class AppSignalModule @Inject constructor(
     private val profileRepo: PoisonProfileRepository,
     private val webViewPool: PhantomWebViewPool,
     private val localeManager: LocaleManager,
+    private val personaLayer: PersonaRotationLayer,
     private val random: Random = Random.Default,
 ) : Module {
+
+    companion object {
+        /**
+         * E8 (#174): probability that an off-interest action is redirected to one of
+         * the active persona's interests. App-store searches are among the
+         * highest-value identity signals brokers ingest, so they get concentrated on
+         * the persona beyond the engine-wide Layer 3 category weighting — while most
+         * actions still follow the engine distribution so Layer 0's entropy survives.
+         *
+         * Lowered 0.35 -> 0.25 with E9 (#176): the rebalanced engine distribution
+         * already lands ~half the stream on persona interests, so the old swap rate
+         * would have pushed the joint app-store concentration to ~57-66% of actions
+         * hitting 3-5 fixed search URLs. 0.25 keeps the joint concentration within
+         * the pre-E9 envelope.
+         */
+        internal const val PERSONA_INTEREST_SWAP_FRACTION = 0.25f
+    }
 
     override suspend fun start() {
         webViewPool.initialize()
@@ -199,9 +219,23 @@ class AppSignalModule @Inject constructor(
     override fun isEnabled(): Boolean = profileRepo.getProfile().appSignalEnabled
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
+        val persona = personaLayer.personaForChannel(PersonaChannel.APP_SIGNAL)
+        // filterNotNull: personas restored from persisted JSON can carry a null Set
+        // element when an interest name no longer parses (Gson skips Kotlin null
+        // checks); contains/isNotEmpty tolerated that, random() would NPE.
+        val interestPool = persona?.interests?.filterNotNull().orEmpty()
+        val effectiveCategory = if (
+            interestPool.isNotEmpty() && category !in interestPool &&
+            random.nextFloat() < PERSONA_INTEREST_SWAP_FRACTION
+        ) {
+            interestPool.random(random)
+        } else {
+            category
+        }
+
         val locale = localeManager.currentLocale
-        val keywords = CATEGORY_APP_KEYWORDS[locale]?.get(category)
-            ?: CATEGORY_APP_KEYWORDS[SupportedLocale.EN]?.get(category)
+        val keywords = CATEGORY_APP_KEYWORDS[locale]?.get(effectiveCategory)
+            ?: CATEGORY_APP_KEYWORDS[SupportedLocale.EN]?.get(effectiveCategory)
             ?: DEFAULT_KEYWORDS
         val url = "https://play.google.com/store/search?q=$keywords&c=apps&hl=${locale.tag}"
         // Defensive precondition: URL is internally constructed but assert host so any
@@ -247,7 +281,9 @@ class AppSignalModule @Inject constructor(
 
         return ActionLogEntity(
             actionType = ActionType.DEEP_LINK_VISIT,
-            category = category,
+            // The category actually searched for (post persona swap), so the action
+            // log and any distribution built from it stay honest.
+            category = effectiveCategory,
             detail = url,
             metadata = metadata,
             success = success

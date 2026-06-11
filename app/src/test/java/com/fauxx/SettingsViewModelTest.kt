@@ -4,6 +4,7 @@ import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.engine.scheduling.CircadianObserver
 import com.fauxx.locale.LocaleManager
 import com.fauxx.logging.EncryptedFileTree
 import com.fauxx.support.MainDispatcherRule
@@ -52,10 +53,11 @@ class SettingsViewModelTest {
         every { userOverrideFlow } returns MutableStateFlow(null)
     }
     private val markovGenerator: MarkovQueryGenerator = mockk(relaxed = true)
+    private val circadianObserver: CircadianObserver = mockk(relaxed = true)
 
     private fun viewModel() = SettingsViewModel(
         profileRepo, actionLogDao, demographicDao, platformDao, personaHistoryDao,
-        targetingEngine, encryptedFileTree, localeManager, markovGenerator
+        targetingEngine, encryptedFileTree, localeManager, markovGenerator, circadianObserver
     )
 
     @Test
@@ -70,5 +72,7 @@ class SettingsViewModelTest {
         coVerify { demographicDao.delete() }
         coVerify { platformDao.deleteAll() }
         coVerify { personaHistoryDao.deleteAll() }
+        // E10 (#177): the learned daily-rhythm histogram is part of the trail wipe.
+        coVerify { circadianObserver.clear() }
     }
 }

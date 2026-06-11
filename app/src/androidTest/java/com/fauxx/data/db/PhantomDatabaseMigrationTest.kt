@@ -18,7 +18,7 @@ import org.junit.runner.RunWith
  * Exercises [PhantomDatabase]'s real migrations under SQLCipher on a device — the path that
  * actually runs on a user's phone when they update the app. A broken migration here is silent
  * data loss or an open-time crash for every existing install, so this verifies both that the
- * 1->2->3->4 chain applies its schema changes AND that rows written before the update survive it.
+ * 1->2->3->4->5->6 chain applies its schema changes AND that rows written before the update survive it.
  *
  * Room's exported schemas only include 3.json, so [androidx.room.testing.MigrationTestHelper]
  * (which needs 1.json/2.json to stand up an old DB) can't be used. Instead we hand-seed an
@@ -47,23 +47,23 @@ class PhantomDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate1To5_preservesSeededRows_andAppliesSchemaChanges() {
+    fun migrate1To6_preservesSeededRows_andAppliesSchemaChanges() {
         seedEncryptedV1Database()
 
         val db = buildRoomDatabase()
         try {
-            // First access runs the 1->2->3->4->5 migration chain and validates the result against v5.
+            // First access runs the 1->2->3->4->5->6 migration chain and validates the result against v6.
             val sdb = db.openHelper.writableDatabase
 
             // Rows written at v1 must survive the migration.
             sdb.query("SELECT detail, success FROM action_log").use { c ->
-                assertTrue("seeded action_log row must survive 1->3", c.moveToFirst())
+                assertTrue("seeded action_log row must survive the migration", c.moveToFirst())
                 assertEquals("exactly one action_log row after migration", 1, c.count)
                 assertEquals("v1-seeded-action", c.getString(0))
                 assertEquals(1, c.getInt(1))
             }
             sdb.query("SELECT ageRange, customInterestsJson FROM user_demographic_profile WHERE id = 0").use { c ->
-                assertTrue("seeded demographic row must survive 1->3", c.moveToFirst())
+                assertTrue("seeded demographic row must survive the migration", c.moveToFirst())
                 assertEquals("25-34", c.getString(0))
                 assertTrue("customInterestsJson added by 2->3 defaults to NULL on existing rows", c.isNull(1))
             }
@@ -94,13 +94,19 @@ class PhantomDatabaseMigrationTest {
             ).use { c ->
                 assertTrue("MIGRATION_4_5 must create profile_snapshot", c.moveToFirst())
             }
+            // MIGRATION_5_6 created the circadian_usage histogram table (issue #177 E10).
+            sdb.query(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='circadian_usage'"
+            ).use { c ->
+                assertTrue("MIGRATION_5_6 must create circadian_usage", c.moveToFirst())
+            }
         } finally {
             db.close()
         }
     }
 
     @Test
-    fun freshCreateAtV3_roundTripsThroughSqlcipher() {
+    fun freshCreateAtV6_roundTripsThroughSqlcipher() {
         val db = buildRoomDatabase()
         try {
             val sdb = db.openHelper.writableDatabase
@@ -112,17 +118,23 @@ class PhantomDatabaseMigrationTest {
                 assertTrue(c.moveToFirst())
                 assertEquals(1, c.getInt(0))
             }
-            // The index ships on a fresh v3 create too, not just via the migration path.
+            // The index ships on a fresh v6 create too, not just via the migration path.
             sdb.query(
                 "SELECT name FROM sqlite_master WHERE type='index' AND name='index_action_log_timestamp_success'"
             ).use { c ->
-                assertTrue("fresh v3 create must include the composite index", c.moveToFirst())
+                assertTrue("fresh v6 create must include the composite index", c.moveToFirst())
             }
             assertTrue(columnExists(sdb, "user_demographic_profile", "customInterestsJson"))
             assertTrue(
-                "fresh v4 create must include action_log.metadata",
+                "fresh v6 create must include action_log.metadata",
                 columnExists(sdb, "action_log", "metadata")
             )
+            // A fresh create at v6 ships the circadian_usage table directly (issue #177 E10).
+            sdb.query(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='circadian_usage'"
+            ).use { c ->
+                assertTrue("fresh v6 create must include circadian_usage", c.moveToFirst())
+            }
         } finally {
             db.close()
         }
@@ -131,7 +143,7 @@ class PhantomDatabaseMigrationTest {
     private fun buildRoomDatabase(): PhantomDatabase =
         Room.databaseBuilder(context, PhantomDatabase::class.java, TEST_DB)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .build()
 
     /**

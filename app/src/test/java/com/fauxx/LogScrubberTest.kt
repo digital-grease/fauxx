@@ -33,6 +33,16 @@ class LogScrubberTest {
     }
 
     @Test
+    fun `scrubs DemographicCell dumps`() {
+        val input = "sampled DemographicCell(age=AGE_25_34, profession=ENGINEER, " +
+            "region=US_WEST, weight=0.01) for persona"
+        val result = LogScrubber.scrub(input)
+        assertFalse(result.contains("AGE_25_34"))
+        assertFalse(result.contains("ENGINEER"))
+        assertTrue(result.contains("[REDACTED]"))
+    }
+
+    @Test
     fun `scrubs interests field`() {
         val input = "interests: [GAMING, COOKING, SPORTS]"
         val result = LogScrubber.scrub(input)

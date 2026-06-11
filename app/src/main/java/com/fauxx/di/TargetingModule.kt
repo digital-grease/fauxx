@@ -11,7 +11,10 @@ import com.fauxx.targeting.layer1.SelfReportLayer
 import com.fauxx.targeting.layer2.AdversarialScraperLayer
 import com.fauxx.targeting.layer2.CategoryMapper
 import com.fauxx.targeting.layer2.PlatformProfileDao
+import com.fauxx.engine.scheduling.CompositeRateModulator
+import com.fauxx.engine.scheduling.RateModulator
 import com.fauxx.locale.LocaleManager
+import com.fauxx.targeting.layer3.PersonaDistribution
 import com.fauxx.targeting.layer3.PersonaGenerator
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaRotationLayer
@@ -65,12 +68,19 @@ object TargetingModule {
 
     @Provides
     @Singleton
+    fun providePersonaDistribution(@ApplicationContext context: Context): PersonaDistribution =
+        PersonaDistribution(context)
+
+    @Provides
+    @Singleton
     fun providePersonaGenerator(
         @ApplicationContext context: Context,
         historyDao: PersonaHistoryDao,
         demographicProfileDao: DemographicProfileDao,
-        localeManager: LocaleManager
-    ): PersonaGenerator = PersonaGenerator(context, historyDao, demographicProfileDao, localeManager)
+        localeManager: LocaleManager,
+        distribution: PersonaDistribution
+    ): PersonaGenerator =
+        PersonaGenerator(context, historyDao, demographicProfileDao, localeManager, distribution)
 
     @Provides
     @Singleton
@@ -78,6 +88,16 @@ object TargetingModule {
         generator: PersonaGenerator,
         historyDao: PersonaHistoryDao
     ): PersonaRotationLayer = PersonaRotationLayer(generator, historyDao)
+
+    /**
+     * The single scheduler rate-modulation seam. E8 contributes the persona rhythm and E10 the
+     * observed screen-on circadian rhythm; [CompositeRateModulator] combines both into one
+     * modulation point (its dependencies — PersonaRateModulator, CircadianRateModulator — are
+     * Hilt `@Inject`-constructed).
+     */
+    @Provides
+    @Singleton
+    fun provideRateModulator(composite: CompositeRateModulator): RateModulator = composite
 
     @Provides
     @Singleton

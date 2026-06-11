@@ -8,9 +8,13 @@ import com.fauxx.data.querybank.CategoryPool
  *
  * @property id Unique identifier for this persona.
  * @property name Generated human-like name.
- * @property ageRange Approximate age bracket (e.g., "35-44").
- * @property profession Synthetic occupation.
- * @property region Geographic region code (e.g., "US_MIDWEST").
+ * @property ageRange Age bracket as a layer-1 AgeRange enum name (e.g., "AGE_35_44").
+ * @property profession Synthetic occupation as a Profession enum name (e.g., "FINANCE_PROF").
+ * @property region Geographic region as a Region enum name (e.g., "US_MIDWEST").
+ *   Demographics are stored as enum names so they are locale-independent on disk;
+ *   display labels resolve in the UI via DemographicLabels. Personas persisted before
+ *   this canonicalization may carry legacy display strings ("35-44") — readers must
+ *   tolerate unparseable values.
  * @property interests Set of 3-5 interest categories this persona focuses on.
  * @property createdAt Epoch millis when this persona was generated.
  * @property activeUntil Epoch millis when this persona should be rotated.
@@ -26,7 +30,13 @@ data class SyntheticPersona(
     val activeUntil: Long
 ) {
     companion object {
-        /** Fraction of actions that follow persona interest weights vs uniform noise. */
-        const val PERSONA_FOLLOW_FRACTION = 0.70f
+        /**
+         * Fraction of actions that follow persona interest weights vs uniform noise.
+         * Raised 0.70 -> 0.85 by E9 (#176): with credible joint-sampled personas (E7)
+         * bound across modules (E8), the persona leads and the uniform spray — the
+         * most anomalous shape, since no real person is equally interested in
+         * everything — recedes to a baseline.
+         */
+        const val PERSONA_FOLLOW_FRACTION = 0.85f
     }
 }

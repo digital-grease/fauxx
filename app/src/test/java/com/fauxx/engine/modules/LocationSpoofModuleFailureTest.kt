@@ -51,7 +51,8 @@ class LocationSpoofModuleFailureTest {
             context = context,
             routeGenerator = mockk(relaxed = true),
             cityDatabase = mockk(relaxed = true),
-            profileRepo = profileRepo
+            profileRepo = profileRepo,
+            personaLayer = mockk { every { personaForChannel(any()) } returns null }
         )
     }
 

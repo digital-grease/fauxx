@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.engine.scheduling.CircadianUsageEntity
 import com.fauxx.targeting.layer1.AgeRange
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer1.Gender
@@ -30,7 +31,7 @@ import org.junit.runner.RunWith
 
 /**
  * Round-trips every DAO of [PhantomDatabase] through a REAL SQLCipher-encrypted database, built
- * fresh at the current schema version (v4, no migrations). The point is to prove that values
+ * fresh at the current schema version (v6, no migrations). The point is to prove that values
  * survive the full Room <-> SQLCipher <-> Room path with their type-converted columns intact:
  *
  * - [ActionType] and [CategoryPool] persist via the explicit [PhantomTypeConverters] (enum.name).
@@ -257,6 +258,34 @@ class PhantomDatabaseDaoRoundTripTest {
         // A cutoff at/after the timestamp returns nothing (query is strictly-greater).
         val none = dao.getRecentPersonas(1_700_000_555_000L)
         assertTrue("strictly-greater cutoff excludes the boundary row", none.isEmpty())
+    }
+
+    @Test
+    fun circadianUsageDao_roundTripsHistogramWithReplaceAndDelete() = runBlocking {
+        val dao = db.circadianUsageDao()
+
+        // Empty table to start.
+        assertTrue("no circadian rows before upsert", dao.getAll().isEmpty())
+
+        // Persist a full 24-bucket snapshot (the observer always writes all hours).
+        val snapshot = (0 until 24).map { CircadianUsageEntity(hourOfDay = it, count = it.toLong()) }
+        dao.upsertAll(snapshot)
+
+        val read = dao.getAll().associateBy { it.hourOfDay }
+        assertEquals("all 24 hour buckets round-trip", 24, read.size)
+        assertEquals(0L, read[0]?.count)
+        assertEquals(23L, read[23]?.count)
+
+        // REPLACE on the hourOfDay primary key: re-upserting must overwrite, not duplicate.
+        val updated = (0 until 24).map { CircadianUsageEntity(hourOfDay = it, count = (it * 2).toLong()) }
+        dao.upsertAll(updated)
+        val reread = dao.getAll()
+        assertEquals("REPLACE must not create duplicate rows", 24, reread.size)
+        assertEquals(46L, reread.first { it.hourOfDay == 23 }.count)
+
+        // deleteAll wipes the learned rhythm (the "Clear My Profile" path).
+        dao.deleteAll()
+        assertTrue("deleteAll clears the histogram", dao.getAll().isEmpty())
     }
 
     private companion object {

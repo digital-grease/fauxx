@@ -4,6 +4,7 @@ import android.content.Context
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.targeting.layer1.DemographicProfileDao
+import com.fauxx.targeting.layer3.PersonaDistribution
 import com.fauxx.targeting.layer3.PersonaGenerator
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import io.mockk.coEvery
@@ -59,7 +60,12 @@ class PersonaTemplateGsonContractTest {
             every { currentLocale } returns SupportedLocale.ES
         }
 
-        val generator = PersonaGenerator(context, historyDao, demographicDao, localeManager)
+        // The ES locale never consults the joint distribution (PersonaGenerator gates
+        // sampling on EN), and PersonaDistribution loads lazily on first sample(), so
+        // the strict assets mock is never asked for persona_distribution.json here.
+        val generator = PersonaGenerator(
+            context, historyDao, demographicDao, localeManager, PersonaDistribution(context)
+        )
 
         // PersonaGenerator.pickRegion() (the no-template fallback) only emits
         // values from this hardcoded set. ES templates exclusively use ES/LatAm

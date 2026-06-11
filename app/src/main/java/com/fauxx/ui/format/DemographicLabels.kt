@@ -56,6 +56,21 @@ fun Profession.displayNameRes(): Int = when (this) {
     Profession.OTHER -> R.string.profession_other
 }
 
+/**
+ * Resolve a [com.fauxx.data.model.SyntheticPersona] demographic string — a layer-1 enum
+ * name like "AGE_35_44" or "FINANCE_PROF" — to its label resource. Returns null for
+ * unparseable values (personas persisted before the enum-name canonicalization, or
+ * template-only regions like "RUSSIA" that have no enum entry); callers fall back to
+ * showing the raw stored string.
+ */
+@StringRes
+fun personaAgeRangeRes(raw: String): Int? =
+    runCatching { AgeRange.valueOf(raw) }.getOrNull()?.displayNameRes()
+
+@StringRes
+fun personaProfessionRes(raw: String): Int? =
+    runCatching { Profession.valueOf(raw) }.getOrNull()?.displayNameRes()
+
 @StringRes
 fun Region.displayNameRes(): Int = when (this) {
     Region.US_NORTHEAST -> R.string.region_us_northeast

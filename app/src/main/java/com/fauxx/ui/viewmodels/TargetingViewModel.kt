@@ -11,6 +11,7 @@ import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.di.PreferenceKeys
 import com.fauxx.di.fauxxDataStore
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.engine.scheduling.CircadianObserver
 import com.fauxx.logging.EncryptedFileTree
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.layer1.AgeRange
@@ -95,6 +96,7 @@ class TargetingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val encryptedFileTree: EncryptedFileTree,
     private val markovGenerator: MarkovQueryGenerator,
+    private val circadianObserver: CircadianObserver,
     private val clock: Clock = SystemClockImpl(),
 ) : ViewModel() {
 
@@ -274,6 +276,9 @@ class TargetingViewModel @Inject constructor(
             demographicDao.delete()
             platformDao.deleteAll()
             personaHistoryDao.deleteAll()
+            // Wipe the learned daily-rhythm histogram (memory + disk) so the behavioral
+            // profile doesn't survive a profile wipe (E10 #177).
+            circadianObserver.clear()
             // The Markov model is seeded from custom interests on this profile, and the
             // encrypted logs hold persona/profile dumps — clear both so no interest-derived
             // trail survives a profile wipe.

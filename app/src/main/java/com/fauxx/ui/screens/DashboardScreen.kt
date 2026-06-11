@@ -61,6 +61,8 @@ import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.EngineState
 import com.fauxx.ui.format.displayNameRes
+import com.fauxx.ui.format.personaAgeRangeRes
+import com.fauxx.ui.format.personaProfessionRes
 import com.fauxx.ui.viewmodels.DashboardViewModel
 
 /**
@@ -236,14 +238,18 @@ fun DashboardScreen(
             CategoryDonutCard(distribution = uiState.categoryDistribution)
         }
 
-        // Current persona card
+        // Current persona card. Demographics are stored as enum names ("AGE_35_44");
+        // resolve to localized labels, falling back to the raw string for personas
+        // persisted before the enum-name canonicalization.
         uiState.currentPersona?.let { persona ->
             val interestLabels = persona.interests.take(3)
                 .map { stringResource(it.displayNameRes()) }
             PersonaCard(
                 name = persona.name,
-                ageRange = persona.ageRange,
-                profession = persona.profession,
+                ageRange = personaAgeRangeRes(persona.ageRange)
+                    ?.let { stringResource(it) } ?: persona.ageRange,
+                profession = personaProfessionRes(persona.profession)
+                    ?.let { stringResource(it) } ?: persona.profession,
                 interests = interestLabels.joinToString(", ")
             )
         }

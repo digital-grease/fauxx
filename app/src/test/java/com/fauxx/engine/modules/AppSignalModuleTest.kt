@@ -3,12 +3,15 @@ package com.fauxx.engine.modules
 import android.content.Context
 import android.webkit.WebView
 import com.fauxx.data.model.ActionType
+import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.support.MainDispatcherRule
+import com.fauxx.targeting.layer3.PersonaRotationLayer
+import kotlin.random.Random
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -50,6 +53,9 @@ class AppSignalModuleTest {
     private val webView: WebView = mockk(relaxed = true)
     private val webViewPool: PhantomWebViewPool = mockk(relaxed = true)
     private val localeManager: LocaleManager = mockk(relaxed = true)
+    private val noPersonaLayer: PersonaRotationLayer = mockk {
+        every { personaForChannel(any()) } returns null
+    }
 
     @Before
     fun setup() {
@@ -57,12 +63,36 @@ class AppSignalModuleTest {
         every { localeManager.currentLocale } returns SupportedLocale.EN
     }
 
-    private fun newModule() = AppSignalModule(
+    private fun newModule(
+        personaLayer: PersonaRotationLayer = noPersonaLayer,
+        random: Random = Random.Default,
+    ) = AppSignalModule(
         context = context,
         profileRepo = profileRepo,
         webViewPool = webViewPool,
         localeManager = localeManager,
+        personaLayer = personaLayer,
+        random = random,
     )
+
+    /** Forces the persona-swap branch deterministically. */
+    private class FixedRandom(private val f: Float) : Random() {
+        override fun nextBits(bitCount: Int): Int = 0
+        override fun nextFloat(): Float = f
+    }
+
+    private fun personaLayerWith(interests: Set<CategoryPool>): PersonaRotationLayer {
+        val persona = SyntheticPersona(
+            id = "test-persona",
+            name = "Test",
+            ageRange = "AGE_25_34",
+            profession = "ENGINEER",
+            region = "US_WEST",
+            interests = interests,
+            activeUntil = Long.MAX_VALUE
+        )
+        return mockk { every { personaForChannel(any()) } returns persona }
+    }
 
     @Test
     fun `onAction builds the localized play store URL and reports a successful DEEP_LINK_VISIT`() =
@@ -84,6 +114,83 @@ class AppSignalModuleTest {
             )
             assertTrue("a normal load must report success", result.success)
         }
+
+    // E8 (#174) persona-interest bias: an off-interest action is redirected to a persona
+    // interest with probability PERSONA_INTEREST_SWAP_FRACTION, and the swapped category
+    // is what gets logged. No persona (Layer 3 off) must mean no swap.
+
+    @Test
+    fun `off-interest action swaps to a persona interest when the dice say so`() =
+        runTest(testDispatcher) {
+            val module = newModule(
+                personaLayer = personaLayerWith(setOf(CategoryPool.COOKING)),
+                random = FixedRandom(0f) // 0 < 0.35 -> swap
+            )
+
+            val result = module.onAction(CategoryPool.GAMING)
+
+            assertEquals(
+                "logged category must be the persona interest actually searched",
+                CategoryPool.COOKING,
+                result.category
+            )
+            assertTrue(
+                "URL keywords must match the swapped category; was: ${result.detail}",
+                result.detail.contains("recipe+app")
+            )
+            assertTrue(
+                "host invariant must survive the persona swap; was: ${result.detail}",
+                result.detail.startsWith("https://play.google.com/store/search")
+            )
+        }
+
+    @Test
+    fun `interest-less persona never swaps and never crashes`() = runTest(testDispatcher) {
+        val module = newModule(
+            personaLayer = personaLayerWith(emptySet()),
+            random = FixedRandom(0f) // swap-favorable dice
+        )
+
+        val result = module.onAction(CategoryPool.GAMING)
+
+        assertEquals(CategoryPool.GAMING, result.category)
+    }
+
+    @Test
+    fun `off-interest action keeps its category when the dice say no swap`() =
+        runTest(testDispatcher) {
+            val module = newModule(
+                personaLayer = personaLayerWith(setOf(CategoryPool.COOKING)),
+                random = FixedRandom(0.9f) // 0.9 >= 0.35 -> no swap
+            )
+
+            val result = module.onAction(CategoryPool.GAMING)
+
+            assertEquals(CategoryPool.GAMING, result.category)
+            assertTrue(result.detail.contains("strategy+games"))
+        }
+
+    @Test
+    fun `no active persona means no swap even with swap-favorable dice`() =
+        runTest(testDispatcher) {
+            val module = newModule(random = FixedRandom(0f))
+
+            val result = module.onAction(CategoryPool.GAMING)
+
+            assertEquals(CategoryPool.GAMING, result.category)
+        }
+
+    @Test
+    fun `persona-aligned action is never swapped`() = runTest(testDispatcher) {
+        val module = newModule(
+            personaLayer = personaLayerWith(setOf(CategoryPool.GAMING, CategoryPool.COOKING)),
+            random = FixedRandom(0f)
+        )
+
+        val result = module.onAction(CategoryPool.GAMING)
+
+        assertEquals(CategoryPool.GAMING, result.category)
+    }
 
     @Test
     fun `onAction reports failure when the WebView throws`() = runTest(testDispatcher) {
