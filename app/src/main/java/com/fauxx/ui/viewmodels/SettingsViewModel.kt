@@ -7,6 +7,7 @@ import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.IntensityLevel
 import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.engine.scheduling.CircadianObserver
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.logging.EncryptedFileTree
@@ -63,7 +64,8 @@ class SettingsViewModel @Inject constructor(
     private val targetingEngine: TargetingEngine,
     private val encryptedFileTree: EncryptedFileTree,
     private val localeManager: LocaleManager,
-    private val markovGenerator: MarkovQueryGenerator
+    private val markovGenerator: MarkovQueryGenerator,
+    private val circadianObserver: CircadianObserver
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(loadFromProfile())
@@ -119,6 +121,9 @@ class SettingsViewModel @Inject constructor(
             demographicDao.delete()
             platformDao.deleteAll()
             personaHistoryDao.deleteAll()
+            // Wipe the learned daily-rhythm histogram, in memory and on disk, so the
+            // behavioral profile doesn't survive a "delete all data" (E10 #177).
+            circadianObserver.clear()
             // Clear the recoverable trail too: the encrypted log files (up to 48h of
             // query/persona text) and the Markov model trained from custom interests.
             // Without these, "delete all data" leaves a recoverable activity trail.

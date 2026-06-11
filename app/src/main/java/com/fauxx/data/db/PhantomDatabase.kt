@@ -8,6 +8,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.engine.scheduling.CircadianUsageDao
+import com.fauxx.engine.scheduling.CircadianUsageEntity
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer1.UserDemographicProfile
 import com.fauxx.targeting.layer2.PlatformProfileCache
@@ -26,6 +28,7 @@ import com.fauxx.targeting.layer3.PersonaHistoryEntity
  * - user_demographic_profile: Optional self-reported user demographics (single row)
  * - platform_profile_cache: Cached ad-platform assigned categories
  * - persona_history: History of generated synthetic personas
+ * - circadian_usage: Locally-observed screen-on histogram by hour of day (E10 #177)
  */
 @Database(
     entities = [
@@ -33,9 +36,10 @@ import com.fauxx.targeting.layer3.PersonaHistoryEntity
         UserDemographicProfile::class,
         PlatformProfileCache::class,
         ProfileSnapshot::class,
-        PersonaHistoryEntity::class
+        PersonaHistoryEntity::class,
+        CircadianUsageEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(PhantomTypeConverters::class)
@@ -45,6 +49,7 @@ abstract class PhantomDatabase : RoomDatabase() {
     abstract fun platformProfileDao(): PlatformProfileDao
     abstract fun profileSnapshotDao(): ProfileSnapshotDao
     abstract fun personaHistoryDao(): PersonaHistoryDao
+    abstract fun circadianUsageDao(): CircadianUsageDao
 }
 
 /** Migration from v1 to v2: add composite index on action_log(timestamp, success). */
@@ -82,6 +87,18 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
         db.execSQL(
             "CREATE INDEX IF NOT EXISTS `index_profile_snapshot_platformName_capturedAt` " +
                 "ON `profile_snapshot` (`platformName`, `capturedAt`)"
+        )
+    }
+}
+
+/** Migration from v5 to v6: add the circadian_usage hour-of-day histogram table (issue #177 E10). */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `circadian_usage` (" +
+                "`hourOfDay` INTEGER NOT NULL, " +
+                "`count` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`hourOfDay`))"
         )
     }
 }

@@ -11,11 +11,11 @@ import com.fauxx.targeting.layer1.SelfReportLayer
 import com.fauxx.targeting.layer2.AdversarialScraperLayer
 import com.fauxx.targeting.layer2.CategoryMapper
 import com.fauxx.targeting.layer2.PlatformProfileDao
+import com.fauxx.engine.scheduling.CompositeRateModulator
 import com.fauxx.engine.scheduling.RateModulator
 import com.fauxx.locale.LocaleManager
 import com.fauxx.targeting.layer3.PersonaDistribution
 import com.fauxx.targeting.layer3.PersonaGenerator
-import com.fauxx.targeting.layer3.PersonaRateModulator
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import dagger.Module
@@ -89,11 +89,15 @@ object TargetingModule {
         historyDao: PersonaHistoryDao
     ): PersonaRotationLayer = PersonaRotationLayer(generator, historyDao)
 
-    /** E8: the single scheduler rate-modulation seam; E10 composes into this binding. */
+    /**
+     * The single scheduler rate-modulation seam. E8 contributes the persona rhythm and E10 the
+     * observed screen-on circadian rhythm; [CompositeRateModulator] combines both into one
+     * modulation point (its dependencies — PersonaRateModulator, CircadianRateModulator — are
+     * Hilt `@Inject`-constructed).
+     */
     @Provides
     @Singleton
-    fun provideRateModulator(personaLayer: PersonaRotationLayer): RateModulator =
-        PersonaRateModulator(personaLayer)
+    fun provideRateModulator(composite: CompositeRateModulator): RateModulator = composite
 
     @Provides
     @Singleton

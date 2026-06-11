@@ -35,6 +35,7 @@ import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.AllowedHours
 import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.engine.scheduling.UsageObserver
 import com.fauxx.targeting.TargetingEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
 import androidx.datastore.preferences.core.edit
@@ -167,6 +168,12 @@ class PoisonEngine @Inject constructor(
      */
     @IoDispatcher private val loopDispatcher: CoroutineDispatcher,
     private val random: Random = Random.Default,
+    /**
+     * Observes local screen-on events to learn the user's daily rhythm (E10 #177). Registered
+     * and unregistered alongside the constraint receivers so it only runs while the engine is
+     * active. Defaults to a no-op so engine tests need not stand one up.
+     */
+    private val usageObserver: UsageObserver = UsageObserver.NONE,
 ) {
     private var scope = CoroutineScope(SupervisorJob() + loopDispatcher)
     private var engineJob: Job? = null
@@ -462,6 +469,9 @@ class PoisonEngine @Inject constructor(
             // WiFi→mobile move would keep the engine acting at the WiFi tier. Surface it.
             Timber.w(it, "registerDefaultNetworkCallback failed; transport tracking degraded")
         }
+        // Start learning the user's daily rhythm while the engine runs (E10 #177).
+        runCatching { usageObserver.start() }
+            .onFailure { Timber.w(it, "usageObserver.start failed; circadian rhythm degraded") }
     }
 
     private fun unregisterConstraintReceivers() {
@@ -470,6 +480,7 @@ class PoisonEngine @Inject constructor(
             context.getSystemService(ConnectivityManager::class.java)
                 .unregisterNetworkCallback(networkCallback)
         }
+        runCatching { usageObserver.stop() }
     }
 
     private suspend fun runLoop() {
