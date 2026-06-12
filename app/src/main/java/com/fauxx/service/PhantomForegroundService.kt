@@ -11,6 +11,8 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import timber.log.Timber
 import com.fauxx.R
+import com.fauxx.di.PreferenceKeys
+import com.fauxx.di.fauxxDataStore
 import com.fauxx.engine.EngineState
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.modules.MockLocationProviderCleaner
@@ -25,6 +27,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -58,6 +62,13 @@ class PhantomForegroundService : Service() {
     private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var notificationJob: Job? = null
+
+    /**
+     * Re-posts the status notification on every [PoisonEngine.engineState] transition so it
+     * reflects active/paused/stopped changes immediately instead of lagging up to a full 60s
+     * [NOTIFICATION_UPDATE_INTERVAL_MS] tick (#193: the notification read as stale/unreliable).
+     */
+    private var stateNotificationJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -105,6 +116,29 @@ class PhantomForegroundService : Service() {
                     }
                     poisonEngine.start()
                     startNotificationUpdates()
+                    // A null intent means the OS recreated this START_STICKY service after
+                    // reclaiming it (memory pressure, or an OEM killing the swiped-away process);
+                    // line 76 maps it back to ACTION_START (#193). Unlike every deliberate start
+                    // site, this restart had no upstream ENABLED gate, so honour the user's choice:
+                    // if the engine was disabled, stop the service we were auto-recreated into.
+                    // Mirrors AlarmResumeReceiver — the FGS slot is already claimed, so verify
+                    // ENABLED async and stop if off (stopping needs no FGS-start grant).
+                    if (intent == null) {
+                        scope.launch {
+                            val enabled = runCatching {
+                                applicationContext.fauxxDataStore.data.first()[PreferenceKeys.ENABLED] ?: false
+                            }.getOrDefault(true) // fail-open: keep protection on a read error
+                            if (!enabled) {
+                                Timber.i("START_STICKY restart but engine is disabled; stopping")
+                                runCatching { startService(stopIntent(this@PhantomForegroundService)) }
+                                    .onFailure { Timber.w(it, "Failed to stop disabled-engine restart") }
+                            }
+                        }
+                    }
+                    // A successfully-running engine should survive an OS reclaim; the denial paths
+                    // above and the engine-failure path below stay non-sticky via the trailing
+                    // START_NOT_STICKY.
+                    return START_STICKY
                 } catch (e: Exception) {
                     Timber.e(e, "Engine failed to start, stopping service")
                     stopForeground(STOP_FOREGROUND_REMOVE)
@@ -116,8 +150,7 @@ class PhantomForegroundService : Service() {
                 // The user is disabling the engine, so any pending resume is now stale.
                 runCatching { resumeScheduler.cancel() }
                     .onFailure { Timber.e(it, "Error cancelling resume on stop") }
-                notificationJob?.cancel()
-                notificationJob = null
+                stopNotificationUpdates()
                 // poisonEngine.stop() is non-blocking (module teardown runs async on the
                 // engine's own scope). Tearing down here on the main thread is safe.
                 runCatching { poisonEngine.stop() }
@@ -131,23 +164,27 @@ class PhantomForegroundService : Service() {
     }
 
     /**
-     * Swiping Fauxx out of recents can kill the service without a reliable [onDestroy] on some
-     * OEMs, orphaning the system mock-location provider so the device keeps reporting the last
-     * spoofed fix (finding #6 / issue #66). Remove it synchronously here — this runs on the main
-     * thread before the process goes away, unlike the engine's async module teardown.
+     * A foreground service is meant to survive the app being swiped out of recents, and on
+     * AOSP/Pixel it does. So we deliberately keep the engine running and leave the FGS up here
+     * (#193). The previous implementation stopped the engine in onTaskRemoved, which on those
+     * devices left a live-but-idle service whose notification flipped to "Stopped" within ~60s
+     * even though nothing had actually asked it to stop.
+     *
+     * We also intentionally do NOT sweep the mock-location provider here. The still-running engine
+     * owns it, and [MockLocationProviderCleaner.clearOrphanedProvider] removes the provider without
+     * resetting [LocationSpoofModule]'s internal mockProviderAdded flag — so the live module would
+     * keep pushing to a provider that no longer exists and location spoofing would silently die.
+     * Orphan cleanup for the aggressive-OEM case (where the process IS killed right after this,
+     * skipping onDestroy) is fully covered by the unconditional cold-start sweep in [com.fauxx.FauxxApp]
+     * and by [onDestroy].
+     *
+     * isRunning is left untouched: if the process survives, the engine genuinely is still running;
+     * if the OEM kills it, the process-global flag resets to false in the fresh process anyway (#156).
      */
     override fun onTaskRemoved(rootIntent: Intent?) {
-        // The engine is stopped here, so the watchdog must see "not running" — otherwise a
-        // swipe-away that survives as a foregrounded-but-engineless service (isRunning still
-        // true) would hide the stopped engine from EngineReconcileWorker (#156).
-        isRunning = false
-        runCatching { mockLocationProviderCleaner.clearOrphanedProvider() }
-            .onFailure { Timber.e(it, "Error clearing mock-location provider on task removal") }
-        runCatching { poisonEngine.stop() }
-            .onFailure { Timber.e(it, "Error stopping engine on task removal") }
-        // Swipe-away is a common kill on aggressive OEMs and may not reach onDestroy, so make a
-        // best-effort attempt to persist buffered logs. Off the main thread — flush() does file
-        // I/O + encryption and onTaskRemoved runs on Main (#158).
+        // Swipe-away is a common hard-kill on aggressive OEMs and may not reach onDestroy, so make
+        // a best-effort attempt to persist buffered logs before a possible kill. Off the main
+        // thread — flush() does file I/O + encryption and onTaskRemoved runs on Main (#158).
         cleanupScope.launch(NonCancellable) {
             runCatching { encryptedFileTree.flush() }
                 .onFailure { Timber.e(it, "Error flushing logs on task removal") }
@@ -199,8 +236,7 @@ class PhantomForegroundService : Service() {
         // diagnostic lines covering the resign are lost (#158).
         runCatching { encryptedFileTree.flush() }
             .onFailure { Timber.e(it, "Failed to flush logs on resign") }
-        notificationJob?.cancel()
-        notificationJob = null
+        stopNotificationUpdates()
         try {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } catch (_: Exception) {
@@ -210,12 +246,30 @@ class PhantomForegroundService : Service() {
     }
 
     private fun startNotificationUpdates() {
+        // Idempotent: ACTION_START is re-dispatched to an already-running service on every
+        // MainActivity.reconcileEngineState (onCreate/onNewIntent) and from the unguarded start
+        // sites, so cancel any existing updaters first or we would leak a duplicate 60s timer and
+        // a never-completing engineState collector per re-dispatch (each adding a duplicate notify).
+        stopNotificationUpdates()
         notificationJob = scope.launch {
             while (isActive) {
                 updateNotification()
                 delay(NOTIFICATION_UPDATE_INTERVAL_MS)
             }
         }
+        // Re-post immediately on engine-state transitions (active/paused/stopped) so the
+        // notification never lags the real state by up to a full 60s tick (#193). collect on a
+        // StateFlow emits the current value first, then every change.
+        stateNotificationJob = scope.launch {
+            poisonEngine.engineState.collect { updateNotification() }
+        }
+    }
+
+    private fun stopNotificationUpdates() {
+        notificationJob?.cancel()
+        notificationJob = null
+        stateNotificationJob?.cancel()
+        stateNotificationJob = null
     }
 
     private fun updateNotification() {

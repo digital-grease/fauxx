@@ -12,6 +12,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.After
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -135,9 +136,14 @@ class PhantomForegroundServiceTest {
     }
 
     @Test
-    fun `onTaskRemoved sweeps the mock-location provider and stops the engine`() {
-        // Swipe-away can kill the service without onDestroy on some OEMs, orphaning the system
-        // mock-location provider (finding #6 / issue #66). The service must remove it eagerly.
+    fun `onTaskRemoved keeps the engine running and leaves the service up`() {
+        // A foreground service is meant to survive swipe-from-recents; on AOSP/Pixel it does, so
+        // the engine must keep running and the FGS must stay up (#193). The old behavior stopped
+        // the engine here, which flipped the notification to "Stopped" on those devices. We also
+        // must NOT sweep the mock-location provider: removing it without resetting
+        // LocationSpoofModule's mockProviderAdded flag would silently break spoofing while the
+        // engine is still live. Orphan cleanup for the OEM-kill case is handled by the cold-start
+        // sweep in FauxxApp and by onDestroy instead.
         val service = Robolectric.buildService(PhantomForegroundService::class.java).get()
         val cleaner: MockLocationProviderCleaner = mockk(relaxed = true)
         val engine: PoisonEngine = mockk(relaxed = true)
@@ -146,11 +152,15 @@ class PhantomForegroundServiceTest {
         service.resumeScheduler = mockk(relaxed = true)
         service.encryptedFileTree = mockk(relaxed = true)
         service.mockLocationProviderCleaner = cleaner
+        PhantomForegroundService.setRunningForTest(true)
 
         service.onTaskRemoved(null)
 
-        verify(exactly = 1) { cleaner.clearOrphanedProvider() }
-        verify(exactly = 1) { engine.stop() }
+        verify(exactly = 0) { engine.stop() }
+        verify(exactly = 0) { cleaner.clearOrphanedProvider() }
+        assertTrue("engine must keep running after swipe-away", PhantomForegroundService.isRunning)
+        val shadow = Shadows.shadowOf(service)
+        assertFalse("service must not tear itself down on task removal", shadow.isStoppedBySelf)
     }
 
     @Test
