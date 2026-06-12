@@ -49,6 +49,7 @@ data class TargetingUiState(
     val layer1Enabled: Boolean = false,
     val layer2Enabled: Boolean = false,
     val layer3Enabled: Boolean = false,
+    val adversarialAllocationEnabled: Boolean = false,
     val hasProfile: Boolean = false,
     val ageRange: AgeRange? = null,
     val gender: Gender? = null,
@@ -140,7 +141,8 @@ class TargetingViewModel @Inject constructor(
         _state.value = _state.value.copy(
             layer1Enabled = profile.layer1Enabled,
             layer2Enabled = profile.layer2Enabled,
-            layer3Enabled = profile.layer3Enabled
+            layer3Enabled = profile.layer3Enabled,
+            adversarialAllocationEnabled = profile.adversarialAllocationEnabled
         )
         // Bridge the 90-day-reminder mute-until pref into _state. Kept off the main
         // combine() because combine() taps out at 5 typed flows — a separate collector
@@ -235,6 +237,12 @@ class TargetingViewModel @Inject constructor(
         _state.value = _state.value.copy(layer3Enabled = enabled)
     }
 
+    fun setAdversarialAllocationEnabled(enabled: Boolean) {
+        targetingEngine.setAdversarialAllocationEnabled(enabled)
+        saveLayerPrefs(adversarial = enabled)
+        _state.value = _state.value.copy(adversarialAllocationEnabled = enabled)
+    }
+
     fun rotatePersona() {
         personaLayer.rotateNow()
     }
@@ -287,15 +295,22 @@ class TargetingViewModel @Inject constructor(
             targetingEngine.setLayer1Enabled(false)
             targetingEngine.setLayer2Enabled(false)
             targetingEngine.setLayer3Enabled(false)
-            saveLayerPrefs(layer1 = false, layer2 = false, layer3 = false)
-            _state.value = _state.value.copy(layer1Enabled = false, layer2Enabled = false, layer3Enabled = false)
+            targetingEngine.setAdversarialAllocationEnabled(false)
+            saveLayerPrefs(layer1 = false, layer2 = false, layer3 = false, adversarial = false)
+            _state.value = _state.value.copy(
+                layer1Enabled = false,
+                layer2Enabled = false,
+                layer3Enabled = false,
+                adversarialAllocationEnabled = false
+            )
         }
     }
 
     private fun saveLayerPrefs(
         layer1: Boolean = _state.value.layer1Enabled,
         layer2: Boolean = _state.value.layer2Enabled,
-        layer3: Boolean = _state.value.layer3Enabled
+        layer3: Boolean = _state.value.layer3Enabled,
+        adversarial: Boolean = _state.value.adversarialAllocationEnabled
     ) {
         viewModelScope.launch {
             val profile = profileRepo.getProfile()
@@ -303,7 +318,8 @@ class TargetingViewModel @Inject constructor(
                 profile.copy(
                     layer1Enabled = layer1,
                     layer2Enabled = layer2,
-                    layer3Enabled = layer3
+                    layer3Enabled = layer3,
+                    adversarialAllocationEnabled = adversarial
                 )
             )
         }

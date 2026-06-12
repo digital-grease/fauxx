@@ -372,6 +372,9 @@
     <string name="targeting_layer3_status_active">Persona: %s</string>
     <string name="targeting_layer3_status_none">Aún sin persona</string>
     <string name="targeting_layer3_action_rotate_now">Rotar ahora</string>
+    <string name="targeting_adversarial_name">Asignación adversaria (experimental)</string>
+    <string name="targeting_adversarial_description">Dirige el ruido donde más altera el perfil que inferiría un broker, dentro de un margen de realismo</string>
+    <string name="targeting_adversarial_status">Requiere la Capa 1 o la Capa 2 activada</string>
     <string name="targeting_clear_profile_button">Borrar mi perfil</string>
     <string name="targeting_clear_dialog_title">¿Borrar perfil?</string>
     <string name="targeting_clear_dialog_body">Esto eliminará tu perfil demográfico, todos los datos de plataformas y el historial de personas sintéticas. El motor volverá a una segmentación aleatoria uniforme.</string>

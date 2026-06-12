@@ -401,6 +401,9 @@
     <string name="targeting_layer3_status_active">Персона: %s</string>
     <string name="targeting_layer3_status_none">Персоны пока нет</string>
     <string name="targeting_layer3_action_rotate_now">Сменить сейчас</string>
+    <string name="targeting_adversarial_name">Состязательное распределение (эксперимент)</string>
+    <string name="targeting_adversarial_description">Направляет шум туда, где он сильнее всего меняет профиль, выводимый брокером, в пределах бюджета правдоподобия</string>
+    <string name="targeting_adversarial_status">Требуется включённый Layer 1 или Layer 2</string>
     <string name="targeting_clear_profile_button">Очистить мой профиль</string>
     <string name="targeting_clear_dialog_confirm">Очистить</string>
     <string name="targeting_profile_summary_title">МОЙ ПРОФИЛЬ</string>

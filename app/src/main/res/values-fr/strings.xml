@@ -372,6 +372,9 @@
     <string name="targeting_layer3_status_active">Persona : %s</string>
     <string name="targeting_layer3_status_none">Aucun persona pour le moment</string>
     <string name="targeting_layer3_action_rotate_now">Faire tourner maintenant</string>
+    <string name="targeting_adversarial_name">Allocation antagoniste (expérimental)</string>
+    <string name="targeting_adversarial_description">Cible le bruit là où il modifie le plus le profil déduit par un courtier, dans une limite de réalisme</string>
+    <string name="targeting_adversarial_status">Nécessite la Couche 1 ou la Couche 2 activée</string>
     <string name="targeting_clear_profile_button">Effacer mon profil</string>
     <string name="targeting_clear_dialog_title">Effacer le profil ?</string>
     <string name="targeting_clear_dialog_body">Cela supprimera ton profil démographique, toutes les données des plateformes et l\'historique des personas. Le moteur reviendra à un ciblage aléatoire uniforme.</string>

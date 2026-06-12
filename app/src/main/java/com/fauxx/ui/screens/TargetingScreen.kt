@@ -153,6 +153,16 @@ fun TargetingScreen(
             onAction = { viewModel.rotatePersona() }
         )
 
+        // Adversarial allocation stage (E4 #180) — post-combine optimization, off by default;
+        // only acts when Layer 1 or Layer 2 supplies a protected-interest signal.
+        LayerToggleCard(
+            layerName = stringResource(R.string.targeting_adversarial_name),
+            description = stringResource(R.string.targeting_adversarial_description),
+            enabled = uiState.adversarialAllocationEnabled,
+            onToggle = { viewModel.setAdversarialAllocationEnabled(it) },
+            statusText = stringResource(R.string.targeting_adversarial_status)
+        )
+
         // Weight visualization chart
         if (uiState.weights.isNotEmpty()) {
             WeightChart(weights = uiState.weights)

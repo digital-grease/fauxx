@@ -370,6 +370,9 @@
     <string name="targeting_layer3_status_active">Persona: %s</string>
     <string name="targeting_layer3_status_none">No persona yet</string>
     <string name="targeting_layer3_action_rotate_now">Rotate Now</string>
+    <string name="targeting_adversarial_name">Adversarial Allocation (experimental)</string>
+    <string name="targeting_adversarial_description">Targets noise where it most shifts the profile a broker would infer, within a realism budget</string>
+    <string name="targeting_adversarial_status">Needs Layer 1 or Layer 2 enabled</string>
     <string name="targeting_clear_profile_button">Clear My Profile</string>
     <string name="targeting_clear_dialog_title">Clear Profile?</string>
     <string name="targeting_clear_dialog_body">This will delete your demographic profile, all platform data, and persona history. The engine will revert to uniform random targeting.</string>
