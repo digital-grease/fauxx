@@ -55,7 +55,10 @@ class GoogleTakeoutImporter @Inject constructor(
 
     private val gson = Gson()
 
-    override suspend fun import(uri: Uri): ImportResult = withContext(Dispatchers.IO) {
+    override suspend fun import(
+        uri: Uri,
+        series: com.fauxx.targeting.layer2.SnapshotSeries,
+    ): ImportResult = withContext(Dispatchers.IO) {
         val rawStrings = try {
             extractRawCategories(uri)
         } catch (e: java.io.IOException) {
@@ -83,12 +86,12 @@ class GoogleTakeoutImporter @Inject constructor(
             // Found the file but it has no categories. Treat as a Success with 0 so the
             // user gets explicit feedback that the import worked but their ad profile
             // is empty (signed-in but Google has no targeting topics for them).
-            persistCategories(emptySet())
+            persistCategories(emptySet(), series)
             return@withContext ImportResult.Success(source, 0)
         }
 
         val mapped = categoryMapper.mapAll(rawStrings)
-        persistCategories(mapped)
+        persistCategories(mapped, series)
         ImportResult.Success(source, mapped.size)
     }
 
@@ -230,23 +233,32 @@ class GoogleTakeoutImporter @Inject constructor(
         return null
     }
 
-    private suspend fun persistCategories(mapped: Set<com.fauxx.data.querybank.CategoryPool>) {
+    private suspend fun persistCategories(
+        mapped: Set<com.fauxx.data.querybank.CategoryPool>,
+        series: com.fauxx.targeting.layer2.SnapshotSeries,
+    ) {
         val json = gson.toJson(mapped.map { it.name })
         val now = clock.currentTimeMillis()
-        platformProfileDao.upsert(
-            PlatformProfileCache(
-                platformName = source.platformId,
-                scrapedCategoriesJson = json,
-                lastScraped = now
+        // The control series is measurement-only (#172): never touch the cache Layer 2 reads, so
+        // a control import can't influence targeting. Only the poisoned import updates the cache.
+        if (series == com.fauxx.targeting.layer2.SnapshotSeries.POISONED) {
+            platformProfileDao.upsert(
+                PlatformProfileCache(
+                    platformName = source.platformId,
+                    scrapedCategoriesJson = json,
+                    lastScraped = now
+                )
             )
-        )
-        // Append an immutable IMPORT snapshot so Layer 2 can compute drift over time (#170 E1).
+        }
+        // Append an immutable IMPORT snapshot so Layer 2 can compute drift over time (#170 E1),
+        // tagged with its experimental arm (#172 E3).
         profileSnapshotDao.insert(
             com.fauxx.targeting.layer2.ProfileSnapshot(
                 platformName = source.platformId,
                 source = com.fauxx.targeting.layer2.SnapshotSource.IMPORT,
                 scrapedCategoriesJson = json,
                 capturedAt = now,
+                series = series,
             )
         )
     }

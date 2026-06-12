@@ -23,6 +23,7 @@ import com.fauxx.targeting.layer1.Profession
 import com.fauxx.targeting.layer1.Region
 import com.fauxx.targeting.layer1.UserDemographicProfile
 import com.fauxx.targeting.layer2.PlatformProfileDao
+import com.fauxx.targeting.layer2.SnapshotSeries
 import com.fauxx.targeting.layer2.importers.AdProfileImporter
 import com.fauxx.targeting.layer2.importers.FacebookDyiImporter
 import com.fauxx.targeting.layer2.importers.GoogleTakeoutImporter
@@ -65,6 +66,9 @@ data class TargetingUiState(
     // most recent outcome shown to the user — auto-clears after a short display window.
     val importInProgress: ImportSource? = null,
     val lastImportResult: ImportResult? = null,
+    // #172 E3: when on, the next import is stored as the CONTROL series (a clean account the user
+    // never poisons) instead of the poisoned profile — it never touches the cache or targeting.
+    val importAsControl: Boolean = false,
     // [showImportReminder] fires if the most recent import is > 90 days old and the
     // user hasn't snoozed/muted it. Derived in the combine() block from cache state +
     // the mute-until pref mirrored via [importReminderMutedUntil].
@@ -168,12 +172,13 @@ class TargetingViewModel @Inject constructor(
 
     private fun runImport(uri: Uri, importer: AdProfileImporter) {
         if (_state.value.importInProgress != null) return
+        val series = if (_state.value.importAsControl) SnapshotSeries.CONTROL else SnapshotSeries.POISONED
         _state.value = _state.value.copy(
             importInProgress = importer.source,
             lastImportResult = null
         )
         viewModelScope.launch {
-            val result = importer.import(uri)
+            val result = importer.import(uri, series)
             _state.value = _state.value.copy(
                 importInProgress = null,
                 lastImportResult = result
@@ -198,6 +203,11 @@ class TargetingViewModel @Inject constructor(
     /** Tap on the result banner — clears it without waiting for the auto-dismiss timer. */
     fun dismissImportResult() {
         _state.value = _state.value.copy(lastImportResult = null)
+    }
+
+    /** Toggle whether the next import is stored as the control series (#172 E3). */
+    fun setImportAsControl(enabled: Boolean) {
+        _state.value = _state.value.copy(importAsControl = enabled)
     }
 
     /** Hide the 90-day-old-import reminder for 30 days. */

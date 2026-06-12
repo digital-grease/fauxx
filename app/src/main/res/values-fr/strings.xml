@@ -375,6 +375,8 @@
     <string name="targeting_adversarial_name">Allocation antagoniste (expérimental)</string>
     <string name="targeting_adversarial_description">Cible le bruit là où il modifie le plus le profil déduit par un courtier, dans une limite de réalisme</string>
     <string name="targeting_adversarial_status">Nécessite la Couche 1 ou la Couche 2 activée</string>
+    <string name="targeting_import_as_control_label">Importer comme profil de contrôle (A/B)</string>
+    <string name="targeting_import_as_control_description">Enregistre le prochain import comme un compte de contrôle propre que vous n\'empoisonnez jamais, pour que le tableau de bord montre à quel point votre profil empoisonné s\'en est éloigné.</string>
     <string name="targeting_clear_profile_button">Effacer mon profil</string>
     <string name="targeting_clear_dialog_title">Effacer le profil ?</string>
     <string name="targeting_clear_dialog_body">Cela supprimera ton profil démographique, toutes les données des plateformes et l\'historique des personas. Le moteur reviendra à un ciblage aléatoire uniforme.</string>
@@ -444,6 +446,8 @@
     <string name="dashboard_drift_title">DÉRIVE DU PROFIL</string>
     <string name="dashboard_drift_help">À quel point votre profil d\'intérêts publicitaires importé s\'est éloigné de votre premier import (de référence), exprimé en divergence KL. Plus la valeur est élevée, plus le mouvement est important. La dérive peut aussi refléter le réentraînement du modèle par la plateforme, pas seulement Fauxx, considérez-la donc comme un indicateur, pas une preuve.</string>
     <string name="dashboard_drift_collecting">collecte…</string>
+    <string name="dashboard_control_divergence_title">EMPOISONNÉ VS CONTRÔLE</string>
+    <string name="dashboard_control_divergence_help">Divergence KL entre votre profil empoisonné et un profil de contrôle importé (un compte propre que vous n\'empoisonnez jamais). Plus la valeur est élevée, plus Fauxx a éloigné les deux profils. Affiché uniquement après avoir importé un profil de contrôle.</string>
     <string name="dashboard_synthetic_activity_title">ACTIVITÉ SYNTHÉTIQUE</string>
     <string name="dashboard_synthetic_activity_help">Le nombre moyen d\'actions synthétiques générées par Fauxx par heure au cours des dernières 24 heures. Cela indique la quantité de trafic de couverture ajoutée par Fauxx. Ce n\'est pas un ratio par rapport à votre activité réelle, qu\'Android ne permet pas à une application de mesurer.</string>
 </resources>

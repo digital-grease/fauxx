@@ -72,7 +72,11 @@ class AdversarialScraperLayer @Inject constructor(
             // Confirmed categories not budging across the two most recent import snapshots: the
             // current noise is not moving them, so push harder (#170 E1). Empty until a platform
             // has >=2 snapshots, so this is a no-op on a fresh install (falls back to static weights).
-            val sticky = driftCalculator.stickyConfirmed(snapshots, ::parseCategories)
+            // Control-series snapshots (#172) are excluded: the control account must never feed targeting.
+            val sticky = driftCalculator.stickyConfirmed(
+                snapshots.filter { it.series == SnapshotSeries.POISONED },
+                ::parseCategories,
+            )
 
             CategoryPool.values().associateWith { category ->
                 when {

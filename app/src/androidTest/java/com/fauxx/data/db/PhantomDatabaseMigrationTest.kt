@@ -18,7 +18,7 @@ import org.junit.runner.RunWith
  * Exercises [PhantomDatabase]'s real migrations under SQLCipher on a device — the path that
  * actually runs on a user's phone when they update the app. A broken migration here is silent
  * data loss or an open-time crash for every existing install, so this verifies both that the
- * 1->2->3->4->5->6 chain applies its schema changes AND that rows written before the update survive it.
+ * 1->2->3->4->5->6->7 chain applies its schema changes AND that rows written before the update survive it.
  *
  * Room's exported schemas only include 3.json, so [androidx.room.testing.MigrationTestHelper]
  * (which needs 1.json/2.json to stand up an old DB) can't be used. Instead we hand-seed an
@@ -47,12 +47,12 @@ class PhantomDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate1To6_preservesSeededRows_andAppliesSchemaChanges() {
+    fun migrate1To7_preservesSeededRows_andAppliesSchemaChanges() {
         seedEncryptedV1Database()
 
         val db = buildRoomDatabase()
         try {
-            // First access runs the 1->2->3->4->5->6 migration chain and validates the result against v6.
+            // First access runs the 1->2->3->4->5->6->7 migration chain and validates against v7.
             val sdb = db.openHelper.writableDatabase
 
             // Rows written at v1 must survive the migration.
@@ -100,13 +100,18 @@ class PhantomDatabaseMigrationTest {
             ).use { c ->
                 assertTrue("MIGRATION_5_6 must create circadian_usage", c.moveToFirst())
             }
+            // MIGRATION_6_7 added the series discriminator to profile_snapshot (issue #172 E3).
+            assertTrue(
+                "MIGRATION_6_7 must add profile_snapshot.series",
+                columnExists(sdb, "profile_snapshot", "series")
+            )
         } finally {
             db.close()
         }
     }
 
     @Test
-    fun freshCreateAtV6_roundTripsThroughSqlcipher() {
+    fun freshCreateAtV7_roundTripsThroughSqlcipher() {
         val db = buildRoomDatabase()
         try {
             val sdb = db.openHelper.writableDatabase
@@ -133,8 +138,13 @@ class PhantomDatabaseMigrationTest {
             sdb.query(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name='circadian_usage'"
             ).use { c ->
-                assertTrue("fresh v6 create must include circadian_usage", c.moveToFirst())
+                assertTrue("fresh create must include circadian_usage", c.moveToFirst())
             }
+            // A fresh create at v7 ships profile_snapshot.series directly (issue #172 E3).
+            assertTrue(
+                "fresh create must include profile_snapshot.series",
+                columnExists(sdb, "profile_snapshot", "series")
+            )
         } finally {
             db.close()
         }
@@ -143,7 +153,7 @@ class PhantomDatabaseMigrationTest {
     private fun buildRoomDatabase(): PhantomDatabase =
         Room.databaseBuilder(context, PhantomDatabase::class.java, TEST_DB)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
             .build()
 
     /**

@@ -8,6 +8,9 @@ import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.layer2.CategoryMapper
 import com.fauxx.targeting.layer2.PlatformProfileCache
 import com.fauxx.targeting.layer2.PlatformProfileDao
+import com.fauxx.targeting.layer2.ProfileSnapshot
+import com.fauxx.targeting.layer2.ProfileSnapshotDao
+import com.fauxx.targeting.layer2.SnapshotSeries
 import com.fauxx.util.Clock
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -35,6 +38,7 @@ class GoogleTakeoutImporterTest {
     private lateinit var contentResolver: ContentResolver
     private lateinit var assetManager: AssetManager
     private lateinit var dao: PlatformProfileDao
+    private lateinit var snapshotDao: ProfileSnapshotDao
     private lateinit var clock: Clock
     private lateinit var importer: GoogleTakeoutImporter
 
@@ -47,6 +51,7 @@ class GoogleTakeoutImporterTest {
         contentResolver = mockk()
         assetManager = mockk()
         dao = mockk(relaxed = true)
+        snapshotDao = mockk(relaxed = true)
         clock = mockk { every { currentTimeMillis() } returns nowMs }
         every { context.contentResolver } returns contentResolver
         every { context.assets } returns assetManager
@@ -62,7 +67,36 @@ class GoogleTakeoutImporterTest {
             """.trimIndent().toByteArray()
         )
         val mapper = CategoryMapper(context)
-        importer = GoogleTakeoutImporter(context, mapper, dao, mockk(relaxed = true), clock)
+        importer = GoogleTakeoutImporter(context, mapper, dao, snapshotDao, clock)
+    }
+
+    @Test
+    fun `control import persists a CONTROL snapshot and never touches the targeting cache`() = runBlocking {
+        val json = """{"interests": [{"category": "Video Games"}]}"""
+        stubStream(json.toByteArray())
+        val snapSlot = slot<ProfileSnapshot>()
+        coEvery { snapshotDao.insert(capture(snapSlot)) } returns 1L
+
+        val result = importer.import(fakeUri, SnapshotSeries.CONTROL)
+
+        assertTrue("expected Success, got $result", result is ImportResult.Success)
+        assertEquals(SnapshotSeries.CONTROL, snapSlot.captured.series)
+        // The control series is measurement-only (#172): the cache Layer 2 reads must NOT be written.
+        coVerify(exactly = 0) { dao.upsert(any()) }
+    }
+
+    @Test
+    fun `poisoned import writes the cache and a POISONED snapshot`() = runBlocking {
+        val json = """{"interests": [{"category": "Video Games"}]}"""
+        stubStream(json.toByteArray())
+        val snapSlot = slot<ProfileSnapshot>()
+        coEvery { snapshotDao.insert(capture(snapSlot)) } returns 1L
+        coEvery { dao.upsert(any()) } returns Unit
+
+        importer.import(fakeUri, SnapshotSeries.POISONED)
+
+        assertEquals(SnapshotSeries.POISONED, snapSlot.captured.series)
+        coVerify(exactly = 1) { dao.upsert(any()) }
     }
 
     @Test

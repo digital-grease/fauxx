@@ -373,6 +373,8 @@
     <string name="targeting_adversarial_name">Adversarial Allocation (experimental)</string>
     <string name="targeting_adversarial_description">Targets noise where it most shifts the profile a broker would infer, within a realism budget</string>
     <string name="targeting_adversarial_status">Needs Layer 1 or Layer 2 enabled</string>
+    <string name="targeting_import_as_control_label">Import as control profile (A/B)</string>
+    <string name="targeting_import_as_control_description">Store the next import as a clean control account you never poison, so the dashboard can show how far your poisoned profile has diverged from it.</string>
     <string name="targeting_clear_profile_button">Clear My Profile</string>
     <string name="targeting_clear_dialog_title">Clear Profile?</string>
     <string name="targeting_clear_dialog_body">This will delete your demographic profile, all platform data, and persona history. The engine will revert to uniform random targeting.</string>
@@ -443,6 +445,8 @@
     <string name="dashboard_drift_help">How far your imported ad-interest profile has moved from its first (baseline) import, shown as a KL divergence. Higher means more movement. Drift can also reflect the platform retraining its own model, not only Fauxx, so treat it as an indicator, not proof.</string>
     <string name="dashboard_drift_value" translatable="false">%.2f</string>
     <string name="dashboard_drift_collecting">collecting…</string>
+    <string name="dashboard_control_divergence_title">POISONED VS CONTROL</string>
+    <string name="dashboard_control_divergence_help">KL divergence between your poisoned profile and an imported control profile (a clean account you never poison). Higher means Fauxx has pushed the two further apart. Shown only after you import a control profile.</string>
     <string name="dashboard_synthetic_activity_title">SYNTHETIC ACTIVITY</string>
     <string name="dashboard_synthetic_activity_help">The average number of synthetic actions Fauxx generated per hour over the last 24 hours. It shows how much cover traffic Fauxx is adding. It is not a ratio against your real activity, which Android does not let an app measure.</string>
     <string name="dashboard_synthetic_activity_value" translatable="false">%.1f/h</string>
