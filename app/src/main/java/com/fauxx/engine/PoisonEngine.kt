@@ -95,8 +95,6 @@ private const val CONSTRAINT_CHECK_MIN_MS = 3_000L
 /** Delay after a single module failure before retrying. */
 private const val FAILURE_RETRY_DELAY_MS = 5_000L
 
-/** Milliseconds in 24 hours. */
-private const val MS_PER_DAY = 24 * 60 * 60 * 1000L
 
 /** Sliding window duration for per-hour rate limiting. */
 private const val RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000L
@@ -248,7 +246,7 @@ class PoisonEngine @Inject constructor(
     /** Today's successful action count, incremented on each action. Reset on day rollover. */
     private val todayActionCount = AtomicInteger(0)
     @Volatile
-    private var actionCountDayStart = clock.currentTimeMillis().let { it - (it % MS_PER_DAY) }
+    private var actionCountDayStart = localDayStartMs(clock.currentTimeMillis())
 
     /**
      * Sliding window of action timestamps (epoch ms) for per-hour rate limiting.
@@ -303,15 +301,45 @@ class PoisonEngine @Inject constructor(
         cm?.allNetworks?.mapNotNull { cm.getNetworkCapabilities(it) }.orEmpty()
     }
 
-    /** Returns today's successful action count (thread-safe, cached). */
+    /**
+     * Local-midnight start of the day containing [nowMs] (mirrors nextAllowedHoursStartMs's
+     * Calendar field-zeroing). Local rather than UTC (epoch-ms modulo) so "actions today" rolls
+     * over at the user's wall-clock midnight, not UTC midnight — audit fix for non-UTC zones.
+     */
+    private fun localDayStartMs(nowMs: Long): Long =
+        java.util.Calendar.getInstance().apply {
+            timeInMillis = nowMs
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+    /** Roll the action counter to a fresh day if [nowMs] has crossed local midnight. */
     @Synchronized
-    fun getTodayActionCount(): Int {
-        val now = clock.currentTimeMillis()
-        val dayStart = now - (now % MS_PER_DAY)
+    private fun rollIfNewDay(nowMs: Long) {
+        val dayStart = localDayStartMs(nowMs)
         if (dayStart != actionCountDayStart) {
             actionCountDayStart = dayStart
             todayActionCount.set(0)
         }
+    }
+
+    /**
+     * Record one successful action under the same monitor as the rollover, so a concurrent
+     * day-rollover can never zero a just-incremented new-day count — audit fix for the race
+     * between the engine's first post-midnight action and the FGS poll's reset.
+     */
+    @Synchronized
+    private fun recordTodayAction(nowMs: Long) {
+        rollIfNewDay(nowMs)
+        todayActionCount.incrementAndGet()
+    }
+
+    /** Returns today's successful action count (thread-safe, cached). */
+    @Synchronized
+    fun getTodayActionCount(): Int {
+        rollIfNewDay(clock.currentTimeMillis())
         return todayActionCount.get()
     }
 
@@ -363,7 +391,7 @@ class PoisonEngine @Inject constructor(
             targetingEngine.setAdversarialAllocationEnabled(savedProfile.adversarialAllocationEnabled)
 
             // Seed today's action count from DB once on start
-            val dayStart = clock.currentTimeMillis().let { it - (it % MS_PER_DAY) }
+            val dayStart = localDayStartMs(clock.currentTimeMillis())
             actionCountDayStart = dayStart
             todayActionCount.set(
                 try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
@@ -623,7 +651,7 @@ class PoisonEngine @Inject constructor(
                 Timber.e(e, "Failed to insert action log entry")
             }
             if (logEntry.success) {
-                todayActionCount.incrementAndGet()
+                recordTodayAction(clock.currentTimeMillis())
                 recentActionTimestamps.add(clock.currentTimeMillis())
             }
 

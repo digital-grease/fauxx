@@ -61,6 +61,7 @@ class SettingsViewModel @Inject constructor(
     private val demographicDao: DemographicProfileDao,
     private val platformDao: PlatformProfileDao,
     private val personaHistoryDao: PersonaHistoryDao,
+    private val profileSnapshotDao: com.fauxx.targeting.layer2.ProfileSnapshotDao,
     private val targetingEngine: TargetingEngine,
     private val encryptedFileTree: EncryptedFileTree,
     private val localeManager: LocaleManager,
@@ -120,6 +121,9 @@ class SettingsViewModel @Inject constructor(
             actionLogDao.deleteOlderThan(Long.MAX_VALUE)
             demographicDao.delete()
             platformDao.deleteAll()
+            // Imported broker ad-interest history, including any clean "control" account (#172),
+            // must not survive an explicit "delete all data" (privacy contract — audit fix).
+            profileSnapshotDao.deleteAll()
             personaHistoryDao.deleteAll()
             // Wipe the learned daily-rhythm histogram, in memory and on disk, so the
             // behavioral profile doesn't survive a "delete all data" (E10 #177).

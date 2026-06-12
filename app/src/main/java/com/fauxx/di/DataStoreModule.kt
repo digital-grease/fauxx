@@ -114,23 +114,32 @@ object DataStoreModule {
         context.fauxxDataStore
 
     /**
-     * Per-install seed for the generative-grammar query model (E5 #179): read once, or generated
-     * and persisted on first launch. A one-time blocking read at injection time, mirroring the DB
-     * passphrase provider in AppModule. The seed is an anonymous random Long, never user data.
+     * Per-install seed for the generative-grammar query model (E5 #179), provided as a DEFERRED
+     * loader so no DataStore IO runs during Hilt graph construction — which can happen on the main
+     * thread in a service / ViewModel onCreate (audit fix). The blocking read-or-create resolves
+     * lazily on first query generation, which runs on the engine's background dispatcher. The seed
+     * is an anonymous random Long, never user data.
      */
     @Provides
     @Singleton
-    fun provideQueryGrammarSeed(dataStore: DataStore<Preferences>): QueryGrammarSeed = runBlocking {
-        val existing = dataStore.data.first()[PreferenceKeys.QUERY_GRAMMAR_SEED]
-        if (existing != null) {
-            QueryGrammarSeed(existing)
-        } else {
-            val seed = Random.Default.nextLong()
-            dataStore.edit { it[PreferenceKeys.QUERY_GRAMMAR_SEED] = seed }
-            QueryGrammarSeed(seed)
+    fun provideQueryGrammarSeed(dataStore: DataStore<Preferences>): QueryGrammarSeed =
+        QueryGrammarSeed {
+            runBlocking {
+                val existing = dataStore.data.first()[PreferenceKeys.QUERY_GRAMMAR_SEED]
+                if (existing != null) {
+                    existing
+                } else {
+                    val seed = Random.Default.nextLong()
+                    dataStore.edit { it[PreferenceKeys.QUERY_GRAMMAR_SEED] = seed }
+                    seed
+                }
+            }
         }
-    }
 }
 
-/** Wrapper so Hilt can inject the per-install query-grammar seed without a qualifier (#179). */
-data class QueryGrammarSeed(val value: Long)
+/**
+ * Deferred per-install query-grammar seed (#179). Holds a loader rather than the value so the
+ * blocking DataStore read happens lazily off the main thread (on first query generation), not at
+ * Hilt injection time. Hilt-injectable without a qualifier.
+ */
+class QueryGrammarSeed(val load: () -> Long)

@@ -2,6 +2,7 @@ package com.fauxx.data.querybank
 
 import com.fauxx.di.QueryGrammarSeed
 import com.fauxx.locale.LocaleManager
+import com.fauxx.targeting.layer3.PersonaChannel
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,8 +36,12 @@ class GrammarQueryGenerator @Inject constructor(
     seed: QueryGrammarSeed,
     private val random: Random = Random.Default,
 ) {
-    /** This install's grammar style, derived deterministically from the persisted device seed. */
-    private val style = InstallStyle.fromSeed(seed.value)
+    /**
+     * This install's grammar style, derived deterministically from the persisted device seed.
+     * Lazy so the seed loader (a blocking DataStore read) resolves on first generate() — which runs
+     * on the engine's background dispatcher — not at construction time on the main thread.
+     */
+    private val style by lazy { InstallStyle.fromSeed(seed.load()) }
 
     /**
      * Generate a compound search query for [category]. Guaranteed never to return a query that
@@ -75,9 +80,14 @@ class GrammarQueryGenerator @Inject constructor(
             .firstOrNull() ?: head
     }
 
-    /** 0f (informational persona) .. 1f (commercial persona); 0.5 when no persona/interests. */
+    /**
+     * 0f (informational persona) .. 1f (commercial persona); 0.5 when no persona/interests.
+     * Reads through the staggered [PersonaChannel.QUERY] accessor (like every other persona-bound
+     * channel) so the query lean phases in over its own adoption lag and inherits the Layer-3
+     * kill-switch, instead of stepping at the rotation instant (audit fix, E8 coherence).
+     */
     private fun personaCommercialLean(): Float {
-        val interests = personaLayer.activePersona()?.interests ?: return NEUTRAL_LEAN
+        val interests = personaLayer.personaForChannel(PersonaChannel.QUERY)?.interests ?: return NEUTRAL_LEAN
         if (interests.isEmpty()) return NEUTRAL_LEAN
         return interests.count { it in COMMERCIAL_CATEGORIES }.toFloat() / interests.size
     }

@@ -94,6 +94,7 @@ class TargetingViewModel @Inject constructor(
     private val demographicDao: DemographicProfileDao,
     private val customInterestMapper: CustomInterestMapper,
     private val platformDao: PlatformProfileDao,
+    private val profileSnapshotDao: com.fauxx.targeting.layer2.ProfileSnapshotDao,
     private val personaHistoryDao: PersonaHistoryDao,
     private val personaLayer: PersonaRotationLayer,
     private val googleTakeoutImporter: GoogleTakeoutImporter,
@@ -293,6 +294,9 @@ class TargetingViewModel @Inject constructor(
         viewModelScope.launch {
             demographicDao.delete()
             platformDao.deleteAll()
+            // Imported broker ad-interest history, including any clean "control" account (#172),
+            // must not survive a profile wipe (privacy contract — audit fix).
+            profileSnapshotDao.deleteAll()
             personaHistoryDao.deleteAll()
             // Wipe the learned daily-rhythm histogram (memory + disk) so the behavioral
             // profile doesn't survive a profile wipe (E10 #177).

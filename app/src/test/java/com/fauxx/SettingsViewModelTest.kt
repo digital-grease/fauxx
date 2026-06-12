@@ -11,6 +11,7 @@ import com.fauxx.support.MainDispatcherRule
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer2.PlatformProfileDao
+import com.fauxx.targeting.layer2.ProfileSnapshotDao
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.ui.viewmodels.SettingsViewModel
 import io.mockk.coVerify
@@ -47,6 +48,7 @@ class SettingsViewModelTest {
     private val demographicDao: DemographicProfileDao = mockk(relaxed = true)
     private val platformDao: PlatformProfileDao = mockk(relaxed = true)
     private val personaHistoryDao: PersonaHistoryDao = mockk(relaxed = true)
+    private val profileSnapshotDao: ProfileSnapshotDao = mockk(relaxed = true)
     private val targetingEngine: TargetingEngine = mockk(relaxed = true)
     private val encryptedFileTree: EncryptedFileTree = mockk(relaxed = true)
     private val localeManager: LocaleManager = mockk(relaxed = true) {
@@ -57,7 +59,8 @@ class SettingsViewModelTest {
 
     private fun viewModel() = SettingsViewModel(
         profileRepo, actionLogDao, demographicDao, platformDao, personaHistoryDao,
-        targetingEngine, encryptedFileTree, localeManager, markovGenerator, circadianObserver
+        profileSnapshotDao, targetingEngine, encryptedFileTree, localeManager,
+        markovGenerator, circadianObserver
     )
 
     @Test
@@ -72,6 +75,9 @@ class SettingsViewModelTest {
         coVerify { demographicDao.delete() }
         coVerify { platformDao.deleteAll() }
         coVerify { personaHistoryDao.deleteAll() }
+        // Audit fix: imported broker-profile history (incl. the clean control account #172) must
+        // also be wiped, or it survives "delete all data" and resurfaces in the dashboard cards.
+        coVerify { profileSnapshotDao.deleteAll() }
         // E10 (#177): the learned daily-rhythm histogram is part of the trail wipe.
         coVerify { circadianObserver.clear() }
     }

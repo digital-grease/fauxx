@@ -28,7 +28,7 @@ class GrammarQueryGeneratorTest {
         every { currentLocale } returns SupportedLocale.EN
     }
     private val personaLayer: PersonaRotationLayer = mockk(relaxed = true) {
-        every { activePersona() } returns null
+        every { personaForChannel(any()) } returns null
     }
 
     private fun gen(
@@ -37,8 +37,8 @@ class GrammarQueryGeneratorTest {
         blocklist: QueryBlocklist = mockk(relaxed = true) { every { isBlocked(any()) } returns false },
         persona: SyntheticPersona? = null,
     ): GrammarQueryGenerator {
-        every { personaLayer.activePersona() } returns persona
-        return GrammarQueryGenerator(queryBankManager, blocklist, localeManager, markov, personaLayer, QueryGrammarSeed(seed), random)
+        every { personaLayer.personaForChannel(any()) } returns persona
+        return GrammarQueryGenerator(queryBankManager, blocklist, localeManager, markov, personaLayer, QueryGrammarSeed { seed }, random)
     }
 
     private fun persona(vararg interests: CategoryPool) = SyntheticPersona(

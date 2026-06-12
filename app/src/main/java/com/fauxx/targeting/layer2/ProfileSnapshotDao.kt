@@ -25,13 +25,17 @@ interface ProfileSnapshotDao {
     suspend fun earliestForPlatform(platform: String): ProfileSnapshot?
 
     /**
-     * Retention: delete snapshots older than [cutoff], but always keep the earliest snapshot per
-     * platform so E2's baseline survives. (MIN(id) per platform is the earliest, since id
-     * auto-increments in capture order.)
+     * Retention: delete snapshots older than [cutoff], but always keep the earliest AND latest
+     * snapshot of each (platform, series). Per-(platform, series) so the control series (#172)
+     * survives independently of the poisoned series: E2 drift needs >=2 rows (earliest + latest)
+     * per platform-series, and E3 control-divergence needs a surviving latest row in each series.
+     * Series-blind pruning would silently revert both dashboard cards to "collecting" (audit fix).
+     * (MIN/MAX(id) per group is the earliest/latest, since id auto-increments in capture order.)
      */
     @Query(
         "DELETE FROM profile_snapshot WHERE capturedAt < :cutoff " +
-            "AND id NOT IN (SELECT MIN(id) FROM profile_snapshot GROUP BY platformName)"
+            "AND id NOT IN (SELECT MIN(id) FROM profile_snapshot GROUP BY platformName, series) " +
+            "AND id NOT IN (SELECT MAX(id) FROM profile_snapshot GROUP BY platformName, series)"
     )
     suspend fun deleteOlderThanKeepingBaseline(cutoff: Long)
 

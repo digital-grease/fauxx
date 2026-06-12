@@ -77,10 +77,6 @@ class PersonaRotationLayer @Inject constructor(
 
     val currentPersona: Flow<SyntheticPersona?> = _currentPersona.asStateFlow()
 
-    /** Synchronous snapshot of the active persona for hot-path readers (e.g. query generation,
-     *  E4 #179); null until the first persona is generated/restored. */
-    fun activePersona(): SyntheticPersona? = _currentPersona.value
-
     /** Persona that was current before the last rotation; in-memory only (see below). */
     private val _previousPersona = MutableStateFlow<SyntheticPersona?>(null)
 
@@ -293,4 +289,4 @@ class PersonaRotationLayer @Inject constructor(
  * distribution itself (added by E9 #176: the peakier blend made an unstaggered
  * weights flip the sharpest remaining rotation change-point).
  */
-enum class PersonaChannel { LOCATION, APP_SIGNAL, RHYTHM, WEIGHTS }
+enum class PersonaChannel { LOCATION, APP_SIGNAL, RHYTHM, WEIGHTS, QUERY }
