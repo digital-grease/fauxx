@@ -1,0 +1,546 @@
+{
+  "version": 1,
+  "provenance": "Designed semantic-affinity prior (hand-curated clusters; scripts/build_cooccurrence.py). NOT measured broker statistics: no public source publishes co-occurrence over fauxx's 32-category taxonomy. Research surrogate for broker inference only.",
+  "model": {
+    "bias": -2.0,
+    "selfCoef": 6.0,
+    "neighborCoef": 3.0
+  },
+  "affinities": [
+    {
+      "a": "ACADEMIC",
+      "b": "ENVIRONMENT",
+      "w": 0.75
+    },
+    {
+      "a": "ACADEMIC",
+      "b": "HISTORY",
+      "w": 0.75
+    },
+    {
+      "a": "ACADEMIC",
+      "b": "MUSIC",
+      "w": 0.75
+    },
+    {
+      "a": "ACADEMIC",
+      "b": "PARENTING",
+      "w": 0.45
+    },
+    {
+      "a": "ACADEMIC",
+      "b": "SCIENCE",
+      "w": 0.75
+    },
+    {
+      "a": "AGRICULTURE",
+      "b": "AUTOMOTIVE",
+      "w": 0.8
+    },
+    {
+      "a": "AGRICULTURE",
+      "b": "ENVIRONMENT",
+      "w": 0.5
+    },
+    {
+      "a": "AGRICULTURE",
+      "b": "FITNESS",
+      "w": 0.8
+    },
+    {
+      "a": "AGRICULTURE",
+      "b": "OUTDOOR_RECREATION",
+      "w": 0.8
+    },
+    {
+      "a": "AGRICULTURE",
+      "b": "PETS",
+      "w": 0.8
+    },
+    {
+      "a": "AGRICULTURE",
+      "b": "SPORTS",
+      "w": 0.8
+    },
+    {
+      "a": "AUTOMOTIVE",
+      "b": "FITNESS",
+      "w": 0.8
+    },
+    {
+      "a": "AUTOMOTIVE",
+      "b": "MILITARY_DEFENSE",
+      "w": 0.35
+    },
+    {
+      "a": "AUTOMOTIVE",
+      "b": "OUTDOOR_RECREATION",
+      "w": 0.8
+    },
+    {
+      "a": "AUTOMOTIVE",
+      "b": "PETS",
+      "w": 0.8
+    },
+    {
+      "a": "AUTOMOTIVE",
+      "b": "SPORTS",
+      "w": 0.8
+    },
+    {
+      "a": "AUTOMOTIVE",
+      "b": "TRAVEL",
+      "w": 0.45
+    },
+    {
+      "a": "BEAUTY",
+      "b": "ENTERTAINMENT",
+      "w": 0.8
+    },
+    {
+      "a": "BEAUTY",
+      "b": "FASHION",
+      "w": 0.8
+    },
+    {
+      "a": "BEAUTY",
+      "b": "FITNESS",
+      "w": 0.8
+    },
+    {
+      "a": "BEAUTY",
+      "b": "FOOD",
+      "w": 0.8
+    },
+    {
+      "a": "BEAUTY",
+      "b": "GAMING",
+      "w": 0.7
+    },
+    {
+      "a": "BEAUTY",
+      "b": "MEDICAL",
+      "w": 0.8
+    },
+    {
+      "a": "BEAUTY",
+      "b": "MUSIC",
+      "w": 0.8
+    },
+    {
+      "a": "BEAUTY",
+      "b": "RELATIONSHIPS_DATING",
+      "w": 0.7
+    },
+    {
+      "a": "BEAUTY",
+      "b": "TRAVEL",
+      "w": 0.8
+    },
+    {
+      "a": "BEAUTY",
+      "b": "WELLNESS_ALTERNATIVE",
+      "w": 0.8
+    },
+    {
+      "a": "BUSINESS",
+      "b": "FINANCE",
+      "w": 0.85
+    },
+    {
+      "a": "BUSINESS",
+      "b": "LEGAL",
+      "w": 0.85
+    },
+    {
+      "a": "BUSINESS",
+      "b": "REAL_ESTATE",
+      "w": 0.85
+    },
+    {
+      "a": "BUSINESS",
+      "b": "RETIREMENT",
+      "w": 0.85
+    },
+    {
+      "a": "COOKING",
+      "b": "CRAFTS",
+      "w": 0.8
+    },
+    {
+      "a": "COOKING",
+      "b": "FOOD",
+      "w": 0.8
+    },
+    {
+      "a": "COOKING",
+      "b": "HOME_IMPROVEMENT",
+      "w": 0.8
+    },
+    {
+      "a": "COOKING",
+      "b": "PARENTING",
+      "w": 0.8
+    },
+    {
+      "a": "COOKING",
+      "b": "PETS",
+      "w": 0.8
+    },
+    {
+      "a": "CRAFTS",
+      "b": "FOOD",
+      "w": 0.8
+    },
+    {
+      "a": "CRAFTS",
+      "b": "HOME_IMPROVEMENT",
+      "w": 0.8
+    },
+    {
+      "a": "CRAFTS",
+      "b": "PARENTING",
+      "w": 0.8
+    },
+    {
+      "a": "CRAFTS",
+      "b": "PETS",
+      "w": 0.8
+    },
+    {
+      "a": "ENTERTAINMENT",
+      "b": "FASHION",
+      "w": 0.8
+    },
+    {
+      "a": "ENTERTAINMENT",
+      "b": "FITNESS",
+      "w": 0.7
+    },
+    {
+      "a": "ENTERTAINMENT",
+      "b": "FOOD",
+      "w": 0.8
+    },
+    {
+      "a": "ENTERTAINMENT",
+      "b": "GAMING",
+      "w": 0.85
+    },
+    {
+      "a": "ENTERTAINMENT",
+      "b": "MUSIC",
+      "w": 0.8
+    },
+    {
+      "a": "ENTERTAINMENT",
+      "b": "RELATIONSHIPS_DATING",
+      "w": 0.7
+    },
+    {
+      "a": "ENTERTAINMENT",
+      "b": "SCIENCE",
+      "w": 0.85
+    },
+    {
+      "a": "ENTERTAINMENT",
+      "b": "TECHNOLOGY",
+      "w": 0.85
+    },
+    {
+      "a": "ENTERTAINMENT",
+      "b": "TRAVEL",
+      "w": 0.8
+    },
+    {
+      "a": "ENVIRONMENT",
+      "b": "HISTORY",
+      "w": 0.75
+    },
+    {
+      "a": "ENVIRONMENT",
+      "b": "MILITARY_DEFENSE",
+      "w": 0.75
+    },
+    {
+      "a": "ENVIRONMENT",
+      "b": "MUSIC",
+      "w": 0.75
+    },
+    {
+      "a": "ENVIRONMENT",
+      "b": "POLITICS",
+      "w": 0.75
+    },
+    {
+      "a": "ENVIRONMENT",
+      "b": "SCIENCE",
+      "w": 0.75
+    },
+    {
+      "a": "FASHION",
+      "b": "FITNESS",
+      "w": 0.7
+    },
+    {
+      "a": "FASHION",
+      "b": "FOOD",
+      "w": 0.8
+    },
+    {
+      "a": "FASHION",
+      "b": "GAMING",
+      "w": 0.7
+    },
+    {
+      "a": "FASHION",
+      "b": "MUSIC",
+      "w": 0.8
+    },
+    {
+      "a": "FASHION",
+      "b": "RELATIONSHIPS_DATING",
+      "w": 0.7
+    },
+    {
+      "a": "FASHION",
+      "b": "TRAVEL",
+      "w": 0.8
+    },
+    {
+      "a": "FINANCE",
+      "b": "LEGAL",
+      "w": 0.85
+    },
+    {
+      "a": "FINANCE",
+      "b": "REAL_ESTATE",
+      "w": 0.85
+    },
+    {
+      "a": "FINANCE",
+      "b": "RETIREMENT",
+      "w": 0.85
+    },
+    {
+      "a": "FINANCE",
+      "b": "TECHNOLOGY",
+      "w": 0.4
+    },
+    {
+      "a": "FITNESS",
+      "b": "FOOD",
+      "w": 0.8
+    },
+    {
+      "a": "FITNESS",
+      "b": "GAMING",
+      "w": 0.7
+    },
+    {
+      "a": "FITNESS",
+      "b": "MEDICAL",
+      "w": 0.8
+    },
+    {
+      "a": "FITNESS",
+      "b": "MUSIC",
+      "w": 0.7
+    },
+    {
+      "a": "FITNESS",
+      "b": "OUTDOOR_RECREATION",
+      "w": 0.8
+    },
+    {
+      "a": "FITNESS",
+      "b": "PETS",
+      "w": 0.8
+    },
+    {
+      "a": "FITNESS",
+      "b": "RELATIONSHIPS_DATING",
+      "w": 0.7
+    },
+    {
+      "a": "FITNESS",
+      "b": "SPORTS",
+      "w": 0.8
+    },
+    {
+      "a": "FITNESS",
+      "b": "WELLNESS_ALTERNATIVE",
+      "w": 0.8
+    },
+    {
+      "a": "FOOD",
+      "b": "HOME_IMPROVEMENT",
+      "w": 0.8
+    },
+    {
+      "a": "FOOD",
+      "b": "MEDICAL",
+      "w": 0.8
+    },
+    {
+      "a": "FOOD",
+      "b": "MUSIC",
+      "w": 0.8
+    },
+    {
+      "a": "FOOD",
+      "b": "PARENTING",
+      "w": 0.8
+    },
+    {
+      "a": "FOOD",
+      "b": "PETS",
+      "w": 0.8
+    },
+    {
+      "a": "FOOD",
+      "b": "TRAVEL",
+      "w": 0.8
+    },
+    {
+      "a": "FOOD",
+      "b": "WELLNESS_ALTERNATIVE",
+      "w": 0.8
+    },
+    {
+      "a": "GAMING",
+      "b": "MUSIC",
+      "w": 0.7
+    },
+    {
+      "a": "GAMING",
+      "b": "RELATIONSHIPS_DATING",
+      "w": 0.7
+    },
+    {
+      "a": "GAMING",
+      "b": "SCIENCE",
+      "w": 0.85
+    },
+    {
+      "a": "GAMING",
+      "b": "TECHNOLOGY",
+      "w": 0.85
+    },
+    {
+      "a": "HISTORY",
+      "b": "MILITARY_DEFENSE",
+      "w": 0.75
+    },
+    {
+      "a": "HISTORY",
+      "b": "MUSIC",
+      "w": 0.75
+    },
+    {
+      "a": "HISTORY",
+      "b": "POLITICS",
+      "w": 0.75
+    },
+    {
+      "a": "HISTORY",
+      "b": "SCIENCE",
+      "w": 0.75
+    },
+    {
+      "a": "HOME_IMPROVEMENT",
+      "b": "PARENTING",
+      "w": 0.8
+    },
+    {
+      "a": "HOME_IMPROVEMENT",
+      "b": "PETS",
+      "w": 0.8
+    },
+    {
+      "a": "HOME_IMPROVEMENT",
+      "b": "REAL_ESTATE",
+      "w": 0.6
+    },
+    {
+      "a": "LEGAL",
+      "b": "REAL_ESTATE",
+      "w": 0.85
+    },
+    {
+      "a": "LEGAL",
+      "b": "RETIREMENT",
+      "w": 0.85
+    },
+    {
+      "a": "MEDICAL",
+      "b": "PETS",
+      "w": 0.35
+    },
+    {
+      "a": "MEDICAL",
+      "b": "RETIREMENT",
+      "w": 0.55
+    },
+    {
+      "a": "MEDICAL",
+      "b": "WELLNESS_ALTERNATIVE",
+      "w": 0.8
+    },
+    {
+      "a": "MILITARY_DEFENSE",
+      "b": "POLITICS",
+      "w": 0.75
+    },
+    {
+      "a": "MUSIC",
+      "b": "RELATIONSHIPS_DATING",
+      "w": 0.7
+    },
+    {
+      "a": "MUSIC",
+      "b": "SCIENCE",
+      "w": 0.75
+    },
+    {
+      "a": "MUSIC",
+      "b": "TRAVEL",
+      "w": 0.8
+    },
+    {
+      "a": "OUTDOOR_RECREATION",
+      "b": "PETS",
+      "w": 0.8
+    },
+    {
+      "a": "OUTDOOR_RECREATION",
+      "b": "SPORTS",
+      "w": 0.8
+    },
+    {
+      "a": "OUTDOOR_RECREATION",
+      "b": "TRAVEL",
+      "w": 0.5
+    },
+    {
+      "a": "PARENTING",
+      "b": "PETS",
+      "w": 0.8
+    },
+    {
+      "a": "PETS",
+      "b": "SPORTS",
+      "w": 0.8
+    },
+    {
+      "a": "REAL_ESTATE",
+      "b": "RETIREMENT",
+      "w": 0.85
+    },
+    {
+      "a": "SCIENCE",
+      "b": "TECHNOLOGY",
+      "w": 0.85
+    }
+  ]
+}

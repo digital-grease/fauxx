@@ -53,6 +53,10 @@ object PreferenceKeys {
     val LAYER2_ENABLED = booleanPreferencesKey("layer2_enabled")
     val LAYER3_ENABLED = booleanPreferencesKey("layer3_enabled")
 
+    // Adversarial allocation stage (E4 #180). Off by default; a post-combine optimization step,
+    // distinct from the L1-L3 layer toggles above.
+    val ADVERSARIAL_ALLOCATION_ENABLED = booleanPreferencesKey("adversarial_allocation_enabled")
+
     // Onboarding
     val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
 

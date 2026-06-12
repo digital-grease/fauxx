@@ -66,3 +66,5 @@ CLAUDE.md
 scripts/*
 !scripts/build_persona_distribution.py
 !scripts/backfill_city_regions.py
+# E4 (#180) broker-inference co-occurrence builder: regenerates a shipped asset, must be reviewable.
+!scripts/build_cooccurrence.py

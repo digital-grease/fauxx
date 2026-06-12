@@ -53,4 +53,28 @@ class ProfileDriftMetricTest {
         assertEquals(0.0, metric.kl(setOf(CategoryPool.GAMING), setOf(CategoryPool.GAMING)), 1e-9)
         assertTrue(metric.kl(setOf(CategoryPool.GAMING), setOf(CategoryPool.COOKING)) > 0.0)
     }
+
+    // --- Weight-map KL overload (E4 #180 allocation budget) ---
+
+    @Test
+    fun `weight-map kl is zero for identical distributions`() {
+        val w = CategoryPool.values().associateWith { 1f / CategoryPool.values().size }
+        assertEquals(0.0, metric.kl(w, w), 1e-9)
+    }
+
+    @Test
+    fun `weight-map kl is positive when distributions differ`() {
+        val cats = CategoryPool.values()
+        val p = cats.associateWith { 1f / cats.size }
+        val q = p.toMutableMap().apply { put(CategoryPool.GAMING, 0.5f) }
+        assertTrue(metric.kl(q, p) > 0.0)
+    }
+
+    @Test
+    fun `weight-map kl stays finite with absent categories`() {
+        val p = mapOf(CategoryPool.GAMING to 1f)
+        val q = mapOf(CategoryPool.COOKING to 1f)
+        val v = metric.kl(p, q)
+        assertTrue(v.isFinite() && v > 0.0)
+    }
 }

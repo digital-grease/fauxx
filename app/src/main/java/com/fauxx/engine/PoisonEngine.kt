@@ -360,6 +360,7 @@ class PoisonEngine @Inject constructor(
             targetingEngine.setLayer1Enabled(savedProfile.layer1Enabled)
             targetingEngine.setLayer2Enabled(savedProfile.layer2Enabled)
             targetingEngine.setLayer3Enabled(savedProfile.layer3Enabled)
+            targetingEngine.setAdversarialAllocationEnabled(savedProfile.adversarialAllocationEnabled)
 
             // Seed today's action count from DB once on start
             val dayStart = clock.currentTimeMillis().let { it - (it % MS_PER_DAY) }
@@ -368,7 +369,7 @@ class PoisonEngine @Inject constructor(
                 try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
             )
             _engineState.value = EngineState.ACTIVE
-            Timber.i("PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled})")
+            Timber.i("PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled}, adversarialAlloc=${savedProfile.adversarialAllocationEnabled})")
             // Fail-closed: if blocklist couldn't load, permanently circuit-break all
             // URL-loading modules. These modules load arbitrary URLs and MUST have a
             // working blocklist to prevent navigation to harmful domains.
@@ -1000,6 +1001,7 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.LAYER1_ENABLED] = p.layer1Enabled
         prefs[com.fauxx.di.PreferenceKeys.LAYER2_ENABLED] = p.layer2Enabled
         prefs[com.fauxx.di.PreferenceKeys.LAYER3_ENABLED] = p.layer3Enabled
+        prefs[com.fauxx.di.PreferenceKeys.ADVERSARIAL_ALLOCATION_ENABLED] = p.adversarialAllocationEnabled
         prefs[com.fauxx.di.PreferenceKeys.THEME_MODE] = p.themeMode.name
         prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] = p.resumeOnBoot
         // Persist customUserAgent only when set; clear the key on null so a
@@ -1034,6 +1036,8 @@ class PoisonProfileRepository @Inject constructor(
             layer1Enabled = prefs[com.fauxx.di.PreferenceKeys.LAYER1_ENABLED] ?: false,
             layer2Enabled = prefs[com.fauxx.di.PreferenceKeys.LAYER2_ENABLED] ?: false,
             layer3Enabled = prefs[com.fauxx.di.PreferenceKeys.LAYER3_ENABLED] ?: true,
+            adversarialAllocationEnabled =
+                prefs[com.fauxx.di.PreferenceKeys.ADVERSARIAL_ALLOCATION_ENABLED] ?: false,
             themeMode = runCatching {
                 com.fauxx.ui.theme.ThemeMode.valueOf(
                     prefs[com.fauxx.di.PreferenceKeys.THEME_MODE]

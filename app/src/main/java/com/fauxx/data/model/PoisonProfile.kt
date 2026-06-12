@@ -30,6 +30,9 @@ import com.fauxx.ui.theme.ThemeMode
  * @property layer1Enabled Whether Layer 1 (self-report targeting) is active.
  * @property layer2Enabled Whether Layer 2 (adversarial scraper) is active.
  * @property layer3Enabled Whether Layer 3 (persona rotation) is active.
+ * @property adversarialAllocationEnabled Whether the adversarial allocation stage (E4 #180) is
+ *   active. A post-combine optimization step, off by default; only has an effect when Layer 1
+ *   and/or Layer 2 are enabled (they supply the protected-interest signal it optimizes against).
  * @property themeMode UI theme preference (system / light / dark).
  * @property resumeOnBoot When true, show a "tap to resume" notification after device
  *   reboot if the engine was enabled pre-reboot. True FGS auto-start is blocked by
@@ -59,6 +62,7 @@ data class PoisonProfile(
     val layer1Enabled: Boolean = false,
     val layer2Enabled: Boolean = false,
     val layer3Enabled: Boolean = true,
+    val adversarialAllocationEnabled: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val resumeOnBoot: Boolean = true,
     val customUserAgent: String? = null

@@ -56,6 +56,33 @@ class ProfileDriftMetric @Inject constructor() {
         return sum
     }
 
+    /**
+     * KL(p || q) over the CategoryPool support for two weight DISTRIBUTIONS (probabilities, not
+     * presence sets), in nats. Both maps are renormalized and epsilon-floored so the result stays
+     * finite even with the [WeightNormalizer] MIN_WEIGHT floor.
+     *
+     * Distinct from the Set-based [kl] above: that measures the broker's inferred-set drift over
+     * time (the E2 dashboard metric); this measures how far one synthetic weight distribution sits
+     * from another, and is the budget constraint for adversarial allocation (E4 #180).
+     */
+    fun kl(p: Map<CategoryPool, Float>, q: Map<CategoryPool, Float>): Double {
+        val cats = CategoryPool.values()
+        val eps = 1e-9
+        var pTotal = 0.0
+        var qTotal = 0.0
+        for (c in cats) {
+            pTotal += (p[c]?.toDouble() ?: 0.0) + eps
+            qTotal += (q[c]?.toDouble() ?: 0.0) + eps
+        }
+        var sum = 0.0
+        for (c in cats) {
+            val pi = ((p[c]?.toDouble() ?: 0.0) + eps) / pTotal
+            val qi = ((q[c]?.toDouble() ?: 0.0) + eps) / qTotal
+            sum += pi * ln(pi / qi)
+        }
+        return sum
+    }
+
     private fun dist(set: Set<CategoryPool>, cats: Array<CategoryPool>): Map<CategoryPool, Double> {
         val alpha = 0.5
         val denom = set.size + alpha * cats.size

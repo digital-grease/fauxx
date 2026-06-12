@@ -3,6 +3,9 @@ package com.fauxx.di
 import android.content.Context
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.WeightNormalizer
+import com.fauxx.targeting.allocation.AdversarialAllocator
+import com.fauxx.targeting.allocation.CooccurrenceLoader
+import com.fauxx.targeting.allocation.CooccurrenceTable
 import com.fauxx.targeting.layer0.UniformEntropyLayer
 import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicDistanceMap
@@ -99,6 +102,14 @@ object TargetingModule {
     @Singleton
     fun provideRateModulator(composite: CompositeRateModulator): RateModulator = composite
 
+    /**
+     * The broker-inference co-occurrence prior (E4 #180), loaded once from the bundled asset.
+     * The loader is fail-safe, so this never throws — a bad asset yields an empty table.
+     */
+    @Provides
+    @Singleton
+    fun provideCooccurrenceTable(loader: CooccurrenceLoader): CooccurrenceTable = loader.load()
+
     @Provides
     @Singleton
     fun provideTargetingEngine(
@@ -106,6 +117,7 @@ object TargetingModule {
         l1: SelfReportLayer,
         l2: AdversarialScraperLayer,
         l3: PersonaRotationLayer,
-        normalizer: WeightNormalizer
-    ): TargetingEngine = TargetingEngine(l0, l1, l2, l3, normalizer)
+        normalizer: WeightNormalizer,
+        allocator: AdversarialAllocator
+    ): TargetingEngine = TargetingEngine(l0, l1, l2, l3, normalizer, allocator)
 }
