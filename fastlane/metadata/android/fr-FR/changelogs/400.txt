@@ -1,0 +1,6 @@
+• Nouveau (expérimental) : Allocation antagoniste, un mode de ciblage facultatif qui dirige le bruit là où il modifie le plus le profil qu'un courtier en données déduit de vous
+• Nouveau : importez un compte « contrôle » propre pour mesurer à quel point Fauxx a réellement éloigné votre profil publicitaire empoisonné, affiché sur le tableau de bord
+• Amélioré : des personas synthétiques plus réalistes (basées sur le recensement), des sessions de recherche en plusieurs étapes plus naturelles et un rythme d'activité quotidien appris de vos propres heures d'écran
+• Amélioré : les requêtes de recherche sont désormais générées par appareil, pour plus de variété et moins d'empreinte à l'échelle de tous les utilisateurs
+• Amélioré : le trafic web synthétique présente une empreinte de navigateur plus cohérente et plus difficile à détecter
+• Correctif : « Supprimer toutes les données » efface désormais aussi l'historique des profils publicitaires importés, ainsi que diverses corrections de stabilité
