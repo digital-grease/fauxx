@@ -7,8 +7,10 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.db.PhantomDatabase
+import com.fauxx.engine.scheduling.CircadianUsageDao
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer2.PlatformProfileDao
+import com.fauxx.targeting.layer2.ProfileSnapshotDao
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import dagger.Module
 import dagger.Provides
@@ -57,6 +59,16 @@ object TestDatabaseModule {
 
     @Provides
     @Singleton
+    fun provideProfileSnapshotDao(db: PhantomDatabase): ProfileSnapshotDao =
+        db.profileSnapshotDao()
+
+    @Provides
+    @Singleton
+    fun provideCircadianUsageDao(db: PhantomDatabase): CircadianUsageDao =
+        db.circadianUsageDao()
+
+    @Provides
+    @Singleton
     fun provideTinkKeyManager(@ApplicationContext context: Context): TinkKeyManager =
         TinkKeyManager(context)
 
@@ -64,6 +76,16 @@ object TestDatabaseModule {
     @Singleton
     fun provideTestDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
         context.testDataStore
+
+    /**
+     * This module replaces [DataStoreModule], so it must also re-provide everything that module
+     * supplies — including the #179 query-grammar seed. A fixed deterministic seed (no DataStore
+     * IO) keeps instrumented tests reproducible. Without this the androidTest Hilt graph fails to
+     * build (QueryGrammarSeed has no binding).
+     */
+    @Provides
+    @Singleton
+    fun provideQueryGrammarSeed(): QueryGrammarSeed = QueryGrammarSeed { 0L }
 }
 
 // Process-level singleton. @HiltAndroidTest recreates the SingletonComponent per test class, so a
