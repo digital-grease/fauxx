@@ -20,7 +20,10 @@ plugins {
 
 android {
     namespace = "com.fauxx"
-    compileSdk = 36
+    // compileSdk 37 is required by androidx.core 1.19.0's AAR metadata gate (#188). targetSdk
+    // stays 36 deliberately: only compileSdk needs to rise to satisfy the gate, and bumping
+    // targetSdk carries separate runtime-behavior changes that are validated on their own.
+    compileSdk = 37
 
     sourceSets {
         // Shared test support (FakeClock, MainDispatcherRule, seeded Random) lives in
