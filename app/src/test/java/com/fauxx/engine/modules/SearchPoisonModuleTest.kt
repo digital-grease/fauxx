@@ -4,7 +4,7 @@ import android.webkit.WebView
 import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
-import com.fauxx.data.querybank.MarkovQueryGenerator
+import com.fauxx.data.querybank.GrammarQueryGenerator
 import com.fauxx.data.querybank.QueryBankManager
 import com.fauxx.data.querybank.QueryBlocklist
 import com.fauxx.engine.PoisonProfileRepository
@@ -58,7 +58,7 @@ class SearchPoisonModuleTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val queryBankManager: QueryBankManager = mockk(relaxed = true)
-    private val markovGenerator: MarkovQueryGenerator = mockk(relaxed = true)
+    private val grammarGenerator: GrammarQueryGenerator = mockk(relaxed = true)
     private val profileRepo: PoisonProfileRepository = mockk(relaxed = true) {
         every { getProfile().intensity } returns com.fauxx.data.model.IntensityLevel.MEDIUM
         every { getProfile().mobileIntensity } returns null
@@ -78,7 +78,7 @@ class SearchPoisonModuleTest {
         clock: com.fauxx.util.Clock = com.fauxx.support.FakeClock(0L),
     ) = SearchPoisonModule(
         queryBankManager = queryBankManager,
-        markovGenerator = markovGenerator,
+        grammarGenerator = grammarGenerator,
         profileRepo = profileRepo,
         webViewPool = webViewPool,
         userAgentPool = userAgentPool,
@@ -89,7 +89,7 @@ class SearchPoisonModuleTest {
         localeManager = localeManager,
         crawlListManager = crawlListManager,
         clock = clock,
-        // nextFloat()=0.99 forces the query-bank branch (never calls markovGenerator.generate);
+        // nextFloat()=0.99 forces the query-bank branch (never calls grammarGenerator.generate);
         // nextBits()=0 makes SEARCH_ENGINES.random(this) deterministic (first engine = google)
         // and the Accept-Language / dwell draws deterministic.
         random = random,

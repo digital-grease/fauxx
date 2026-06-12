@@ -5,7 +5,7 @@ import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
-import com.fauxx.data.querybank.MarkovQueryGenerator
+import com.fauxx.data.querybank.GrammarQueryGenerator
 import com.fauxx.data.querybank.QueryBankManager
 import com.fauxx.data.querybank.QueryBlocklist
 import com.fauxx.data.querybank.SearchRefinements
@@ -108,7 +108,7 @@ private val SEARCH_ENGINES = listOf(
 @Singleton
 class SearchPoisonModule @Inject constructor(
     private val queryBankManager: QueryBankManager,
-    private val markovGenerator: MarkovQueryGenerator,
+    private val grammarGenerator: GrammarQueryGenerator,
     private val profileRepo: PoisonProfileRepository,
     private val webViewPool: PhantomWebViewPool,
     private val userAgentPool: UserAgentPool,
@@ -136,7 +136,7 @@ class SearchPoisonModule @Inject constructor(
      * and inject as seed phrases into the Markov generator.
      */
     private suspend fun injectCustomInterestSeeds() {
-        markovGenerator.clearSeedPhrases()
+        grammarGenerator.clearSeedPhrases()
         val profile = demographicDao.get() ?: return
         val customInterests = profile.getCustomInterests()
         if (customInterests.isEmpty()) return
@@ -144,7 +144,7 @@ class SearchPoisonModule @Inject constructor(
         val mappings = customInterestMapper.mapAll(customInterests)
         for (mapping in mappings) {
             val category = mapping.category ?: continue
-            markovGenerator.injectSeedPhrases(category, listOf(mapping.interest))
+            grammarGenerator.injectSeedPhrases(category, listOf(mapping.interest))
         }
         Timber.d("Injected ${mappings.count { it.category != null }} custom interest seed phrases")
     }
@@ -156,15 +156,17 @@ class SearchPoisonModule @Inject constructor(
     override fun isEnabled(): Boolean = profileRepo.getProfile().searchPoisonEnabled
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
-        // Session goal. Use Markov generator 60% of the time for natural-looking queries.
+        // Session goal. Use the grammar generator 60% of the time for natural-looking, per-install
+        // styled queries (E5 #179); the rest are raw corpus picks. The grammar wraps Markov/corpus
+        // heads, so this keeps naturalness while breaking the shared-corpus fleet signature.
         val goal = if (random.nextFloat() < 0.60f) {
-            markovGenerator.generate(category)
+            grammarGenerator.generate(category)
         } else {
             queryBankManager.randomQuery(category)
         }
 
         // Final safety gate on the goal. If a query reaches here matching the blocklist,
-        // upstream filters (QueryBankManager load-time filter + MarkovQueryGenerator
+        // upstream filters (QueryBankManager load-time filter + GrammarQueryGenerator
         // resample) have failed — log the invariant violation and drop the cycle.
         if (goal.isBlank() || queryBlocklist.isBlocked(goal)) {
             Timber.e(

@@ -77,6 +77,10 @@ class PersonaRotationLayer @Inject constructor(
 
     val currentPersona: Flow<SyntheticPersona?> = _currentPersona.asStateFlow()
 
+    /** Synchronous snapshot of the active persona for hot-path readers (e.g. query generation,
+     *  E4 #179); null until the first persona is generated/restored. */
+    fun activePersona(): SyntheticPersona? = _currentPersona.value
+
     /** Persona that was current before the last rotation; in-memory only (see below). */
     private val _previousPersona = MutableStateFlow<SyntheticPersona?>(null)
 

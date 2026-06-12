@@ -6,13 +6,17 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import javax.inject.Singleton
+import kotlin.random.Random
 
 /** Top-level extension property — creates a single DataStore instance for the app. */
 val Context.fauxxDataStore: DataStore<Preferences> by preferencesDataStore(name = "fauxx_prefs")
@@ -56,6 +60,11 @@ object PreferenceKeys {
     // Adversarial allocation stage (E4 #180). Off by default; a post-combine optimization step,
     // distinct from the L1-L3 layer toggles above.
     val ADVERSARIAL_ALLOCATION_ENABLED = booleanPreferencesKey("adversarial_allocation_enabled")
+
+    // Per-install random seed for the generative-grammar query model (E5 #179). Generated once
+    // and persisted so this install's synthetic query distribution is stable and install-unique
+    // (breaking the shared-corpus fleet signature). Anonymous (a random Long), not user data.
+    val QUERY_GRAMMAR_SEED = androidx.datastore.preferences.core.longPreferencesKey("query_grammar_seed")
 
     // Onboarding
     val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
@@ -103,4 +112,25 @@ object DataStoreModule {
     @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
         context.fauxxDataStore
+
+    /**
+     * Per-install seed for the generative-grammar query model (E5 #179): read once, or generated
+     * and persisted on first launch. A one-time blocking read at injection time, mirroring the DB
+     * passphrase provider in AppModule. The seed is an anonymous random Long, never user data.
+     */
+    @Provides
+    @Singleton
+    fun provideQueryGrammarSeed(dataStore: DataStore<Preferences>): QueryGrammarSeed = runBlocking {
+        val existing = dataStore.data.first()[PreferenceKeys.QUERY_GRAMMAR_SEED]
+        if (existing != null) {
+            QueryGrammarSeed(existing)
+        } else {
+            val seed = Random.Default.nextLong()
+            dataStore.edit { it[PreferenceKeys.QUERY_GRAMMAR_SEED] = seed }
+            QueryGrammarSeed(seed)
+        }
+    }
 }
+
+/** Wrapper so Hilt can inject the per-install query-grammar seed without a qualifier (#179). */
+data class QueryGrammarSeed(val value: Long)
