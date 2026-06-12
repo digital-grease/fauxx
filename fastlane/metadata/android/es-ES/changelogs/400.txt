@@ -1,0 +1,6 @@
+• Nuevo (experimental): Asignación adversaria, un modo de segmentación opcional que dirige el ruido donde más cambia el perfil que un broker de datos infiere de ti
+• Nuevo: importa una cuenta de "control" limpia para medir cuánto ha alejado Fauxx tu perfil publicitario envenenado, visible en el panel
+• Mejorado: personas sintéticas más realistas (basadas en el censo), sesiones de búsqueda de varios pasos más naturales y un ritmo de actividad diario aprendido de tus propias horas de pantalla
+• Mejorado: las consultas de búsqueda ahora se generan por dispositivo, para más variedad y menos huella digital a nivel de toda la base de usuarios
+• Mejorado: el tráfico web sintético presenta una huella de navegador más coherente y difícil de detectar
+• Corrección: "Borrar todos los datos" ahora también elimina el historial de perfiles publicitarios importados, además de varias correcciones de estabilidad

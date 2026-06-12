@@ -1,0 +1,6 @@
+• New (experimental): Adversarial Allocation — an opt-in targeting mode that aims noise where it most changes a data broker's inferred profile of you
+• New: import a clean "control" account to measure how far Fauxx has actually moved your poisoned ad profile, shown on the dashboard
+• Improved: more realistic synthetic personas (census-based), natural multi-step search sessions, and a daily activity rhythm learned from your own screen-on times
+• Improved: search queries are now generated per-device, for more variety and less fleet-wide fingerprinting
+• Improved: synthetic web traffic presents a more consistent, less detectable browser fingerprint
+• Fix: "Delete all data" now also clears imported ad-profile history, plus a range of stability and correctness fixes
