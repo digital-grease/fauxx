@@ -17,7 +17,17 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 /**
- * Hilt module providing OkHttp client with header randomization interceptor.
+ * Hilt module providing the OkHttp client and its interceptors.
+ *
+ * ORPHANED TRANSPORT WARNING (#183): after M1 (#168 / #169) routed the synthetic search path onto
+ * the real Chromium WebView (PhantomWebViewPool), NO engine module consumes the [OkHttpClient]
+ * provided here any more, and DnsNoiseModule uses raw InetAddress. The client,
+ * [BlocklistInterceptor], and [HeaderRandomizerInterceptor] are deliberately kept (they retain
+ * unit-test coverage, and [UserAgentPool] is still live for the WebView path) but have no outbound
+ * consumer. Any NEW OkHttp consumer would ship OkHttp's constant JA3/JA4 TLS fingerprint and fixed
+ * header order, re-opening the exact tell #168 / #169 closed. Route any synthetic or search traffic
+ * through the Chromium WebView, never OkHttp. The OkHttpOrphanGuardTest fails the build if a new
+ * OkHttp request/execution path reappears under app/src/main.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -37,6 +47,12 @@ object NetworkModule {
         localeManager: LocaleManager
     ): HeaderRandomizerInterceptor = HeaderRandomizerInterceptor(uaPool, localeManager)
 
+    /**
+     * Orphaned post-M1 (#183): nothing injects this [OkHttpClient]. Kept for unit-test coverage and
+     * documented future re-wiring. Do NOT add a consumer without routing through the Chromium
+     * WebView, because OkHttp here carries a constant JA3/JA4 fingerprint and fixed header order
+     * (#168 / #169).
+     */
     @Provides
     @Singleton
     fun provideOkHttpClient(

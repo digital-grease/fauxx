@@ -11,7 +11,9 @@ import javax.inject.Singleton
  * Fail-closed blocklist gate for the OkHttp path. Every request made through the
  * injected [OkHttpClient] flows through this interceptor, so no module can issue an
  * HTTP request to a blocked host even if a future call site forgets an upstream
- * check. The WebView path is gated separately by
+ * check. NOTE (#183): post-M1 no engine module currently issues OkHttp requests, so
+ * this gate has no live traffic today; it remains the enforced chokepoint for any
+ * future OkHttp consumer. The WebView path is gated separately by
  * [com.fauxx.engine.webview.PhantomWebViewClient]; together these are the single
  * enforced chokepoints for the blocklist invariant (issue #165).
  *

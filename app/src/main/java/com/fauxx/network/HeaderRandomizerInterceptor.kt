@@ -15,6 +15,10 @@ import kotlin.random.Random
  * Applied to all OkHttp requests made by Fauxx modules. Does not modify requests made by
  * WebView (those are handled by [com.fauxx.engine.webview.PhantomWebViewClient]).
  *
+ * Orphaned post-M1 (#183): no engine module currently makes OkHttp requests, so this interceptor
+ * has no live traffic. It is retained for its locale-coherency tests and for any future OkHttp
+ * consumer, which must still route the TLS path through the WebView to preserve the JA3/JA4 match.
+ *
  * Accept-Language is locale-aware: the active [LocaleManager] locale selects which
  * primary-language strings are eligible for emission. A Spanish-mode install never
  * sends `en-US` as primary, because the mismatch with locale-aware search-engine URL
