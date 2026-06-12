@@ -12,10 +12,15 @@ class ProfileDriftMetricTest {
     private val gson = Gson()
     private val metric = ProfileDriftMetric()
 
-    private fun snap(platform: String, cats: List<String>, at: Long) =
+    private fun snap(
+        platform: String,
+        cats: List<String>,
+        at: Long,
+        series: SnapshotSeries = SnapshotSeries.POISONED,
+    ) =
         ProfileSnapshot(
             platformName = platform, source = SnapshotSource.IMPORT,
-            scrapedCategoriesJson = gson.toJson(cats), capturedAt = at,
+            scrapedCategoriesJson = gson.toJson(cats), capturedAt = at, series = series,
         )
 
     @Test
@@ -46,6 +51,62 @@ class ProfileDriftMetricTest {
         val r = metric.compute(snaps)
         assertEquals(DriftState.AVAILABLE, r.state)
         assertTrue("drift should be positive when the profile changes", r.klDivergence!! > 0.0)
+    }
+
+    // --- Poisoned-vs-control divergence (E3 #172) ---
+
+    @Test
+    fun `control divergence is COLLECTING when there is no control series`() {
+        val r = metric.computeControlDivergence(
+            listOf(snap("google", listOf("GAMING"), 1), snap("google", listOf("COOKING"), 2)),
+        )
+        assertEquals(DriftState.COLLECTING, r.state)
+    }
+
+    @Test
+    fun `control divergence is COLLECTING with a control but no poisoned series`() {
+        val r = metric.computeControlDivergence(
+            listOf(snap("google", listOf("GAMING"), 1, SnapshotSeries.CONTROL)),
+        )
+        assertEquals(DriftState.COLLECTING, r.state)
+    }
+
+    @Test
+    fun `identical latest poisoned and control yields zero divergence`() {
+        val r = metric.computeControlDivergence(
+            listOf(
+                snap("google", listOf("GAMING", "MEDICAL"), 2, SnapshotSeries.POISONED),
+                snap("google", listOf("GAMING", "MEDICAL"), 2, SnapshotSeries.CONTROL),
+            ),
+        )
+        assertEquals(DriftState.AVAILABLE, r.state)
+        assertEquals(0.0, r.klDivergence!!, 1e-9)
+    }
+
+    @Test
+    fun `divergent poisoned and control yields positive divergence`() {
+        val r = metric.computeControlDivergence(
+            listOf(
+                snap("google", listOf("GAMING"), 2, SnapshotSeries.POISONED),
+                snap("google", listOf("COOKING", "TRAVEL"), 2, SnapshotSeries.CONTROL),
+            ),
+        )
+        assertEquals(DriftState.AVAILABLE, r.state)
+        assertTrue(r.klDivergence!! > 0.0)
+    }
+
+    @Test
+    fun `control divergence uses the latest snapshot of each series`() {
+        // Poisoned drifted to COOKING (latest), control stayed at GAMING — latest-of-each diverges.
+        val r = metric.computeControlDivergence(
+            listOf(
+                snap("google", listOf("GAMING"), 1, SnapshotSeries.POISONED),
+                snap("google", listOf("COOKING"), 3, SnapshotSeries.POISONED),
+                snap("google", listOf("GAMING"), 2, SnapshotSeries.CONTROL),
+            ),
+        )
+        assertEquals(DriftState.AVAILABLE, r.state)
+        assertTrue(r.klDivergence!! > 0.0)
     }
 
     @Test

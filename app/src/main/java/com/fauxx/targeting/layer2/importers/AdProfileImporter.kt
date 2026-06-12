@@ -1,6 +1,7 @@
 package com.fauxx.targeting.layer2.importers
 
 import android.net.Uri
+import com.fauxx.targeting.layer2.SnapshotSeries
 
 /**
  * Source of a user-driven Layer 2 ad-profile import.
@@ -71,9 +72,16 @@ interface AdProfileImporter {
     val source: ImportSource
 
     /**
-     * Parse the archive at [uri] and write any extracted categories to
-     * `PlatformProfileCache` under [source].platformId. Idempotent — repeated imports
-     * overwrite the cache entry (the export is the source of truth at import time).
+     * Parse the archive at [uri] and persist any extracted categories.
+     *
+     * For [SnapshotSeries.POISONED] (the default) this overwrites the `PlatformProfileCache` entry
+     * under [source].platformId and appends a poisoned snapshot — idempotent, the export is the
+     * source of truth at import time. For [SnapshotSeries.CONTROL] (issue #172) it appends a
+     * control-series snapshot ONLY and never touches the cache, so the control account can never
+     * influence targeting.
      */
-    suspend fun import(uri: Uri): ImportResult
+    suspend fun import(
+        uri: Uri,
+        series: SnapshotSeries = SnapshotSeries.POISONED,
+    ): ImportResult
 }

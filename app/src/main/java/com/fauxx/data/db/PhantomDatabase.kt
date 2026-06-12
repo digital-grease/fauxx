@@ -16,6 +16,7 @@ import com.fauxx.targeting.layer2.PlatformProfileCache
 import com.fauxx.targeting.layer2.PlatformProfileDao
 import com.fauxx.targeting.layer2.ProfileSnapshot
 import com.fauxx.targeting.layer2.ProfileSnapshotDao
+import com.fauxx.targeting.layer2.SnapshotSeries
 import com.fauxx.targeting.layer2.SnapshotSource
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaHistoryEntity
@@ -39,7 +40,7 @@ import com.fauxx.targeting.layer3.PersonaHistoryEntity
         PersonaHistoryEntity::class,
         CircadianUsageEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(PhantomTypeConverters::class)
@@ -103,6 +104,18 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
+/**
+ * Migration from v6 to v7: add the `series` discriminator to profile_snapshot (issue #172 E3).
+ * Existing rows are the user's poisoned account, so they backfill to POISONED. The NOT NULL +
+ * DEFAULT matches the entity's `@ColumnInfo(defaultValue = "POISONED")` so Room's schema validation
+ * passes.
+ */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `profile_snapshot` ADD COLUMN `series` TEXT NOT NULL DEFAULT 'POISONED'")
+    }
+}
+
 /** Room type converters for enum types. */
 class PhantomTypeConverters {
     @TypeConverter
@@ -126,4 +139,11 @@ class PhantomTypeConverters {
     @TypeConverter
     fun toSnapshotSource(value: String): SnapshotSource =
         runCatching { SnapshotSource.valueOf(value) }.getOrDefault(SnapshotSource.IMPORT)
+
+    @TypeConverter
+    fun fromSnapshotSeries(value: SnapshotSeries): String = value.name
+
+    @TypeConverter
+    fun toSnapshotSeries(value: String): SnapshotSeries =
+        runCatching { SnapshotSeries.valueOf(value) }.getOrDefault(SnapshotSeries.POISONED)
 }

@@ -404,6 +404,8 @@
     <string name="targeting_adversarial_name">Состязательное распределение (эксперимент)</string>
     <string name="targeting_adversarial_description">Направляет шум туда, где он сильнее всего меняет профиль, выводимый брокером, в пределах бюджета правдоподобия</string>
     <string name="targeting_adversarial_status">Требуется включённый Layer 1 или Layer 2</string>
+    <string name="targeting_import_as_control_label">Импортировать как контрольный профиль (A/B)</string>
+    <string name="targeting_import_as_control_description">Сохранить следующий импорт как чистую контрольную учётную запись, которую вы никогда не отравляете, чтобы на панели было видно, насколько ваш отравленный профиль отдалился от неё.</string>
     <string name="targeting_clear_profile_button">Очистить мой профиль</string>
     <string name="targeting_clear_dialog_confirm">Очистить</string>
     <string name="targeting_profile_summary_title">МОЙ ПРОФИЛЬ</string>
@@ -464,6 +466,8 @@
     <string name="dashboard_drift_title">ДРЕЙФ ПРОФИЛЯ</string>
     <string name="dashboard_drift_help">Насколько ваш импортированный профиль рекламных интересов отдалился от первого (базового) импорта, в виде KL-дивергенции. Большее значение означает большее движение. Дрейф также может отражать переобучение модели самой платформой, а не только работу Fauxx, поэтому воспринимайте его как индикатор, а не доказательство.</string>
     <string name="dashboard_drift_collecting">сбор данных…</string>
+    <string name="dashboard_control_divergence_title">ОТРАВЛЕННЫЙ ПРОТИВ КОНТРОЛЯ</string>
+    <string name="dashboard_control_divergence_help">KL-дивергенция между вашим отравленным профилем и импортированным контрольным профилем (чистая учётная запись, которую вы никогда не отравляете). Большее значение означает, что Fauxx сильнее развёл их. Показывается только после импорта контрольного профиля.</string>
     <string name="dashboard_synthetic_activity_title">СИНТЕТИЧЕСКАЯ АКТИВНОСТЬ</string>
     <string name="dashboard_synthetic_activity_help">Среднее число синтетических действий, которые Fauxx генерировал в час за последние 24 часа. Показывает, сколько маскирующего трафика добавляет Fauxx. Это не соотношение с вашей реальной активностью, которую приложение в Android измерить не может.</string>
 </resources>

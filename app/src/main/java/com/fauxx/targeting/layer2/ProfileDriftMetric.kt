@@ -42,6 +42,32 @@ class ProfileDriftMetric @Inject constructor() {
         return DriftResult(DriftState.AVAILABLE, kl(current, baseline))
     }
 
+    /**
+     * Poisoned-vs-control divergence (E3 #172): KL of the latest POISONED ad-interest distribution
+     * from the latest CONTROL one, over the CategoryPool support. COLLECTING until both an imported
+     * poisoned profile and an imported control profile exist. Quantifies how far Fauxx has moved the
+     * poisoned account away from an untouched control account.
+     */
+    fun computeControlDivergence(snapshots: List<ProfileSnapshot>): DriftResult {
+        val poisoned = latestCategories(snapshots, SnapshotSeries.POISONED)
+        val control = latestCategories(snapshots, SnapshotSeries.CONTROL)
+        if (poisoned.isEmpty() || control.isEmpty()) return DriftResult(DriftState.COLLECTING, null)
+        return DriftResult(DriftState.AVAILABLE, kl(poisoned, control))
+    }
+
+    /** Union of the latest snapshot's categories per platform, within one series. */
+    private fun latestCategories(
+        snapshots: List<ProfileSnapshot>,
+        series: SnapshotSeries,
+    ): Set<CategoryPool> =
+        snapshots.asSequence()
+            .filter { it.series == series }
+            .groupBy { it.platformName }
+            .values
+            .mapNotNull { perPlatform -> perPlatform.maxByOrNull { it.capturedAt } }
+            .flatMap { parse(it.scrapedCategoriesJson) }
+            .toSet()
+
     /** KL(current || baseline) over the CategoryPool support, Laplace-smoothed so it stays finite. */
     fun kl(current: Set<CategoryPool>, baseline: Set<CategoryPool>): Double {
         val cats = CategoryPool.values()

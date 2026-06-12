@@ -139,6 +139,34 @@ fun TargetingScreen(
                 onImportFacebook = { viewModel.importFacebookDyi(it) },
                 onDismissResult = { viewModel.dismissImportResult() }
             )
+
+            // #172 E3: route the next import to a clean "control" account for poisoned-vs-control A/B.
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.targeting_import_as_control_label),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontFamily = FontFamily.Monospace
+                        )
+                        Text(
+                            text = stringResource(R.string.targeting_import_as_control_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = uiState.importAsControl,
+                        onCheckedChange = { viewModel.setImportAsControl(it) }
+                    )
+                }
+            }
         }
 
         // Layer 3 toggle

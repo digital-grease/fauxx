@@ -259,6 +259,16 @@ fun DashboardScreen(
 
         // Profile-drift indicator (issue #171 E2)
         DriftCard(driftState = uiState.driftState, kl = uiState.driftKlDivergence)
+
+        // Poisoned-vs-control divergence (issue #172 E3) — shown once a control profile is imported.
+        if (uiState.hasControlSeries) {
+            DriftCard(
+                driftState = uiState.controlDivergenceState,
+                kl = uiState.controlDivergenceKl,
+                title = stringResource(R.string.dashboard_control_divergence_title),
+                help = stringResource(R.string.dashboard_control_divergence_help),
+            )
+        }
     }
 }
 
@@ -585,7 +595,12 @@ private fun SyntheticActivityCard(actionsPerHour: Float) {
 }
 
 @Composable
-private fun DriftCard(driftState: com.fauxx.targeting.layer2.DriftState, kl: Double?) {
+private fun DriftCard(
+    driftState: com.fauxx.targeting.layer2.DriftState,
+    kl: Double?,
+    title: String = stringResource(R.string.dashboard_drift_title),
+    help: String = stringResource(R.string.dashboard_drift_help),
+) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -595,8 +610,8 @@ private fun DriftCard(driftState: com.fauxx.targeting.layer2.DriftState, kl: Dou
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 SectionHeaderWithHelp(
-                    title = stringResource(R.string.dashboard_drift_title),
-                    help = stringResource(R.string.dashboard_drift_help)
+                    title = title,
+                    help = help
                 )
                 Text(
                     text = if (driftState == com.fauxx.targeting.layer2.DriftState.AVAILABLE && kl != null) {
