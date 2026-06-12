@@ -25,7 +25,7 @@ private const val AMPLITUDE = 0.2
  * Shape: cosine over the 24h day, peak at 14:00 ± 3h (persona-keyed), amplitude ±20%.
  * The mean over 24 hours is exactly 1.0, honoring the [RateModulator] honesty contract
  * (issue #76). Returns 1.0 (neutral) when Layer 3 is disabled or no persona is active,
- * via [PersonaRotationLayer.activePersona].
+ * via [PersonaRotationLayer.personaForChannel] for [PersonaChannel.RHYTHM].
  */
 @Singleton
 class PersonaRateModulator @Inject constructor(
