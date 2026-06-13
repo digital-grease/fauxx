@@ -1,0 +1,2 @@
+• Corrección: Fauxx ahora sigue funcionando cuando lo deslizas para quitarlo de las aplicaciones recientes, en lugar de detenerse silenciosamente en segundo plano; la notificación de estado también se actualiza de inmediato cuando la actividad se pausa o se reanuda
+• Mantenimiento: actualizaciones internas de dependencias y de compilación

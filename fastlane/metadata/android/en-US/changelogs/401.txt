@@ -1,0 +1,2 @@
+• Fix: Fauxx now keeps running when you swipe it out of your recent apps, instead of quietly stopping in the background; the status notification also updates immediately when activity pauses or resumes
+• Maintenance: under-the-hood dependency and build updates
