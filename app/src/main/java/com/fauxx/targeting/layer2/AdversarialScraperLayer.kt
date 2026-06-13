@@ -11,14 +11,14 @@ import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Weight for categories the platform has explicitly assigned to the user — suppress these. */
-private const val CONFIRMED_WEIGHT = 0.05f
+/** Weight for categories the platform has explicitly assigned to the user — boost these. */
+private const val CONFIRMED_WEIGHT = 3.0f
 
 /** Weight for confirmed categories not moving across snapshots ("won't budge"): push harder. */
-private const val STICKY_CONFIRMED_WEIGHT = 0.02f
+private const val STICKY_CONFIRMED_WEIGHT = 5.0f
 
-/** Weight for categories absent from the platform profile — boost these. */
-private const val ABSENT_WEIGHT = 3.0f
+/** Weight for categories absent from the platform profile — suppress these. */
+private const val ABSENT_WEIGHT = 0.05f
 
 /** Neutral weight used when scraper is disabled or data is stale. */
 private const val NEUTRAL_WEIGHT = 1.0f

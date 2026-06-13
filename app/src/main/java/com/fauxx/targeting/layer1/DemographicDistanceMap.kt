@@ -10,10 +10,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** Weight assigned to categories considered "close" to the user's actual demographics. */
-private const val CLOSE_WEIGHT = 0.15f
+private const val CLOSE_WEIGHT = 2.5f
 
 /** Weight assigned to categories considered "distant" from the user's actual demographics. */
-private const val DISTANT_WEIGHT = 2.5f
+private const val DISTANT_WEIGHT = 0.15f
 
 /** Weight for categories with no specific mapping in the rules. */
 private const val NEUTRAL_WEIGHT = 1.0f

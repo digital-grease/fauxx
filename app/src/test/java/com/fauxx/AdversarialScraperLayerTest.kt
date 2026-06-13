@@ -54,21 +54,21 @@ class AdversarialScraperLayerTest {
     }
 
     @Test
-    fun `confirmed categories get 0_05 weight`() = runTest {
+    fun `confirmed categories get 3_0 weight`() = runTest {
         val layer = layer(daoWith(profile("google", listOf("GAMING", "MEDICAL"))))
         layer.setEnabled(true)
         val weights = layer.getWeights().first()
-        assertEquals(0.05f, weights[CategoryPool.GAMING]!!, 0.001f)
-        assertEquals(0.05f, weights[CategoryPool.MEDICAL]!!, 0.001f)
+        assertEquals(3.0f, weights[CategoryPool.GAMING]!!, 0.001f)
+        assertEquals(3.0f, weights[CategoryPool.MEDICAL]!!, 0.001f)
     }
 
     @Test
-    fun `absent categories get 3_0 weight`() = runTest {
+    fun `absent categories get 0_05 weight`() = runTest {
         val layer = layer(daoWith(profile("google", listOf("GAMING"))))
         layer.setEnabled(true)
         val weights = layer.getWeights().first()
-        assertEquals(3.0f, weights[CategoryPool.RETIREMENT]!!, 0.001f)
-        assertEquals(3.0f, weights[CategoryPool.COOKING]!!, 0.001f)
+        assertEquals(0.05f, weights[CategoryPool.RETIREMENT]!!, 0.001f)
+        assertEquals(0.05f, weights[CategoryPool.COOKING]!!, 0.001f)
     }
 
     @Test
@@ -95,9 +95,9 @@ class AdversarialScraperLayerTest {
         val layer = layer(daoWith(profile("google", listOf("GAMING")), profile("facebook", listOf("MEDICAL"))))
         layer.setEnabled(true)
         val weights = layer.getWeights().first()
-        assertEquals(0.05f, weights[CategoryPool.GAMING]!!, 0.001f)
-        assertEquals(0.05f, weights[CategoryPool.MEDICAL]!!, 0.001f)
-        assertTrue(weights[CategoryPool.COOKING]!! == 3.0f)
+        assertEquals(3.0f, weights[CategoryPool.GAMING]!!, 0.001f)
+        assertEquals(3.0f, weights[CategoryPool.MEDICAL]!!, 0.001f)
+        assertTrue(weights[CategoryPool.COOKING]!! == 0.05f)
     }
 
     @Test
@@ -111,8 +111,8 @@ class AdversarialScraperLayerTest {
         val layer = layer(daoWith(profile("google", listOf("GAMING", "MEDICAL"))), snaps)
         layer.setEnabled(true)
         val weights = layer.getWeights().first()
-        assertEquals("sticky confirmed category is pushed harder", 0.02f, weights[CategoryPool.GAMING]!!, 0.001f)
-        assertEquals("non-sticky confirmed stays at standard suppression", 0.05f, weights[CategoryPool.MEDICAL]!!, 0.001f)
+        assertEquals("sticky confirmed category is pushed harder", 5.0f, weights[CategoryPool.GAMING]!!, 0.001f)
+        assertEquals("non-sticky confirmed stays at standard boost", 3.0f, weights[CategoryPool.MEDICAL]!!, 0.001f)
     }
 
     @Test
@@ -120,7 +120,7 @@ class AdversarialScraperLayerTest {
         val snaps = listOf(snapshot("google", listOf("GAMING"), at = 1_000))
         val layer = layer(daoWith(profile("google", listOf("GAMING"))), snaps)
         layer.setEnabled(true)
-        // Only one snapshot -> no drift comparison -> standard 0.05, not 0.02.
-        assertEquals(0.05f, layer.getWeights().first()[CategoryPool.GAMING]!!, 0.001f)
+        // Only one snapshot -> no drift comparison -> standard 3.0, not 5.0.
+        assertEquals(3.0f, layer.getWeights().first()[CategoryPool.GAMING]!!, 0.001f)
     }
 }

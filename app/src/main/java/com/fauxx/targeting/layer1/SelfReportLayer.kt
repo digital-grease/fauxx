@@ -7,7 +7,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** Weight applied to categories the user explicitly selected or that mapped from custom interests. */
-private const val SELF_REPORTED_CLOSE_WEIGHT = 0.15f
+private const val SELF_REPORTED_CLOSE_WEIGHT = 1000.0f
+
+/** Minimum weight for non-selected categories. */
+private const val NON_SELECTED_WEIGHT = 0.001f
 
 /**
  * Light suppression applied across ALL categories when a custom interest can't be mapped
@@ -50,8 +53,7 @@ class SelfReportLayer @Inject constructor(
 
     /**
      * Overlay chip-selected and custom interests onto the demographic distance weights.
-     * Interest-matched categories get suppressed (CLOSE weight) since they represent
-     * the user's real interests.
+     * Interest-matched categories get boosted since they represent the user's real interests.
      */
     private fun applyInterests(
         baseWeights: Map<CategoryPool, Float>,
@@ -72,10 +74,12 @@ class SelfReportLayer @Inject constructor(
 
         return baseWeights.mapValues { (category, weight) ->
             when {
-                // Explicit interest → suppress (take the more suppressive of base vs interest)
-                category in allCloseCategories -> minOf(weight, SELF_REPORTED_CLOSE_WEIGHT)
+                // Explicit interest → boost (take the higher of base vs interest)
+                category in allCloseCategories -> maxOf(weight, SELF_REPORTED_CLOSE_WEIGHT)
                 // Unmapped custom interests → light global suppression
                 hasUnmapped -> weight * UNMAPPED_GLOBAL_SUPPRESSION
+                // If there are explicit interests but this category isn't one of them, suppress it strongly
+                allCloseCategories.isNotEmpty() -> NON_SELECTED_WEIGHT
                 else -> weight
             }
         }
