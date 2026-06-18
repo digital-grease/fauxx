@@ -39,3 +39,17 @@
 
 # Error-prone annotations are compile-time only; missing at runtime is expected
 -dontwarn com.google.errorprone.annotations.**
+
+# LAN sync (E13 #178): JNA reflectively accesses its mapped classes and native
+# callback structures, and lazysodium binds to libsodium through JNA. R8 would
+# otherwise strip/rename these and crash only in the minified release build.
+-keep class com.sun.jna.** { *; }
+-keepclassmembers class * extends com.sun.jna.* { *; }
+-keep class com.goterl.lazysodium.** { *; }
+-dontwarn com.sun.jna.**
+-dontwarn java.awt.*
+
+# LAN sync Gson + Room models (kept so R8 cannot rename the fields Gson reflects
+# over for the wire schema, nor the paired_peers entity columns).
+-keep class com.fauxx.sync.wire.PairingPayload { *; }
+-keep class com.fauxx.sync.data.PairedPeerEntity { *; }

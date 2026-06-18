@@ -105,6 +105,17 @@ class PhantomDatabaseMigrationTest {
                 "MIGRATION_6_7 must add profile_snapshot.series",
                 columnExists(sdb, "profile_snapshot", "series")
             )
+            // MIGRATION_7_8 created the LAN sync tables (issue #178 E13).
+            sdb.query(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='paired_peers'"
+            ).use { c ->
+                assertTrue("MIGRATION_7_8 must create paired_peers", c.moveToFirst())
+            }
+            sdb.query(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='synced_personas'"
+            ).use { c ->
+                assertTrue("MIGRATION_7_8 must create synced_personas", c.moveToFirst())
+            }
         } finally {
             db.close()
         }
@@ -145,6 +156,13 @@ class PhantomDatabaseMigrationTest {
                 "fresh create must include profile_snapshot.series",
                 columnExists(sdb, "profile_snapshot", "series")
             )
+            // A fresh create at v8 ships the LAN sync tables directly (issue #178 E13).
+            sdb.query("SELECT name FROM sqlite_master WHERE type='table' AND name='paired_peers'").use { c ->
+                assertTrue("fresh create must include paired_peers", c.moveToFirst())
+            }
+            sdb.query("SELECT name FROM sqlite_master WHERE type='table' AND name='synced_personas'").use { c ->
+                assertTrue("fresh create must include synced_personas", c.moveToFirst())
+            }
         } finally {
             db.close()
         }
@@ -153,7 +171,7 @@ class PhantomDatabaseMigrationTest {
     private fun buildRoomDatabase(): PhantomDatabase =
         Room.databaseBuilder(context, PhantomDatabase::class.java, TEST_DB)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
             .build()
 
     /**

@@ -48,6 +48,13 @@ android {
             useSupportLibrary = true
         }
 
+        ndk {
+            // E13 (#178) adds JNA, whose AAR bundles legacy ABIs (mips, mips64, armeabi) that
+            // Android no longer supports. Restrict packaging to the standard supported ABIs so the
+            // APK does not ship dead native libraries; these match the ABIs SQLCipher already ships.
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+        }
+
         // Locales whose UI strings, query banks, harmful_queries blocklists, persona
         // templates, and crawl URL sets have shipped to production. The Settings language
         // picker enables only entries in this list; selecting a non-shipped locale is
@@ -223,6 +230,18 @@ dependencies {
     // Gson
     implementation(libs.gson)
 
+    // LAN sync (E13 #178): X25519 sealed channel (lazysodium wraps libsodium, wire-
+    // compatible with the desktop dryoc build) plus offline QR scan/generate (ZXing).
+    // JNA MUST be the Android AAR variant so the native .so files are packaged; the
+    // plain JVM jar resolves but throws UnsatisfiedLinkError at runtime. lazysodium-android's
+    // POM pulls that plain jar transitively, so exclude it or it collides with the explicit
+    // AAR below (duplicate com.sun.jna.* classes at dex merge).
+    implementation(libs.lazysodium.android) {
+        exclude(group = "net.java.dev.jna", module = "jna")
+    }
+    implementation(libs.jna) { artifact { type = "aar" } }
+    implementation(libs.zxing.embedded)
+
     // Logging
     implementation(libs.timber)
 
@@ -303,6 +322,19 @@ kover {
                     "com.fauxx.ui.screens.*",
                     "com.fauxx.ui.components.*",
                     "com.fauxx.ui.theme.*",
+                    "com.fauxx.ui.sync.*",
+                    // E13 LAN sync: native crypto (lazysodium), raw-socket transport, NsdManager
+                    // discovery, QR pairing, and the foreground service are all exercised by
+                    // instrumented androidTests (native lib + sockets + multicast need a device),
+                    // which this unit-coverage measurement cannot observe. The pure byte/JSON
+                    // codecs (com.fauxx.sync.wire.*) and the paired-peer data layer
+                    // (com.fauxx.sync.data.*) stay measured: they have fast JVM unit tests.
+                    "com.fauxx.sync.crypto.*",
+                    "com.fauxx.sync.transport.*",
+                    "com.fauxx.sync.discovery.*",
+                    "com.fauxx.sync.pairing.*",
+                    "com.fauxx.sync.SealedChannel",
+                    "com.fauxx.service.SyncForegroundService",
                 )
             }
         }

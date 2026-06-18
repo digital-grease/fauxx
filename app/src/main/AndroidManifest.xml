@@ -7,6 +7,14 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
+    <!-- Encrypted LAN persona sync (E13 #178). CHANGE_WIFI_MULTICAST_STATE lets us
+         hold a MulticastLock so NsdManager can receive inbound mDNS multicast (Android
+         drops it by default). CAMERA is requested at runtime only when the user taps
+         "Scan to pair"; a manual paste fallback exists, so the camera is not required. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+
     <!-- Location spoofing -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -18,6 +26,13 @@
          src/play/AndroidManifest.xml and src/full/AndroidManifest.xml) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- LAN sync runs as a SHORT, user-initiated dataSync foreground session (the user is
+         on the Sync screen). dataSync's ~6h/24h cap (Android 14+) is irrelevant here: a
+         household pairing/push finishes in seconds and the service is torn down when the
+         user leaves. This is the documented FGS type for a user-initiated local data
+         transfer, distinct from the always-on engine's specialUse service. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Boot receiver -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -59,6 +74,15 @@
         <service
             android:name=".service.PhantomForegroundService"
             android:exported="false" />
+
+        <!-- Encrypted LAN persona sync session (E13 #178). A user-initiated dataSync
+             foreground service that holds the MulticastLock, advertises/browses over
+             NsdManager, and runs the inbound sealed-frame listener only while the user
+             has sync enabled. Never auto-started at boot. -->
+        <service
+            android:name=".service.SyncForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- Boot receiver -->
         <receiver

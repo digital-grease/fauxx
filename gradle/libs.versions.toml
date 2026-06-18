@@ -31,6 +31,12 @@ robolectric = "4.16.1"
 kotest = "6.1.11"
 timber = "5.0.1"
 appcompat = "1.7.1"
+# LAN sync (E13 #178). lazysodium-android 5.2.0 declares jna 5.17.0 in its POM; we
+# pin the JNA *Android AAR* at that exact version so the bundled libsodiumjni.so /
+# libjnidispatch.so ship per ABI (the plain JVM jar would throw UnsatisfiedLinkError).
+lazysodium = "5.2.0"
+jna = "5.17.0"
+zxingEmbedded = "4.3.0"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -80,6 +86,9 @@ timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "tim
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
+lazysodium-android = { group = "com.goterl", name = "lazysodium-android", version.ref = "lazysodium" }
+jna = { group = "net.java.dev.jna", name = "jna", version.ref = "jna" }
+zxing-embedded = { group = "com.journeyapps", name = "zxing-android-embedded", version.ref = "zxingEmbedded" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
