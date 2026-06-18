@@ -324,17 +324,19 @@ kover {
                     "com.fauxx.ui.theme.*",
                     "com.fauxx.ui.sync.*",
                     // E13 LAN sync: native crypto (lazysodium), raw-socket transport, NsdManager
-                    // discovery, QR pairing, and the foreground service are all exercised by
-                    // instrumented androidTests (native lib + sockets + multicast need a device),
-                    // which this unit-coverage measurement cannot observe. The pure byte/JSON
-                    // codecs (com.fauxx.sync.wire.*) and the paired-peer data layer
-                    // (com.fauxx.sync.data.*) stay measured: they have fast JVM unit tests.
+                    // discovery, QR pairing, the foreground service, and the Room-backed data layer
+                    // are all exercised by instrumented androidTests (native lib + sockets +
+                    // multicast + a real SQLCipher DB need a device), which this unit-coverage
+                    // measurement cannot observe. The pure byte/JSON codecs (the rest of
+                    // com.fauxx.sync.wire.*) stay measured: they have fast JVM unit tests.
                     "com.fauxx.sync.crypto.*",
                     "com.fauxx.sync.transport.*",
                     "com.fauxx.sync.discovery.*",
                     "com.fauxx.sync.pairing.*",
-                    "com.fauxx.sync.SealedChannel",
-                    "com.fauxx.service.SyncForegroundService",
+                    "com.fauxx.sync.data.*",
+                    "com.fauxx.sync.SealedChannel*",
+                    "com.fauxx.sync.wire.Fingerprint*",
+                    "com.fauxx.service.SyncForegroundService*",
                 )
             }
         }
