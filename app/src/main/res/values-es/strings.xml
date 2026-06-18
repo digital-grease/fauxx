@@ -332,6 +332,37 @@
     <string name="settings_clear_all_data_button">Borrar todos los datos</string>
     <string name="settings_export_debug_logs_button">Exportar registros de depuración</string>
     <string name="settings_about_privacy_button">Información y política de privacidad</string>
+    <string name="settings_lan_sync_button">Sincronización LAN</string>
+
+    <!-- LAN sync screen (E13 #178) -->
+    <string name="sync_enable_title">Activar sincronización por LAN</string>
+    <string name="sync_my_qr_title">Mi QR de emparejamiento</string>
+    <string name="sync_qr_content_desc">QR de emparejamiento de este dispositivo</string>
+    <string name="sync_fingerprint_label">Huella: %1$s</string>
+    <string name="sync_qr_hint">Haz que el otro dispositivo escanee este, o escanea el suyo.</string>
+    <string name="sync_scan_button">Escanear para emparejar</string>
+    <string name="sync_paste_button">Pegar carga útil</string>
+    <string name="sync_push_button">Enviar persona actual a los dispositivos emparejados</string>
+    <string name="sync_paired_header">Dispositivos emparejados</string>
+    <string name="sync_discovered_header">Detectados en esta red</string>
+    <string name="sync_none_yet">Ninguno todavía.</string>
+    <string name="sync_revoke_button">Revocar</string>
+    <string name="sync_no_fingerprint">(sin huella anunciada)</string>
+    <string name="sync_paste_dialog_title">Pegar carga útil de emparejamiento</string>
+    <string name="sync_paste_field_label">Carga útil base64url</string>
+    <string name="sync_pair_button">Emparejar</string>
+    <string name="sync_cancel_button">Cancelar</string>
+    <string name="sync_scan_prompt">Escanea el QR de emparejamiento de Fauxx del otro dispositivo</string>
+    <string name="sync_status_enabled">Sincronización activada. Visible en esta red.</string>
+    <string name="sync_status_stopped">Sincronización detenida.</string>
+    <string name="sync_status_paired">Emparejado con %1$s (%2$s)</string>
+    <string name="sync_status_pair_failed">Error de emparejamiento: %1$s</string>
+    <string name="sync_status_removed">%1$s eliminado</string>
+    <string name="sync_status_no_peers">No hay pares emparejados a los que enviar.</string>
+    <string name="sync_status_no_persona">Aún no hay persona local para enviar.</string>
+    <string name="sync_status_push_result">Enviado a %1$d de %2$d par(es)</string>
+    <string name="sync_status_push_result_failures">Enviado a %1$d de %2$d par(es); sin ruta a %3$s</string>
+    <string name="sync_status_imported">Persona señuelo importada %1$s (%2$s)</string>
     <string name="settings_version_info">Fauxx v%1$s (compilación %2$d)</string>
     <string name="settings_clear_dialog_title">¿Borrar todos los datos?</string>
     <string name="settings_clear_dialog_body">Esto eliminará permanentemente:\n• Todos los registros de acciones\n• Tu perfil demográfico\n• La caché de perfiles publicitarios\n• El historial de personas sintéticas\n\nTodos los ajustes se restablecerán a sus valores por defecto. El motor se detendrá y volverá a la Capa 0 (ruido uniforme).\n\nEsto no se puede deshacer.</string>

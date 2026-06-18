@@ -60,6 +60,7 @@ import kotlin.math.roundToInt
 @Composable
 fun SettingsScreen(
     onNavigateToAbout: () -> Unit = {},
+    onNavigateToSync: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -486,6 +487,17 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(stringResource(R.string.settings_export_debug_logs_button), color = MaterialTheme.colorScheme.onSurface)
+        }
+
+        // LAN sync (E13 #178)
+        Button(
+            onClick = onNavigateToSync,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.settings_lan_sync_button), color = MaterialTheme.colorScheme.onSurface)
         }
 
         // About & Privacy

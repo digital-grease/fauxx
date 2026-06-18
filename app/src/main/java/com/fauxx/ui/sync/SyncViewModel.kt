@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fauxx.R
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.service.SyncForegroundService
 import com.fauxx.sync.data.PairedPeer
@@ -84,7 +85,7 @@ class SyncViewModel @Inject constructor(
             .onEach { personas ->
                 personas.firstOrNull()?.let {
                     _uiState.value = _uiState.value.copy(
-                        lastImport = "Imported decoy persona ${it.name} (${it.id.take(8)})"
+                        lastImport = appContext.getString(R.string.sync_status_imported, it.name, it.id.take(8))
                     )
                 }
             }
@@ -96,7 +97,9 @@ class SyncViewModel @Inject constructor(
         if (enabled) SyncForegroundService.start(appContext) else SyncForegroundService.stop(appContext)
         _uiState.value = _uiState.value.copy(
             syncEnabled = enabled,
-            statusMessage = if (enabled) "Sync enabled. Discoverable on this network." else "Sync stopped."
+            statusMessage = appContext.getString(
+                if (enabled) R.string.sync_status_enabled else R.string.sync_status_stopped
+            )
         )
     }
 
@@ -106,8 +109,8 @@ class SyncViewModel @Inject constructor(
             val result = runCatching { pairingManager.completePairing(payload) }
             _uiState.value = _uiState.value.copy(
                 statusMessage = result.fold(
-                    onSuccess = { "Paired with ${it.name} (${it.fingerprint})" },
-                    onFailure = { "Pairing failed: ${it.message}" }
+                    onSuccess = { appContext.getString(R.string.sync_status_paired, it.name, it.fingerprint) },
+                    onFailure = { appContext.getString(R.string.sync_status_pair_failed, it.message ?: "") }
                 )
             )
         }
@@ -117,7 +120,9 @@ class SyncViewModel @Inject constructor(
     fun revoke(peer: PairedPeer) {
         viewModelScope.launch {
             pairedPeerRepository.unpair(peer.publicKey)
-            _uiState.value = _uiState.value.copy(statusMessage = "Removed ${peer.name}")
+            _uiState.value = _uiState.value.copy(
+                statusMessage = appContext.getString(R.string.sync_status_removed, peer.name)
+            )
         }
     }
 
@@ -126,23 +131,28 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             val peers = pairedPeers.value
             if (peers.isEmpty()) {
-                _uiState.value = _uiState.value.copy(statusMessage = "No paired peers to push to.")
+                _uiState.value = _uiState.value.copy(
+                    statusMessage = appContext.getString(R.string.sync_status_no_peers)
+                )
                 return@launch
             }
             val persona = latestLocalPersona()
             if (persona == null) {
-                _uiState.value = _uiState.value.copy(statusMessage = "No local persona to push yet.")
+                _uiState.value = _uiState.value.copy(
+                    statusMessage = appContext.getString(R.string.sync_status_no_persona)
+                )
                 return@launch
             }
             val result = tcpClient.pushPersonaToAll(persona, peers)
-            _uiState.value = _uiState.value.copy(
-                statusMessage = buildString {
-                    append("Pushed to ${result.sent} of ${peers.size} peer(s)")
-                    if (result.failedPeerNames.isNotEmpty()) {
-                        append("; no route to ${result.failedPeerNames.joinToString()}")
-                    }
-                }
-            )
+            val message = if (result.failedPeerNames.isEmpty()) {
+                appContext.getString(R.string.sync_status_push_result, result.sent, peers.size)
+            } else {
+                appContext.getString(
+                    R.string.sync_status_push_result_failures,
+                    result.sent, peers.size, result.failedPeerNames.joinToString()
+                )
+            }
+            _uiState.value = _uiState.value.copy(statusMessage = message)
         }
     }
 

@@ -332,6 +332,37 @@
     <string name="settings_clear_all_data_button">Effacer toutes les données</string>
     <string name="settings_export_debug_logs_button">Exporter les journaux de débogage</string>
     <string name="settings_about_privacy_button">À propos et politique de confidentialité</string>
+    <string name="settings_lan_sync_button">Synchronisation LAN</string>
+
+    <!-- LAN sync screen (E13 #178) -->
+    <string name="sync_enable_title">Activer la synchronisation LAN</string>
+    <string name="sync_my_qr_title">Mon QR d\'appairage</string>
+    <string name="sync_qr_content_desc">QR d\'appairage de cet appareil</string>
+    <string name="sync_fingerprint_label">Empreinte : %1$s</string>
+    <string name="sync_qr_hint">Faites scanner ceci par l\'autre appareil, ou scannez le sien.</string>
+    <string name="sync_scan_button">Scanner pour appairer</string>
+    <string name="sync_paste_button">Coller la charge utile</string>
+    <string name="sync_push_button">Envoyer la persona actuelle aux appareils appairés</string>
+    <string name="sync_paired_header">Appareils appairés</string>
+    <string name="sync_discovered_header">Découverts sur ce réseau</string>
+    <string name="sync_none_yet">Aucun pour l\'instant.</string>
+    <string name="sync_revoke_button">Révoquer</string>
+    <string name="sync_no_fingerprint">(aucune empreinte annoncée)</string>
+    <string name="sync_paste_dialog_title">Coller la charge utile d\'appairage</string>
+    <string name="sync_paste_field_label">Charge utile base64url</string>
+    <string name="sync_pair_button">Appairer</string>
+    <string name="sync_cancel_button">Annuler</string>
+    <string name="sync_scan_prompt">Scannez le QR d\'appairage Fauxx de l\'autre appareil</string>
+    <string name="sync_status_enabled">Synchronisation activée. Visible sur ce réseau.</string>
+    <string name="sync_status_stopped">Synchronisation arrêtée.</string>
+    <string name="sync_status_paired">Appairé avec %1$s (%2$s)</string>
+    <string name="sync_status_pair_failed">Échec de l\'appairage : %1$s</string>
+    <string name="sync_status_removed">%1$s supprimé</string>
+    <string name="sync_status_no_peers">Aucun pair appairé vers qui envoyer.</string>
+    <string name="sync_status_no_persona">Aucune persona locale à envoyer pour l\'instant.</string>
+    <string name="sync_status_push_result">Envoyé à %1$d pair(s) sur %2$d</string>
+    <string name="sync_status_push_result_failures">Envoyé à %1$d pair(s) sur %2$d ; aucune route vers %3$s</string>
+    <string name="sync_status_imported">Persona leurre %1$s importée (%2$s)</string>
     <string name="settings_version_info">Fauxx v%1$s (build %2$d)</string>
     <string name="settings_clear_dialog_title">Effacer toutes les données ?</string>
     <string name="settings_clear_dialog_body">Cela supprimera définitivement :\n• Tous les journaux d\'actions\n• Ton profil démographique\n• Le cache des profils publicitaires\n• L\'historique des personas générés\n\nTous les paramètres seront réinitialisés à leurs valeurs par défaut. Le moteur s\'arrêtera et reviendra à la Couche 0 (bruit uniforme).\n\nCette action est irréversible.</string>

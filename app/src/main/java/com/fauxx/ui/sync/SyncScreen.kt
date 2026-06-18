@@ -32,9 +32,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.R
 import com.fauxx.sync.discovery.DiscoveredPeer
 import com.fauxx.sync.data.PairedPeer
 import com.journeyapps.barcodescanner.ScanContract
@@ -53,11 +55,12 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
     val discovered by viewModel.discoveredPeers.collectAsState()
 
     var showPasteDialog by remember { mutableStateOf(false) }
+    val scanPrompt = stringResource(R.string.sync_scan_prompt)
 
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         result.contents?.let { viewModel.completePairing(it) }
     }
-    val launchScan = { scanLauncher.launch(QrScanOptionsFactory.pairingScan()) }
+    val launchScan = { scanLauncher.launch(QrScanOptionsFactory.pairingScan(scanPrompt)) }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -81,7 +84,7 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Enable LAN sync", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.sync_enable_title), style = MaterialTheme.typography.titleMedium)
                 Switch(checked = state.syncEnabled, onCheckedChange = { viewModel.setSyncEnabled(it) })
             }
         }
@@ -93,19 +96,22 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("My pairing QR", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.sync_my_qr_title), style = MaterialTheme.typography.titleSmall)
                     state.qrBitmap?.let { bmp ->
                         Image(
                             bitmap = bmp.asImageBitmap(),
-                            contentDescription = "This device's pairing QR",
+                            contentDescription = stringResource(R.string.sync_qr_content_desc),
                             modifier = Modifier.size(240.dp)
                         )
                     }
                     state.fingerprint?.let {
-                        Text("Fingerprint: $it", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            stringResource(R.string.sync_fingerprint_label, it),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                     Text(
-                        "Have the other device scan this, or scan theirs.",
+                        stringResource(R.string.sync_qr_hint),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -117,9 +123,11 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(onClick = onScanClicked, modifier = Modifier.weight(1f)) { Text("Scan to pair") }
+                Button(onClick = onScanClicked, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.sync_scan_button))
+                }
                 OutlinedButton(onClick = { showPasteDialog = true }, modifier = Modifier.weight(1f)) {
-                    Text("Paste payload")
+                    Text(stringResource(R.string.sync_paste_button))
                 }
             }
         }
@@ -129,7 +137,7 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
                 onClick = { viewModel.pushCurrentPersonaToAll() },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = paired.isNotEmpty()
-            ) { Text("Push current persona to paired devices") }
+            ) { Text(stringResource(R.string.sync_push_button)) }
         }
 
         state.statusMessage?.let { msg ->
@@ -140,17 +148,17 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
         }
 
         item { HorizontalDivider() }
-        item { Text("Paired devices", style = MaterialTheme.typography.titleSmall) }
+        item { Text(stringResource(R.string.sync_paired_header), style = MaterialTheme.typography.titleSmall) }
         if (paired.isEmpty()) {
-            item { Text("None yet.", style = MaterialTheme.typography.bodySmall) }
+            item { Text(stringResource(R.string.sync_none_yet), style = MaterialTheme.typography.bodySmall) }
         } else {
             items(paired, key = { it.publicKey }) { peer -> PairedPeerRow(peer) { viewModel.revoke(peer) } }
         }
 
         item { HorizontalDivider() }
-        item { Text("Discovered on this network", style = MaterialTheme.typography.titleSmall) }
+        item { Text(stringResource(R.string.sync_discovered_header), style = MaterialTheme.typography.titleSmall) }
         if (discovered.isEmpty()) {
-            item { Text("None yet.", style = MaterialTheme.typography.bodySmall) }
+            item { Text(stringResource(R.string.sync_none_yet), style = MaterialTheme.typography.bodySmall) }
         } else {
             items(discovered, key = { it.name }) { peer -> DiscoveredPeerRow(peer) }
         }
@@ -178,7 +186,7 @@ private fun PairedPeerRow(peer: PairedPeer, onRevoke: () -> Unit) {
             Text(peer.name, style = MaterialTheme.typography.bodyMedium)
             Text(peer.fingerprint, style = MaterialTheme.typography.bodySmall)
         }
-        TextButton(onClick = onRevoke) { Text("Revoke") }
+        TextButton(onClick = onRevoke) { Text(stringResource(R.string.sync_revoke_button)) }
     }
 }
 
@@ -187,7 +195,7 @@ private fun DiscoveredPeerRow(peer: DiscoveredPeer) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(peer.name, style = MaterialTheme.typography.bodyMedium)
         Text(
-            peer.fingerprint ?: "(no fingerprint advertised)",
+            peer.fingerprint ?: stringResource(R.string.sync_no_fingerprint),
             style = MaterialTheme.typography.bodySmall
         )
     }
@@ -198,16 +206,20 @@ private fun PastePayloadDialog(onDismiss: () -> Unit, onPair: (String) -> Unit) 
     var text by remember { mutableStateOf("") }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Paste pairing payload") },
+        title = { Text(stringResource(R.string.sync_paste_dialog_title)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = { Text("base64url payload") },
+                label = { Text(stringResource(R.string.sync_paste_field_label)) },
                 modifier = Modifier.fillMaxWidth()
             )
         },
-        confirmButton = { TextButton(onClick = { onPair(text.trim()) }, enabled = text.isNotBlank()) { Text("Pair") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = {
+            TextButton(onClick = { onPair(text.trim()) }, enabled = text.isNotBlank()) {
+                Text(stringResource(R.string.sync_pair_button))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.sync_cancel_button)) } }
     )
 }

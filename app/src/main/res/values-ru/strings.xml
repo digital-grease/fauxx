@@ -393,6 +393,37 @@
     <string name="settings_clear_all_data_button">Очистить все данные</string>
     <string name="settings_export_debug_logs_button">Экспортировать отладочные логи</string>
     <string name="settings_about_privacy_button">О приложении и приватность</string>
+    <string name="settings_lan_sync_button">Синхронизация по локальной сети</string>
+
+    <!-- LAN sync screen (E13 #178) -->
+    <string name="sync_enable_title">Включить синхронизацию по LAN</string>
+    <string name="sync_my_qr_title">Мой QR для сопряжения</string>
+    <string name="sync_qr_content_desc">QR этого устройства для сопряжения</string>
+    <string name="sync_fingerprint_label">Отпечаток: %1$s</string>
+    <string name="sync_qr_hint">Дайте другому устройству отсканировать этот код или отсканируйте его код.</string>
+    <string name="sync_scan_button">Сканировать для сопряжения</string>
+    <string name="sync_paste_button">Вставить данные</string>
+    <string name="sync_push_button">Отправить текущую личность на сопряжённые устройства</string>
+    <string name="sync_paired_header">Сопряжённые устройства</string>
+    <string name="sync_discovered_header">Обнаружены в этой сети</string>
+    <string name="sync_none_yet">Пока нет.</string>
+    <string name="sync_revoke_button">Отозвать</string>
+    <string name="sync_no_fingerprint">(отпечаток не объявлен)</string>
+    <string name="sync_paste_dialog_title">Вставить данные сопряжения</string>
+    <string name="sync_paste_field_label">Данные base64url</string>
+    <string name="sync_pair_button">Связать</string>
+    <string name="sync_cancel_button">Отмена</string>
+    <string name="sync_scan_prompt">Отсканируйте QR сопряжения Fauxx другого устройства</string>
+    <string name="sync_status_enabled">Синхронизация включена. Доступно для обнаружения в этой сети.</string>
+    <string name="sync_status_stopped">Синхронизация остановлена.</string>
+    <string name="sync_status_paired">Сопряжено с %1$s (%2$s)</string>
+    <string name="sync_status_pair_failed">Сбой сопряжения: %1$s</string>
+    <string name="sync_status_removed">Удалено: %1$s</string>
+    <string name="sync_status_no_peers">Нет сопряжённых узлов для отправки.</string>
+    <string name="sync_status_no_persona">Пока нет локальной личности для отправки.</string>
+    <string name="sync_status_push_result">Отправлено на %1$d из %2$d узл.</string>
+    <string name="sync_status_push_result_failures">Отправлено на %1$d из %2$d узл.; нет маршрута к %3$s</string>
+    <string name="sync_status_imported">Импортирована подставная личность %1$s (%2$s)</string>
     <string name="settings_version_info">Fauxx v%1$s (сборка %2$d)</string>
     <string name="targeting_layer1_description">Усиливает шум, уводя его от заявленных тобой демографических данных</string>
     <string name="targeting_layer1_status_set">Профиль задан</string>

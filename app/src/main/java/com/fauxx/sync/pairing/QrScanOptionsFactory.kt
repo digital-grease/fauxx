@@ -10,9 +10,9 @@ import com.journeyapps.barcodescanner.ScanOptions
  */
 object QrScanOptionsFactory {
 
-    fun pairingScan(): ScanOptions = ScanOptions()
+    fun pairingScan(prompt: String): ScanOptions = ScanOptions()
         .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
         .setBeepEnabled(false)
         .setOrientationLocked(false)
-        .setPrompt("Scan the other device's Fauxx pairing QR")
+        .setPrompt(prompt)
 }
