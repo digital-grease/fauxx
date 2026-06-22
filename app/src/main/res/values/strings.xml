@@ -310,9 +310,8 @@
     <string name="settings_mobile_intensity_off_description">Paused on mobile data</string>
     <string name="settings_resume_on_boot_title">Resume after reboot</string>
     <string name="settings_resume_on_boot_description">After a reboot, show a notification to resume protection. Android blocks apps from silently starting themselves in the background, so a tap is required.</string>
-    <string name="settings_battery_threshold_title">Pause below</string>
-    <string name="settings_battery_ignore_while_charging_title">Ignore threshold while charging</string>
-    <string name="settings_battery_ignore_while_charging_description">Keep running below the threshold when the device is plugged in.</string>
+    <string name="settings_battery_threshold_battery_title">Pause below (Battery)</string>
+    <string name="settings_battery_threshold_charging_title">Pause below (Charging)</string>
     <string name="settings_active_hours_title">Active Hours</string>
     <string name="settings_active_hours_start_label">Start</string>
     <string name="settings_active_hours_end_label">End</string>

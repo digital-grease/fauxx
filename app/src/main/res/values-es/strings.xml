@@ -313,8 +313,6 @@
     <string name="settings_resume_on_boot_title">Reanudar tras reiniciar</string>
     <string name="settings_resume_on_boot_description">Tras reiniciar el dispositivo, mostrar una notificación para reanudar la protección. Android impide que las apps se inicien solas en segundo plano, así que es necesario un toque.</string>
     <string name="settings_battery_threshold_title">Pausar por debajo de</string>
-    <string name="settings_battery_ignore_while_charging_title">Ignorar umbral al cargar</string>
-    <string name="settings_battery_ignore_while_charging_description">Mantener en marcha por debajo del umbral cuando el dispositivo esté enchufado.</string>
     <string name="settings_active_hours_title">Horas activas</string>
     <string name="settings_active_hours_start_label">Inicio</string>
     <string name="settings_active_hours_end_label">Fin</string>

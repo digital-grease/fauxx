@@ -155,7 +155,8 @@ object AppModule {
                         prefs[PreferenceKeys.ENABLED] = legacy.getBoolean("enabled", false)
                         legacy.getString("intensity", null)?.let { prefs[PreferenceKeys.INTENSITY] = it }
                         prefs[PreferenceKeys.WIFI_ONLY] = legacy.getBoolean("wifi_only", true)
-                        prefs[PreferenceKeys.BATTERY_THRESHOLD] = legacy.getInt("battery_threshold", 20)
+                        prefs[PreferenceKeys.BATTERY_THRESHOLD_BATTERY] = legacy.getInt("battery_threshold_battery", 20)
+                        prefs[PreferenceKeys.BATTERY_THRESHOLD_CHARGING] = legacy.getInt("battery_threshold_charging", 20)
                         prefs[PreferenceKeys.ALLOWED_HOURS_START] = legacy.getInt("allowed_hours_start", 7)
                         prefs[PreferenceKeys.ALLOWED_HOURS_END] = legacy.getInt("allowed_hours_end", 23)
 

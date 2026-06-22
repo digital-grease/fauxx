@@ -37,8 +37,8 @@ object PreferenceKeys {
     // IntensityLevel name while on mobile data, or the literal "OFF" sentinel for "pause on
     // mobile". Absent = legacy profile, derive from WIFI_ONLY (issue #62).
     val MOBILE_INTENSITY = stringPreferencesKey("mobile_intensity")
-    val BATTERY_THRESHOLD = intPreferencesKey("battery_threshold")
-    val IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING = booleanPreferencesKey("ignore_battery_threshold_while_charging")
+    val BATTERY_THRESHOLD_BATTERY = intPreferencesKey("battery_threshold_battery")
+    val BATTERY_THRESHOLD_CHARGING = intPreferencesKey("battery_threshold_charging")
     val ALLOWED_HOURS_START = intPreferencesKey("allowed_hours_start")
     val ALLOWED_HOURS_END = intPreferencesKey("allowed_hours_end")
     val LOG_RETENTION_DAYS = intPreferencesKey("log_retention_days")
