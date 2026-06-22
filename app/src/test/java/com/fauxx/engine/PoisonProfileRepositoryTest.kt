@@ -89,8 +89,8 @@ class PoisonProfileRepositoryTest {
             enabled = true,                                  // default false
             intensity = IntensityLevel.HIGH,                 // default MEDIUM
             mobileIntensity = IntensityLevel.LOW,            // default null (paused on mobile)
-            batteryThreshold = 73,                           // default 20
-            ignoreBatteryThresholdWhileCharging = true,      // default false
+            batteryThresholdBattery = 73,                    // default 20
+            batteryThresholdCharging = 60,                   // default 20
             allowedHoursStart = 3,                           // default 7
             allowedHoursEnd = 19,                            // default 23
             searchPoisonEnabled = false,                     // default true
@@ -275,7 +275,8 @@ class PoisonProfileRepositoryTest {
     fun `updateProfile applies a transform atomically without clobbering unrelated fields`() {
         val seeded = PoisonProfile(
             intensity = IntensityLevel.HIGH,
-            batteryThreshold = 42,
+            batteryThresholdBattery = 42,
+            batteryThresholdCharging = 69,
             customUserAgent = "Mozilla/5.0 (seeded)",
             mobileIntensity = IntensityLevel.MEDIUM,
         )

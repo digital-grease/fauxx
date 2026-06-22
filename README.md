@@ -212,7 +212,7 @@ Scrollable audit log of all actions with timestamps, types, and details. Export 
 Global controls:
 - **Wi-Fi intensity:** Low (light noise) / Medium (balanced) / High (aggressive) / Max (highest volume)
 - **Mobile data intensity:** a separate Off / Low / Medium / High / Max ladder for mobile data — Off (the default) never touches mobile data; any tier runs the engine on mobile at its own rate
-- **Battery threshold:** Minimum battery % to run actions
+- **Battery threshold:** Minimum battery % to run actions (Can be adjusted individually while on battery and while charging)
 - **Active hours:** Time range when actions should run (e.g., 7am–11pm)
 - **Clear all data:** Destructive button to reset everything
 
