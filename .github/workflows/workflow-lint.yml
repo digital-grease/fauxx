@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # Pinned image; it ships actionlint + shellcheck + pyflakes so run-block shell is linted too.
       - name: Run actionlint
