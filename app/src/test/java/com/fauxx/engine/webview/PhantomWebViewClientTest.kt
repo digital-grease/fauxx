@@ -2,6 +2,7 @@ package com.fauxx.engine.webview
 
 import android.net.Uri
 import android.net.http.SslError
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.SafeBrowsingResponse
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
@@ -194,6 +195,30 @@ class PhantomWebViewClientTest {
         client().onSafeBrowsingHit(view, req, /* threatType */ 1, callback)
 
         verify(exactly = 1) { callback.backToSafety(false) }
+    }
+
+    // --- onRenderProcessGone (issue #210) --------------------------------------
+
+    @Test
+    fun `onRenderProcessGone returns true so Android does not kill the app process`() {
+        var notified: WebView? = null
+        val client = PhantomWebViewClient(blocklist, onRenderGone = { notified = it })
+        val detail: RenderProcessGoneDetail = mockk(relaxed = true)
+        every { detail.didCrash() } returns true
+
+        val handled = client.onRenderProcessGone(view, detail)
+
+        assertTrue("must return true to prevent the app-process kill", handled)
+        assertEquals("the dead WebView must be handed to the pool for replacement", view, notified)
+    }
+
+    @Test
+    fun `onRenderProcessGone still returns true with no callback wired`() {
+        val client = PhantomWebViewClient(blocklist)
+        val detail: RenderProcessGoneDetail = mockk(relaxed = true)
+        every { detail.didCrash() } returns false
+
+        assertTrue(client.onRenderProcessGone(view, detail))
     }
 
     // --- onPageFinished --------------------------------------------------------

@@ -5,6 +5,7 @@ import android.net.http.SslError
 import android.os.Build
 import androidx.annotation.RequiresApi
 import timber.log.Timber
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.SafeBrowsingResponse
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
@@ -34,7 +35,11 @@ class PhantomWebViewClient(
     // Issue #73: incremented for each allowed (non-blocked) resource request so the pool can
     // report a "resources loaded" count in the action-log metadata. Null = don't count.
     private val resourceCounter: AtomicInteger? = null,
-    private val onPageFinished: ((String) -> Unit)? = null
+    private val onPageFinished: ((String) -> Unit)? = null,
+    // Issue #210: invoked with the affected WebView when its renderer process dies, so the pool
+    // can destroy the broken instance and swap in a fresh one. onRenderProcessGone ALWAYS returns
+    // true regardless, so Android never terminates the whole app process on a renderer death.
+    private val onRenderGone: ((WebView) -> Unit)? = null
 ) : WebViewClient() {
 
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -93,6 +98,18 @@ class PhantomWebViewClient(
         val description = error?.description ?: "unknown error"
         val code = error?.errorCode ?: 0
         Timber.w("WebView load error on ${request.url} (code=$code): $description")
+    }
+
+    override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+        // A renderer-process death (Chromium renderer OOM, or the OS evicting a backgrounded
+        // renderer — common on memory-constrained/foldable devices and hardened OSes like
+        // GrapheneOS) takes down the ENTIRE app process unless this returns true. Issue #210:
+        // the SIGTRAP abort "Render process crash wasn't handled by all associated webviews,
+        // triggering application crash". Handle it: log, hand the dead instance to the pool for
+        // replacement, and tell Android we recovered so the app keeps running.
+        Timber.w("WebView renderer gone (didCrash=${detail.didCrash()}); recovering pool slot instead of crashing")
+        onRenderGone?.invoke(view)
+        return true
     }
 
     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {

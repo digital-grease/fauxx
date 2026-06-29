@@ -32,6 +32,33 @@ class ProfileDriftMetricTest {
     }
 
     @Test
+    fun `an empty imported profile reports NO_PROFILE not collecting`() {
+        // #220: personalized ads off -> the export parses to zero categories, so a drift value can
+        // never accrue. A single empty import must report NO_PROFILE (not "collecting…" forever)...
+        val one = metric.compute(listOf(snap("google", emptyList(), 1)))
+        assertEquals(DriftState.NO_PROFILE, one.state)
+        assertNull(one.klDivergence)
+
+        // ...and even two empty imports, which would otherwise compute a meaningless kl=0.00.
+        val two = metric.compute(
+            listOf(
+                snap("google", emptyList(), 1),
+                snap("google", emptyList(), 2),
+            )
+        )
+        assertEquals(DriftState.NO_PROFILE, two.state)
+        assertNull(two.klDivergence)
+    }
+
+    @Test
+    fun `a non-empty single import is still COLLECTING not NO_PROFILE`() {
+        // Guards the boundary: one real (non-empty) snapshot is genuinely collecting, awaiting a
+        // second to compute drift — it must NOT be misreported as NO_PROFILE.
+        val r = metric.compute(listOf(snap("google", listOf("GAMING"), 1)))
+        assertEquals(DriftState.COLLECTING, r.state)
+    }
+
+    @Test
     fun `identical baseline and latest yields zero drift`() {
         val snaps = listOf(
             snap("google", listOf("GAMING", "MEDICAL"), 1),

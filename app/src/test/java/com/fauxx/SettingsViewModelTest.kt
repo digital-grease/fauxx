@@ -22,6 +22,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -62,6 +64,38 @@ class SettingsViewModelTest {
         profileSnapshotDao, targetingEngine, encryptedFileTree, localeManager,
         markovGenerator, circadianObserver
     )
+
+    // --- #201 custom-UA quick wins ---
+
+    @Test
+    fun `setCustomUserAgent strips the WebView wv marker`() = runTest {
+        val vm = viewModel()
+        vm.setCustomUserAgent(
+            "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP1A; wv) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Version/4.0 Chrome/120.0.0.0 Mobile Safari/537.36"
+        )
+        advanceUntilIdle()
+        val ua = vm.uiState.value.customUserAgent
+        assertFalse("the '; wv' WebView marker must be stripped", ua.contains("; wv"))
+        assertTrue("the rest of the UA is preserved", ua.contains("Chrome/120.0.0.0"))
+    }
+
+    @Test
+    fun `customUserAgentIsNonChromium flags a Firefox UA but not a Chrome one`() = runTest {
+        val vm = viewModel()
+        vm.setCustomUserAgent("Mozilla/5.0 (Android 14; Mobile; rv:130.0) Gecko/130.0 Firefox/130.0")
+        advanceUntilIdle()
+        assertTrue("a Firefox UA is non-Chromium and ignored on the WebView path",
+            vm.uiState.value.customUserAgentIsNonChromium)
+
+        vm.setCustomUserAgent(
+            "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+        )
+        advanceUntilIdle()
+        assertFalse("a Chrome-on-Android UA must not be flagged",
+            vm.uiState.value.customUserAgentIsNonChromium)
+    }
 
     @Test
     fun `resetToDefaults clears the encrypted logs and the trained Markov model`() = runTest {

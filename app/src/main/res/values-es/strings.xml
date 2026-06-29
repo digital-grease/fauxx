@@ -329,6 +329,7 @@
     <string name="settings_custom_ua_field_label">Identificador de navegador (avanzado — déjalo en blanco para rotar automáticamente)</string>
     <string name="settings_custom_ua_placeholder">Mozilla/5.0 (…)</string>
     <string name="settings_custom_ua_clear_button">Borrar y reanudar la rotación</string>
+    <string name="settings_custom_ua_non_chromium_warning">Este no es un user-agent de Chrome en Android, así que se ignorará para la navegación sintética (que usa el WebView del sistema). Usa un user-agent de Chrome en Android para que se aplique.</string>
     <string name="settings_clear_all_data_button">Borrar todos los datos</string>
     <string name="settings_export_debug_logs_button">Exportar registros de depuración</string>
     <string name="settings_about_privacy_button">Información y política de privacidad</string>
@@ -343,6 +344,23 @@
     <string name="sync_scan_button">Escanear para emparejar</string>
     <string name="sync_paste_button">Pegar carga útil</string>
     <string name="sync_push_button">Enviar persona actual a los dispositivos emparejados</string>
+    <!-- #213 -->
+    <string name="sync_onboarding_title">Cómo funciona la sincronización LAN</string>
+    <string name="sync_onboarding_steps">1. Activa \"Habilitar sincronización LAN\" en AMBOS dispositivos.\n2. En cada dispositivo, escanea (o pega) el QR del OTRO dispositivo: el emparejamiento debe hacerse en ambos sentidos.\n3. Mantén ambos dispositivos en la misma red Wi-Fi.\n4. Toca \"Enviar persona actual\".</string>
+    <string name="sync_onboarding_blockers">Si los dispositivos no aparecen: una app de VPN o proxy, o una red Wi-Fi de invitados o con \"aislamiento de clientes\", puede bloquear la detección. Usa una red sin proxy o configura una IP manual abajo.</string>
+    <string name="sync_push_disabled_hint">Habilita la sincronización LAN arriba para enviar a tus dispositivos emparejados.</string>
+    <string name="sync_status_push_requires_enabled">Primero habilita la sincronización LAN y luego envía.</string>
+    <string name="sync_discovered_empty_searching">Aún no se han encontrado dispositivos. Asegúrate de que el otro dispositivo también tenga la sincronización LAN habilitada y esté en la misma red Wi-Fi (no una red de invitados o aislada), y de que ninguna app de VPN o proxy bloquee la detección.</string>
+    <string name="sync_discovered_disabled">Habilita la sincronización LAN para empezar a detectar dispositivos.</string>
+    <string name="sync_manual_ip_title">Conectar por IP (avanzado)</string>
+    <string name="sync_manual_ip_help">Si la detección está bloqueada, introduce la dirección IP de un dispositivo emparejado para enviarle directamente. Solo funciona con un dispositivo que ya hayas emparejado.</string>
+    <string name="sync_manual_ip_label">Dirección IP del par</string>
+    <string name="sync_manual_ip_placeholder">192.168.1.42</string>
+    <string name="sync_manual_ip_set_button">Usar esta dirección</string>
+    <string name="sync_manual_ip_clear_button">Borrar</string>
+    <string name="sync_status_manual_ip_set">Dirección manual establecida: %1$s. Los envíos la usarán cuando un dispositivo no se detecte.</string>
+    <string name="sync_status_manual_ip_invalid">Eso no parece una dirección IP o IP:puerto válida.</string>
+    <string name="sync_status_manual_ip_cleared">Dirección manual borrada.</string>
     <string name="sync_paired_header">Dispositivos emparejados</string>
     <string name="sync_discovered_header">Detectados en esta red</string>
     <string name="sync_none_yet">Ninguno todavía.</string>
@@ -477,6 +495,7 @@
     <string name="dashboard_drift_title">DERIVA DEL PERFIL</string>
     <string name="dashboard_drift_help">Cuánto se ha alejado tu perfil de intereses publicitarios importado desde la primera importación (de referencia), expresado como divergencia KL. Un valor más alto indica más movimiento. La deriva también puede reflejar que la plataforma reentrena su propio modelo, no solo Fauxx, así que considérala un indicador, no una prueba.</string>
     <string name="dashboard_drift_collecting">recopilando…</string>
+    <string name="dashboard_drift_no_profile">sin perfil publicitario</string>
     <string name="dashboard_control_divergence_title">ENVENENADO FRENTE A CONTROL</string>
     <string name="dashboard_control_divergence_help">Divergencia KL entre tu perfil envenenado y un perfil de control importado (una cuenta limpia que nunca envenenas). Un valor más alto significa que Fauxx ha separado más ambos perfiles. Se muestra solo tras importar un perfil de control.</string>
     <string name="dashboard_synthetic_activity_title">ACTIVIDAD SINTÉTICA</string>
