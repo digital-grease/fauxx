@@ -453,6 +453,16 @@ fun SettingsScreen(
                 },
                 singleLine = true
             )
+            // #201: a non-Android-Chromium custom UA is silently dropped on the WebView path, so
+            // warn rather than let the user believe a Firefox/Edge/iOS string is in effect.
+            if (uiState.customUserAgentIsNonChromium) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.settings_custom_ua_non_chromium_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             if (uiState.customUserAgent.isNotBlank()) {
                 Spacer(Modifier.height(4.dp))
                 TextButton(

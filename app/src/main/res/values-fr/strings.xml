@@ -327,6 +327,7 @@
     <string name="settings_custom_ua_field_label">Identifiant de navigateur (avancé — laisse vide pour la rotation automatique)</string>
     <string name="settings_custom_ua_placeholder">Mozilla/5.0 (…)</string>
     <string name="settings_custom_ua_clear_button">Effacer et reprendre la rotation</string>
+    <string name="settings_custom_ua_non_chromium_warning">Ce n\'est pas un user-agent Chrome sur Android, il sera donc ignoré pour la navigation synthétique (qui passe par le WebView du système). Utilisez un user-agent Chrome sur Android pour qu\'il soit appliqué.</string>
     <string name="settings_clear_all_data_button">Effacer toutes les données</string>
     <string name="settings_export_debug_logs_button">Exporter les journaux de débogage</string>
     <string name="settings_about_privacy_button">À propos et politique de confidentialité</string>
@@ -341,6 +342,23 @@
     <string name="sync_scan_button">Scanner pour appairer</string>
     <string name="sync_paste_button">Coller la charge utile</string>
     <string name="sync_push_button">Envoyer la persona actuelle aux appareils appairés</string>
+    <!-- #213 -->
+    <string name="sync_onboarding_title">Comment fonctionne la synchro LAN</string>
+    <string name="sync_onboarding_steps">1. Activez \"Activer la synchro LAN\" sur LES DEUX appareils.\n2. Sur chaque appareil, scannez (ou collez) le QR de l\'AUTRE appareil — l\'appairage doit se faire dans les deux sens.\n3. Gardez les deux appareils sur le même Wi-Fi.\n4. Touchez \"Envoyer la persona actuelle\".</string>
+    <string name="sync_onboarding_blockers">Si les appareils n\'apparaissent pas : une app VPN ou proxy, ou un réseau Wi-Fi invité/\"isolation des clients\", peut bloquer la découverte. Utilisez un réseau sans proxy, ou définissez une IP manuelle ci-dessous.</string>
+    <string name="sync_push_disabled_hint">Activez la synchro LAN ci-dessus pour envoyer à vos appareils appairés.</string>
+    <string name="sync_status_push_requires_enabled">Activez d\'abord la synchro LAN, puis envoyez.</string>
+    <string name="sync_discovered_empty_searching">Aucun appareil trouvé pour l\'instant. Vérifiez que l\'autre appareil a aussi la synchro LAN activée et se trouve sur le même Wi-Fi (pas un réseau invité ou isolé), et qu\'aucune app VPN ou proxy ne bloque la découverte.</string>
+    <string name="sync_discovered_disabled">Activez la synchro LAN pour commencer à découvrir des appareils.</string>
+    <string name="sync_manual_ip_title">Connexion par IP (avancé)</string>
+    <string name="sync_manual_ip_help">Si la découverte est bloquée, saisissez l\'adresse IP d\'un appareil appairé pour lui envoyer directement. Cela ne fonctionne qu\'avec un appareil déjà appairé.</string>
+    <string name="sync_manual_ip_label">Adresse IP du pair</string>
+    <string name="sync_manual_ip_placeholder">192.168.1.42</string>
+    <string name="sync_manual_ip_set_button">Utiliser cette adresse</string>
+    <string name="sync_manual_ip_clear_button">Effacer</string>
+    <string name="sync_status_manual_ip_set">Adresse manuelle définie : %1$s. Les envois l\'utiliseront quand un appareil n\'est pas découvert.</string>
+    <string name="sync_status_manual_ip_invalid">Cela ne ressemble pas à une adresse IP ou IP:port valide.</string>
+    <string name="sync_status_manual_ip_cleared">Adresse manuelle effacée.</string>
     <string name="sync_paired_header">Appareils appairés</string>
     <string name="sync_discovered_header">Découverts sur ce réseau</string>
     <string name="sync_none_yet">Aucun pour l\'instant.</string>
@@ -475,6 +493,7 @@
     <string name="dashboard_drift_title">DÉRIVE DU PROFIL</string>
     <string name="dashboard_drift_help">À quel point votre profil d\'intérêts publicitaires importé s\'est éloigné de votre premier import (de référence), exprimé en divergence KL. Plus la valeur est élevée, plus le mouvement est important. La dérive peut aussi refléter le réentraînement du modèle par la plateforme, pas seulement Fauxx, considérez-la donc comme un indicateur, pas une preuve.</string>
     <string name="dashboard_drift_collecting">collecte…</string>
+    <string name="dashboard_drift_no_profile">aucun profil publicitaire</string>
     <string name="dashboard_control_divergence_title">EMPOISONNÉ VS CONTRÔLE</string>
     <string name="dashboard_control_divergence_help">Divergence KL entre votre profil empoisonné et un profil de contrôle importé (un compte propre que vous n\'empoisonnez jamais). Plus la valeur est élevée, plus Fauxx a éloigné les deux profils. Affiché uniquement après avoir importé un profil de contrôle.</string>
     <string name="dashboard_synthetic_activity_title">ACTIVITÉ SYNTHÉTIQUE</string>

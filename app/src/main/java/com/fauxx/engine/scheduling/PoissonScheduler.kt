@@ -113,10 +113,15 @@ class PoissonScheduler @Inject constructor(
             if (sameTopic) {
                 baseDelay
             } else {
-                // Cross-niche: scale up by a lognormal dwell multiplier and enforce a
-                // tier-derived floor (lower for the aggressive tiers — see crossNicheFloorMs).
+                // Cross-niche: scale the Poisson base up by a lognormal dwell multiplier so
+                // unrelated topics tend to sit further apart, then bound the result to BOTH a
+                // tier-derived floor (lower for the aggressive tiers — see crossNicheFloorMs)
+                // AND the same 3× mean-inter-arrival ceiling poissonDelay already enforces.
+                // Without the ceiling the unbounded lognormal tail (p95 ≈ 4.5×, worst ≈ 15×)
+                // applied on top of an already-clamped baseDelay let a single LOW/MEDIUM gap
+                // run past an hour, starving the displayed actions/hour (issue #209).
                 val dwell = (baseDelay * lognormalMultiplier()).toLong()
-                maxOf(crossNicheFloorMs(actionsPerHour), dwell)
+                dwell.coerceIn(crossNicheFloorMs(actionsPerHour), maxPoissonDelayMs(effectiveRate))
             }
         }
     }
@@ -164,11 +169,22 @@ class PoissonScheduler @Inject constructor(
     fun poissonDelay(actionsPerHour: Float): Long {
         if (actionsPerHour <= 0f) return 60_000L
         val ratePerMs = actionsPerHour / (60f * 60f * 1000f)
-        val meanDelayMs = (3_600_000f / actionsPerHour).toLong()
-        val maxDelayMs = maxOf(60_000L, meanDelayMs * 3)
         val u = random.nextDouble()
         val delayMs = (-ln(1.0 - u) / ratePerMs).toLong()
-        return delayMs.coerceIn(1_000L, maxDelayMs)
+        return delayMs.coerceIn(1_000L, maxPoissonDelayMs(actionsPerHour))
+    }
+
+    /**
+     * The upper clamp on any single inter-action delay: 3× the mean inter-arrival time
+     * (minimum 60 s). Shared by [poissonDelay] and the cross-niche dwell branch of
+     * [nextDelayMs] so a cross-niche pause can never exceed the same ceiling a same-topic
+     * gap does (issue #209). For LOW (12/hr, mean 300 s) this is ~15 min; HIGH (200/hr,
+     * mean 18 s) caps at ~54 s.
+     */
+    private fun maxPoissonDelayMs(actionsPerHour: Float): Long {
+        if (actionsPerHour <= 0f) return 60_000L
+        val meanDelayMs = (3_600_000f / actionsPerHour).toLong()
+        return maxOf(60_000L, meanDelayMs * 3)
     }
 
     private fun msUntilHour(now: Calendar, targetHour: Int): Long {

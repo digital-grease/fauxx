@@ -11,6 +11,7 @@ import com.fauxx.data.model.IntensityLevel
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.QueryBankManager
+import com.fauxx.engine.EngineState
 import com.fauxx.engine.NetworkTransport
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
@@ -113,6 +114,32 @@ class PoisonEngineLoopTest {
         assertNotNull("engine should have resigned during quiet hours", resignedWith)
         assertTrue(
             "quiet-hours resignation must use AtTime spec",
+            resignedWith is ResumeSpec.AtTime
+        )
+    }
+
+    @Test
+    fun `an uncaught loop exception tears down and resigns instead of crashing the process`() = runTest {
+        // #197: pre-fix, an exception from the loop machinery (here profile.getProfile()) escaped
+        // engineJob — a SupervisorJob child the supervisor does not absorb — reached the app's
+        // default uncaught handler (FauxxApp), and killed the whole process; isRunning stayed true
+        // so the watchdog couldn't recover. The engine must instead catch it, mark STOPPED, and
+        // resign so an (auto-)resume is scheduled. Under runTest, an uncaught child exception also
+        // fails the test, so this pins the no-propagation contract too.
+        val clock = FakeClock(noonEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        engine = buildEngine(clock, profile = baseProfile, loopDispatcher = dispatcher, profileThrows = true)
+
+        var resignedWith: ResumeSpec? = null
+        engine.setOnLongPause { spec -> resignedWith = spec }
+        engine.start()
+
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
+
+        assertEquals("a crashed loop must end STOPPED", EngineState.STOPPED, engine.engineState.value)
+        assertNotNull("a crashed loop must resign so recovery is scheduled", resignedWith)
+        assertTrue(
+            "loop-failure recovery must use an AtTime auto-resume",
             resignedWith is ResumeSpec.AtTime
         )
     }
@@ -372,10 +399,17 @@ class PoisonEngineLoopTest {
         scheduler: PoissonScheduler = mockk {
             every { nextDelayMs(any(), any(), any(), any(), any()) } returns 1000L
         },
-        searchModule: SearchPoisonModule? = null
+        searchModule: SearchPoisonModule? = null,
+        // #197: when true, profile.getProfile() throws so the loop machinery raises an uncaught
+        // exception, exercising the crash-guard teardown rather than a normal resign.
+        profileThrows: Boolean = false
     ): PoisonEngine {
         val profileRepo: PoisonProfileRepository = mockk {
-            every { getProfile() } returns profile
+            if (profileThrows) {
+                every { getProfile() } throws RuntimeException("boom: corrupt profile read")
+            } else {
+                every { getProfile() } returns profile
+            }
         }
         val dispatcher: ActionDispatcher = mockk {
             coEvery { selectCategory() } returns CategoryPool.GAMING

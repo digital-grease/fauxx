@@ -39,7 +39,16 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val resumeOnBoot: Boolean = true,
     val customUserAgent: String = ""
-)
+) {
+    /**
+     * #201: true when a non-blank custom UA is NOT an Android-Chromium string, so it is silently
+     * dropped on the WebView path (a Firefox/Edge/iOS UA would otherwise mislead the user). The
+     * Settings screen surfaces a warning when this holds.
+     */
+    val customUserAgentIsNonChromium: Boolean
+        get() = customUserAgent.isNotBlank() &&
+            !com.fauxx.network.UserAgentPool.isChromiumAndroid(customUserAgent)
+}
 
 /**
  * UI state for the app-language picker. `userOverride == null` means "follow system locale";
@@ -109,7 +118,14 @@ class SettingsViewModel @Inject constructor(
     fun setLogRetentionDays(v: Int) { update { it.copy(logRetentionDays = v) } }
     fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
     fun setResumeOnBoot(v: Boolean) { update { it.copy(resumeOnBoot = v) } }
-    fun setCustomUserAgent(v: String) { update { it.copy(customUserAgent = v) } }
+    fun setCustomUserAgent(v: String) {
+        // #201: the system WebView's getDefaultUserAgent (the "use this device's browser" capture)
+        // always carries the Android WebView marker "; wv", which is itself a tell and which users
+        // were hand-editing out. Strip it here — the single funnel for both the capture and the
+        // text field — so the stored UA matches a real on-device Chrome. No-op for input without it.
+        val cleaned = if (v.contains("; wv")) v.replace("; wv", "").replace("  ", " ") else v
+        update { it.copy(customUserAgent = cleaned) }
+    }
 
     /**
      * Persist the user's app-language choice and trigger the activity recreate that

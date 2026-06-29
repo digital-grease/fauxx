@@ -14,7 +14,9 @@ import androidx.work.NetworkType
 import com.fauxx.di.IoDispatcher
 import com.fauxx.service.ResumeSpec
 import com.fauxx.util.Clock
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineExceptionHandler
 import timber.log.Timber
 import com.fauxx.data.crawllist.CrawlListManager
 import com.fauxx.data.crawllist.DomainBlocklist
@@ -122,6 +124,14 @@ private const val SLEEP_CONSTRAINT_RECHECK_MS = 60_000L
 private const val LONG_PAUSE_THRESHOLD_MS = 30L * 60 * 1000
 
 /**
+ * Delay before auto-resuming after the engine loop terminates by an uncaught exception (issue
+ * #197). Long enough that a deterministic fault doesn't hot-loop, short enough that a transient
+ * one self-heals without waiting on the 6h reconcile watchdog. The full flavor's exact-alarm
+ * resume path auto-restarts the FGS at this time with no user interaction (#126).
+ */
+private const val LOOP_FAILURE_RESUME_DELAY_MS = 60_000L
+
+/**
  * Decision returned by [PoisonEngine.decidePauseAction]: either keep the current
  * delay-loop ([Continue]) or [Resign] from the foreground service and schedule a
  * resume notification when the constraint clears.
@@ -173,7 +183,16 @@ class PoisonEngine @Inject constructor(
      */
     private val usageObserver: UsageObserver = UsageObserver.NONE,
 ) {
-    private var scope = CoroutineScope(SupervisorJob() + loopDispatcher)
+    /**
+     * Backstop for an uncaught exception in a direct child of [scope] (issue #197). A
+     * [SupervisorJob] does NOT absorb a child failure, so without this the exception would reach
+     * the app's default uncaught-exception handler ([com.fauxx.FauxxApp]) and crash the whole
+     * process. The primary guard is the try/catch around the engineJob body in [start]; this
+     * additionally catches anything launched separately on [scope].
+     */
+    private val loopExceptionHandler = CoroutineExceptionHandler { _, t -> handleLoopFailure(t) }
+
+    private var scope = CoroutineScope(SupervisorJob() + loopDispatcher + loopExceptionHandler)
     private var engineJob: Job? = null
 
     /**
@@ -374,7 +393,7 @@ class PoisonEngine @Inject constructor(
         if (engineJob?.isActive == true) return
         // Recreate the scope if it was previously cancelled by destroy()
         if (!scope.isActive) {
-            scope = CoroutineScope(SupervisorJob() + loopDispatcher)
+            scope = CoroutineScope(SupervisorJob() + loopDispatcher + loopExceptionHandler)
         }
         engineStartElapsedMs = clock.elapsedRealtime()
         pauseEnteredAtElapsedMs = 0L
@@ -383,47 +402,68 @@ class PoisonEngine @Inject constructor(
         hasSignaledActive = false
         registerConstraintReceivers()
         engineJob = scope.launch {
-            // Sync targeting layer enable flags from persisted profile
-            val savedProfile = profile.getProfile()
-            targetingEngine.setLayer1Enabled(savedProfile.layer1Enabled)
-            targetingEngine.setLayer2Enabled(savedProfile.layer2Enabled)
-            targetingEngine.setLayer3Enabled(savedProfile.layer3Enabled)
-            targetingEngine.setAdversarialAllocationEnabled(savedProfile.adversarialAllocationEnabled)
-
-            // Seed today's action count from DB once on start
-            val dayStart = localDayStartMs(clock.currentTimeMillis())
-            actionCountDayStart = dayStart
-            todayActionCount.set(
-                try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
-            )
-            _engineState.value = EngineState.ACTIVE
-            Timber.i("PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled}, adversarialAlloc=${savedProfile.adversarialAllocationEnabled})")
-            // Fail-closed: if blocklist couldn't load, permanently circuit-break all
-            // URL-loading modules. These modules load arbitrary URLs and MUST have a
-            // working blocklist to prevent navigation to harmful domains.
-            if (blocklist.loadFailed) {
-                val urlModules = listOf(searchModule, cookieModule, adModule, appSignalModule)
-                for (m in urlModules) {
-                    val name = m::class.simpleName ?: "Unknown"
-                    circuitBreakerUntil[name] = Long.MAX_VALUE
-                    Timber.e("Blocklist failed to load — permanently disabling $name")
-                }
+            try {
+                runEngineSession()
+            } catch (ce: CancellationException) {
+                throw ce // normal stop()/destroy() cancellation — must propagate
+            } catch (t: Throwable) {
+                // #197: an uncaught exception from the loop machinery (profile.getProfile,
+                // checkConstraints, dispatcher.selectCategory, scheduler.nextDelayMs, the
+                // rate-limit block, sleepRespectingConstraints) would otherwise escape this
+                // SupervisorJob child, reach the app's default uncaught handler (FauxxApp), and
+                // crash the whole process — leaving isRunning=true so EngineReconcileWorker could
+                // not recover. Catch it, mark STOPPED, and resign so recovery is scheduled.
+                handleLoopFailure(t)
             }
-
-            // Startup asset health check — verify critical data loaded successfully.
-            _healthWarnings.value = checkAssetHealth()
-
-            allModules.filter { it.isEnabled() }.forEach { module ->
-                try {
-                    module.start()
-                } catch (e: Exception) {
-                    val name = module::class.simpleName ?: "Unknown"
-                    Timber.e(e, "Module $name failed to start, circuit-breaking")
-                    circuitBreakerUntil[name] = clock.currentTimeMillis() + MAX_BACKOFF_MS
-                }
-            }
-            runLoop()
         }
+    }
+
+    /**
+     * The engine session body: sync targeting flags, seed counters, start modules, then enter the
+     * run loop. Extracted from [start] so the launch can wrap it in the #197 crash guard. Runs on
+     * the engine [scope] / [loopDispatcher].
+     */
+    private suspend fun runEngineSession() {
+        // Sync targeting layer enable flags from persisted profile
+        val savedProfile = profile.getProfile()
+        targetingEngine.setLayer1Enabled(savedProfile.layer1Enabled)
+        targetingEngine.setLayer2Enabled(savedProfile.layer2Enabled)
+        targetingEngine.setLayer3Enabled(savedProfile.layer3Enabled)
+        targetingEngine.setAdversarialAllocationEnabled(savedProfile.adversarialAllocationEnabled)
+
+        // Seed today's action count from DB once on start
+        val dayStart = localDayStartMs(clock.currentTimeMillis())
+        actionCountDayStart = dayStart
+        todayActionCount.set(
+            try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
+        )
+        _engineState.value = EngineState.ACTIVE
+        Timber.i("PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled}, adversarialAlloc=${savedProfile.adversarialAllocationEnabled})")
+        // Fail-closed: if blocklist couldn't load, permanently circuit-break all
+        // URL-loading modules. These modules load arbitrary URLs and MUST have a
+        // working blocklist to prevent navigation to harmful domains.
+        if (blocklist.loadFailed) {
+            val urlModules = listOf(searchModule, cookieModule, adModule, appSignalModule)
+            for (m in urlModules) {
+                val name = m::class.simpleName ?: "Unknown"
+                circuitBreakerUntil[name] = Long.MAX_VALUE
+                Timber.e("Blocklist failed to load — permanently disabling $name")
+            }
+        }
+
+        // Startup asset health check — verify critical data loaded successfully.
+        _healthWarnings.value = checkAssetHealth()
+
+        allModules.filter { it.isEnabled() }.forEach { module ->
+            try {
+                module.start()
+            } catch (e: Exception) {
+                val name = module::class.simpleName ?: "Unknown"
+                Timber.e(e, "Module $name failed to start, circuit-breaking")
+                circuitBreakerUntil[name] = clock.currentTimeMillis() + MAX_BACKOFF_MS
+            }
+        }
+        runLoop()
     }
 
     /**
@@ -802,6 +842,30 @@ class PoisonEngine @Inject constructor(
         val ctx = reason ?: state?.toString() ?: "unknown"
         Timber.i("Engine resigning ($ctx) after ${sessionDurationMs}ms; resume spec: $spec")
         onLongPause?.invoke(spec)
+    }
+
+    /**
+     * Recover from an uncaught exception thrown by the engine loop machinery (issue #197).
+     * Without this, the exception escapes [engineJob] (a [SupervisorJob] child has no parent to
+     * absorb it), reaches the app's default uncaught-exception handler ([com.fauxx.FauxxApp]),
+     * and crashes the whole process — and because [com.fauxx.service.PhantomForegroundService]
+     * `isRunning` stays true, [com.fauxx.service.EngineReconcileWorker] could not recover it.
+     *
+     * Instead: mark the engine [EngineState.STOPPED] and route through the existing resign path so
+     * the FGS schedules a resume and tears itself down cleanly (clearing isRunning). The full
+     * flavor's exact-alarm resume auto-restarts shortly so a transient fault self-heals; the delay
+     * keeps a deterministic fault from hot-looping. Idempotent: a no-op if already resigned.
+     */
+    private fun handleLoopFailure(t: Throwable) {
+        if (t is CancellationException) return
+        Timber.e(t, "Engine loop terminated by an uncaught exception (#197); tearing down for recovery")
+        _engineState.value = EngineState.STOPPED
+        if (hasResigned) return
+        resignAndRecord(
+            state = EngineState.STOPPED,
+            spec = ResumeSpec.AtTime(clock.currentTimeMillis() + LOOP_FAILURE_RESUME_DELAY_MS),
+            reason = "loop failure: ${t.javaClass.simpleName}",
+        )
     }
 
     /**
