@@ -375,8 +375,6 @@
     <string name="settings_resume_on_boot_title">Возобновлять после перезагрузки</string>
     <string name="settings_resume_on_boot_description">После перезагрузки показать уведомление для возобновления защиты. Android запрещает приложениям молча запускаться в фоне, так что нужно касание.</string>
     <string name="settings_battery_threshold_title">Пауза при заряде ниже</string>
-    <string name="settings_battery_ignore_while_charging_title">Игнорировать порог при зарядке</string>
-    <string name="settings_battery_ignore_while_charging_description">Продолжать работу ниже порога, когда устройство подключено к зарядке.</string>
     <string name="settings_active_hours_start_label">Начало</string>
     <string name="settings_active_hours_end_label">Конец</string>
     <string name="settings_active_hours_description">Активность приостановлена вне этих часов</string>

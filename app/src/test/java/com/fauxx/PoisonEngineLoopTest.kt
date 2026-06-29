@@ -73,7 +73,8 @@ class PoisonEngineLoopTest {
         // The relaxed ConnectivityManager mock classifies as CELLULAR (no transport bits
         // set), so engine tests must allow mobile for the loop to dispatch (issue #62).
         mobileIntensity = IntensityLevel.LOW,
-        batteryThreshold = 0,
+        batteryThresholdBattery = 0,
+        batteryThresholdCharging = 0,
         allowedHoursStart = 7,
         allowedHoursEnd = 23,
         searchPoisonEnabled = true,
@@ -217,7 +218,7 @@ class PoisonEngineLoopTest {
         // counted only the 15-min battery leg and the engine never resigned.
         val clock = FakeClock(noonEpochMs())
         val dispatcher = StandardTestDispatcher(testScheduler)
-        val profile = baseProfile.copy(batteryThreshold = 20)
+        val profile = baseProfile.copy(batteryThresholdBattery = 20, batteryThresholdCharging = 20)
         engine = buildEngine(clock, profile = profile, loopDispatcher = dispatcher)
 
         var resignedWith: ResumeSpec? = null

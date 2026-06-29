@@ -760,9 +760,9 @@ class PoisonEngine @Inject constructor(
         }
         if (shouldPauseForBattery(
                 batteryLevel = cachedBatteryLevel.get(),
-                threshold = currentProfile.batteryThreshold,
-                isCharging = cachedIsCharging.get(),
-                ignoreThresholdWhileCharging = currentProfile.ignoreBatteryThresholdWhileCharging
+                thresholdBattery = currentProfile.batteryThresholdBattery,
+                thresholdCharging = currentProfile.batteryThresholdCharging,
+                isCharging = cachedIsCharging.get()
             )
         ) {
             return EngineState.PAUSED_BATTERY
@@ -797,13 +797,19 @@ class PoisonEngine @Inject constructor(
      */
     internal fun shouldPauseForBattery(
         batteryLevel: Int,
-        threshold: Int,
-        isCharging: Boolean,
-        ignoreThresholdWhileCharging: Boolean
+        thresholdBattery: Int,
+        thresholdCharging: Int,
+        isCharging: Boolean
     ): Boolean {
-        if (batteryLevel >= threshold) return false
-        // Below threshold: pause unless the user opted to keep running while plugged in.
-        return !(ignoreThresholdWhileCharging && isCharging)
+        if(
+            (isCharging && batteryLevel >= thresholdCharging)||
+            (!isCharging && batteryLevel >= thresholdBattery)
+        ) {
+            return false
+        }
+
+        // Battery above threshold, don't pause
+        return true
     }
 
     /** Returns true if the current local hour falls within the profile's allowed window.
@@ -1077,9 +1083,8 @@ class PoisonProfileRepository @Inject constructor(
         // downgrade to a pre-0.3.2 build lands on the equivalent on/off behavior.
         prefs[com.fauxx.di.PreferenceKeys.MOBILE_INTENSITY] = p.mobileIntensity?.name ?: MOBILE_INTENSITY_OFF
         prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] = (p.mobileIntensity == null)
-        prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] = p.batteryThreshold
-        prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] =
-            p.ignoreBatteryThresholdWhileCharging
+        prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD_BATTERY] = p.batteryThresholdBattery
+        prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD_CHARGING] = p.batteryThresholdCharging
         prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] = p.allowedHoursStart
         prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] = p.allowedHoursEnd
         prefs[com.fauxx.di.PreferenceKeys.LOG_RETENTION_DAYS] = p.logRetentionDays
@@ -1112,9 +1117,8 @@ class PoisonProfileRepository @Inject constructor(
             enabled = prefs[com.fauxx.di.PreferenceKeys.ENABLED] ?: false,
             intensity = intensity,
             mobileIntensity = readMobileIntensity(prefs, intensity),
-            batteryThreshold = prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] ?: 20,
-            ignoreBatteryThresholdWhileCharging =
-                prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] ?: false,
+            batteryThresholdBattery = prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD_BATTERY] ?: 20,
+            batteryThresholdCharging = prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD_CHARGING] ?: 20,
             allowedHoursStart = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] ?: 7,
             allowedHoursEnd = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] ?: 23,
             logRetentionDays = prefs[com.fauxx.di.PreferenceKeys.LOG_RETENTION_DAYS] ?: 7,

@@ -313,8 +313,6 @@
     <string name="settings_resume_on_boot_title">Reprendre après redémarrage</string>
     <string name="settings_resume_on_boot_description">Après un redémarrage, afficher une notification pour reprendre la protection. Android empêche les applications de démarrer silencieusement en arrière-plan, donc un appui est requis.</string>
     <string name="settings_battery_threshold_title">Mettre en pause sous</string>
-    <string name="settings_battery_ignore_while_charging_title">Ignorer le seuil pendant la charge</string>
-    <string name="settings_battery_ignore_while_charging_description">Continuer à fonctionner sous le seuil quand l\'appareil est branché.</string>
     <string name="settings_active_hours_title">Heures actives</string>
     <string name="settings_active_hours_start_label">Début</string>
     <string name="settings_active_hours_end_label">Fin</string>
