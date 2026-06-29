@@ -28,7 +28,7 @@ mockk = "1.14.11"
 turbine = "1.2.1"
 mockkAndroid = "1.14.11"
 robolectric = "4.16.1"
-kotest = "6.1.11"
+kotest = "6.2.1"
 timber = "5.0.1"
 appcompat = "1.7.1"
 # LAN sync (E13 #178). lazysodium-android 5.2.0 declares jna 5.17.0 in its POM; we
