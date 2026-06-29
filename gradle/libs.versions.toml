@@ -35,7 +35,7 @@ appcompat = "1.7.1"
 # pin the JNA *Android AAR* at that exact version so the bundled libsodiumjni.so /
 # libjnidispatch.so ship per ABI (the plain JVM jar would throw UnsatisfiedLinkError).
 lazysodium = "5.2.0"
-jna = "5.17.0"
+jna = "5.19.1"
 zxingEmbedded = "4.3.0"
 
 [libraries]
