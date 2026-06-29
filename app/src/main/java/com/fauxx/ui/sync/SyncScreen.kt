@@ -36,6 +36,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.fauxx.R
 import com.fauxx.sync.discovery.DiscoveredPeer
 import com.fauxx.sync.data.PairedPeer
@@ -56,6 +58,12 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
 
     var showPasteDialog by remember { mutableStateOf(false) }
     val scanPrompt = stringResource(R.string.sync_scan_prompt)
+
+    // #213: reflect an externally-stopped session (e.g. the notification Stop action) when the
+    // user returns to the screen, instead of leaving a stale ON toggle.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshSyncEnabledState()
+    }
 
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         result.contents?.let { viewModel.completePairing(it) }
@@ -86,6 +94,25 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
             ) {
                 Text(stringResource(R.string.sync_enable_title), style = MaterialTheme.typography.titleMedium)
                 Switch(checked = state.syncEnabled, onCheckedChange = { viewModel.setSyncEnabled(it) })
+            }
+        }
+
+        // #213: most sync failures are silent setup gaps (one-way pairing, sync left off, mDNS
+        // blocked). Spell out the steps and the common blockers up front.
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(stringResource(R.string.sync_onboarding_title), style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.sync_onboarding_steps), style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        stringResource(R.string.sync_onboarding_blockers),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
@@ -136,8 +163,19 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
             Button(
                 onClick = { viewModel.pushCurrentPersonaToAll() },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = paired.isNotEmpty()
+                // #213: a push needs both a paired peer AND a running session (routes only exist
+                // while sync is enabled), so don't offer the action until both hold.
+                enabled = paired.isNotEmpty() && state.syncEnabled
             ) { Text(stringResource(R.string.sync_push_button)) }
+        }
+        if (paired.isNotEmpty() && !state.syncEnabled) {
+            item {
+                Text(
+                    stringResource(R.string.sync_push_disabled_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         state.statusMessage?.let { msg ->
@@ -158,9 +196,28 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
         item { HorizontalDivider() }
         item { Text(stringResource(R.string.sync_discovered_header), style = MaterialTheme.typography.titleSmall) }
         if (discovered.isEmpty()) {
-            item { Text(stringResource(R.string.sync_none_yet), style = MaterialTheme.typography.bodySmall) }
+            // #213: distinguish "sync off" from "on but nothing found" instead of a bare "none yet".
+            item {
+                Text(
+                    stringResource(
+                        if (state.syncEnabled) R.string.sync_discovered_empty_searching
+                        else R.string.sync_discovered_disabled
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         } else {
             items(discovered, key = { it.name }) { peer -> DiscoveredPeerRow(peer) }
+        }
+
+        // #213: manual IP fallback for networks where mDNS is blocked (VPN/proxy app, AP isolation).
+        item { HorizontalDivider() }
+        item {
+            ManualPeerAddressSection(
+                onSet = { viewModel.setManualPeerAddress(it) },
+                onClear = { viewModel.setManualPeerAddress("") }
+            )
         }
     }
 
@@ -172,6 +229,39 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
                 viewModel.completePairing(payload)
             }
         )
+    }
+}
+
+@Composable
+private fun ManualPeerAddressSection(onSet: (String) -> Unit, onClear: () -> Unit) {
+    var manualIp by remember { mutableStateOf("") }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(stringResource(R.string.sync_manual_ip_title), style = MaterialTheme.typography.titleSmall)
+        Text(
+            stringResource(R.string.sync_manual_ip_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        OutlinedTextField(
+            value = manualIp,
+            onValueChange = { manualIp = it },
+            label = { Text(stringResource(R.string.sync_manual_ip_label)) },
+            placeholder = { Text(stringResource(R.string.sync_manual_ip_placeholder)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { onSet(manualIp) }, enabled = manualIp.isNotBlank()) {
+                Text(stringResource(R.string.sync_manual_ip_set_button))
+            }
+            OutlinedButton(onClick = {
+                manualIp = ""
+                onClear()
+            }) { Text(stringResource(R.string.sync_manual_ip_clear_button)) }
+        }
     }
 }
 

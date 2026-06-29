@@ -15,6 +15,7 @@ import com.fauxx.sync.discovery.NsdDiscovery
 import com.fauxx.sync.pairing.PairingManager
 import com.fauxx.sync.pairing.QrRenderer
 import com.fauxx.sync.transport.TcpClient
+import com.fauxx.sync.wire.SyncConstants
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -69,6 +70,9 @@ class SyncViewModel @Inject constructor(
     val discoveredPeers: StateFlow<List<DiscoveredPeer>> = nsdDiscovery.discoveredPeers
 
     init {
+        // #213: seed the toggle from the REAL service state so re-entering the screen (or a fresh
+        // process) reflects whether a session is actually running, not the stale OFF default.
+        _uiState.value = _uiState.value.copy(syncEnabled = SyncForegroundService.isRunning)
         // Load this device's identity-derived display values off the main thread.
         viewModelScope.launch {
             val payload = pairingManager.myPairingPayload()
@@ -90,6 +94,50 @@ class SyncViewModel @Inject constructor(
                 }
             }
             .launchIn(viewModelScope)
+    }
+
+    /**
+     * Re-sync the toggle with the real service state (#213). Called on screen resume so the toggle
+     * reflects an externally-stopped session (e.g. the notification's Stop action) instead of a
+     * stale ON.
+     */
+    fun refreshSyncEnabledState() {
+        val running = SyncForegroundService.isRunning
+        if (_uiState.value.syncEnabled != running) {
+            _uiState.value = _uiState.value.copy(syncEnabled = running)
+        }
+    }
+
+    /**
+     * Set (or clear, on blank input) a manual peer IP[:port] used as a last-resort route when mDNS
+     * discovery is blocked by a VPN/proxy app or Wi-Fi AP client-isolation (#213). The sealed
+     * channel still authenticates by paired key, so a wrong address simply fails to deliver.
+     */
+    fun setManualPeerAddress(input: String) {
+        viewModelScope.launch {
+            if (input.isBlank()) {
+                tcpClient.setManualFallback(null)
+                _uiState.value = _uiState.value.copy(
+                    statusMessage = appContext.getString(R.string.sync_status_manual_ip_cleared)
+                )
+                return@launch
+            }
+            val addr = withContext(Dispatchers.IO) {
+                TcpClient.parseHostPort(input, SyncConstants.DEFAULT_SYNC_PORT)
+            }
+            if (addr == null) {
+                _uiState.value = _uiState.value.copy(
+                    statusMessage = appContext.getString(R.string.sync_status_manual_ip_invalid)
+                )
+                return@launch
+            }
+            tcpClient.setManualFallback(addr)
+            _uiState.value = _uiState.value.copy(
+                statusMessage = appContext.getString(
+                    R.string.sync_status_manual_ip_set, "${addr.hostString}:${addr.port}"
+                )
+            )
+        }
     }
 
     /** Enable or disable the LAN sync session (starts/stops the foreground service). */
@@ -129,6 +177,14 @@ class SyncViewModel @Inject constructor(
     /** Push the most recent locally-generated persona to every paired peer. */
     fun pushCurrentPersonaToAll() {
         viewModelScope.launch {
+            // #213: routes only populate while the session runs, so pushing with sync disabled
+            // deterministically failed with a confusing "no route" error. Tell the user plainly.
+            if (!_uiState.value.syncEnabled) {
+                _uiState.value = _uiState.value.copy(
+                    statusMessage = appContext.getString(R.string.sync_status_push_requires_enabled)
+                )
+                return@launch
+            }
             val peers = pairedPeers.value
             if (peers.isEmpty()) {
                 _uiState.value = _uiState.value.copy(

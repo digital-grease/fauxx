@@ -190,6 +190,44 @@ class PoissonSchedulerTest {
         }
     }
 
+    // --- Cross-niche upper ceiling (issue #209) ---
+    //
+    // The lognormal dwell multiplier is unbounded, so before the fix a single cross-niche gap
+    // at LOW/MEDIUM could exceed an hour (an already-clamped baseDelay up to 15 min times the
+    // ~4.5x+ lognormal tail), starving the displayed actions/hour — users reported "a few
+    // actions then quiet for most of the hour". The dwell is now clamped to the SAME 3x-mean
+    // ceiling poissonDelay uses, so a cross-niche pause can never exceed a same-topic gap.
+
+    @Test
+    fun `cross-niche delay never exceeds the 3x-mean ceiling at LOW`() {
+        // LOW (12/hr): mean=300s, ceiling=3*300s=900s (15 min). Pre-fix this could blow past an hour.
+        repeat(5000) {
+            val delay = scheduler.nextDelayMs(
+                actionsPerHour = 12,
+                prev = CategoryPool.FINANCE,
+                next = CategoryPool.LEGAL,
+                allowedStart = ALL_HOURS_START,
+                allowedEnd = ALL_HOURS_END
+            )
+            assertTrue("LOW cross-niche must not exceed 900s (got ${delay}ms)", delay <= 900_000L)
+        }
+    }
+
+    @Test
+    fun `cross-niche delay never exceeds the 3x-mean ceiling at MEDIUM`() {
+        // MEDIUM (60/hr): mean=60s, ceiling=3*60s=180s.
+        repeat(5000) {
+            val delay = scheduler.nextDelayMs(
+                actionsPerHour = 60,
+                prev = CategoryPool.FINANCE,
+                next = CategoryPool.LEGAL,
+                allowedStart = ALL_HOURS_START,
+                allowedEnd = ALL_HOURS_END
+            )
+            assertTrue("MEDIUM cross-niche must not exceed 180s (got ${delay}ms)", delay <= 180_000L)
+        }
+    }
+
     // --- Degenerate (start == end) allowed-hours window (issue #124) ---
     //
     // The scheduler's old private predicate evaluated start==end as `hour in start until

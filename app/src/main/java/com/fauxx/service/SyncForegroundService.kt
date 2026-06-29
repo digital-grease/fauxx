@@ -77,6 +77,7 @@ class SyncForegroundService : Service() {
             return START_NOT_STICKY
         }
         startInForeground()
+        isRunning = true
         if (!started) {
             started = true
             startSession()
@@ -146,6 +147,7 @@ class SyncForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        isRunning = false
         stopSession()
         scope.cancel()
         started = false
@@ -207,6 +209,21 @@ class SyncForegroundService : Service() {
         const val CHANNEL_ID = "fauxx_sync"
         const val NOTIFICATION_ID = 2
         const val ACTION_STOP = "com.fauxx.sync.action.STOP"
+
+        /**
+         * True while the sync session is foregrounded (#213). The Sync screen's toggle defaults to
+         * false and was only ever mutated by the toggle itself, so re-entering the screen showed a
+         * stale OFF even with a session running. [SyncViewModel] seeds its state from this flag.
+         * Process-scoped: a fresh process correctly reads false.
+         */
+        @Volatile
+        var isRunning: Boolean = false
+            private set
+
+        @androidx.annotation.VisibleForTesting
+        internal fun setRunningForTest(value: Boolean) {
+            isRunning = value
+        }
 
         fun start(context: Context) {
             val intent = Intent(context, SyncForegroundService::class.java)

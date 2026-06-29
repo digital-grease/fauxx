@@ -390,6 +390,7 @@
     <string name="settings_custom_ua_field_label">Идентификатор браузера (для продвинутых — оставь пустым для автоматического чередования)</string>
     <string name="settings_custom_ua_placeholder">Mozilla/5.0 (…)</string>
     <string name="settings_custom_ua_clear_button">Очистить и возобновить чередование</string>
+    <string name="settings_custom_ua_non_chromium_warning">Это не user-agent Chrome для Android, поэтому он будет проигнорирован для синтетического просмотра (он идёт через системный WebView). Используйте user-agent Chrome для Android, чтобы он применялся.</string>
     <string name="settings_clear_all_data_button">Очистить все данные</string>
     <string name="settings_export_debug_logs_button">Экспортировать отладочные логи</string>
     <string name="settings_about_privacy_button">О приложении и приватность</string>
@@ -404,6 +405,23 @@
     <string name="sync_scan_button">Сканировать для сопряжения</string>
     <string name="sync_paste_button">Вставить данные</string>
     <string name="sync_push_button">Отправить текущую личность на сопряжённые устройства</string>
+    <!-- #213 -->
+    <string name="sync_onboarding_title">Как работает синхронизация по локальной сети</string>
+    <string name="sync_onboarding_steps">1. Включите \"Включить синхронизацию по локальной сети\" на ОБОИХ устройствах.\n2. На каждом устройстве отсканируйте (или вставьте) QR-код ДРУГОГО устройства — сопряжение должно быть выполнено в обе стороны.\n3. Держите оба устройства в одной сети Wi-Fi.\n4. Нажмите \"Отправить текущую личность\".</string>
+    <string name="sync_onboarding_blockers">Если устройства не появляются: приложение VPN или прокси либо гостевая сеть Wi-Fi с \"изоляцией клиентов\" может блокировать обнаружение. Используйте сеть без прокси или задайте IP вручную ниже.</string>
+    <string name="sync_push_disabled_hint">Включите синхронизацию по локальной сети выше, чтобы отправлять на сопряжённые устройства.</string>
+    <string name="sync_status_push_requires_enabled">Сначала включите синхронизацию по локальной сети, затем отправляйте.</string>
+    <string name="sync_discovered_empty_searching">Устройства пока не найдены. Убедитесь, что на другом устройстве также включена синхронизация по локальной сети и оно в той же сети Wi-Fi (не гостевой или изолированной), и что обнаружение не блокирует приложение VPN или прокси.</string>
+    <string name="sync_discovered_disabled">Включите синхронизацию по локальной сети, чтобы начать обнаружение устройств.</string>
+    <string name="sync_manual_ip_title">Подключение по IP (для опытных)</string>
+    <string name="sync_manual_ip_help">Если обнаружение заблокировано, введите IP-адрес сопряжённого устройства, чтобы отправить напрямую. Это работает только с уже сопряжённым устройством.</string>
+    <string name="sync_manual_ip_label">IP-адрес узла</string>
+    <string name="sync_manual_ip_placeholder">192.168.1.42</string>
+    <string name="sync_manual_ip_set_button">Использовать этот адрес</string>
+    <string name="sync_manual_ip_clear_button">Очистить</string>
+    <string name="sync_status_manual_ip_set">Адрес задан вручную: %1$s. Отправки будут использовать его, когда устройство не обнаружено.</string>
+    <string name="sync_status_manual_ip_invalid">Это не похоже на корректный IP-адрес или IP:порт.</string>
+    <string name="sync_status_manual_ip_cleared">Адрес, заданный вручную, очищен.</string>
     <string name="sync_paired_header">Сопряжённые устройства</string>
     <string name="sync_discovered_header">Обнаружены в этой сети</string>
     <string name="sync_none_yet">Пока нет.</string>
@@ -497,6 +515,7 @@
     <string name="dashboard_drift_title">ДРЕЙФ ПРОФИЛЯ</string>
     <string name="dashboard_drift_help">Насколько ваш импортированный профиль рекламных интересов отдалился от первого (базового) импорта, в виде KL-дивергенции. Большее значение означает большее движение. Дрейф также может отражать переобучение модели самой платформой, а не только работу Fauxx, поэтому воспринимайте его как индикатор, а не доказательство.</string>
     <string name="dashboard_drift_collecting">сбор данных…</string>
+    <string name="dashboard_drift_no_profile">нет рекламного профиля</string>
     <string name="dashboard_control_divergence_title">ОТРАВЛЕННЫЙ ПРОТИВ КОНТРОЛЯ</string>
     <string name="dashboard_control_divergence_help">KL-дивергенция между вашим отравленным профилем и импортированным контрольным профилем (чистая учётная запись, которую вы никогда не отравляете). Большее значение означает, что Fauxx сильнее развёл их. Показывается только после импорта контрольного профиля.</string>
     <string name="dashboard_synthetic_activity_title">СИНТЕТИЧЕСКАЯ АКТИВНОСТЬ</string>

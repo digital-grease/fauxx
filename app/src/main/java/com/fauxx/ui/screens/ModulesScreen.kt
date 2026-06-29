@@ -40,6 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.content.Context
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.fauxx.R
 import com.fauxx.engine.modules.LocationDiagnostics
 import com.fauxx.ui.viewmodels.ModulesViewModel
@@ -54,6 +56,14 @@ fun ModulesScreen(
     val uiState by viewModel.uiState.collectAsState()
     val locationFailure by viewModel.locationStartFailure.collectAsState()
     var showLocationSetupHint by remember { mutableStateOf(false) }
+
+    // #202: the mock-location AppOp is only checked when the location module (re)starts, so setting
+    // Fauxx as the "Select mock location app" in Developer Options while Location is already ON is
+    // not picked up live. Re-check on every return to this screen (e.g. back from the Developer
+    // Options deep-link) so the green/red banner refreshes without an engine restart.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshLocationStatus()
+    }
 
     if (showLocationSetupHint) {
         LocationSetupHintDialog(onDismiss = { showLocationSetupHint = false })
