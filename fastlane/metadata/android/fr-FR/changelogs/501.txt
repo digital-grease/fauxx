@@ -1,0 +1,5 @@
+• Synchro LAN plus claire : le bouton d'envoi exige la synchro activée, l'interrupteur reflète son état réel, l'appairage se fait dans les deux sens, et une nouvelle option "Connexion par IP" fonctionne quand la détection est bloquée (#213).
+• Correction d'un plantage du moteur de rendu WebView qui pouvait fermer l'application (#210).
+• Le moteur se rétablit désormais automatiquement après une erreur inattendue en arrière-plan au lieu de planter (#197).
+• Correction des longues pauses en intensité faible/moyenne (#209), actualisation en direct de la position simulée (#202), un état de tableau de bord plus clair pour les profils vides (#220) et des améliorations du user-agent personnalisé (#201).
+• Maintenance : mises à jour des dépendances et de la compilation.

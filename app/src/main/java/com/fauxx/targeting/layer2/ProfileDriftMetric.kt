@@ -7,10 +7,17 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.ln
 
-/** Whether enough snapshots exist to show a drift number yet (issue #171 E2). */
-enum class DriftState { COLLECTING, AVAILABLE }
+/**
+ * Whether a drift number can be shown yet (issue #171 E2).
+ *  - [COLLECTING]: a profile exists but not enough snapshots to compute drift (needs a second).
+ *  - [AVAILABLE]: a drift value is computed.
+ *  - [NO_PROFILE]: the user has imported a profile but it is empty — e.g. personalized ads are
+ *    turned off, so there is no ad profile to track. Distinguished from COLLECTING so the
+ *    dashboard can say so instead of showing "collecting…" forever (#220).
+ */
+enum class DriftState { COLLECTING, AVAILABLE, NO_PROFILE }
 
-/** Result of the profile-drift computation; [klDivergence] is null while [state] is COLLECTING. */
+/** Result of the profile-drift computation; [klDivergence] is null unless [state] is AVAILABLE. */
 data class DriftResult(val state: DriftState, val klDivergence: Double?)
 
 /**
@@ -28,6 +35,13 @@ class ProfileDriftMetric @Inject constructor() {
     private val gson = Gson()
 
     fun compute(snapshots: List<ProfileSnapshot>): DriftResult {
+        // If the user has imported at least one profile but the latest snapshot for every platform
+        // is empty, there is simply no ad profile to track (e.g. Google personalized ads turned
+        // off). Report NO_PROFILE so the dashboard can explain that, rather than sitting on
+        // "collecting…" indefinitely while a value can never accrue (#220).
+        if (snapshots.isNotEmpty() && latestUnion(snapshots).isEmpty()) {
+            return DriftResult(DriftState.NO_PROFILE, null)
+        }
         val baselineSets = mutableListOf<Set<CategoryPool>>()
         val currentSets = mutableListOf<Set<CategoryPool>>()
         for ((_, snaps) in snapshots.groupBy { it.platformName }) {
@@ -54,6 +68,15 @@ class ProfileDriftMetric @Inject constructor() {
         if (poisoned.isEmpty() || control.isEmpty()) return DriftResult(DriftState.COLLECTING, null)
         return DriftResult(DriftState.AVAILABLE, kl(poisoned, control))
     }
+
+    /** Union of the latest snapshot's categories per platform, across all series (#220). */
+    private fun latestUnion(snapshots: List<ProfileSnapshot>): Set<CategoryPool> =
+        snapshots.asSequence()
+            .groupBy { it.platformName }
+            .values
+            .mapNotNull { perPlatform -> perPlatform.maxByOrNull { it.capturedAt } }
+            .flatMap { parse(it.scrapedCategoriesJson) }
+            .toSet()
 
     /** Union of the latest snapshot's categories per platform, within one series. */
     private fun latestCategories(

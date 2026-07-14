@@ -614,10 +614,14 @@ private fun DriftCard(
                     help = help
                 )
                 Text(
-                    text = if (driftState == com.fauxx.targeting.layer2.DriftState.AVAILABLE && kl != null) {
-                        stringResource(R.string.dashboard_drift_value, kl)
-                    } else {
-                        stringResource(R.string.dashboard_drift_collecting)
+                    text = when {
+                        driftState == com.fauxx.targeting.layer2.DriftState.AVAILABLE && kl != null ->
+                            stringResource(R.string.dashboard_drift_value, kl)
+                        // #220: an empty imported profile (e.g. personalized ads off) can never
+                        // produce a value, so say so instead of "collecting…" forever.
+                        driftState == com.fauxx.targeting.layer2.DriftState.NO_PROFILE ->
+                            stringResource(R.string.dashboard_drift_no_profile)
+                        else -> stringResource(R.string.dashboard_drift_collecting)
                     },
                     style = MaterialTheme.typography.labelMedium,
                     fontFamily = FontFamily.Monospace,

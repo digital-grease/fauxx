@@ -1,0 +1,106 @@
+{
+  "mobile": [
+    {
+      "model": "Pixel 8",
+      "platform": "Android",
+      "platformVersion": "14.0.0",
+      "uaTemplate": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{MAJOR}.0.0.0 Mobile Safari/537.36",
+      "isMobile": true,
+      "brands": [ {"name": "Chromium", "version": "{MAJOR}"}, {"name": "Google Chrome", "version": "{MAJOR}"}, {"name": "Not?A_Brand", "version": "24"} ],
+      "screenWidth": 412, "screenHeight": 915, "devicePixelRatio": 2.625,
+      "hardwareConcurrency": 8, "deviceMemory": 8
+    },
+    {
+      "model": "Pixel 7",
+      "platform": "Android",
+      "platformVersion": "13.0.0",
+      "uaTemplate": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{MAJOR}.0.0.0 Mobile Safari/537.36",
+      "isMobile": true,
+      "brands": [ {"name": "Chromium", "version": "{MAJOR}"}, {"name": "Google Chrome", "version": "{MAJOR}"}, {"name": "Not?A_Brand", "version": "24"} ],
+      "screenWidth": 412, "screenHeight": 915, "devicePixelRatio": 2.625,
+      "hardwareConcurrency": 8, "deviceMemory": 8
+    },
+    {
+      "model": "Pixel 6a",
+      "platform": "Android",
+      "platformVersion": "13.0.0",
+      "uaTemplate": "Mozilla/5.0 (Linux; Android 13; Pixel 6a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{MAJOR}.0.0.0 Mobile Safari/537.36",
+      "isMobile": true,
+      "brands": [ {"name": "Chromium", "version": "{MAJOR}"}, {"name": "Google Chrome", "version": "{MAJOR}"}, {"name": "Not?A_Brand", "version": "24"} ],
+      "screenWidth": 412, "screenHeight": 915, "devicePixelRatio": 2.625,
+      "hardwareConcurrency": 8, "deviceMemory": 6
+    },
+    {
+      "model": "SM-S911B",
+      "platform": "Android",
+      "platformVersion": "14.0.0",
+      "uaTemplate": "Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{MAJOR}.0.0.0 Mobile Safari/537.36",
+      "isMobile": true,
+      "brands": [ {"name": "Chromium", "version": "{MAJOR}"}, {"name": "Google Chrome", "version": "{MAJOR}"}, {"name": "Not?A_Brand", "version": "24"} ],
+      "screenWidth": 360, "screenHeight": 780, "devicePixelRatio": 3.0,
+      "hardwareConcurrency": 8, "deviceMemory": 12
+    },
+    {
+      "model": "SM-S901B",
+      "platform": "Android",
+      "platformVersion": "13.0.0",
+      "uaTemplate": "Mozilla/5.0 (Linux; Android 13; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{MAJOR}.0.0.0 Mobile Safari/537.36",
+      "isMobile": true,
+      "brands": [ {"name": "Chromium", "version": "{MAJOR}"}, {"name": "Google Chrome", "version": "{MAJOR}"}, {"name": "Not?A_Brand", "version": "24"} ],
+      "screenWidth": 360, "screenHeight": 780, "devicePixelRatio": 3.0,
+      "hardwareConcurrency": 8, "deviceMemory": 8
+    },
+    {
+      "model": "SM-A546B",
+      "platform": "Android",
+      "platformVersion": "14.0.0",
+      "uaTemplate": "Mozilla/5.0 (Linux; Android 14; SM-A546B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{MAJOR}.0.0.0 Mobile Safari/537.36",
+      "isMobile": true,
+      "brands": [ {"name": "Chromium", "version": "{MAJOR}"}, {"name": "Google Chrome", "version": "{MAJOR}"}, {"name": "Not?A_Brand", "version": "24"} ],
+      "screenWidth": 384, "screenHeight": 854, "devicePixelRatio": 2.8125,
+      "hardwareConcurrency": 8, "deviceMemory": 6
+    }
+  ],
+  "desktop": [
+    {
+      "model": "",
+      "platform": "Windows",
+      "platformVersion": "15.0.0",
+      "uaTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{MAJOR}.0.0.0 Safari/537.36",
+      "isMobile": false,
+      "brands": [ {"name": "Chromium", "version": "{MAJOR}"}, {"name": "Google Chrome", "version": "{MAJOR}"}, {"name": "Not?A_Brand", "version": "24"} ],
+      "screenWidth": 1920, "screenHeight": 1080, "devicePixelRatio": 1.0,
+      "hardwareConcurrency": 8, "deviceMemory": 16
+    },
+    {
+      "model": "",
+      "platform": "Windows",
+      "platformVersion": "10.0.0",
+      "uaTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{MAJOR}.0.0.0 Safari/537.36",
+      "isMobile": false,
+      "brands": [ {"name": "Chromium", "version": "{MAJOR}"}, {"name": "Google Chrome", "version": "{MAJOR}"}, {"name": "Not?A_Brand", "version": "24"} ],
+      "screenWidth": 1536, "screenHeight": 864, "devicePixelRatio": 1.25,
+      "hardwareConcurrency": 12, "deviceMemory": 16
+    },
+    {
+      "model": "",
+      "platform": "macOS",
+      "platformVersion": "14.5.0",
+      "uaTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{MAJOR}.0.0.0 Safari/537.36",
+      "isMobile": false,
+      "brands": [ {"name": "Chromium", "version": "{MAJOR}"}, {"name": "Google Chrome", "version": "{MAJOR}"}, {"name": "Not?A_Brand", "version": "24"} ],
+      "screenWidth": 1512, "screenHeight": 982, "devicePixelRatio": 2.0,
+      "hardwareConcurrency": 8, "deviceMemory": 16
+    },
+    {
+      "model": "",
+      "platform": "Linux",
+      "platformVersion": "",
+      "uaTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{MAJOR}.0.0.0 Safari/537.36",
+      "isMobile": false,
+      "brands": [ {"name": "Chromium", "version": "{MAJOR}"}, {"name": "Google Chrome", "version": "{MAJOR}"}, {"name": "Not?A_Brand", "version": "24"} ],
+      "screenWidth": 1920, "screenHeight": 1080, "devicePixelRatio": 1.0,
+      "hardwareConcurrency": 12, "deviceMemory": 32
+    }
+  ]
+}

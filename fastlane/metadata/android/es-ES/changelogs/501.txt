@@ -1,0 +1,5 @@
+• Sincronización LAN más clara: el botón de envío requiere la sincronización activada, el interruptor refleja su estado real, el emparejamiento es en ambos sentidos y hay una nueva opción "Conectar por IP" cuando se bloquea la detección (#213).
+• Corregido un fallo del renderizador del WebView que podía cerrar la app (#210).
+• El motor ahora se recupera automáticamente de un error inesperado en segundo plano en lugar de fallar (#197).
+• Corregidas las pausas largas en intensidad baja/media (#209), actualización en vivo de la ubicación simulada (#202), un estado del panel más claro para perfiles vacíos (#220) y mejoras del user-agent personalizado (#201).
+• Mantenimiento: actualizaciones de dependencias y de compilación.

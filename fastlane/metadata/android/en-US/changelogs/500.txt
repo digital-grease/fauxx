@@ -1,0 +1,2 @@
+• New: Cross-device sync. From the new LAN Sync screen in Settings, pair Fauxx with the Fauxx Desktop companion or another device by scanning a QR code, then share one coherent synthetic persona across them. Pairing and transfer happen entirely on your local Wi-Fi, end-to-end encrypted, with no account and no cloud.
+• Maintenance: dependency and build updates

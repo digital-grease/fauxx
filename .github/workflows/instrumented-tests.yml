@@ -30,7 +30,7 @@ jobs:
         api-level: [34]
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # Hardware acceleration: the emulator is unusably slow on the runner without /dev/kvm.
       - name: Enable KVM

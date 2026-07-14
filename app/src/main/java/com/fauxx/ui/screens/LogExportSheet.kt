@@ -38,11 +38,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import com.fauxx.BuildConfig
 import com.fauxx.R
 import com.fauxx.util.CrashReportUrlBuilder
-import java.io.File
+import com.fauxx.util.FileShare
 
 private const val GITHUB_ISSUES_URL = "https://github.com/digital-grease/fauxx/issues/new"
 
@@ -211,25 +210,17 @@ private fun openBugReportForm(context: Context) {
 }
 
 private fun shareViaIntent(context: Context, content: String, fileName: String, subject: String) {
-    val tempFile = File(context.cacheDir, fileName)
-    tempFile.writeText(content)
-
-    val uri = FileProvider.getUriForFile(
-        context,
-        "${context.packageName}.fileprovider",
-        tempFile
+    // Shares the export as a FileProvider stream (never an EXTRA_TEXT extra) so a large log cannot
+    // overflow the Binder transaction limit and crash on startActivity (issue #239).
+    val shared = FileShare.share(
+        context = context,
+        content = content,
+        mimeType = "text/plain",
+        fileName = fileName,
+        chooserTitle = subject,
+        caption = context.getString(R.string.log_export_share_text, subject),
     )
-
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        putExtra(Intent.EXTRA_SUBJECT, subject)
-        putExtra(Intent.EXTRA_TEXT, context.getString(R.string.log_export_share_text, subject))
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    try {
-        context.startActivity(Intent.createChooser(intent, subject))
-    } catch (_: ActivityNotFoundException) {
+    if (!shared) {
         Toast.makeText(context, context.getString(R.string.log_export_toast_no_sharing_app), Toast.LENGTH_LONG).show()
     }
 }

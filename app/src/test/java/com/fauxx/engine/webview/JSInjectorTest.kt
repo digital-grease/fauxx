@@ -1,5 +1,8 @@
 package com.fauxx.engine.webview
 
+import com.fauxx.data.device.Brand
+import com.fauxx.data.device.DeviceProfile
+import com.fauxx.data.device.FormFactor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -8,59 +11,52 @@ import org.junit.Test
 /**
  * Payload structure / composition guard for [JSInjector].
  *
- * These scripts are static string constants with NO runtime interpolation, so there is
- * nothing to escape and no need to mock a WebView. This suite is therefore framed honestly
- * as a tripwire over the shape and composition of the payloads: it verifies that the
- * combined script contains every individual payload in the expected order, that each
- * payload is a well-formed IIFE with balanced delimiters, and that the security-relevant
- * API names each payload is supposed to override are actually present. It does NOT execute
- * or parse the JavaScript.
+ * The static payloads (canvas, WASM, eval, font, GPC) are string constants; the navigator override
+ * is now a function of the persona [DeviceProfile] (issue #242), emitting FIXED, device-consistent
+ * values instead of per-read random ones. This suite is a tripwire over the shape and composition of
+ * the payloads and over the navigator override's device coherence; it does NOT execute the JS.
  */
 class JSInjectorTest {
 
-    /** The five individual payloads that [JSInjector.ALL_SCRIPTS] is built from. */
+    /** The five individual payloads that [JSInjector.allScripts] is built from (device-less form). */
     private val individualScripts = listOf(
         JSInjector.CANVAS_NOISE_SCRIPT,
-        JSInjector.NAVIGATOR_OVERRIDE_SCRIPT,
+        JSInjector.navigatorOverrideScript(null),
         JSInjector.FONT_SPOOF_SCRIPT,
         JSInjector.WASM_WORKER_BLOCK_SCRIPT,
         JSInjector.EVAL_BLOCK_SCRIPT
     )
 
-    // --- Composition of ALL_SCRIPTS ---------------------------------------------------------
+    // --- Composition of allScripts ----------------------------------------------------------
 
     @Test
-    fun `ALL_SCRIPTS contains every individual payload`() {
+    fun `allScripts contains every individual payload`() {
+        val all = JSInjector.allScripts(null)
         for (script in individualScripts) {
-            assertTrue(JSInjector.ALL_SCRIPTS.contains(script))
+            assertTrue(all.contains(script))
         }
     }
 
     @Test
-    fun `ALL_SCRIPTS joins payloads with a blank-line separator`() {
-        // joinToString("\n\n") puts exactly one blank line between adjacent payloads.
-        assertTrue(JSInjector.ALL_SCRIPTS.contains("})();\n\n(function()"))
+    fun `allScripts joins payloads with a blank-line separator`() {
+        assertTrue(JSInjector.allScripts(null).contains("})();\n\n(function()"))
     }
 
     @Test
-    fun `ALL_SCRIPTS orders payloads WASM EVAL CANVAS NAVIGATOR FONT`() {
-        // The listOf order in ALL_SCRIPTS differs from the source declaration order;
-        // assert the combined order via ascending index of each payload.
-        val all = JSInjector.ALL_SCRIPTS
+    fun `allScripts orders payloads WASM EVAL CANVAS NAVIGATOR FONT`() {
+        val all = JSInjector.allScripts(null)
         val wasm = all.indexOf(JSInjector.WASM_WORKER_BLOCK_SCRIPT)
         val eval = all.indexOf(JSInjector.EVAL_BLOCK_SCRIPT)
         val canvas = all.indexOf(JSInjector.CANVAS_NOISE_SCRIPT)
-        val navigator = all.indexOf(JSInjector.NAVIGATOR_OVERRIDE_SCRIPT)
+        val navigator = all.indexOf(JSInjector.navigatorOverrideScript(null))
         val font = all.indexOf(JSInjector.FONT_SPOOF_SCRIPT)
 
-        // every payload is actually present
         assertTrue(wasm >= 0)
         assertTrue(eval >= 0)
         assertTrue(canvas >= 0)
         assertTrue(navigator >= 0)
         assertTrue(font >= 0)
 
-        // and they appear in the listOf order: WASM < EVAL < CANVAS < NAVIGATOR < FONT
         assertTrue(wasm < eval)
         assertTrue(eval < canvas)
         assertTrue(canvas < navigator)
@@ -80,9 +76,6 @@ class JSInjectorTest {
 
     @Test
     fun `each payload has balanced parentheses and braces`() {
-        // Syntactic tripwire, NOT a real JS parser: this only compares total open/close
-        // character counts. It catches a dropped delimiter from a future edit, but does
-        // not validate nesting or string-literal context.
         for (script in individualScripts) {
             assertEquals(script.count { it == '(' }, script.count { it == ')' })
             assertEquals(script.count { it == '{' }, script.count { it == '}' })
@@ -96,16 +89,38 @@ class JSInjectorTest {
         val script = JSInjector.CANVAS_NOISE_SCRIPT
         assertTrue(script.contains("HTMLCanvasElement.prototype.getContext"))
         assertTrue(script.contains("getImageData"))
-        // exact perturbation noise call from the canvas payload
         assertTrue(script.contains("imageData.data[i] += Math.floor(Math.random() * 3) - 1;"))
     }
 
     @Test
-    fun `NAVIGATOR payload redefines hardwareConcurrency and deviceMemory`() {
-        val script = JSInjector.NAVIGATOR_OVERRIDE_SCRIPT
+    fun `navigator payload redefines hardwareConcurrency and deviceMemory`() {
+        val script = JSInjector.navigatorOverrideScript(null)
         assertTrue(script.contains("hardwareConcurrency"))
         assertTrue(script.contains("deviceMemory"))
         assertTrue(script.contains("Object.defineProperty"))
+    }
+
+    @Test
+    fun `navigator payload emits the device's FIXED values and never per-read randomness`() {
+        val device = DeviceProfile(
+            formFactor = FormFactor.MOBILE, userAgent = "ua", platform = "Android",
+            platformVersion = "14.0.0", model = "Pixel 6a", isMobile = true,
+            brands = listOf(Brand("Chromium", "142")), screenWidth = 412, screenHeight = 915,
+            devicePixelRatio = 2.625f, hardwareConcurrency = 6, deviceMemory = 8,
+        )
+        val script = JSInjector.navigatorOverrideScript(device)
+        // The #242 regression: a real device never varies these per read.
+        assertFalse("must not vary per read", script.contains("Math.random"))
+        assertTrue("hardwareConcurrency must be the device's value", script.contains("hardwareConcurrency', { get: () => 6 }"))
+        assertTrue("deviceMemory must be the device's value", script.contains("deviceMemory', { get: () => 8 }"))
+    }
+
+    @Test
+    fun `navigator payload falls back to fixed defaults with no device`() {
+        val script = JSInjector.navigatorOverrideScript(null)
+        assertFalse(script.contains("Math.random"))
+        assertTrue(script.contains("hardwareConcurrency', { get: () => ${JSInjector.DEFAULT_HARDWARE_CONCURRENCY} }"))
+        assertTrue(script.contains("deviceMemory', { get: () => ${JSInjector.DEFAULT_DEVICE_MEMORY_GB} }"))
     }
 
     @Test
@@ -124,7 +139,6 @@ class JSInjectorTest {
         assertTrue(script.contains("window.Function"))
         assertTrue(script.contains("setTimeout"))
         assertTrue(script.contains("setInterval"))
-        // the string-argument guard that defeats implicit eval via timers
         assertTrue(script.contains("typeof fn === 'string'"))
     }
 
@@ -137,13 +151,12 @@ class JSInjectorTest {
 
     @Test
     fun `no payload contains an unresolved Kotlin template marker`() {
-        // These are raw string constants with no interpolation. If a future edit introduces
-        // a Kotlin string template, the literal "${" two-character sequence would only survive
-        // into the payload if it were escaped/unresolved. Guard against that leaking out.
+        // The static payloads have no interpolation; the navigator override interpolates only bounded
+        // Ints (which render as digits). A stray unresolved "${" must never survive into any payload.
         val marker = "\${"
         for (script in individualScripts) {
             assertFalse(script.contains(marker))
         }
-        assertFalse(JSInjector.ALL_SCRIPTS.contains(marker))
+        assertFalse(JSInjector.allScripts(null).contains(marker))
     }
 }

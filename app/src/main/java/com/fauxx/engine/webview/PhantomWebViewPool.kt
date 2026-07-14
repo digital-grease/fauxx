@@ -6,6 +6,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.db.LogMetadata
+import com.fauxx.data.device.DeviceProfile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
+import timber.log.Timber
 
 /** Maximum number of WebView instances in the pool. */
 private const val POOL_SIZE = 2
@@ -75,6 +77,9 @@ class PhantomWebViewPool @Inject constructor(
     /** Per-WebView allowed-resource-request counter, reset on [acquire] (issue #73 metadata). */
     private val resourceCounters = ConcurrentHashMap<String, AtomicInteger>()
 
+    /** Total renderer-process deaths recovered from (issue #210), for diagnostics. */
+    private val rendererDeaths = AtomicInteger(0)
+
     /**
      * Current User-Agent string to apply to WebViews on acquire.
      * Updated by [FingerprintModule] on each rotation action.
@@ -82,11 +87,28 @@ class PhantomWebViewPool @Inject constructor(
     private val currentUserAgent = AtomicReference<String?>(null)
 
     /**
+     * Current persona device (issue #242): its UA is applied to WebViews on acquire and its fixed
+     * navigator values are injected on page load (via the client's device provider). Null when Layer
+     * 3 is off, in which case the injected navigator values fall back to fixed defaults.
+     */
+    private val currentDevice = AtomicReference<DeviceProfile?>(null)
+
+    /**
      * Set the User-Agent string that will be applied to WebViews when they are acquired.
      * Called by FingerprintModule when a UA rotation action fires.
      */
     fun setUserAgent(ua: String) {
         currentUserAgent.set(ua)
+    }
+
+    /**
+     * Bind the active persona's [device] (issue #242): applies its UA on the next acquire and makes
+     * the injected navigator overrides use its fixed hardwareConcurrency/deviceMemory. Called by
+     * FingerprintModule when a persona is active.
+     */
+    fun setDevice(device: DeviceProfile) {
+        currentDevice.set(device)
+        currentUserAgent.set(device.userAgent)
     }
 
     /**
@@ -185,11 +207,16 @@ class PhantomWebViewPool @Inject constructor(
         try {
             withTimeoutOrNull(MAIN_OP_TIMEOUT_MS) {
                 withContext(Dispatchers.Main) {
-                    webView.stopLoading()
-                    webView.clearHistory()
-                    webView.clearCache(false)
-                    webView.evaluateJavascript("document.open();document.close();", null)
-                    webView.loadUrl("about:blank")
+                    // Guard the cleanup: after a renderer death (issue #210) this instance may be
+                    // broken or already destroyed + replaced in the pool, so these ops can throw.
+                    // The bookkeeping in the finally must still run so the permit is returned.
+                    runCatching {
+                        webView.stopLoading()
+                        webView.clearHistory()
+                        webView.clearCache(false)
+                        webView.evaluateJavascript("document.open();document.close();", null)
+                        webView.loadUrl("about:blank")
+                    }
                     // Note: WebStorage.getInstance().deleteAllData() is intentionally NOT called
                     // here because it's a global singleton that wipes storage for ALL WebView
                     // instances. Per-WebView cleanup (stopLoading + clearHistory + clearCache +
@@ -219,6 +246,34 @@ class PhantomWebViewPool @Inject constructor(
         pool.forEach { it.destroy() }
         pool.clear()
         initialized = false
+    }
+
+    /**
+     * Recover from a system-WebView renderer-process death (issue #210). [PhantomWebViewClient]
+     * returns true from onRenderProcessGone (so Android never terminates the whole app process)
+     * and routes the dead instance here. We destroy it and swap a freshly-created WebView into the
+     * same pool slot (same tag), so the engine can keep running on the next acquire.
+     *
+     * Always invoked on the main thread — WebView callbacks are delivered on the creating thread,
+     * which is also where [pool] is mutated in [initialize]/[acquire]/[destroy] — so the list swap
+     * here cannot race those. A WebView whose renderer died but that is still acquired and in-flight
+     * is destroyed here; the engine's current action on it fails and is caught by the engine's
+     * per-action try/catch, and the subsequent [release] is defended with runCatching.
+     */
+    private fun handleRendererGone(dead: WebView) {
+        val total = rendererDeaths.incrementAndGet()
+        val tag = dead.tag as? String
+        val index = pool.indexOfFirst { it === dead }
+        if (index < 0) {
+            // Already swapped out (e.g. a duplicate callback for the same instance). Just destroy.
+            Timber.w("Renderer death for an already-replaced WebView (tag=$tag, total=$total)")
+            runCatching { dead.destroy() }
+            return
+        }
+        Timber.w("Rebuilding phantom WebView pool slot after renderer death (tag=$tag, total=$total)")
+        val replacement = createWebView(tag = tag ?: "pool_$index")
+        pool[index] = replacement
+        runCatching { dead.destroy() }
     }
 
     private fun createWebView(tag: String): WebView {
@@ -256,7 +311,12 @@ class PhantomWebViewPool @Inject constructor(
 
         val resourceCounter = AtomicInteger(0)
         resourceCounters[tag] = resourceCounter
-        webView.webViewClient = PhantomWebViewClient(blocklist, resourceCounter = resourceCounter)
+        webView.webViewClient = PhantomWebViewClient(
+            blocklist,
+            resourceCounter = resourceCounter,
+            onRenderGone = ::handleRendererGone,
+            deviceProvider = { currentDevice.get() },
+        )
         webView.isClickable = false
         webView.isFocusable = false
 

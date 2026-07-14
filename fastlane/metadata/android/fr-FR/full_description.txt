@@ -1,10 +1,10 @@
-Fauxx est un outil de confidentialité open source qui vous protège en générant en arrière-plan une activité de navigation synthétique et variée. En inondant les courtiers en données et les plateformes publicitaires de bruit plausible étranger à votre profil, Fauxx rend votre signal comportemental réel statistiquement indissociable des fausses données.
+Fauxx est un outil de confidentialité open source qui vous protège en générant en arrière-plan une activité de navigation synthétique et variée. En alimentant les courtiers en données et les plateformes publicitaires en activité leurre plausible, étrangère à votre profil et qui ressemble à de vraies personnes, Fauxx rend votre signal comportemental réel indissociable de fausses données convaincantes : de la tromperie, pas du bruit facile à filtrer.
 
 Ceci est la version COMPLÈTE distribuée via F-Droid et GitHub. Elle inclut tous les modules, y compris l'usurpation de localisation et la pollution du profil publicitaire, qui ne sont pas disponibles dans la version Play Store en raison des règles de Google.
 
 COMMENT ÇA MARCHE
 
-Fauxx s'exécute discrètement en arrière-plan et effectue des activités de navigation variées dans de nombreuses catégories de sujets : recherches, visites de pages, requêtes DNS, rotation d'empreinte numérique, pollution du profil publicitaire et usurpation de localisation GPS. L'objectif est d'enfouir vos centres d'intérêt réels sous une montagne de bruit synthétique afin que les courtiers en données ne puissent pas établir un profil précis de vous.
+Fauxx s'exécute discrètement en arrière-plan et effectue des activités de navigation variées dans de nombreuses catégories de sujets : recherches, visites de pages, requêtes DNS, une identité d'appareil stable par persona, pollution du profil publicitaire et usurpation de localisation GPS. L'objectif est d'enfouir vos centres d'intérêt réels sous un flux d'activité leurre cohérente et crédible afin que les courtiers en données ne puissent pas savoir quel « vous » est réel.
 
 FONCTIONNALITÉS
 
@@ -12,7 +12,7 @@ FONCTIONNALITÉS
 • Visites de sites web diversifiées dans des dizaines de catégories de contenu
 • Pollution du profil publicitaire : charge des pages riches en publicités pour injecter des signaux publicitaires étrangers à votre démographie
 • Usurpation de localisation GPS : fournit de fausses coordonnées via le fournisseur de localisation fictive (nécessite les options pour développeurs)
-• Rotation de l'empreinte du navigateur (User-Agent, bruit de canvas, en-têtes de langue)
+• Identité d'appareil stable par persona : un User-Agent cohérent + client hints par persona synthétique, sans rotation aléatoire (plus le bruit de canvas)
 • Diversification des requêtes DNS
 • Moteur de ciblage intelligent avec 3 couches de distanciation démographique
 • Rotation de personas synthétiques : adopte une nouvelle fausse identité chaque semaine
@@ -23,7 +23,7 @@ FONCTIONNALITÉS
 
 CIBLAGE DÉMOGRAPHIQUE OPTIONNEL
 
-Renseignez Fauxx sur vous (âge, genre, centres d'intérêt, profession, région) et il générera un bruit aussi différent que possible de votre profil réel. Toutes les données démographiques restent chiffrées sur votre appareil. Ignorez entièrement la configuration pour un bruit aléatoire uniforme.
+Renseignez Fauxx sur vous (âge, genre, centres d'intérêt, profession, région) et il générera une activité leurre aussi différente que possible de votre profil réel. Toutes les données démographiques restent chiffrées sur votre appareil. Ignorez entièrement la configuration pour des leurres uniformes et sans biais.
 
 LA CONFIDENTIALITÉ AVANT TOUT
 

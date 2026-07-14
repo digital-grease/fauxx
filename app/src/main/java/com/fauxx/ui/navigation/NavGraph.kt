@@ -56,6 +56,7 @@ import com.fauxx.ui.screens.ModulesScreen
 import com.fauxx.ui.screens.AboutScreen
 import com.fauxx.ui.screens.SettingsScreen
 import com.fauxx.ui.screens.TargetingScreen
+import com.fauxx.ui.sync.SyncScreen
 
 private const val README_URL = "https://github.com/digital-grease/fauxx#readme"
 // Opens the issue form picker (crash / bug / feature / question / other). Lands users
@@ -73,6 +74,7 @@ sealed class Screen(val route: String, @androidx.annotation.StringRes val labelR
     object Onboarding : Screen("onboarding", R.string.nav_onboarding)
     object About : Screen("about", R.string.about_title)
     object Faq : Screen("faq", R.string.faq_title)
+    object Sync : Screen("sync", R.string.settings_lan_sync_button)
 }
 
 private val bottomNavItems = listOf(
@@ -149,12 +151,14 @@ fun FauxxNavGraph(showOnboarding: Boolean) {
                 composable(Screen.Log.route) { LogScreen() }
                 composable(Screen.Settings.route) {
                     SettingsScreen(
-                        onNavigateToAbout = { navController.navigate(Screen.About.route) }
+                        onNavigateToAbout = { navController.navigate(Screen.About.route) },
+                        onNavigateToSync = { navController.navigate(Screen.Sync.route) }
                     )
                 }
                 composable(Screen.About.route) {
                     AboutScreen(onBack = { navController.popBackStack() })
                 }
+                composable(Screen.Sync.route) { SyncScreen() }
                 composable(Screen.Faq.route) {
                     FaqScreen(onBack = { navController.popBackStack() })
                 }

@@ -1,10 +1,16 @@
 package com.fauxx.engine.webview
 
+import com.fauxx.data.device.DeviceProfile
+
 /**
  * JavaScript payloads injected into background WebViews to reduce fingerprinting consistency.
  * These scripts override browser APIs commonly used for fingerprinting.
  */
 object JSInjector {
+
+    /** Fallback navigator values when no persona device is bound (Layer 3 off). Fixed, not random. */
+    const val DEFAULT_HARDWARE_CONCURRENCY = 8
+    const val DEFAULT_DEVICE_MEMORY_GB = 8
 
     /**
      * Canvas fingerprint noise: adds subtle random pixel offsets to canvas draw calls,
@@ -32,21 +38,27 @@ object JSInjector {
     """.trimIndent()
 
     /**
-     * Navigator property overrides: randomizes minor properties used for fingerprinting.
-     * Does not break normal page functionality.
+     * Navigator property overrides for the persona's device (issue #242).
+     *
+     * The old version returned a fresh `Math.random()` value on EVERY read of
+     * `navigator.hardwareConcurrency`/`deviceMemory` — a real device never varies these, so reading
+     * the same property twice and getting different numbers was itself an automation tell, and it
+     * contradicted the persona's stable User-Agent. This emits the persona [device]'s FIXED,
+     * coherent values instead (falling back to common fixed defaults when Layer 3 is off, never
+     * per-read random).
      */
-    val NAVIGATOR_OVERRIDE_SCRIPT = """
-        (function() {
-            const hardwareConcurrencies = [2, 4, 6, 8];
-            const deviceMemories = [2, 4, 8];
-            Object.defineProperty(navigator, 'hardwareConcurrency', {
-                get: () => hardwareConcurrencies[Math.floor(Math.random() * hardwareConcurrencies.length)]
-            });
-            Object.defineProperty(navigator, 'deviceMemory', {
-                get: () => deviceMemories[Math.floor(Math.random() * deviceMemories.length)]
-            });
-        })();
-    """.trimIndent()
+    fun navigatorOverrideScript(device: DeviceProfile?): String {
+        // Bounded plain Ints (values come from the bundled device catalog, never user input). The
+        // coerce guarantees only digits reach the script — no interpolation/injection surface.
+        val cores: Int = (device?.hardwareConcurrency ?: DEFAULT_HARDWARE_CONCURRENCY).coerceIn(1, 64)
+        val memory: Int = (device?.deviceMemory ?: DEFAULT_DEVICE_MEMORY_GB).coerceIn(1, 64)
+        return """
+            (function() {
+                Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => $cores });
+                Object.defineProperty(navigator, 'deviceMemory', { get: () => $memory });
+            })();
+        """.trimIndent()
+    }
 
     /**
      * Font enumeration spoofing: returns a consistent but randomized font list
@@ -136,12 +148,12 @@ object JSInjector {
         })();
     """.trimIndent()
 
-    /** Combined script injected on every page load. */
-    val ALL_SCRIPTS = listOf(
+    /** Combined script injected on every non-high-scrutiny page load, tailored to [device]. */
+    fun allScripts(device: DeviceProfile?): String = listOf(
         WASM_WORKER_BLOCK_SCRIPT,
         EVAL_BLOCK_SCRIPT,
         CANVAS_NOISE_SCRIPT,
-        NAVIGATOR_OVERRIDE_SCRIPT,
+        navigatorOverrideScript(device),
         FONT_SPOOF_SCRIPT,
         GPC_SCRIPT
     ).joinToString("\n\n")

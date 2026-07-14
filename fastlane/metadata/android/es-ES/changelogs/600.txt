@@ -1,0 +1,4 @@
+• Novedad: Identidad de dispositivo. Cada persona presenta ahora un dispositivo estable y creíble, con un user-agent de navegador coherente y señales de dispositivo acordes, en lugar de rotar al azar. Los señuelos coherentes son mucho más difíciles de filtrar para los agregadores de datos (#242).
+• Corregido un fallo al exportar un historial de registros extenso a HTML o JSON (#239).
+• La sincronización LAN ahora converge: una persona enviada a un teléfono emparejado se adopta como su persona activa, de modo que ambos dispositivos coinciden (#234).
+• Mantenimiento: actualizaciones de dependencias y de compilación.

@@ -56,13 +56,7 @@ class UserAgentPool @Inject constructor(
         return if (chromiumAndroidAgents.isNotEmpty()) chromiumAndroidAgents.random(random) else DEFAULT_UA
     }
 
-    /** Android + Chrome/Samsung only; excludes Firefox, Opera, Edge, and iOS browsers. */
-    private fun isChromiumAndroid(ua: String): Boolean =
-        ua.contains("Android") && ua.contains("Chrome/") &&
-            !ua.contains("Firefox") && !ua.contains("OPR/") &&
-            !ua.contains("EdgA") && !ua.contains("CriOS") && !ua.contains("FxiOS")
-
-    private val chromiumAndroidAgents: List<String> by lazy { agents.filter(::isChromiumAndroid) }
+    private val chromiumAndroidAgents: List<String> by lazy { agents.filter { isChromiumAndroid(it) } }
 
     private fun loadAgents(): List<String> {
         return try {
@@ -80,5 +74,16 @@ class UserAgentPool @Inject constructor(
         private const val DEFAULT_UA =
             "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 " +
             "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+
+        /**
+         * Android + Chrome/Samsung only; excludes Firefox, Opera, Edge, and iOS browsers. A custom
+         * UA is honored on the WebView path only when this holds (the System WebView always does an
+         * Android-Chromium TLS handshake, so a non-Chromium UA there recreates the #168 tell). The
+         * Settings screen uses this to warn that a non-Chromium custom UA will be ignored (#201).
+         */
+        internal fun isChromiumAndroid(ua: String): Boolean =
+            ua.contains("Android") && ua.contains("Chrome/") &&
+                !ua.contains("Firefox") && !ua.contains("OPR/") &&
+                !ua.contains("EdgA") && !ua.contains("CriOS") && !ua.contains("FxiOS")
     }
 }

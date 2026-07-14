@@ -1,0 +1,5 @@
+• LAN Sync is much clearer: Push now requires sync to be enabled, the toggle reflects its real state, pairing is two-way, and a new "Connect by IP" fallback works when discovery is blocked (#213).
+• Fixed a system WebView renderer crash that could take down the app (#210).
+• The engine now recovers automatically from an unexpected background error instead of crashing (#197).
+• Fixed long quiet stretches at low/medium intensity (#209), live mock-location refresh (#202), a clearer empty-profile dashboard state (#220), and custom user-agent cleanups (#201).
+• Maintenance: dependency and build updates.

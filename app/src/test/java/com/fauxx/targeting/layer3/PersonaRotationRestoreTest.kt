@@ -40,8 +40,11 @@ class PersonaRotationRestoreTest {
     }
 
     private fun layerWithHistory(entries: List<PersonaHistoryEntity>): PersonaRotationLayer {
+        // Restore reads history by insert order (id DESC) so a synced-adopted persona survives a
+        // restart (#234); these tests supply already-ordered lists with id == createdAt, so the
+        // pick is unchanged from the createdAt-DESC contract this test originally locked (#63).
         val dao: PersonaHistoryDao = mockk(relaxed = true) {
-            coEvery { getRecentPersonas(any()) } returns entries
+            coEvery { getRecentByInsertOrder(any()) } returns entries
         }
         return PersonaRotationLayer(generator, dao)
     }
@@ -108,7 +111,7 @@ class PersonaRotationRestoreTest {
     @Test
     fun `restore returns null when DAO query throws`() = runTest {
         val dao: PersonaHistoryDao = mockk {
-            coEvery { getRecentPersonas(any()) } throws RuntimeException("DB unavailable")
+            coEvery { getRecentByInsertOrder(any()) } throws RuntimeException("DB unavailable")
         }
         val layer = PersonaRotationLayer(generator, dao)
         assertNull(layer.restoreMostRecentActivePersona())

@@ -9,21 +9,25 @@
 
 **Data poisoning for your everyday tracking.**
 
-Fauxx is an open-source Android privacy tool that poisons data broker and ad-tech profiles by generating continuous, plausible, off-demographic synthetic activity from your device. The goal is simple: make your real behavioral signal statistically indistinguishable from noise.
+Fauxx is an open-source Android privacy tool that poisons data broker and ad-tech profiles by generating continuous, plausible, off-demographic synthetic activity from your device. The goal is simple: bury your real behavioral signal under a steady stream of coherent, believable decoy activity, so profilers can't tell the real you from the plausible fakes. Not easily-filterable noise — deception that reads as real people.
 
 > 💬 **Questions about how Fauxx works, or wishlist ideas?** Use [Discussions](https://github.com/digital-grease/fauxx/discussions). Bug reports and feature requests stay in [Issues](https://github.com/digital-grease/fauxx/issues).
 
+> 💬 **Looking for the AI usage disclosure?** See [AIUSE.md](https://github.com/digital-grease/fauxx/blob/main/AIUSE.md)
+
 > 📦 **Where to get it:** Fauxx ships via **F-Droid**, **GitHub Releases**, and sideload / Obtainium. **The Google Play build is no longer maintained or published.** Play is too restrictive for Fauxx's full feature set (it disallows the location-spoofing and ad-profile-pollution modules), and it is moving toward requiring the age-verification API, which a no-account privacy tool has no business integrating. The `play` build flavor stays in the source in case that ever changes (CI still debug-compiles and unit-tests it so it doesn't rot unnoticed), but it carries no quality gates and is no longer built, shipped, or allowed to block a release.
+
+> 🖥️ **Desktop companion (alpha):** [fauxx-desktop](https://github.com/digital-grease/fauxx-desktop) is a new, early-alpha cross-device privacy command center (a Rust headless core with an Iced GUI). It runs decoy generation on a desktop or homelab box and shares an encrypted, local-only LAN persona-sync protocol with the Android app, so paired devices can keep one coherent persona. It is alpha software, so expect rough edges while it stabilizes.
 
 ## The Problem
 
 Every search you make, every link you click, every location you visit is collected by data brokers, ad networks, and analytics platforms. Over time, they build a detailed profile of who you are, what you want, and what you're likely to do next. That profile is sold, traded, and collated with other data and profiles to continue the process.
 
-Fauxx addresses this by injecting continuous, category-weighted synthetic activity that obscures your real interests under a statistical cloud. Your genuine signal becomes noise.
+Fauxx addresses this by injecting continuous, category-weighted synthetic activity that obscures your real interests under a cloud of plausible, believable decoys. Your genuine signal gets lost among convincing fakes — not random noise a broker can filter out, but coherent activity that looks like real people.
 
 ## How It Works
 
-Fauxx uses a **Demographic Distancing Engine**—a layered system that determines what noise to generate:
+Fauxx uses a **Demographic Distancing Engine**—a layered system that decides what synthetic activity to generate:
 
 ### Layer 0: Uniform Entropy (Always Active)
 
@@ -31,14 +35,14 @@ The baseline: equal probability across all content categories. This is your foun
 
 ### Layer 1: Self-Report (Optional)
 
-You optionally tell Fauxx coarse demographics (age range, interests, profession, region). Fauxx then weights AWAY from these categories—generating noise in the things you don't care about, maximizing confusion.
+You optionally tell Fauxx coarse demographics (age range, interests, profession, region). Fauxx then weights AWAY from these categories—generating believable decoy activity in the things you don't care about, so the interests it steers clear of are your real ones.
 
-- Skip it? You keep Layer 0 uniform noise.
+- Skip it? You keep Layer 0's uniform, unbiased decoys.
 - Enable it? Your real profile becomes harder to infer.
 
 ### Layer 2: Ad-Profile Import (Opt-in, Advanced)
 
-Fauxx imports the ad-interest profile the platforms have already built about you, from a data export you provide: Google Takeout ("My Ad Center") or Facebook's "Download Your Information" (JSON). It reads exactly what the ad networks think they know about you, then aggressively suppresses those confirmed categories so the synthetic activity floods everything else instead.
+Fauxx imports the ad-interest profile the platforms have already built about you, from a data export you provide: Google Takeout ("My Ad Center") or Facebook's "Download Your Information" (JSON). It reads exactly what the ad networks think they know about you, then aggressively suppresses those confirmed categories so the decoy activity concentrates on believable off-profile interests instead.
 
 - You provide an exported file. Fauxx never logs in, reads cookies, or touches the platforms.
 - Reads the file only. Nothing is sent anywhere.
@@ -47,13 +51,13 @@ Fauxx imports the ad-interest profile the platforms have already built about you
 
 ### Layer 3: Synthetic Persona Rotation (Active When L1 or L2 Enabled)
 
-To prevent pattern detection, Fauxx generates a coherent synthetic persona every 7 days (with random jitter). This persona—a fake age, profession, interests, region—becomes your "noise profile" for that week. It changes on a schedule, adding temporal coherence and making you harder to fingerprint.
+To avoid a predictable change-point, Fauxx rotates to a fresh coherent persona on a jittered schedule: a 7-day base plus 1 to 3 days of random jitter, re-rolled every cycle, so rotations never land on a fixed weekly tick. This persona (a fake age, profession, interests, and region) becomes the decoy identity that shapes the next stretch of activity: a believable person who isn't you. And it doesn't all flip at once. The persona's channels (device, location, queries, rhythm, category weights) phase in over hours through staggered adoption, so a broker sees no single synchronized change-point to lock onto.
 
 ### How Weights Combine
 
 All layers produce a weight map across content categories. These weights multiply together and normalize, so the final distribution sums to 1.0. Categories are clamped with a minimum weight of 0.001—absence is still a signal.
 
-Example: If you report yourself as a 25-year-old software engineer, Layer 1 drops RETIREMENT and PARENTING to 0.15× (away-from) and boosts GAMING and TECHNOLOGY to 2.5× (toward other interests). When Layer 2 imports your ad profile and sees Google has tagged you with TECH, it further suppresses TECH (0.05×) and boosts categories Google has never associated with you (3.0×). These multiply together, then Layer 3 blends in the weekly persona's preferences. The result: a noise distribution that looks nothing like your real profile.
+Example: If you report yourself as a 25-year-old software engineer, Layer 1 drops RETIREMENT and PARENTING to 0.15× (away-from) and boosts GAMING and TECHNOLOGY to 2.5× (toward other interests). When Layer 2 imports your ad profile and sees Google has tagged you with TECH, it further suppresses TECH (0.05×) and boosts categories Google has never associated with you (3.0×). These multiply together, then Layer 3 blends in the weekly persona's preferences. The result: a decoy profile that reads like a real person, just not you.
 
 ## Modules
 
@@ -61,7 +65,7 @@ Fauxx poisons through seven complementary channels:
 
 ### 1. Search Poisoning
 
-Executes synthetic search queries across Google, Bing, DuckDuckGo, and Yahoo. Queries are generated using a Markov-chain model trained on a bundled corpus—they're natural-sounding and topically coherent, not random gibberish. Each query is followed by 1–3 result clicks with random dwell time (2–30 seconds).
+Executes synthetic search queries across Google, Bing, DuckDuckGo, and Yahoo. Most queries are composed on-device by a per-install grammar model (with a Markov fallback) over a bundled corpus, so they read as natural, topically coherent searches rather than random gibberish. The grammar is styled per install, so no two devices emit the same query distribution for a broker to fingerprint. Each query is followed by 1–3 result clicks with random dwell time (2–30 seconds).
 
 **Category-aware:** Query bank selection is weighted by your targeting engine output.
 
@@ -80,9 +84,9 @@ Powered by a database of 800+ world city centers. Location selection is weighted
 
 **Setup:** Android requires you to designate the mock-location app explicitly. Enable Developer Options (Settings → About phone → tap Build Number 7 times), then Developer Options → "Select mock location app" → Fauxx. The Location Spoofing toggle surfaces this dialog on first enable. The Play Store build does not include this module; F-Droid / sideload only.
 
-### 4. Fingerprint Rotation
+### 4. Device Identity
 
-Continuously rotates User-Agent strings (from a pool of 275+ real-world UA strings), injects canvas fingerprint noise via JavaScript, randomizes Accept-Language and Accept-Encoding headers, and periodically resets the Android Advertising ID. This layer disrupts browser fingerprinting and device-level profiling.
+Presents a **stable, coherent device identity** per synthetic persona rather than churning random User-Agents. Each persona gets one believable Android device — a consistent User-Agent plus matching client-hint and `navigator` values (hardware concurrency, device memory, screen) — derived deterministically from the persona, so the synthetic traffic reads as one real device instead of the User-Agent-hopping pattern anti-fraud systems trivially flag and discard. The browser version drifts slowly over time to mimic real auto-updates. Canvas fingerprint noise is still injected via JavaScript to blunt pixel-level fingerprinting.
 
 ### 5. Cookie Saturation
 
@@ -90,13 +94,13 @@ Visits 2,400+ categorized URLs in isolated background WebViews, accumulating tra
 
 **Category-aware:** URL selection weighted by your targeting engine.
 
-### 6. App Signal Noise
+### 6. App Signals
 
-Opens deep links and app store pages for off-profile applications, triggering attribution pixel fires that make ad networks think you're interested in categories you've never touched.
+Opens deep links and app store pages for off-profile applications, triggering attribution pixel fires that lead ad networks to believe you're interested in categories you've never touched.
 
 ### 7. DNS Noise
 
-Resolves diverse domain names, generating DNS query noise visible to ISP and network-level trackers. Adds another layer of confusion at the network level.
+Resolves a diverse spread of domain names, so the DNS lookups visible to ISP and network-level trackers reflect the decoy activity instead of only your real destinations.
 
 ## Privacy Guarantees
 
@@ -171,7 +175,7 @@ On first launch, Fauxx offers an optional demographic self-report flow:
 - Profession
 - Region
 
-Every screen has a visible "Skip" button. You can skip all of it and run on pure Layer 0 uniform noise.
+Every screen has a visible "Skip" button. You can skip all of it and run on pure Layer 0 uniform, unbiased decoys.
 
 ### Dashboard
 
@@ -180,7 +184,7 @@ View at a glance:
 - Actions executed today/this week (animated counter)
 - Per-module activity sparklines
 - Current synthetic persona (name, age, interests)
-- Category distribution donut chart showing how noise is spread
+- Category distribution donut chart showing how the decoy activity is spread
 
 ### Targeting
 
@@ -196,9 +200,9 @@ Toggle each poison module independently:
 - Search Poisoning (choose search engines)
 - Ad Pollution
 - Location Spoofing (location spoofing mode)
-- Fingerprint Rotation
+- Device Identity
 - Cookie Saturation (URL categories)
-- App Signal Noise
+- App Signals
 - DNS Noise
 
 ### Log
@@ -208,7 +212,7 @@ Scrollable audit log of all actions with timestamps, types, and details. Export 
 ### Settings
 
 Global controls:
-- **Wi-Fi intensity:** Low (light noise) / Medium (balanced) / High (aggressive) / Max (highest volume)
+- **Wi-Fi intensity:** Low (light activity) / Medium (balanced) / High (aggressive) / Max (highest volume)
 - **Mobile data intensity:** a separate Off / Low / Medium / High / Max ladder for mobile data — Off (the default) never touches mobile data; any tier runs the engine on mobile at its own rate
 - **Battery threshold:** Minimum battery % to run actions
 - **Active hours:** Time range when actions should run (e.g., 7am–11pm)
@@ -222,7 +226,7 @@ All configurable values are exposed in the app UI and backed by Room preferences
 - **Action timing:** Poisson-distributed with human-like bursts (3–7 actions, then 5–20 min gaps)
 - **Cross-niche dwell:** Lognormal dwell-time multiplier on category transitions (e.g., Finance → Legal) with a 30s floor — defeats heuristic bot detection that flags sub-second niche switches
 - **Circadian pattern:** Near-zero activity 11pm–7am local time
-- **Layer 3 rotation:** Every 7 days ± [1, 3] days jitter
+- **Layer 3 rotation:** 7-day base + 1–3 days random jitter (~8–10 days), re-rolled each cycle; channels phase in via staggered adoption
 - **Layer 2 re-import reminder:** about 90 days (the import is manual, not scheduled)
 
 ## Project Structure
@@ -328,9 +332,9 @@ See `.devloop/spikes/multilingual-support.md` for the design and threat model.
 
 It's a throughput indicator: `min(actions today / 500, 100%)`. 500 actions in a day reads as a "saturated" Noise Ratio of 100%.
 
-What it *doesn't* measure: the *quality* of the noise — whether the synthetic activity is hitting categories that are actually different from your real interests, whether it's fooling profiling systems, or how diverse the topics are. It's just a rate gauge.
+What it *doesn't* measure: the *quality* of the decoy activity — whether it's hitting categories that are actually different from your real interests, whether it's fooling profiling systems, or how diverse the topics are. It's just a rate gauge.
 
-If you want to see where the noise is actually going, the **Targeting screen's category-weight chart** is more useful: red bars are categories Fauxx is suppressing (because they match your demographic profile), green bars are categories it's boosting (off-profile noise), gray is neutral.
+If you want to see where the decoy activity is actually going, the **Targeting screen's category-weight chart** is more useful: red bars are categories Fauxx is suppressing (because they match your demographic profile), green bars are categories it's boosting (off-profile decoys), gray is neutral.
 
 A future release will move Noise Ratio toward a quality-aware metric rather than pure throughput. Tracked as a planned improvement.
 
@@ -381,11 +385,11 @@ Fauxx operates within the terms of service of search engines and ad platforms, b
 
 - **Adversaries:** Data brokers, ad networks, analytics platforms, ISPs.
 - **Data in scope:** The weak, low-confidence signals these adversaries infer from search queries, URL visits, location history, device fingerprints, app-store interest signals, and DNS queries.
-- **Goal:** Dilution at the edge of the identity graph. Fauxx adds plausible synthetic activity so that low-confidence behavioral inferences become noisier and less certain. It does not replace or overwrite a profile.
+- **Goal:** Dilution at the edge of the identity graph. Fauxx adds plausible decoy activity so that low-confidence behavioral inferences become less certain and less trustworthy to the profiler. It does not replace or overwrite a profile.
 
 ### What Fauxx does not reach
 
-Fauxx jams weak signals. It deliberately does not attempt to defeat the strong, deterministic mechanisms modern profiling anchors on, and it makes no claim to affect the following:
+Fauxx targets weak signals with believable decoys. It deliberately does not attempt to defeat the strong, deterministic mechanisms modern profiling anchors on, and it makes no claim to affect the following:
 
 - **Deterministic identity joins** from your real email address or phone number.
 - **Google Privacy Sandbox Topics.** Fauxx runs in isolated WebViews that do not influence the Topics your real browser computes.

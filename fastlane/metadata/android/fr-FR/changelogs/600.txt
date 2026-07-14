@@ -1,0 +1,4 @@
+• Nouveau : Identité d'appareil. Chaque persona présente désormais un appareil stable et crédible, avec un user-agent de navigateur cohérent et des signaux d'appareil concordants, au lieu d'une rotation aléatoire. Les leurres cohérents sont bien plus difficiles à filtrer pour les courtiers en données (#242).
+• Correction d'un plantage lors de l'export d'un long historique de journaux en HTML ou JSON (#239).
+• La synchro LAN converge désormais : une persona envoyée à un téléphone appairé est adoptée comme sa persona active, de sorte que les deux appareils correspondent (#234).
+• Maintenance : mises à jour des dépendances et de la compilation.

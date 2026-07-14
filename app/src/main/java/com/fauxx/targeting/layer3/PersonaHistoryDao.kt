@@ -36,6 +36,16 @@ interface PersonaHistoryDao {
     @Query("SELECT * FROM persona_history WHERE createdAt > :sinceMillis ORDER BY createdAt DESC")
     suspend fun getRecentPersonas(sinceMillis: Long): List<PersonaHistoryEntity>
 
+    /**
+     * Personas within retention ordered by INSERT ORDER (autoincrement `id` DESC), so the most
+     * recently STORED persona is first. Used to restore the last-active persona (#234): a persona
+     * adopted from a paired device carries the sender's `createdAt`, which may be older than a local
+     * persona, so `createdAt` ordering would revert the adoption on restart. Insert order does not.
+     * For local-only history, insert order matches `createdAt` order, so restore is unchanged.
+     */
+    @Query("SELECT * FROM persona_history WHERE createdAt > :sinceMillis ORDER BY id DESC")
+    suspend fun getRecentByInsertOrder(sinceMillis: Long): List<PersonaHistoryEntity>
+
     /** Delete all persona history (e.g., "Clear My Profile" action). */
     @Query("DELETE FROM persona_history")
     suspend fun deleteAll()

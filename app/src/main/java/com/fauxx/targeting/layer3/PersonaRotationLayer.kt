@@ -192,13 +192,60 @@ class PersonaRotationLayer @Inject constructor(
      */
     internal suspend fun restoreMostRecentActivePersona(): SyntheticPersona? {
         val cutoff = clock.currentTimeMillis() - HISTORY_RETENTION_MS
-        val entries = runCatching { historyDao.getRecentPersonas(cutoff) }.getOrNull() ?: return null
+        val entries = runCatching { historyDao.getRecentByInsertOrder(cutoff) }.getOrNull() ?: return null
         val now = clock.currentTimeMillis()
-        // `getRecentPersonas` already sorts DESC by createdAt — first deserializable
-        // entry whose activeUntil is in the future is the right pick.
+        // Ordered by insert order (id DESC): the most recently STORED persona — whether locally
+        // rotated or adopted from a paired device (#234) — is first. First deserializable entry
+        // whose activeUntil is in the future is the currently-active persona. For local-only
+        // history this equals createdAt order, so restore is unchanged for existing users.
         return entries.asSequence()
             .mapNotNull { runCatching { gson.fromJson(it.personaJson, SyntheticPersona::class.java) }.getOrNull() }
             .firstOrNull { it.activeUntil > now }
+    }
+
+    /**
+     * Adopt a persona received from a paired device as the active persona (#234), so paired
+     * devices converge to one coherent persona instead of the receiver silently keeping its own.
+     * Fire-and-forget wrapper over [adoptSyncedPersonaInternal], wired from the sync session (see
+     * [com.fauxx.sync.transport.SyncListener]'s `onPersona` hook).
+     */
+    fun adoptSyncedPersona(persona: SyntheticPersona) {
+        scope.launch { adoptSyncedPersonaInternal(persona) }
+    }
+
+    /**
+     * The adoption body (internal + suspend so tests can await it deterministically, mirroring
+     * [restoreMostRecentActivePersona]).
+     *
+     * A push is an explicit convergence event, not the weekly automatic change-point, so the new
+     * identity is adopted on ALL channels at once (previous persona cleared) rather than staggered.
+     * An already-expired incoming persona is ignored (adopting a dead identity would immediately
+     * rotate it out), and re-delivery of the persona already active is a no-op. The persona is
+     * written to history so the adoption survives a process restart: [restoreMostRecentActivePersona]
+     * reads history by insert order, so this last-stored active persona is the one restored.
+     */
+    @androidx.annotation.VisibleForTesting
+    internal suspend fun adoptSyncedPersonaInternal(persona: SyntheticPersona) {
+        try {
+            val now = clock.currentTimeMillis()
+            if (now > persona.activeUntil) {
+                Timber.i("LAN sync: ignoring already-expired synced persona ${persona.id}")
+                return
+            }
+            if (_currentPersona.value?.id == persona.id) return // idempotent: already active
+            _previousPersona.value = null
+            _currentPersona.value = persona
+            historyDao.insert(
+                PersonaHistoryEntity(
+                    personaJson = gson.toJson(persona),
+                    createdAt = persona.createdAt
+                )
+            )
+            historyDao.pruneOlderThan(now - HISTORY_RETENTION_MS)
+            Timber.i("LAN sync: adopted synced persona ${persona.name} (${persona.id}) as active")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to adopt synced persona ${persona.id}")
+        }
     }
 
     /**
@@ -287,6 +334,9 @@ class PersonaRotationLayer @Inject constructor(
  * rotated persona after its own deterministic lag — see
  * [PersonaRotationLayer.personaForChannel]. WEIGHTS is the Layer 3 category
  * distribution itself (added by E9 #176: the peakier blend made an unstaggered
- * weights flip the sharpest remaining rotation change-point).
+ * weights flip the sharpest remaining rotation change-point). DEVICE is the
+ * persona's browser/device identity (issue #242): the WebView presents the
+ * persona's stable mobile [com.fauxx.data.device.DeviceProfile], staggered so the
+ * User-Agent does not flip in the same instant as the other channels at rotation.
  */
-enum class PersonaChannel { LOCATION, APP_SIGNAL, RHYTHM, WEIGHTS, QUERY }
+enum class PersonaChannel { LOCATION, APP_SIGNAL, RHYTHM, WEIGHTS, QUERY, DEVICE }

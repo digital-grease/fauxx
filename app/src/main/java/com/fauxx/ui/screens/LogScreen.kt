@@ -1,6 +1,7 @@
 package com.fauxx.ui.screens
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -55,6 +56,7 @@ import com.fauxx.data.model.ActionType
 import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.viewmodels.LogListItem
 import com.fauxx.ui.viewmodels.LogViewModel
+import com.fauxx.util.FileShare
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -75,9 +77,33 @@ fun LogScreen(
     val context = LocalContext.current
     var showExportMenu by remember { mutableStateOf(false) }
     val chooserTitle = stringResource(R.string.log_export_chooser_title)
+    // Resolve resource values via stringResource (not context.getString on LocalContext.current) so
+    // Compose handles config changes and lint's LocalContextGetResourceValueCall stays satisfied.
+    val noSharingAppMessage = stringResource(R.string.log_export_toast_no_sharing_app)
+    val csvShareCaption = stringResource(R.string.log_export_share_text, "action_log.csv")
+    val jsonShareCaption = stringResource(R.string.log_export_share_text, "action_log.json")
+    val htmlShareCaption = stringResource(R.string.log_export_share_text, "action_log.html")
 
     val onShareEntry: (ActionLogEntity) -> Unit = { entry ->
         shareText(context, viewModel.formatEntry(entry), "text/plain", "action_log_entry.txt", chooserTitle)
+    }
+
+    // Full-log exports (CSV/JSON/HTML) can be several megabytes, so they are shared as a file via
+    // FileProvider, never an Intent EXTRA_TEXT extra. A megabyte in EXTRA_TEXT overflows the ~1MB
+    // Binder transaction limit and crashes on startActivity (issue #239). The per-entry share above
+    // stays inline text because a single entry is tiny.
+    val shareExport: (String, String, String, String) -> Unit = { content, mimeType, fileName, caption ->
+        val shared = FileShare.share(
+            context = context,
+            content = content,
+            mimeType = mimeType,
+            fileName = fileName,
+            chooserTitle = chooserTitle,
+            caption = caption,
+        )
+        if (!shared) {
+            Toast.makeText(context, noSharingAppMessage, Toast.LENGTH_LONG).show()
+        }
     }
 
     Column(
@@ -114,7 +140,7 @@ fun LogScreen(
                         onClick = {
                             showExportMenu = false
                             viewModel.exportCsv { csv ->
-                                shareText(context, csv, "text/csv", "action_log.csv", chooserTitle)
+                                shareExport(csv, "text/csv", "action_log.csv", csvShareCaption)
                             }
                         }
                     )
@@ -123,7 +149,7 @@ fun LogScreen(
                         onClick = {
                             showExportMenu = false
                             viewModel.exportJson { json ->
-                                shareText(context, json, "application/json", "action_log.json", chooserTitle)
+                                shareExport(json, "application/json", "action_log.json", jsonShareCaption)
                             }
                         }
                     )
@@ -132,7 +158,7 @@ fun LogScreen(
                         onClick = {
                             showExportMenu = false
                             viewModel.exportHtml { html ->
-                                shareText(context, html, "text/html", "action_log.html", chooserTitle)
+                                shareExport(html, "text/html", "action_log.html", htmlShareCaption)
                             }
                         }
                     )

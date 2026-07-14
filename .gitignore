@@ -61,6 +61,9 @@ Thumbs.db
 CLAUDE.md
 .devloop
 .claude/
+# Local working/reference docs (e.g. the E13 handoff brief + sync protocol copy).
+# The canonical sync contract lives in fauxx-desktop/docs/SYNC_PROTOCOL.md.
+docs/
 # Local one-off dev/AI-review tools stay ignored; the E7 persona-distribution
 # builder is committed (it regenerates a shipped asset and must be reviewable).
 scripts/*

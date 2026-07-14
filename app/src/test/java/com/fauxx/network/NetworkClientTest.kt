@@ -127,6 +127,10 @@ class NetworkClientTest {
 
     @Test
     fun `User-Agent rotates across the pool over the wire`() {
+        // NOTE: this exercises the ORPHANED OkHttp path (HeaderRandomizerInterceptor, #183 — no live
+        // traffic routes through it). The LIVE WebView path now presents the active persona's STABLE
+        // device UA (#242), NOT per-request rotation; this only guards the retained interceptor's
+        // mechanics, it is not the product's UA behavior.
         // REAL pool (2 UAs from the mocked asset) + REAL interceptor, both seam-injected
         // with a seeded Random so the rotation is deterministic but still varies per call.
         val pool = setOf("UA-Alpha/1.0", "UA-Bravo/2.0")

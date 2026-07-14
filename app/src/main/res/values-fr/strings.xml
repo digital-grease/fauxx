@@ -20,11 +20,11 @@
 
     <!-- Onboarding -->
     <string name="onboarding_title">FAUXX</string>
-    <string name="onboarding_subtitle">La vie privée par le bruit</string>
+    <string name="onboarding_subtitle">La vie privée par la tromperie</string>
     <string name="onboarding_intro">Fauxx protège ta vie privée en générant une activité de navigation synthétique en arrière-plan. Voici ce qu\'il fait :</string>
     <string name="onboarding_bullet_search">Effectue des recherches web sur Google, Bing, DuckDuckGo et Yahoo sur des sujets variés</string>
     <string name="onboarding_bullet_browse">Visite une grande variété de sites pour diversifier ton profil de navigation</string>
-    <string name="onboarding_bullet_fingerprint">Fait tourner les empreintes du navigateur (User-Agent, en-têtes de langue)</string>
+    <string name="onboarding_bullet_fingerprint">Présente une identité d\'appareil stable par persona (User-Agent, client hints)</string>
     <string name="onboarding_bullet_dns">Génère des requêtes DNS vers des domaines variés</string>
     <string name="onboarding_bullet_battery">Toute l\'activité s\'exécute en arrière-plan et consomme de la batterie et des données</string>
     <string name="onboarding_optional_profile">Si tu le souhaites, parle-nous de toi sur les écrans suivants. Ces informations restent sur ton appareil et nous aident à générer un bruit différent de ton vrai profil. Passe cette étape si tu préfères un bruit uniforme.</string>
@@ -54,7 +54,7 @@
     <string name="consent_intro">Fauxx effectuera les activités suivantes en arrière-plan :</string>
     <string name="consent_bullet_search">Rechercher des sujets variés sur Google, Bing, DuckDuckGo et Yahoo</string>
     <string name="consent_bullet_browse">Visiter divers sites pour élargir ton profil de navigation</string>
-    <string name="consent_bullet_fingerprint">Faire tourner les empreintes du navigateur (User-Agent, en-têtes de langue)</string>
+    <string name="consent_bullet_fingerprint">Présenter une identité d\'appareil stable par persona (User-Agent, client hints)</string>
     <string name="consent_bullet_dns">Générer des requêtes DNS vers des domaines variés</string>
     <string name="consent_bullet_battery">Utiliser la batterie et les données mobiles en arrière-plan</string>
     <string name="consent_footer">Toute l\'activité est synthétique et reste sur ton appareil. Aucune donnée personnelle n\'est collectée ni transmise.</string>
@@ -272,8 +272,8 @@
     <string name="module_cookie_description">Visite plus de 10 000 URL en arrière-plan pour accumuler des cookies de pistage variés</string>
     <string name="module_dns_name">Bruit DNS</string>
     <string name="module_dns_description">Résout des domaines variés pour générer un bruit de requêtes DNS visible par le FAI</string>
-    <string name="module_fingerprint_name">Rotation d\'empreintes</string>
-    <string name="module_fingerprint_description">Fait tourner le User-Agent, le bruit canvas et les propriétés du navigateur</string>
+    <string name="module_fingerprint_name">Identité de l\'appareil</string>
+    <string name="module_fingerprint_description">Présente un appareil stable par persona (User-Agent, client hints, navigator) plus le bruit canvas</string>
     <string name="module_ad_name">Pollution publicitaire</string>
     <string name="module_ad_description">Charge des pages saturées de publicités et visite les tableaux de bord des préférences publicitaires</string>
     <string name="module_location_name">Simulation de position</string>
@@ -329,9 +329,58 @@
     <string name="settings_custom_ua_field_label">Identifiant de navigateur (avancé — laisse vide pour la rotation automatique)</string>
     <string name="settings_custom_ua_placeholder">Mozilla/5.0 (…)</string>
     <string name="settings_custom_ua_clear_button">Effacer et reprendre la rotation</string>
+    <string name="settings_custom_ua_non_chromium_warning">Ce n\'est pas un user-agent Chrome sur Android, il sera donc ignoré pour la navigation synthétique (qui passe par le WebView du système). Utilisez un user-agent Chrome sur Android pour qu\'il soit appliqué.</string>
     <string name="settings_clear_all_data_button">Effacer toutes les données</string>
     <string name="settings_export_debug_logs_button">Exporter les journaux de débogage</string>
     <string name="settings_about_privacy_button">À propos et politique de confidentialité</string>
+    <string name="settings_lan_sync_button">Synchronisation LAN</string>
+
+    <!-- LAN sync screen (E13 #178) -->
+    <string name="sync_enable_title">Activer la synchronisation LAN</string>
+    <string name="sync_my_qr_title">Mon QR d\'appairage</string>
+    <string name="sync_qr_content_desc">QR d\'appairage de cet appareil</string>
+    <string name="sync_fingerprint_label">Empreinte : %1$s</string>
+    <string name="sync_qr_hint">Faites scanner ceci par l\'autre appareil, ou scannez le sien.</string>
+    <string name="sync_scan_button">Scanner pour appairer</string>
+    <string name="sync_paste_button">Coller la charge utile</string>
+    <string name="sync_push_button">Envoyer la persona actuelle aux appareils appairés</string>
+    <!-- #213 -->
+    <string name="sync_onboarding_title">Comment fonctionne la synchro LAN</string>
+    <string name="sync_onboarding_steps">1. Activez \"Activer la synchro LAN\" sur LES DEUX appareils.\n2. Sur chaque appareil, scannez (ou collez) le QR de l\'AUTRE appareil — l\'appairage doit se faire dans les deux sens.\n3. Gardez les deux appareils sur le même Wi-Fi.\n4. Touchez \"Envoyer la persona actuelle\".</string>
+    <string name="sync_onboarding_blockers">Si les appareils n\'apparaissent pas : une app VPN ou proxy, ou un réseau Wi-Fi invité/\"isolation des clients\", peut bloquer la découverte. Utilisez un réseau sans proxy, ou définissez une IP manuelle ci-dessous.</string>
+    <string name="sync_push_disabled_hint">Activez la synchro LAN ci-dessus pour envoyer à vos appareils appairés.</string>
+    <string name="sync_status_push_requires_enabled">Activez d\'abord la synchro LAN, puis envoyez.</string>
+    <string name="sync_discovered_empty_searching">Aucun appareil trouvé pour l\'instant. Vérifiez que l\'autre appareil a aussi la synchro LAN activée et se trouve sur le même Wi-Fi (pas un réseau invité ou isolé), et qu\'aucune app VPN ou proxy ne bloque la découverte.</string>
+    <string name="sync_discovered_disabled">Activez la synchro LAN pour commencer à découvrir des appareils.</string>
+    <string name="sync_manual_ip_title">Connexion par IP (avancé)</string>
+    <string name="sync_manual_ip_help">Si la découverte est bloquée, saisissez l\'adresse IP d\'un appareil appairé pour lui envoyer directement. Cela ne fonctionne qu\'avec un appareil déjà appairé.</string>
+    <string name="sync_manual_ip_label">Adresse IP du pair</string>
+    <string name="sync_manual_ip_placeholder">192.168.1.42</string>
+    <string name="sync_manual_ip_set_button">Utiliser cette adresse</string>
+    <string name="sync_manual_ip_clear_button">Effacer</string>
+    <string name="sync_status_manual_ip_set">Adresse manuelle définie : %1$s. Les envois l\'utiliseront quand un appareil n\'est pas découvert.</string>
+    <string name="sync_status_manual_ip_invalid">Cela ne ressemble pas à une adresse IP ou IP:port valide.</string>
+    <string name="sync_status_manual_ip_cleared">Adresse manuelle effacée.</string>
+    <string name="sync_paired_header">Appareils appairés</string>
+    <string name="sync_discovered_header">Découverts sur ce réseau</string>
+    <string name="sync_none_yet">Aucun pour l\'instant.</string>
+    <string name="sync_revoke_button">Révoquer</string>
+    <string name="sync_no_fingerprint">(aucune empreinte annoncée)</string>
+    <string name="sync_paste_dialog_title">Coller la charge utile d\'appairage</string>
+    <string name="sync_paste_field_label">Charge utile base64url</string>
+    <string name="sync_pair_button">Appairer</string>
+    <string name="sync_cancel_button">Annuler</string>
+    <string name="sync_scan_prompt">Scannez le QR d\'appairage Fauxx de l\'autre appareil</string>
+    <string name="sync_status_enabled">Synchronisation activée. Visible sur ce réseau.</string>
+    <string name="sync_status_stopped">Synchronisation arrêtée.</string>
+    <string name="sync_status_paired">Appairé avec %1$s (%2$s)</string>
+    <string name="sync_status_pair_failed">Échec de l\'appairage : %1$s</string>
+    <string name="sync_status_removed">%1$s supprimé</string>
+    <string name="sync_status_no_peers">Aucun pair appairé vers qui envoyer.</string>
+    <string name="sync_status_no_persona">Aucune persona locale à envoyer pour l\'instant.</string>
+    <string name="sync_status_push_result">Envoyé à %1$d pair(s) sur %2$d</string>
+    <string name="sync_status_push_result_failures">Envoyé à %1$d pair(s) sur %2$d ; aucune route vers %3$s</string>
+    <string name="sync_status_imported">Persona leurre %1$s importée (%2$s)</string>
     <string name="settings_version_info">Fauxx v%1$s (build %2$d)</string>
     <string name="settings_clear_dialog_title">Effacer toutes les données ?</string>
     <string name="settings_clear_dialog_body">Cela supprimera définitivement :\n• Tous les journaux d\'actions\n• Ton profil démographique\n• Le cache des profils publicitaires\n• L\'historique des personas générés\n\nTous les paramètres seront réinitialisés à leurs valeurs par défaut. Le moteur s\'arrêtera et reviendra à la Couche 0 (bruit uniforme).\n\nCette action est irréversible.</string>
@@ -446,6 +495,7 @@
     <string name="dashboard_drift_title">DÉRIVE DU PROFIL</string>
     <string name="dashboard_drift_help">À quel point votre profil d\'intérêts publicitaires importé s\'est éloigné de votre premier import (de référence), exprimé en divergence KL. Plus la valeur est élevée, plus le mouvement est important. La dérive peut aussi refléter le réentraînement du modèle par la plateforme, pas seulement Fauxx, considérez-la donc comme un indicateur, pas une preuve.</string>
     <string name="dashboard_drift_collecting">collecte…</string>
+    <string name="dashboard_drift_no_profile">aucun profil publicitaire</string>
     <string name="dashboard_control_divergence_title">EMPOISONNÉ VS CONTRÔLE</string>
     <string name="dashboard_control_divergence_help">Divergence KL entre votre profil empoisonné et un profil de contrôle importé (un compte propre que vous n\'empoisonnez jamais). Plus la valeur est élevée, plus Fauxx a éloigné les deux profils. Affiché uniquement après avoir importé un profil de contrôle.</string>
     <string name="dashboard_synthetic_activity_title">ACTIVITÉ SYNTHÉTIQUE</string>

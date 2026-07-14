@@ -10,6 +10,8 @@ import com.fauxx.data.db.PhantomDatabase
 import com.fauxx.engine.scheduling.CircadianUsageDao
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer2.PlatformProfileDao
+import com.fauxx.sync.data.PairedPeerDao
+import com.fauxx.sync.data.SyncedPersonaDao
 import com.fauxx.targeting.layer2.ProfileSnapshotDao
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import dagger.Module
@@ -66,6 +68,14 @@ object TestDatabaseModule {
     @Singleton
     fun provideCircadianUsageDao(db: PhantomDatabase): CircadianUsageDao =
         db.circadianUsageDao()
+
+    @Provides
+    @Singleton
+    fun providePairedPeerDao(db: PhantomDatabase): PairedPeerDao = db.pairedPeerDao()
+
+    @Provides
+    @Singleton
+    fun provideSyncedPersonaDao(db: PhantomDatabase): SyncedPersonaDao = db.syncedPersonaDao()
 
     @Provides
     @Singleton

@@ -1,0 +1,4 @@
+• New: Device Identity. Each persona now presents one stable, believable device, a consistent browser user-agent with matching device signals, instead of rotating at random. Coherent decoys are much harder for data brokers to filter out (#242).
+• Fixed a crash when exporting a large log history to HTML or JSON (#239).
+• LAN Sync now converges: a persona pushed to a paired phone is adopted as its active persona, so both devices match (#234).
+• Maintenance: dependency and build updates.

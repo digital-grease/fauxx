@@ -31,11 +31,11 @@
 
     <!-- Onboarding -->
     <string name="onboarding_title">FAUXX</string>
-    <string name="onboarding_subtitle">Приватность через шум</string>
+    <string name="onboarding_subtitle">Приватность через обман</string>
     <string name="onboarding_intro">Fauxx защищает твою приватность, создавая синтетическую активность в браузере в фоновом режиме. Вот что он делает:</string>
     <string name="onboarding_bullet_search">Выполняет веб-поиск в Google, Bing, DuckDuckGo и Yahoo на разные темы</string>
     <string name="onboarding_bullet_browse">Посещает разные сайты, чтобы разнообразить твой профиль браузинга</string>
-    <string name="onboarding_bullet_fingerprint">Меняет отпечатки браузера: User-Agent и языковые заголовки</string>
+    <string name="onboarding_bullet_fingerprint">Представляет стабильную идентичность устройства для каждой личности (User-Agent, client hints)</string>
     <string name="onboarding_bullet_dns">Создает DNS-запросы к разным доменам</string>
     <string name="onboarding_bullet_battery">Вся активность выполняется в фоне и расходует заряд батареи и трафик</string>
     <string name="onboarding_optional_profile">При желании расскажи о себе на следующих экранах. Эти данные останутся на твоём устройстве и помогут генерировать шум, отличающийся от твоего реального профиля. Пропусти, если хочешь равномерный шум.</string>
@@ -65,7 +65,7 @@
     <string name="consent_intro">Fauxx будет выполнять следующие фоновые действия:</string>
     <string name="consent_bullet_search">Искать разные темы в Google, Bing, DuckDuckGo и Yahoo</string>
     <string name="consent_bullet_browse">Посещать разные сайты, чтобы расширить твой профиль браузинга</string>
-    <string name="consent_bullet_fingerprint">Менять отпечатки браузера: User-Agent и языковые заголовки</string>
+    <string name="consent_bullet_fingerprint">Представлять стабильную идентичность устройства для каждой личности (User-Agent, client hints)</string>
     <string name="consent_bullet_dns">Создавать DNS-запросы к разным доменам</string>
     <string name="consent_bullet_battery">Расходовать заряд батареи и мобильный трафик во время фоновой работы</string>
     <string name="consent_footer">Вся активность синтетическая и остаётся на твоём устройстве. Личные данные не собираются и не передаются.</string>
@@ -201,7 +201,7 @@
     <string name="module_search_name">Зашумление поиска</string>
     <string name="module_cookie_name">Насыщение cookie</string>
     <string name="module_dns_name">Шум DNS</string>
-    <string name="module_fingerprint_name">Смена отпечатка</string>
+    <string name="module_fingerprint_name">Идентичность устройства</string>
     <string name="module_ad_name">Зашумление рекламы</string>
     <string name="module_location_name">Подмена местоположения</string>
 
@@ -347,7 +347,7 @@
     <string name="module_search_description">Выполняет поисковые запросы в Google, Bing, DuckDuckGo, Yahoo</string>
     <string name="module_cookie_description">Посещает 10 000+ URL в фоне, чтобы накопить разнообразные трекерные куки</string>
     <string name="module_dns_description">Резолвит разнообразные домены, чтобы создать видимый ISP шум DNS-запросов</string>
-    <string name="module_fingerprint_description">Меняет User-Agent, шум canvas и свойства navigator</string>
+    <string name="module_fingerprint_description">Представляет стабильное устройство для каждой личности (User-Agent, client hints, navigator) плюс шум canvas</string>
     <string name="module_ad_description">Загружает страницы с большим количеством рекламы и посещает панели рекламных настроек</string>
     <string name="module_location_description">Подаёт синтетические GPS-маршруты через MockLocationProvider</string>
     <string name="module_location_setup_hint">Требует включённые «Для разработчиков» и выбор Fauxx в качестве приложения для имитации местоположения</string>
@@ -390,9 +390,58 @@
     <string name="settings_custom_ua_field_label">Идентификатор браузера (для продвинутых — оставь пустым для автоматического чередования)</string>
     <string name="settings_custom_ua_placeholder">Mozilla/5.0 (…)</string>
     <string name="settings_custom_ua_clear_button">Очистить и возобновить чередование</string>
+    <string name="settings_custom_ua_non_chromium_warning">Это не user-agent Chrome для Android, поэтому он будет проигнорирован для синтетического просмотра (он идёт через системный WebView). Используйте user-agent Chrome для Android, чтобы он применялся.</string>
     <string name="settings_clear_all_data_button">Очистить все данные</string>
     <string name="settings_export_debug_logs_button">Экспортировать отладочные логи</string>
     <string name="settings_about_privacy_button">О приложении и приватность</string>
+    <string name="settings_lan_sync_button">Синхронизация по локальной сети</string>
+
+    <!-- LAN sync screen (E13 #178) -->
+    <string name="sync_enable_title">Включить синхронизацию по LAN</string>
+    <string name="sync_my_qr_title">Мой QR для сопряжения</string>
+    <string name="sync_qr_content_desc">QR этого устройства для сопряжения</string>
+    <string name="sync_fingerprint_label">Отпечаток: %1$s</string>
+    <string name="sync_qr_hint">Дайте другому устройству отсканировать этот код или отсканируйте его код.</string>
+    <string name="sync_scan_button">Сканировать для сопряжения</string>
+    <string name="sync_paste_button">Вставить данные</string>
+    <string name="sync_push_button">Отправить текущую личность на сопряжённые устройства</string>
+    <!-- #213 -->
+    <string name="sync_onboarding_title">Как работает синхронизация по локальной сети</string>
+    <string name="sync_onboarding_steps">1. Включите \"Включить синхронизацию по локальной сети\" на ОБОИХ устройствах.\n2. На каждом устройстве отсканируйте (или вставьте) QR-код ДРУГОГО устройства — сопряжение должно быть выполнено в обе стороны.\n3. Держите оба устройства в одной сети Wi-Fi.\n4. Нажмите \"Отправить текущую личность\".</string>
+    <string name="sync_onboarding_blockers">Если устройства не появляются: приложение VPN или прокси либо гостевая сеть Wi-Fi с \"изоляцией клиентов\" может блокировать обнаружение. Используйте сеть без прокси или задайте IP вручную ниже.</string>
+    <string name="sync_push_disabled_hint">Включите синхронизацию по локальной сети выше, чтобы отправлять на сопряжённые устройства.</string>
+    <string name="sync_status_push_requires_enabled">Сначала включите синхронизацию по локальной сети, затем отправляйте.</string>
+    <string name="sync_discovered_empty_searching">Устройства пока не найдены. Убедитесь, что на другом устройстве также включена синхронизация по локальной сети и оно в той же сети Wi-Fi (не гостевой или изолированной), и что обнаружение не блокирует приложение VPN или прокси.</string>
+    <string name="sync_discovered_disabled">Включите синхронизацию по локальной сети, чтобы начать обнаружение устройств.</string>
+    <string name="sync_manual_ip_title">Подключение по IP (для опытных)</string>
+    <string name="sync_manual_ip_help">Если обнаружение заблокировано, введите IP-адрес сопряжённого устройства, чтобы отправить напрямую. Это работает только с уже сопряжённым устройством.</string>
+    <string name="sync_manual_ip_label">IP-адрес узла</string>
+    <string name="sync_manual_ip_placeholder">192.168.1.42</string>
+    <string name="sync_manual_ip_set_button">Использовать этот адрес</string>
+    <string name="sync_manual_ip_clear_button">Очистить</string>
+    <string name="sync_status_manual_ip_set">Адрес задан вручную: %1$s. Отправки будут использовать его, когда устройство не обнаружено.</string>
+    <string name="sync_status_manual_ip_invalid">Это не похоже на корректный IP-адрес или IP:порт.</string>
+    <string name="sync_status_manual_ip_cleared">Адрес, заданный вручную, очищен.</string>
+    <string name="sync_paired_header">Сопряжённые устройства</string>
+    <string name="sync_discovered_header">Обнаружены в этой сети</string>
+    <string name="sync_none_yet">Пока нет.</string>
+    <string name="sync_revoke_button">Отозвать</string>
+    <string name="sync_no_fingerprint">(отпечаток не объявлен)</string>
+    <string name="sync_paste_dialog_title">Вставить данные сопряжения</string>
+    <string name="sync_paste_field_label">Данные base64url</string>
+    <string name="sync_pair_button">Связать</string>
+    <string name="sync_cancel_button">Отмена</string>
+    <string name="sync_scan_prompt">Отсканируйте QR сопряжения Fauxx другого устройства</string>
+    <string name="sync_status_enabled">Синхронизация включена. Доступно для обнаружения в этой сети.</string>
+    <string name="sync_status_stopped">Синхронизация остановлена.</string>
+    <string name="sync_status_paired">Сопряжено с %1$s (%2$s)</string>
+    <string name="sync_status_pair_failed">Сбой сопряжения: %1$s</string>
+    <string name="sync_status_removed">Удалено: %1$s</string>
+    <string name="sync_status_no_peers">Нет сопряжённых узлов для отправки.</string>
+    <string name="sync_status_no_persona">Пока нет локальной личности для отправки.</string>
+    <string name="sync_status_push_result">Отправлено на %1$d из %2$d узл.</string>
+    <string name="sync_status_push_result_failures">Отправлено на %1$d из %2$d узл.; нет маршрута к %3$s</string>
+    <string name="sync_status_imported">Импортирована подставная личность %1$s (%2$s)</string>
     <string name="settings_version_info">Fauxx v%1$s (сборка %2$d)</string>
     <string name="targeting_layer1_description">Усиливает шум, уводя его от заявленных тобой демографических данных</string>
     <string name="targeting_layer1_status_set">Профиль задан</string>
@@ -466,6 +515,7 @@
     <string name="dashboard_drift_title">ДРЕЙФ ПРОФИЛЯ</string>
     <string name="dashboard_drift_help">Насколько ваш импортированный профиль рекламных интересов отдалился от первого (базового) импорта, в виде KL-дивергенции. Большее значение означает большее движение. Дрейф также может отражать переобучение модели самой платформой, а не только работу Fauxx, поэтому воспринимайте его как индикатор, а не доказательство.</string>
     <string name="dashboard_drift_collecting">сбор данных…</string>
+    <string name="dashboard_drift_no_profile">нет рекламного профиля</string>
     <string name="dashboard_control_divergence_title">ОТРАВЛЕННЫЙ ПРОТИВ КОНТРОЛЯ</string>
     <string name="dashboard_control_divergence_help">KL-дивергенция между вашим отравленным профилем и импортированным контрольным профилем (чистая учётная запись, которую вы никогда не отравляете). Большее значение означает, что Fauxx сильнее развёл их. Показывается только после импорта контрольного профиля.</string>
     <string name="dashboard_synthetic_activity_title">СИНТЕТИЧЕСКАЯ АКТИВНОСТЬ</string>

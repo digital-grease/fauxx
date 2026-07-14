@@ -18,6 +18,10 @@ import com.fauxx.targeting.layer2.ProfileSnapshot
 import com.fauxx.targeting.layer2.ProfileSnapshotDao
 import com.fauxx.targeting.layer2.SnapshotSeries
 import com.fauxx.targeting.layer2.SnapshotSource
+import com.fauxx.sync.data.PairedPeerDao
+import com.fauxx.sync.data.PairedPeerEntity
+import com.fauxx.sync.data.SyncedPersonaDao
+import com.fauxx.sync.data.SyncedPersonaEntity
 import com.fauxx.targeting.layer3.PersonaHistoryDao
 import com.fauxx.targeting.layer3.PersonaHistoryEntity
 
@@ -30,6 +34,8 @@ import com.fauxx.targeting.layer3.PersonaHistoryEntity
  * - platform_profile_cache: Cached ad-platform assigned categories
  * - persona_history: History of generated synthetic personas
  * - circadian_usage: Locally-observed screen-on histogram by hour of day (E10 #177)
+ * - paired_peers: Devices paired for encrypted LAN persona sync (E13 #178)
+ * - synced_personas: Inbound synced personas, keyed on persona id for idempotent upsert (E13 #178)
  */
 @Database(
     entities = [
@@ -38,9 +44,11 @@ import com.fauxx.targeting.layer3.PersonaHistoryEntity
         PlatformProfileCache::class,
         ProfileSnapshot::class,
         PersonaHistoryEntity::class,
-        CircadianUsageEntity::class
+        CircadianUsageEntity::class,
+        PairedPeerEntity::class,
+        SyncedPersonaEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 @TypeConverters(PhantomTypeConverters::class)
@@ -51,6 +59,8 @@ abstract class PhantomDatabase : RoomDatabase() {
     abstract fun profileSnapshotDao(): ProfileSnapshotDao
     abstract fun personaHistoryDao(): PersonaHistoryDao
     abstract fun circadianUsageDao(): CircadianUsageDao
+    abstract fun pairedPeerDao(): PairedPeerDao
+    abstract fun syncedPersonaDao(): SyncedPersonaDao
 }
 
 /** Migration from v1 to v2: add composite index on action_log(timestamp, success). */
@@ -113,6 +123,34 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
 val MIGRATION_6_7 = object : Migration(6, 7) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE `profile_snapshot` ADD COLUMN `series` TEXT NOT NULL DEFAULT 'POISONED'")
+    }
+}
+
+/**
+ * Migration from v7 to v8: add the encrypted LAN persona sync tables (issue #178 E13).
+ *
+ * - `paired_peers`: the trust set for sealed sync; the base64url `publicKey` is the primary key.
+ * - `synced_personas`: inbound synced personas keyed on the persona `id`, so re-delivering the
+ *   idempotent PersonaUpsert converges to the same row instead of piling up duplicates.
+ *
+ * The CREATE TABLE statements mirror Room's generated v8 schema exactly (column order, NOT NULL,
+ * and primary keys) so Room's open-time schema validation passes. Runs against the SQLCipher
+ * connection, so the Tink/passphrase unlock must already be wired before it executes. Destructive
+ * fallback is deliberately NOT enabled.
+ */
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `paired_peers` (" +
+                "`publicKey` TEXT NOT NULL, `name` TEXT NOT NULL, `fingerprint` TEXT NOT NULL, " +
+                "`host` TEXT, `port` INTEGER NOT NULL, `pairedAt` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`publicKey`))"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `synced_personas` (" +
+                "`id` TEXT NOT NULL, `personaJson` TEXT NOT NULL, `receivedAt` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`id`))"
+        )
     }
 }
 

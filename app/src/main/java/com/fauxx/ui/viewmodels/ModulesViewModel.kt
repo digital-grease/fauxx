@@ -56,6 +56,24 @@ class ModulesViewModel @Inject constructor(
     }
     fun setAppSignalEnabled(v: Boolean) { update { it.copy(appSignalEnabled = v) } }
 
+    /**
+     * Re-evaluate the mock-location AppOp gate (issue #202). The capability is only checked inside
+     * [LocationDiagnostics.requestStart] (LocationSpoofModule.start), which runs at engine start
+     * and on toggle-ON. So designating Fauxx as the "Select mock location app" in Developer Options
+     * while Location is ALREADY enabled is not detected live — the red NOT_MOCK_APP banner stays
+     * stale until the engine is restarted. The screen calls this on ON_RESUME, so returning from
+     * the Developer Options deep-link refreshes the banner. Re-runs only when Location is enabled
+     * AND the last attempt is in a failure state, to avoid re-kicking start() (and any in-flight
+     * spoof route) on every routine return to the screen.
+     */
+    fun refreshLocationStatus() {
+        if (_uiState.value.locationEnabled &&
+            locationDiagnostics.lastStartFailure.value != LocationDiagnostics.StartFailure.OK
+        ) {
+            viewModelScope.launch { locationDiagnostics.requestStart() }
+        }
+    }
+
     private fun update(transform: (ModulesUiState) -> ModulesUiState) {
         val new = transform(_uiState.value)
         _uiState.value = new
