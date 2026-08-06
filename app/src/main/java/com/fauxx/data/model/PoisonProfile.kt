@@ -12,10 +12,8 @@ import com.fauxx.ui.theme.ThemeMode
  *   e.g. HIGH on Wi-Fi but LOW on mobile instead of the old all-or-nothing toggle. The
  *   legacy `wifi_only` preference key migrates lazily: true → null, false → mirror
  *   [intensity] (see PoisonProfileRepository.prefsToProfile).
- * @property batteryThreshold Pause when battery level drops below this percentage (0-100).
- * @property ignoreBatteryThresholdWhileCharging When true, [batteryThreshold] is bypassed while
- *   the device is plugged in — the engine keeps running even at low charge as long as it's
- *   actively charging. Defaults to false to preserve historical behavior.
+ * @property batteryThresholdBattery Pause when battery level drops below this percentage while NOT charging (0-100).
+ * @property batteryThresholdCharging Pause when battery level drops below this percentage while charging (0-100).
  * @property allowedHoursStart Hour of day (0-23) when activity is permitted to start.
  * @property allowedHoursEnd Hour of day (0-23) when activity must stop.
  * @property logRetentionDays Days of action-log history to keep; the retention worker prunes
@@ -47,8 +45,8 @@ data class PoisonProfile(
     val enabled: Boolean = false,
     val intensity: IntensityLevel = IntensityLevel.MEDIUM,
     val mobileIntensity: IntensityLevel? = null,
-    val batteryThreshold: Int = 20,
-    val ignoreBatteryThresholdWhileCharging: Boolean = false,
+    val batteryThresholdBattery: Int = 20,
+    val batteryThresholdCharging: Int = 20,
     val allowedHoursStart: Int = 7,
     val allowedHoursEnd: Int = 23,
     val logRetentionDays: Int = 7,

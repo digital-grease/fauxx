@@ -48,6 +48,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.BuildConfig
 import com.fauxx.R
 import com.fauxx.data.model.IntensityLevel
+import com.fauxx.data.model.BatteryThresholdType
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.theme.ThemeMode
@@ -285,46 +286,45 @@ fun SettingsScreen(
 
         // Battery threshold
         SettingsCard {
+            // While on Battery
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(stringResource(R.string.settings_battery_threshold_title), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.settings_battery_threshold_battery_title), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "${uiState.batteryThreshold}%",
+                    "${uiState.batteryThresholdBattery}%",
                     color = MaterialTheme.colorScheme.primary,
                     fontFamily = FontFamily.Monospace
                 )
             }
             Slider(
-                value = uiState.batteryThreshold.toFloat(),
-                onValueChange = { viewModel.setBatteryThreshold(it.toInt()) },
-                valueRange = 10f..50f,
-                steps = 7
+                value = uiState.batteryThresholdBattery.toFloat(),
+                onValueChange = { viewModel.setBatteryThreshold(it.toInt(), BatteryThresholdType.BATTERY) },
+                valueRange = 0f..100f,
+                steps = 19
             )
             Spacer(Modifier.height(8.dp))
+
+            // While charging
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.settings_battery_ignore_while_charging_title),
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                    Text(
-                        stringResource(R.string.settings_battery_ignore_while_charging_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                Switch(
-                    checked = uiState.ignoreBatteryThresholdWhileCharging,
-                    onCheckedChange = { viewModel.setIgnoreBatteryThresholdWhileCharging(it) }
+                Text(stringResource(R.string.settings_battery_threshold_charging_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "${uiState.batteryThresholdCharging}%",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontFamily = FontFamily.Monospace
                 )
             }
+            Slider(
+                value = uiState.batteryThresholdCharging.toFloat(),
+                onValueChange = { viewModel.setBatteryThreshold(it.toInt(), BatteryThresholdType.CHARGING) },
+                valueRange = 0f..100f,
+                steps = 19
+            )
+            Spacer(Modifier.height(8.dp))
         }
 
         // Active hours

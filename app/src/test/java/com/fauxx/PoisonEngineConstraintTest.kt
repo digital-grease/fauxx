@@ -50,7 +50,8 @@ class PoisonEngineConstraintTest {
         enabled = true,
         intensity = IntensityLevel.LOW,
         mobileIntensity = IntensityLevel.LOW,
-        batteryThreshold = 20,
+        batteryThresholdBattery = 20,
+        batteryThresholdCharging = 20,
         allowedHoursStart = 0,
         allowedHoursEnd = 24,
         searchPoisonEnabled = true,
@@ -164,32 +165,44 @@ class PoisonEngineConstraintTest {
     // --- shouldPauseForBattery (issue #20: ignore threshold while charging) ---
 
     @Test
-    fun `shouldPauseForBattery returns false when battery is at or above threshold`() {
+    fun `shouldPauseForBattery returns false when battery is at or above threshold (Battery)`() {
         engine = createEngine()
-        assertFalse(engine.shouldPauseForBattery(50, 20, isCharging = false, ignoreThresholdWhileCharging = false))
-        assertFalse(engine.shouldPauseForBattery(20, 20, isCharging = false, ignoreThresholdWhileCharging = false))
+        assertFalse(engine.shouldPauseForBattery(50, 20, 20, isCharging = false))
+        assertFalse(engine.shouldPauseForBattery(20, 20, 20, isCharging = false))
+        assertFalse(engine.shouldPauseForBattery(20, 20, 99, isCharging = false))
+        assertFalse(engine.shouldPauseForBattery(20, 20, 2, isCharging = false))
     }
 
     @Test
-    fun `shouldPauseForBattery returns true when below threshold and not charging`() {
+    fun `shouldPauseForBattery returns false when battery is at or above threshold (Charging)`() {
         engine = createEngine()
-        assertTrue(engine.shouldPauseForBattery(10, 20, isCharging = false, ignoreThresholdWhileCharging = true))
-        assertTrue(engine.shouldPauseForBattery(10, 20, isCharging = false, ignoreThresholdWhileCharging = false))
+        assertFalse(engine.shouldPauseForBattery(50, 20, 20, isCharging = true))
+        assertFalse(engine.shouldPauseForBattery(20, 20, 20, isCharging = true))
+        assertFalse(engine.shouldPauseForBattery(20, 99, 20, isCharging = true))
+        assertFalse(engine.shouldPauseForBattery(20, 2, 20, isCharging = true))
     }
 
     @Test
-    fun `shouldPauseForBattery bypasses threshold when charging and toggle on`() {
+    fun `shouldPauseForBattery returns true when battery is below threshold (Battery)`() {
         engine = createEngine()
-        // Issue #20: plugged in + opted in → keep running even below the user's threshold.
-        assertFalse(engine.shouldPauseForBattery(5, 20, isCharging = true, ignoreThresholdWhileCharging = true))
-        assertFalse(engine.shouldPauseForBattery(0, 100, isCharging = true, ignoreThresholdWhileCharging = true))
+        assertTrue(engine.shouldPauseForBattery(10, 20, 20, isCharging = false))
+        assertTrue(engine.shouldPauseForBattery(10, 20, 20, isCharging = false))
     }
 
     @Test
-    fun `shouldPauseForBattery still pauses when charging but toggle off`() {
+    fun `shouldPauseForBattery returns true when battery is below threshold (Charging)`() {
         engine = createEngine()
-        // Default behavior preserved for users who haven't opted in.
-        assertTrue(engine.shouldPauseForBattery(10, 20, isCharging = true, ignoreThresholdWhileCharging = false))
+        assertTrue(engine.shouldPauseForBattery(10, 20, 20, isCharging = true))
+        assertTrue(engine.shouldPauseForBattery(10, 20, 20, isCharging = true))
+    }
+
+    @Test
+    fun `shouldPauseForBattery (mixed test) all combinations for battery, charging and states`() {
+        engine = createEngine()
+        assertTrue(engine.shouldPauseForBattery(0, 50, 50, isCharging = true))
+        assertTrue(engine.shouldPauseForBattery(0, 50, 50, isCharging = false))
+        assertFalse(engine.shouldPauseForBattery(50, 50, 50, isCharging = true))
+        assertFalse(engine.shouldPauseForBattery(50, 50, 50, isCharging = false))
     }
 
     // --- decidePauseAction tests ---

@@ -155,7 +155,21 @@ object AppModule {
                         prefs[PreferenceKeys.ENABLED] = legacy.getBoolean("enabled", false)
                         legacy.getString("intensity", null)?.let { prefs[PreferenceKeys.INTENSITY] = it }
                         prefs[PreferenceKeys.WIFI_ONLY] = legacy.getBoolean("wifi_only", true)
-                        prefs[PreferenceKeys.BATTERY_THRESHOLD] = legacy.getInt("battery_threshold", 20)
+                        // #216 split one battery threshold into two. This SharedPreferences store
+                        // predates that split, so it only ever held "battery_threshold" — reading
+                        // the new names here would always hit the default and silently reset a
+                        // customised value. Carry the single old threshold onto both sides, and map
+                        // the old "ignore while charging" toggle to a charging threshold of 0
+                        // (never pause while plugged in), matching the lazy migration in
+                        // PoisonEngine.prefsToProfile.
+                        val legacyBatteryThreshold = legacy.getInt("battery_threshold", 20)
+                        prefs[PreferenceKeys.BATTERY_THRESHOLD_BATTERY] = legacyBatteryThreshold
+                        prefs[PreferenceKeys.BATTERY_THRESHOLD_CHARGING] =
+                            if (legacy.getBoolean("ignore_battery_threshold_while_charging", false)) {
+                                0
+                            } else {
+                                legacyBatteryThreshold
+                            }
                         prefs[PreferenceKeys.ALLOWED_HOURS_START] = legacy.getInt("allowed_hours_start", 7)
                         prefs[PreferenceKeys.ALLOWED_HOURS_END] = legacy.getInt("allowed_hours_end", 23)
 

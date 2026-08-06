@@ -132,6 +132,13 @@ private const val LONG_PAUSE_THRESHOLD_MS = 30L * 60 * 1000
 private const val LOOP_FAILURE_RESUME_DELAY_MS = 60_000L
 
 /**
+ * Battery-level floor used when no stored preference exists at all. Mirrors the
+ * [PoisonProfile.batteryThresholdBattery] / [PoisonProfile.batteryThresholdCharging] defaults, and
+ * is the last-resort fallback in the pre-#216 migration path.
+ */
+private const val DEFAULT_BATTERY_THRESHOLD = 20
+
+/**
  * Decision returned by [PoisonEngine.decidePauseAction]: either keep the current
  * delay-loop ([Continue]) or [Resign] from the foreground service and schedule a
  * resume notification when the constraint clears.
@@ -760,9 +767,9 @@ class PoisonEngine @Inject constructor(
         }
         if (shouldPauseForBattery(
                 batteryLevel = cachedBatteryLevel.get(),
-                threshold = currentProfile.batteryThreshold,
-                isCharging = cachedIsCharging.get(),
-                ignoreThresholdWhileCharging = currentProfile.ignoreBatteryThresholdWhileCharging
+                thresholdBattery = currentProfile.batteryThresholdBattery,
+                thresholdCharging = currentProfile.batteryThresholdCharging,
+                isCharging = cachedIsCharging.get()
             )
         ) {
             return EngineState.PAUSED_BATTERY
@@ -794,16 +801,18 @@ class PoisonEngine @Inject constructor(
      * Pure decision function for the battery branch of [checkConstraints]. Extracted so
      * the bypass-while-charging behavior (issue #20) can be exercised without registering
      * BroadcastReceivers in tests.
+     *
+     * The two thresholds are independent (#216): a charging threshold of 0 means "never pause for
+     * battery while plugged in", which is how the retired ignore-while-charging toggle migrates.
      */
     internal fun shouldPauseForBattery(
         batteryLevel: Int,
-        threshold: Int,
-        isCharging: Boolean,
-        ignoreThresholdWhileCharging: Boolean
+        thresholdBattery: Int,
+        thresholdCharging: Int,
+        isCharging: Boolean
     ): Boolean {
-        if (batteryLevel >= threshold) return false
-        // Below threshold: pause unless the user opted to keep running while plugged in.
-        return !(ignoreThresholdWhileCharging && isCharging)
+        val threshold = if (isCharging) thresholdCharging else thresholdBattery
+        return batteryLevel < threshold
     }
 
     /** Returns true if the current local hour falls within the profile's allowed window.
@@ -1077,9 +1086,8 @@ class PoisonProfileRepository @Inject constructor(
         // downgrade to a pre-0.3.2 build lands on the equivalent on/off behavior.
         prefs[com.fauxx.di.PreferenceKeys.MOBILE_INTENSITY] = p.mobileIntensity?.name ?: MOBILE_INTENSITY_OFF
         prefs[com.fauxx.di.PreferenceKeys.WIFI_ONLY] = (p.mobileIntensity == null)
-        prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] = p.batteryThreshold
-        prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] =
-            p.ignoreBatteryThresholdWhileCharging
+        prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD_BATTERY] = p.batteryThresholdBattery
+        prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD_CHARGING] = p.batteryThresholdCharging
         prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] = p.allowedHoursStart
         prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] = p.allowedHoursEnd
         prefs[com.fauxx.di.PreferenceKeys.LOG_RETENTION_DAYS] = p.logRetentionDays
@@ -1106,15 +1114,45 @@ class PoisonProfileRepository @Inject constructor(
         }
     }
 
+    /**
+     * On-battery threshold for a profile written before #216 split the single slider in two.
+     * The old [PreferenceKeys.BATTERY_THRESHOLD] meant "pause below this level", which is exactly
+     * the on-battery threshold, so it carries over unchanged. Falls back to the 20% default only
+     * when the user never had a stored value at all.
+     */
+    private fun legacyBatteryThreshold(
+        prefs: androidx.datastore.preferences.core.Preferences
+    ): Int = prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] ?: DEFAULT_BATTERY_THRESHOLD
+
+    /**
+     * While-charging threshold for a pre-#216 profile. The old behavior was a single threshold plus
+     * an "ignore it while charging" toggle, so a user who had that toggle ON meant "never pause for
+     * battery while plugged in" — which is a charging threshold of 0. Everyone else keeps the same
+     * threshold they had on both sides, matching the old single-slider behavior.
+     *
+     * Without this, updating silently reset a customised threshold to 20% and dropped the
+     * ignore-while-charging preference entirely.
+     */
+    private fun legacyChargingThreshold(
+        prefs: androidx.datastore.preferences.core.Preferences
+    ): Int =
+        if (prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] == true) {
+            0
+        } else {
+            prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] ?: DEFAULT_BATTERY_THRESHOLD
+        }
+
     private fun prefsToProfile(prefs: androidx.datastore.preferences.core.Preferences): PoisonProfile {
         val intensity = readIntensity(prefs)
         return PoisonProfile(
             enabled = prefs[com.fauxx.di.PreferenceKeys.ENABLED] ?: false,
             intensity = intensity,
             mobileIntensity = readMobileIntensity(prefs, intensity),
-            batteryThreshold = prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] ?: 20,
-            ignoreBatteryThresholdWhileCharging =
-                prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] ?: false,
+            batteryThresholdBattery =
+                prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD_BATTERY] ?: legacyBatteryThreshold(prefs),
+            batteryThresholdCharging =
+                prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD_CHARGING]
+                    ?: legacyChargingThreshold(prefs),
             allowedHoursStart = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] ?: 7,
             allowedHoursEnd = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] ?: 23,
             logRetentionDays = prefs[com.fauxx.di.PreferenceKeys.LOG_RETENTION_DAYS] ?: 7,
