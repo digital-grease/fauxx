@@ -30,7 +30,7 @@ mockkAndroid = "1.14.11"
 robolectric = "4.16.1"
 kotest = "6.2.3"
 timber = "5.0.1"
-appcompat = "1.7.1"
+appcompat = "1.8.0"
 # LAN sync (E13 #178). lazysodium-android 5.2.0 declares jna 5.17.0 in its POM; we
 # pin the JNA *Android AAR* at that exact version so the bundled libsodiumjni.so /
 # libjnidispatch.so ship per ABI (the plain JVM jar would throw UnsatisfiedLinkError).
