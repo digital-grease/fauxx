@@ -215,7 +215,7 @@ Scrollable audit log of all actions with timestamps, types, and details. Export 
 Global controls:
 - **Wi-Fi intensity:** Low (light activity) / Medium (balanced) / High (aggressive) / Max (highest volume)
 - **Mobile data intensity:** a separate Off / Low / Medium / High / Max ladder for mobile data — Off (the default) never touches mobile data; any tier runs the engine on mobile at its own rate. Wi-Fi networks the system reports as metered, a tethered phone hotspot or a network you marked metered in Android's Wi-Fi settings, are governed by this ladder too, so Fauxx does not quietly spend a data allowance it cannot see
-- **Battery threshold:** Minimum battery % to run actions
+- **Battery threshold:** Minimum battery % to run actions (Can be adjusted individually while on battery and while charging)
 - **Active hours:** Time range when actions should run (e.g., 7am–11pm)
 - **Search engines:** Which engines receive synthetic queries. Turning one off spares it entirely. At least two stay active, because real people spread searches across engines and noise from a single one would be easy to filter out
 - **Clear all data:** Destructive button to reset everything

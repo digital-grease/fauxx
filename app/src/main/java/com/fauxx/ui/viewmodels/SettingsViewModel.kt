@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.fauxx.BuildConfig
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.IntensityLevel
+import com.fauxx.data.model.BatteryThresholdType
 import com.fauxx.data.model.MIN_ACTIVE_SEARCH_ENGINES
 import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.engine.modules.SEARCH_ENGINE_IDS
@@ -32,8 +33,8 @@ data class SettingsUiState(
     val intensity: IntensityLevel = IntensityLevel.MEDIUM,
     /** Action rate on mobile data; null = paused on mobile (issue #62). */
     val mobileIntensity: IntensityLevel? = null,
-    val batteryThreshold: Int = 20,
-    val ignoreBatteryThresholdWhileCharging: Boolean = false,
+    val batteryThresholdBattery: Int = 20,
+    val batteryThresholdCharging: Int = 20,
     val allowedHoursStart: Int = 7,
     val allowedHoursEnd: Int = 23,
     val logRetentionDays: Int = 7,
@@ -116,10 +117,13 @@ class SettingsViewModel @Inject constructor(
     fun setIntensity(level: IntensityLevel) { update { it.copy(intensity = level) } }
     /** Null pauses on mobile data — the legacy "Wi-Fi only" behavior (issue #62). */
     fun setMobileIntensity(level: IntensityLevel?) { update { it.copy(mobileIntensity = level) } }
-    fun setBatteryThreshold(v: Int) { update { it.copy(batteryThreshold = v) } }
-    fun setIgnoreBatteryThresholdWhileCharging(v: Boolean) {
-        update { it.copy(ignoreBatteryThresholdWhileCharging = v) }
+    fun setBatteryThreshold(v: Int, t: BatteryThresholdType) = update {
+        when (t) {
+            BatteryThresholdType.BATTERY -> it.copy(batteryThresholdBattery = v)
+            BatteryThresholdType.CHARGING -> it.copy(batteryThresholdCharging = v)
+        }
     }
+
     fun setAllowedHoursStart(v: Int) { update { it.copy(allowedHoursStart = v) } }
     fun setAllowedHoursEnd(v: Int) { update { it.copy(allowedHoursEnd = v) } }
     fun setLogRetentionDays(v: Int) { update { it.copy(logRetentionDays = v) } }
@@ -203,8 +207,8 @@ class SettingsViewModel @Inject constructor(
                 current.copy(
                     intensity = new.intensity,
                     mobileIntensity = new.mobileIntensity,
-                    batteryThreshold = new.batteryThreshold,
-                    ignoreBatteryThresholdWhileCharging = new.ignoreBatteryThresholdWhileCharging,
+                    batteryThresholdBattery = new.batteryThresholdBattery,
+                    batteryThresholdCharging = new.batteryThresholdCharging,
                     allowedHoursStart = new.allowedHoursStart,
                     allowedHoursEnd = new.allowedHoursEnd,
                     logRetentionDays = new.logRetentionDays,
@@ -224,8 +228,8 @@ class SettingsViewModel @Inject constructor(
         return SettingsUiState(
             intensity = p.intensity,
             mobileIntensity = p.mobileIntensity,
-            batteryThreshold = p.batteryThreshold,
-            ignoreBatteryThresholdWhileCharging = p.ignoreBatteryThresholdWhileCharging,
+            batteryThresholdBattery = p.batteryThresholdBattery,
+            batteryThresholdCharging = p.batteryThresholdCharging,
             allowedHoursStart = p.allowedHoursStart,
             allowedHoursEnd = p.allowedHoursEnd,
             logRetentionDays = p.logRetentionDays,

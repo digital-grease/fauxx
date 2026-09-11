@@ -88,13 +88,23 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun batteryThresholdSection_isDisplayed() {
+    fun batteryThresholdBatterySection_isDisplayed() {
         composeRule.setContent {
             FauxxTheme {
                 SettingsScreen()
             }
         }
-        composeRule.onNodeWithText("Pause below").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Pause below (Battery)").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun batteryThresholdChargingSection_isDisplayed() {
+        composeRule.setContent {
+            FauxxTheme {
+                SettingsScreen()
+            }
+        }
+        composeRule.onNodeWithText("Pause below (Charging)").performScrollTo().assertIsDisplayed()
     }
 
     @Test
