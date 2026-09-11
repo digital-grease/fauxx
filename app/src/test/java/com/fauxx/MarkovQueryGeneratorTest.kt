@@ -15,7 +15,11 @@ import org.junit.Test
 
 class MarkovQueryGeneratorTest {
 
-    private val queryBankManager: QueryBankManager = mockk()
+    private val queryBankManager: QueryBankManager = mockk<QueryBankManager>().also {
+        // The generator reads this to know when its bigram model is stale (#256); a steady
+        // value means "corpus unchanged", which is what these tests assume.
+        every { it.corpusGeneration } returns 0
+    }
     private val queryBlocklist: QueryBlocklist = mockk<QueryBlocklist>().also {
         every { it.isBlocked(any()) } returns false
     }

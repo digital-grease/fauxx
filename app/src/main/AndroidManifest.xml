@@ -15,9 +15,14 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
-    <!-- Location spoofing -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Location spoofing.
+         ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION are deliberately NOT declared. The app
+         only ever WRITES through the mock-location test provider, which is gated by the
+         ACCESS_MOCK_LOCATION appop, not by the runtime location permissions. Verified on
+         Android 14: addTestProvider / setTestProviderEnabled / setTestProviderLocation all
+         succeed with the appop alone. Declaring them cost the app a "requests location" entry
+         in the OS permission list and in F-Droid metadata with nothing asking for them at
+         runtime, so they were never granted anyway. -->
     <!-- ACCESS_MOCK_LOCATION is declared in src/full/AndroidManifest.xml so the
          F-Droid build appears in Developer Options → "Select mock location app".
          Play flavor intentionally omits it (Play Store policy). -->

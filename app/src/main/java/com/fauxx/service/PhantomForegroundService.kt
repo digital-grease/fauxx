@@ -277,6 +277,7 @@ class PhantomForegroundService : Service() {
         val status = when (poisonEngine.engineState.value) {
             EngineState.ACTIVE -> "Generating diverse browsing activity — $count actions today"
             EngineState.PAUSED_WIFI -> "Paused — waiting for a usable network"
+            EngineState.PAUSED_METERED_WIFI -> "Paused — this Wi-Fi is metered"
             EngineState.PAUSED_BATTERY -> "Paused — battery low"
             EngineState.PAUSED_RATE_LIMIT -> "Paused — hourly limit reached"
             EngineState.PAUSED_QUIET_HOURS -> "Paused — outside active hours"

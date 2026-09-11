@@ -42,6 +42,15 @@ class MarkovQueryGenerator @Inject constructor(
     /** Categories whose banks have been folded into [bigramMap]. */
     private val trainedCategories = mutableSetOf<CategoryPool>()
 
+    /**
+     * [QueryBankManager.corpusGeneration] the current [bigramMap] was trained against, or -1
+     * before any training. The model is DERIVED state: the manager re-resolving its banks
+     * (locale change, or a calendar-year roll under issue #256) leaves a model still holding
+     * the old text, so it would keep generating last year's queries from stale bigrams even
+     * though the banks themselves are current.
+     */
+    private var trainedGeneration = -1
+
     /** Extra seed phrases per category, injected from custom user interests. */
     private val seedPhrases = mutableMapOf<CategoryPool, MutableList<String>>()
 
@@ -58,15 +67,32 @@ class MarkovQueryGenerator @Inject constructor(
             localeManager.currentLocaleFlow
                 .drop(1)
                 .distinctUntilChanged()
-                .collect { resetBigramModel() }
+                .collect { resetBigramModel("Locale changed") }
         }
     }
 
     @Synchronized
-    private fun resetBigramModel() {
-        Timber.d("Locale changed; resetting MarkovQueryGenerator bigram model")
+    private fun resetBigramModel(reason: String) {
+        Timber.d("$reason; resetting MarkovQueryGenerator bigram model")
         bigramMap.clear()
         trainedCategories.clear()
+    }
+
+    /**
+     * Drop the bigram model when the corpus behind it has been re-resolved (issue #256).
+     * Without this the New Year eviction in [QueryBankManager] is defeated one layer up:
+     * `getQueries` would hand back "best smartphones 2027" while this model still chains
+     * `smartphones -> 2026` from training done before midnight.
+     */
+    @Synchronized
+    private fun syncToCorpusGeneration() {
+        val current = queryBankManager.corpusGeneration
+        if (trainedGeneration == current) return
+        // -1 is "nothing trained yet", not an invalidation worth logging.
+        if (trainedGeneration != -1) {
+            resetBigramModel("Corpus generation $trainedGeneration -> $current")
+        }
+        trainedGeneration = current
     }
 
     /**
@@ -104,6 +130,7 @@ class MarkovQueryGenerator @Inject constructor(
         // whichever category was requested first, leaving the bigram model starved of
         // vocabulary for every other category — which produced seed words with no
         // outgoing bigrams and caused single-word queries like "dry".
+        syncToCorpusGeneration()
         if (trainedCategories.add(category)) {
             train(queries)
         }
@@ -211,6 +238,9 @@ class MarkovQueryGenerator @Inject constructor(
         seedPhrases.clear()
         bigramMap.clear()
         trainedCategories.clear()
+        // Re-arm the generation check so the next generate() retrains from scratch rather
+        // than believing it is already in sync with the current corpus.
+        trainedGeneration = -1
     }
 
     companion object {

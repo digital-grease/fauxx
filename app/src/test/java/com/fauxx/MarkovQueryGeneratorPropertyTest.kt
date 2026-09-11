@@ -44,6 +44,8 @@ class MarkovQueryGeneratorPropertyTest {
 
     private fun generator(seed: Long): MarkovQueryGenerator {
         val bank: QueryBankManager = mockk {
+            // MarkovQueryGenerator reads this to know when its bigram model is stale (#256).
+            every { corpusGeneration } returns 0
             every { getQueries(any()) } returns adversarialCorpus
             // Safe fallback the generator uses when every resample is blocked.
             every { randomQuery(any()) } returns "easy weeknight dinner ideas"

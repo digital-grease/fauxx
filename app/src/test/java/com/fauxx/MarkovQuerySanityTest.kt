@@ -4,6 +4,8 @@ import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.data.querybank.QueryBankManager
 import com.fauxx.data.querybank.QueryBlocklist
+import com.fauxx.data.querybank.currentYear
+import com.fauxx.data.querybank.freshenRecencyYear
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.safety.CorpusSafetyMatchers
@@ -81,7 +83,11 @@ class MarkovQuerySanityTest {
                 val categoryName = bankFile.nameWithoutExtension.uppercase()
                 val category = runCatching { CategoryPool.valueOf(categoryName) }.getOrNull()
                     ?: continue
-                val queries: List<String> = gson.fromJson(bankFile.readText(), stringListType)
+                // Match production: QueryBankManager resolves $YEAR$ before the generator
+            // ever sees the corpus, so the bigram model must be built from resolved text
+            // rather than modelling the placeholder itself (#256).
+            val queries: List<String> = gson.fromJson<List<String>>(bankFile.readText(), stringListType)
+                .map { freshenRecencyYear(it, currentYear()) }
                 if (queries.isEmpty()) continue
 
                 val generator = buildGenerator(target.locale, queries, blocker)
@@ -144,6 +150,8 @@ class MarkovQuerySanityTest {
         blocker: (String) -> Boolean
     ): MarkovQueryGenerator {
         val bankManager: QueryBankManager = mockk {
+            // MarkovQueryGenerator reads this to know when its bigram model is stale (#256).
+            every { corpusGeneration } returns 0
             every { getQueries(any()) } returns queries
             // Used only by the safe-fallback path (when resample runs out). In test, the
             // production code falls back to COOKING — feed the current locale's COOKING

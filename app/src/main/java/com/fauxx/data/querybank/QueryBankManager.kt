@@ -1,6 +1,7 @@
 package com.fauxx.data.querybank
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import com.fauxx.locale.LocaleManager
@@ -48,8 +49,41 @@ class QueryBankManager @Inject constructor(
     private val localeManager: LocaleManager,
     private val random: Random = Random.Default,
 ) {
+    /**
+     * Source of the current calendar year for $YEAR$ resolution (issue #256). A property
+     * rather than a constructor parameter because Dagger cannot bind a function type, and
+     * adding a `() -> Int` binding to the graph for one test seam is not worth it.
+     */
+    @VisibleForTesting
+    internal var yearProvider: () -> Int = ::currentYear
     private val cache = ConcurrentHashMap<Pair<SupportedLocale, CategoryPool>, List<String>>()
     private val watcherScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * The year the cached banks were resolved against (issue #256). Banks are cached for
+     * the life of the process, and a phone can stay up across New Year, so the cache is
+     * evicted when the calendar year moves rather than serving a query frozen at the year
+     * the process happened to start in. Guarded by [cacheLock].
+     */
+    private var cachedYear = 0
+
+    /**
+     * Guards [cachedYear] and the cache read together. A bare compare-and-set is not enough:
+     * the thread that LOSES the year-roll race skips the eviction, reaches the cache first,
+     * and is served a list still resolved against last year (issue #256).
+     */
+    private val cacheLock = Any()
+
+    /**
+     * Bumped every time the cached banks are invalidated, by a locale change or a
+     * calendar-year roll. Consumers that build their OWN state from the corpus — notably
+     * [MarkovQueryGenerator]'s bigram model — watch this so a model trained on the old text
+     * cannot outlive the corpus it came from and keep emitting last year's queries (#256).
+     */
+    private val generation = java.util.concurrent.atomic.AtomicInteger(0)
+
+    /** See [generation]. Changes whenever cached corpus text is replaced. */
+    val corpusGeneration: Int get() = generation.get()
 
     init {
         // Drop the initial replay (current value at subscription) so the cache isn't
@@ -62,7 +96,7 @@ class QueryBankManager @Inject constructor(
                 .distinctUntilChanged()
                 .collect {
                     Timber.d("Locale changed; clearing QueryBankManager cache")
-                    cache.clear()
+                    synchronized(cacheLock) { invalidate() }
                 }
         }
     }
@@ -87,7 +121,27 @@ class QueryBankManager @Inject constructor(
      */
     fun getQueries(category: CategoryPool): List<String> {
         val locale = localeManager.currentLocale
-        return cache.getOrPut(locale to category) { loadCategory(locale, category) }
+        // Eviction and read under one lock — see [cacheLock]. Asset loads serialize, which is
+        // immaterial at the engine's few-actions-per-minute cadence, and it also closes the
+        // pre-existing double-load window in ConcurrentHashMap.getOrPut (not atomic).
+        synchronized(cacheLock) {
+            val year = yearProvider()
+            if (cachedYear != year) {
+                // cachedYear == 0 is the first read of the process, not a roll.
+                if (cachedYear != 0) {
+                    Timber.d("Calendar year rolled $cachedYear -> $year; clearing QueryBankManager cache")
+                    invalidate()
+                }
+                cachedYear = year
+            }
+            return cache.getOrPut(locale to category) { loadCategory(locale, category) }
+        }
+    }
+
+    /** Drop cached banks and tell consumers their derived state is stale. Hold [cacheLock]. */
+    private fun invalidate() {
+        cache.clear()
+        generation.incrementAndGet()
     }
 
     private fun loadCategory(locale: SupportedLocale, category: CategoryPool): List<String> {
@@ -104,11 +158,17 @@ class QueryBankManager @Inject constructor(
             return emptyList()
         }
 
-        val filtered = raw.filterNot { queryBlocklist.isBlocked(it) }
-        val dropped = raw.size - filtered.size
+        // Resolve $YEAR$ BEFORE the safety gate (issue #256), so the blocklist and every
+        // downstream consumer — raw corpus picks, Markov n-grams, grammar heads — only ever
+        // see the real dispatched text. The token never escapes this loader.
+        val year = yearProvider()
+        val resolved = raw.map { freshenRecencyYear(it, year) }
+
+        val filtered = resolved.filterNot { queryBlocklist.isBlocked(it) }
+        val dropped = resolved.size - filtered.size
         if (dropped > 0) {
             Timber.w(
-                "QueryBlocklist filtered $dropped/${raw.size} harmful entries from " +
+                "QueryBlocklist filtered $dropped/${resolved.size} harmful entries from " +
                     "$localeFilename — corpus needs cleanup"
             )
         }

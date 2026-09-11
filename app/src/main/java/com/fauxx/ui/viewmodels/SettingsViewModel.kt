@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.fauxx.BuildConfig
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.model.IntensityLevel
+import com.fauxx.data.model.MIN_ACTIVE_SEARCH_ENGINES
 import com.fauxx.data.querybank.MarkovQueryGenerator
+import com.fauxx.engine.modules.SEARCH_ENGINE_IDS
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.scheduling.CircadianObserver
 import com.fauxx.locale.LocaleManager
@@ -37,8 +39,22 @@ data class SettingsUiState(
     val logRetentionDays: Int = 7,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val resumeOnBoot: Boolean = true,
+    /** Search engines the user opted out of poisoning (issue #281). */
+    val excludedSearchEngines: Set<String> = emptySet(),
     val customUserAgent: String = ""
 ) {
+    /** Engines still in the rotation, in pool order (issue #281). */
+    val activeSearchEngineCount: Int
+        get() = SEARCH_ENGINE_IDS.count { it !in excludedSearchEngines }
+
+    /**
+     * True when turning [id] off would drop below [MIN_ACTIVE_SEARCH_ENGINES]. The Settings
+     * screen disables the switch in that case rather than letting the user collapse the
+     * noise onto a single SERP, which would be trivially separable from real traffic.
+     */
+    fun isLastRequiredSearchEngine(id: String): Boolean =
+        id !in excludedSearchEngines && activeSearchEngineCount <= MIN_ACTIVE_SEARCH_ENGINES
+
     /**
      * #201: true when a non-blank custom UA is NOT an Android-Chromium string, so it is silently
      * dropped on the WebView path (a Firefox/Edge/iOS UA would otherwise mislead the user). The
@@ -109,6 +125,18 @@ class SettingsViewModel @Inject constructor(
     fun setLogRetentionDays(v: Int) { update { it.copy(logRetentionDays = v) } }
     fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
     fun setResumeOnBoot(v: Boolean) { update { it.copy(resumeOnBoot = v) } }
+
+
+    /**
+     * Opt [id] in or out of the synthetic search rotation (issue #281). Refuses a change
+     * that would leave fewer than [MIN_ACTIVE_SEARCH_ENGINES] engines active, so the
+     * invariant holds even if a caller bypasses the disabled switch.
+     */
+    fun setSearchEngineEnabled(id: String, enabled: Boolean) = update { state ->
+        val next = if (enabled) state.excludedSearchEngines - id else state.excludedSearchEngines + id
+        val remaining = SEARCH_ENGINE_IDS.count { it !in next }
+        if (remaining < MIN_ACTIVE_SEARCH_ENGINES) state else state.copy(excludedSearchEngines = next)
+    }
     fun setCustomUserAgent(v: String) {
         // #201: the system WebView's getDefaultUserAgent (the "use this device's browser" capture)
         // always carries the Android WebView marker "; wv", which is itself a tell and which users
@@ -182,6 +210,7 @@ class SettingsViewModel @Inject constructor(
                     logRetentionDays = new.logRetentionDays,
                     themeMode = new.themeMode,
                     resumeOnBoot = new.resumeOnBoot,
+                    excludedSearchEngines = new.excludedSearchEngines,
                     // Empty string in UI-state collapses to null in profile so the
                     // engine treats "blank field" as "no override" cleanly.
                     customUserAgent = new.customUserAgent.takeIf { it.isNotBlank() }
@@ -202,6 +231,7 @@ class SettingsViewModel @Inject constructor(
             logRetentionDays = p.logRetentionDays,
             themeMode = p.themeMode,
             resumeOnBoot = p.resumeOnBoot,
+            excludedSearchEngines = p.excludedSearchEngines,
             customUserAgent = p.customUserAgent.orEmpty()
         )
     }

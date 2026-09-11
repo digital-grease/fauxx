@@ -37,6 +37,13 @@ import com.fauxx.ui.theme.ThemeMode
  * @property resumeOnBoot When true, show a "tap to resume" notification after device
  *   reboot if the engine was enabled pre-reboot. True FGS auto-start is blocked by
  *   Android 14+ for our FGS types.
+ * @property excludedSearchEngines Names of search engines the user has opted OUT of poisoning
+ *   (issue #281), e.g. a privacy-respecting engine they would rather not send synthetic traffic
+ *   to. Stored as exclusions rather than inclusions so the default is empty and any engine added
+ *   to the pool later is on by default without a preference migration. The UI keeps at least
+ *   [MIN_ACTIVE_SEARCH_ENGINES] engines active: a single-engine noise stream is itself a
+ *   fingerprint, and engine diversity is the reason the pool was widened in the first place
+ *   (issue #24).
  * @property customUserAgent When non-null/non-blank, overrides the persona's derived device
  *   User-Agent on the WebView path with the user's own (issue #7), so the noise blends with their
  *   real browser's activity; honored only when it is itself Android-Chromium (the WebView TLS
@@ -65,5 +72,13 @@ data class PoisonProfile(
     val adversarialAllocationEnabled: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val resumeOnBoot: Boolean = true,
+    val excludedSearchEngines: Set<String> = emptySet(),
     val customUserAgent: String? = null
 )
+
+/**
+ * Floor on how many search engines can stay active (issue #281). Real users spread their
+ * searches across engines; collapsing synthetic traffic onto one SERP would make it
+ * trivially separable, which is exactly what the poisoning is trying to avoid.
+ */
+const val MIN_ACTIVE_SEARCH_ENGINES = 2

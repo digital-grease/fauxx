@@ -72,6 +72,11 @@ enum class EngineState {
      *  settings: no connectivity at all, or on mobile data with the mobile intensity
      *  set to Off (issue #62). Name kept from the legacy wifi-only toggle era. */
     PAUSED_WIFI,
+    /** Running but paused because the current Wi-Fi network is marked metered by the
+     *  system (a phone hotspot, or a network the user flagged as metered) and the mobile
+     *  intensity is Off. Distinct from [PAUSED_WIFI] so the UI can say "this Wi-Fi is
+     *  metered" instead of the misleading "waiting for a usable network" (issue #288). */
+    PAUSED_METERED_WIFI,
     PAUSED_BATTERY,
     PAUSED_RATE_LIMIT,
     PAUSED_QUIET_HOURS,
@@ -745,7 +750,9 @@ class PoisonEngine @Inject constructor(
      */
     private fun effectiveIntensity(p: PoisonProfile): IntensityLevel? = when (cachedTransport.get()) {
         NetworkTransport.WIFI -> p.intensity
-        NetworkTransport.CELLULAR -> p.mobileIntensity
+        // Metered WiFi spends the user's data allowance, so it is governed by the mobile
+        // budget, not the WiFi one (issue #288).
+        NetworkTransport.METERED_WIFI, NetworkTransport.CELLULAR -> p.mobileIntensity
         NetworkTransport.NONE -> null
     }
 
@@ -756,7 +763,14 @@ class PoisonEngine @Inject constructor(
         // No logging here — this runs every retry tick (and again per 60s sleep chunk).
         // The reason is logged once per transition by [logPauseReason] from runLoop (#158).
         if (effectiveIntensity(currentProfile) == null) {
-            return EngineState.PAUSED_WIFI
+            // Same underlying cause (no budget for this network), but name the metered-WiFi
+            // case separately so the UI doesn't claim we're "waiting for a usable network"
+            // while the user is plainly connected to WiFi (issue #288).
+            return if (cachedTransport.get() == NetworkTransport.METERED_WIFI) {
+                EngineState.PAUSED_METERED_WIFI
+            } else {
+                EngineState.PAUSED_WIFI
+            }
         }
         if (shouldPauseForBattery(
                 batteryLevel = cachedBatteryLevel.get(),
@@ -783,6 +797,13 @@ class PoisonEngine @Inject constructor(
         when (state) {
             EngineState.PAUSED_WIFI ->
                 Timber.d("Paused: no usable network (transport=${cachedTransport.get()}, mobile=${profile.mobileIntensity})")
+            EngineState.PAUSED_METERED_WIFI -> {
+                Timber.d("Paused: Wi-Fi is metered and mobile intensity is Off (mobile=${profile.mobileIntensity})")
+                // The resume constraint for this state is UNMETERED, which on a permanently
+                // metered home network may never fire — so this pause could otherwise last
+                // forever in silence. Say it once, here, on the state transition (#288).
+                com.fauxx.service.postMeteredWifiNotice(context)
+            }
             EngineState.PAUSED_BATTERY -> Timber.d("Paused: battery below threshold")
             EngineState.PAUSED_QUIET_HOURS ->
                 Timber.d("Paused: outside allowed hours (${profile.allowedHoursStart}-${profile.allowedHoursEnd})")
@@ -869,7 +890,8 @@ class PoisonEngine @Inject constructor(
      * Rules:
      * - [EngineState.PAUSED_QUIET_HOURS]: always resign — quiet hours can be 8+ hours long,
      *   so we release the FGS slot rather than spin idle.
-     * - [EngineState.PAUSED_WIFI] / [EngineState.PAUSED_BATTERY]: resign once the pause has
+     * - [EngineState.PAUSED_WIFI] / [EngineState.PAUSED_METERED_WIFI] /
+     *   [EngineState.PAUSED_BATTERY]: resign once the pause has
      *   lasted [LONG_PAUSE_THRESHOLD_MS]. Short blips (commute, brief WiFi drop) keep the
      *   FGS up, but sustained pauses surrender it.
      */
@@ -884,7 +906,11 @@ class PoisonEngine @Inject constructor(
         return when (state) {
             EngineState.PAUSED_QUIET_HOURS ->
                 PauseDecision.Resign(ResumeSpec.AtTime(nextAllowedHoursStartMs(currentProfile, nowMs)))
-            EngineState.PAUSED_WIFI ->
+            // Both share a resume rule. PAUSED_METERED_WIFI only ever occurs with mobile
+            // Off (otherwise the mobile budget would have applied and the engine would be
+            // running), so it always resolves to the UNMETERED constraint below — exactly
+            // the "resume when a real unmetered network appears" behavior issue #288 wants.
+            EngineState.PAUSED_WIFI, EngineState.PAUSED_METERED_WIFI ->
                 if (pauseElapsedMs >= LONG_PAUSE_THRESHOLD_MS)
                     // When the user allows mobile data (mobileIntensity set), this pause can
                     // only mean "no network at all", so ANY connection should resume us.
@@ -966,8 +992,13 @@ class PoisonEngine @Inject constructor(
          * can be exercised without standing up a real ConnectivityManager.
          *
          * Mapping:
-         *  - WiFi or ethernet → [NetworkTransport.WIFI] (unmetered bucket)
-         *  - VPN whose underlying networks include non-VPN WiFi → [NetworkTransport.WIFI]
+         *  - UNMETERED WiFi or ethernet → [NetworkTransport.WIFI] (unmetered bucket)
+         *  - METERED WiFi or ethernet → [NetworkTransport.METERED_WIFI] (issue #288): a phone
+         *    hotspot, or a network the user marked metered, spends a data allowance just like
+         *    cellular, so it is billed against the mobile budget instead of the WiFi one
+         *  - VPN whose underlying networks include an unmetered non-VPN WiFi →
+         *    [NetworkTransport.WIFI]; if every WiFi underneath is metered →
+         *    [NetworkTransport.METERED_WIFI]
          *  - VPN otherwise (tunneled over cellular, or underlying unknown) →
          *    [NetworkTransport.CELLULAR] — when in doubt, bill it as mobile data so the
          *    engine never exceeds the user's mobile budget
@@ -982,23 +1013,42 @@ class PoisonEngine @Inject constructor(
             if (activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                 activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
             ) {
-                return NetworkTransport.WIFI
+                return if (isUnmetered(activeCaps)) NetworkTransport.WIFI
+                else NetworkTransport.METERED_WIFI
             }
             if (activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
                 // Same unmetered bucket as the direct branch: WiFi or ethernet underneath.
-                val unmeteredUnderneath = underlyingCaps().any {
+                val wifiUnderneath = underlyingCaps().filter {
                     (it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                         it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) &&
                         !it.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
                 }
-                return if (unmeteredUnderneath) NetworkTransport.WIFI else NetworkTransport.CELLULAR
+                return when {
+                    wifiUnderneath.any { isUnmetered(it) } -> NetworkTransport.WIFI
+                    // Wi-Fi underneath, but every candidate is metered (issue #288): name it
+                    // METERED_WIFI so the pause reason is truthful, and bill it as mobile.
+                    wifiUnderneath.isNotEmpty() -> NetworkTransport.METERED_WIFI
+                    else -> NetworkTransport.CELLULAR
+                }
             }
             return NetworkTransport.CELLULAR
         }
 
         /**
+         * True when [caps] carries `NET_CAPABILITY_NOT_METERED`. Android sets this on
+         * ordinary home/office WiFi and CLEARS it for tethered phone hotspots (detected
+         * automatically) and for networks the user marked metered in Wi-Fi settings.
+         * Absence is treated as metered, matching the "when in doubt, bill it as mobile
+         * data" doctrine the VPN branch already follows (issue #288).
+         */
+        private fun isUnmetered(caps: NetworkCapabilities): Boolean =
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+
+        /**
          * Legacy boolean view of [classifyTransport], kept because "is this WiFi for the
          * engine's purposes" remains a meaningful question (issue #59 test surface).
+         * Note this means the UNMETERED bucket specifically: a metered WiFi network
+         * classifies as [NetworkTransport.METERED_WIFI] and returns false here (issue #288).
          */
         internal fun isWifiActive(
             activeCaps: NetworkCapabilities?,
@@ -1010,9 +1060,23 @@ class PoisonEngine @Inject constructor(
 /**
  * Transport class the engine is currently running on, as cached from the default-network
  * callback. Drives per-network intensity (issue #62): WIFI runs [PoisonProfile.intensity],
- * CELLULAR runs [PoisonProfile.mobileIntensity] (null = pause), NONE always pauses.
+ * CELLULAR and METERED_WIFI both run [PoisonProfile.mobileIntensity] (null = pause, and the
+ * default), NONE always pauses.
  */
-internal enum class NetworkTransport { WIFI, CELLULAR, NONE }
+internal enum class NetworkTransport {
+    /** Unmetered Wi-Fi or ethernet — the full [PoisonProfile.intensity] budget applies. */
+    WIFI,
+    /**
+     * Wi-Fi or ethernet the system reports as METERED (issue #288): a tethered phone
+     * hotspot, or a network the user marked metered in Android's Wi-Fi settings. It spends
+     * a data allowance exactly like cellular does, so it is billed against
+     * [PoisonProfile.mobileIntensity] rather than the Wi-Fi budget. Kept separate from
+     * [CELLULAR] purely so logs and the UI can name the real cause.
+     */
+    METERED_WIFI,
+    CELLULAR,
+    NONE
+}
 
 /**
  * Repository providing the current [PoisonProfile] backed by Jetpack DataStore.
@@ -1080,6 +1144,7 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] = p.batteryThreshold
         prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] =
             p.ignoreBatteryThresholdWhileCharging
+        prefs[com.fauxx.di.PreferenceKeys.EXCLUDED_SEARCH_ENGINES] = p.excludedSearchEngines
         prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] = p.allowedHoursStart
         prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] = p.allowedHoursEnd
         prefs[com.fauxx.di.PreferenceKeys.LOG_RETENTION_DAYS] = p.logRetentionDays
@@ -1115,6 +1180,8 @@ class PoisonProfileRepository @Inject constructor(
             batteryThreshold = prefs[com.fauxx.di.PreferenceKeys.BATTERY_THRESHOLD] ?: 20,
             ignoreBatteryThresholdWhileCharging =
                 prefs[com.fauxx.di.PreferenceKeys.IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING] ?: false,
+            excludedSearchEngines =
+                prefs[com.fauxx.di.PreferenceKeys.EXCLUDED_SEARCH_ENGINES].orEmpty(),
             allowedHoursStart = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_START] ?: 7,
             allowedHoursEnd = prefs[com.fauxx.di.PreferenceKeys.ALLOWED_HOURS_END] ?: 23,
             logRetentionDays = prefs[com.fauxx.di.PreferenceKeys.LOG_RETENTION_DAYS] ?: 7,

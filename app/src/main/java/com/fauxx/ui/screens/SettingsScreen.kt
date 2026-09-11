@@ -18,6 +18,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.ElevatedFilterChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -48,6 +49,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.BuildConfig
 import com.fauxx.R
 import com.fauxx.data.model.IntensityLevel
+import com.fauxx.data.model.MIN_ACTIVE_SEARCH_ENGINES
+import com.fauxx.engine.modules.SEARCH_ENGINE_IDS
+import com.fauxx.engine.modules.searchEngineDisplayName
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.theme.ThemeMode
@@ -381,6 +385,52 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.error
                 )
             }
+        }
+
+        // Search engines (issue #281): let users spare an engine they trust from the
+        // synthetic traffic, without letting them collapse the pool onto one SERP.
+        SettingsCard {
+            Text(
+                stringResource(R.string.settings_search_engines_title),
+                style = MaterialTheme.typography.titleSmall
+            )
+            Text(
+                stringResource(R.string.settings_search_engines_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            SEARCH_ENGINE_IDS.forEach { id ->
+                val enabled = id !in uiState.excludedSearchEngines
+                // The last two active engines are pinned on, so the switch is disabled
+                // rather than silently refusing the tap.
+                val pinned = uiState.isLastRequiredSearchEngine(id)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        searchEngineDisplayName(id),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (pinned) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurface
+                    )
+                    Switch(
+                        checked = enabled,
+                        enabled = !pinned,
+                        onCheckedChange = { viewModel.setSearchEngineEnabled(id, it) }
+                    )
+                }
+            }
+            Text(
+                stringResource(
+                    R.string.settings_search_engines_minimum_notice,
+                    MIN_ACTIVE_SEARCH_ENGINES
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         // Log retention (issue #73)

@@ -316,6 +316,8 @@ private fun ProtectionCard(
                         text = when (engineState) {
                             EngineState.ACTIVE -> stringResource(R.string.dashboard_engine_state_active)
                             EngineState.PAUSED_WIFI -> stringResource(R.string.dashboard_engine_state_paused_wifi)
+                            EngineState.PAUSED_METERED_WIFI ->
+                                stringResource(R.string.dashboard_engine_state_paused_metered_wifi)
                             EngineState.PAUSED_BATTERY -> stringResource(R.string.dashboard_engine_state_paused_battery)
                             EngineState.PAUSED_RATE_LIMIT -> stringResource(R.string.dashboard_engine_state_paused_rate_limit)
                             EngineState.PAUSED_QUIET_HOURS -> stringResource(R.string.dashboard_engine_state_paused_quiet_hours)
@@ -330,7 +332,21 @@ private fun ProtectionCard(
             // One-tap "opt into mobile data" for users who didn't realise the mobile-data
             // tier was a setting they could change (issue #38; tier ladder since #62).
             // Only shown when mobile is actually Off — see the call site.
-            if (engineState == EngineState.PAUSED_WIFI && showUseMobileData) {
+            // A metered-WiFi pause looks identical to "connected but idle" from the user's
+            // side, so spell out why before offering the escape hatch (issue #288).
+            if (engineState == EngineState.PAUSED_METERED_WIFI) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.dashboard_metered_wifi_explainer),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            // The same one-tap opt-in resolves both pauses: each is "this network has no
+            // budget", and the mobile tier is the budget that governs them (issues #38, #288).
+            if ((engineState == EngineState.PAUSED_WIFI ||
+                    engineState == EngineState.PAUSED_METERED_WIFI) && showUseMobileData
+            ) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = onUseMobileData,
@@ -722,6 +738,7 @@ private fun ConsentDialog(onAccept: () -> Unit, onDismiss: () -> Unit) {
                 ConsentBullet(stringResource(R.string.consent_bullet_browse))
                 ConsentBullet(stringResource(R.string.consent_bullet_fingerprint))
                 ConsentBullet(stringResource(R.string.consent_bullet_dns))
+                ConsentBullet(stringResource(R.string.consent_bullet_location))
                 ConsentBullet(stringResource(R.string.consent_bullet_battery))
                 Spacer(Modifier.height(4.dp))
                 Text(

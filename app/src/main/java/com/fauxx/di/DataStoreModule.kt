@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.Module
@@ -39,6 +40,7 @@ object PreferenceKeys {
     val MOBILE_INTENSITY = stringPreferencesKey("mobile_intensity")
     val BATTERY_THRESHOLD = intPreferencesKey("battery_threshold")
     val IGNORE_BATTERY_THRESHOLD_WHILE_CHARGING = booleanPreferencesKey("ignore_battery_threshold_while_charging")
+    val EXCLUDED_SEARCH_ENGINES = stringSetPreferencesKey("excluded_search_engines")
     val ALLOWED_HOURS_START = intPreferencesKey("allowed_hours_start")
     val ALLOWED_HOURS_END = intPreferencesKey("allowed_hours_end")
     val LOG_RETENTION_DAYS = intPreferencesKey("log_retention_days")

@@ -11,8 +11,10 @@ import com.fauxx.di.fauxxDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.Calendar
 
 /**
  * Starts the engine headlessly when the user taps the "Start" action on the resume
@@ -69,6 +71,19 @@ class StartEngineReceiver : BroadcastReceiver() {
                 runCatching {
                     appContext.fauxxDataStore.edit { it[PreferenceKeys.ENABLED] = true }
                 }.onFailure { Timber.w(it, "StartEngineReceiver: failed to persist ENABLED=true") }
+
+                // #198: starting outside the active window is correct but invisible — the
+                // engine resigns to PAUSED_QUIET_HOURS within about a second, so the FGS
+                // notification flashes and disappears and Start looks broken. Explain it.
+                // Deliberately AFTER the FGS start above, which must stay synchronous to
+                // keep the Android 14+ UI-interaction start grant in scope.
+                runCatching {
+                    val prefs = appContext.fauxxDataStore.data.first()
+                    val start = prefs[PreferenceKeys.ALLOWED_HOURS_START] ?: DEFAULT_HOURS_START
+                    val end = prefs[PreferenceKeys.ALLOWED_HOURS_END] ?: DEFAULT_HOURS_END
+                    val nowHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                    postQuietHoursStartNotice(appContext, nowHour, start, end)
+                }.onFailure { Timber.w(it, "StartEngineReceiver: failed to post the quiet-hours notice") }
             } finally {
                 pending?.finish()
             }
@@ -77,5 +92,9 @@ class StartEngineReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_START_ENGINE = "com.fauxx.START_ENGINE"
+
+        /** Mirrors [com.fauxx.data.model.PoisonProfile]'s defaults for an unwritten pref. */
+        private const val DEFAULT_HOURS_START = 7
+        private const val DEFAULT_HOURS_END = 23
     }
 }
