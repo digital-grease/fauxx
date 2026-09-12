@@ -41,11 +41,8 @@ internal fun meteredWifiNoticeText(): String =
  * notification id plus `setOnlyAlertOnce` means a network that flaps between metered and
  * unmetered updates the existing notice silently instead of stacking or re-alerting.
  *
- * Deliberately a flat function body. Building the Intent inside a lambda (a `runCatching`
- * block, say) defeats CodeQL's implicit-PendingIntent dataflow, which stops tracking the
- * component through the closure and reports CWE-927 even though `setPackage` is set. The
- * caller wraps this instead, so the engine's pause path still cannot be taken down by an
- * unexpected NotificationManager failure.
+ * Flat function body, with the caller owning the crash-safety, so the engine's pause path
+ * still cannot be taken down by an unexpected NotificationManager failure.
  */
 fun postMeteredWifiNotice(context: Context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -67,10 +64,13 @@ fun postMeteredWifiNotice(context: Context) {
         }
     )
 
+    // No ACTION_MAIN here, deliberately. The constructor sets the component, and adding an
+    // action is what makes CodeQL's java/android/implicit-pendingintents query (CWE-927) read
+    // this as implicit. ResumeNotifier sets the action because MainActivity reconciles on the
+    // extra it carries; this notice carries none, so the action is dead weight that buys an
+    // alert. MainActivity never inspects intent.action, so dropping it changes nothing.
+    // setPackage stays as belt-and-braces.
     val tapIntent = Intent(context, MainActivity::class.java).apply {
-        action = Intent.ACTION_MAIN
-        // Explicit target package — defensive against implicit-PendingIntent flags
-        // (CWE-927), matching ResumeNotifier.
         setPackage(context.packageName)
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
     }
