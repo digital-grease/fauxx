@@ -386,13 +386,6 @@
     <string name="settings_log_retention_title">Хранение журнала</string>
     <string name="settings_log_retention_value">%d дн.</string>
     <string name="settings_log_retention_description">Автоматически удалять записи журнала старше этого срока. Не даёт журналу на устройстве расти без ограничений.</string>
-    <string name="settings_custom_ua_title">Подстроить под мой браузер</string>
-    <string name="settings_custom_ua_description">По умолчанию Fauxx чередует множество идентификаторов браузера — но реальные люди обычно пользуются одним браузером, поэтому само разнообразие может выглядеть как трафик ботов. Нажми ниже, чтобы вместо этого использовать встроенный идентификатор браузера этого устройства — тогда шум будет сливаться с твоей реальной активностью. Оставь пустым, чтобы оставить чередование по умолчанию.</string>
-    <string name="settings_custom_ua_use_device_button">Использовать браузер этого устройства</string>
-    <string name="settings_custom_ua_field_label">Идентификатор браузера (для продвинутых — оставь пустым для автоматического чередования)</string>
-    <string name="settings_custom_ua_placeholder">Mozilla/5.0 (…)</string>
-    <string name="settings_custom_ua_clear_button">Очистить и возобновить чередование</string>
-    <string name="settings_custom_ua_non_chromium_warning">Это не user-agent Chrome для Android, поэтому он будет проигнорирован для синтетического просмотра (он идёт через системный WebView). Используйте user-agent Chrome для Android, чтобы он применялся.</string>
     <string name="settings_clear_all_data_button">Очистить все данные</string>
     <string name="settings_export_debug_logs_button">Экспортировать отладочные логи</string>
     <string name="settings_about_privacy_button">О приложении и приватность</string>
