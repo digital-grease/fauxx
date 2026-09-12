@@ -809,7 +809,10 @@ class PoisonEngine @Inject constructor(
                 // The resume constraint for this state is UNMETERED, which on a permanently
                 // metered home network may never fire — so this pause could otherwise last
                 // forever in silence. Say it once, here, on the state transition (#288).
-                com.fauxx.service.postMeteredWifiNotice(context)
+                // Wrapped here rather than inside the notifier: keeping that function a flat
+                // body is what lets CodeQL track the PendingIntent's component (CWE-927).
+                runCatching { com.fauxx.service.postMeteredWifiNotice(context) }
+                    .onFailure { Timber.w(it, "Failed to post the metered-Wi-Fi notice") }
             }
             EngineState.PAUSED_BATTERY -> Timber.d("Paused: battery below threshold")
             EngineState.PAUSED_QUIET_HOURS ->

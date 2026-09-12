@@ -41,62 +41,62 @@ internal fun meteredWifiNoticeText(): String =
  * notification id plus `setOnlyAlertOnce` means a network that flaps between metered and
  * unmetered updates the existing notice silently instead of stacking or re-alerting.
  *
- * Never throws. This runs inside the engine's pause path, where an unexpected
- * NotificationManager failure must not take the loop down with it.
+ * Deliberately a flat function body. Building the Intent inside a lambda (a `runCatching`
+ * block, say) defeats CodeQL's implicit-PendingIntent dataflow, which stops tracking the
+ * component through the closure and reports CWE-927 even though `setPackage` is set. The
+ * caller wraps this instead, so the engine's pause path still cannot be taken down by an
+ * unexpected NotificationManager failure.
  */
 fun postMeteredWifiNotice(context: Context) {
-    runCatching {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            !NotificationManagerCompat.from(context).areNotificationsEnabled()
-        ) {
-            Timber.w("POST_NOTIFICATIONS not granted; skipping metered-Wi-Fi notice")
-            return@runCatching
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        !NotificationManagerCompat.from(context).areNotificationsEnabled()
+    ) {
+        Timber.w("POST_NOTIFICATIONS not granted; skipping metered-Wi-Fi notice")
+        return
+    }
+
+    val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    nm.createNotificationChannel(
+        NotificationChannel(
+            METERED_WIFI_CHANNEL_ID,
+            "Metered network notices",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "Explains why Fauxx is paused on a metered Wi-Fi network"
+            setShowBadge(false)
         }
+    )
 
-        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(
-            NotificationChannel(
-                METERED_WIFI_CHANNEL_ID,
-                "Metered network notices",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Explains why Fauxx is paused on a metered Wi-Fi network"
-                setShowBadge(false)
-            }
-        )
+    val tapIntent = Intent(context, MainActivity::class.java).apply {
+        action = Intent.ACTION_MAIN
+        // Explicit target package — defensive against implicit-PendingIntent flags
+        // (CWE-927), matching ResumeNotifier.
+        setPackage(context.packageName)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+    }
+    val pendingIntent = PendingIntent.getActivity(
+        context, 2, tapIntent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
 
-        val tapIntent = Intent(context, MainActivity::class.java).apply {
-            action = Intent.ACTION_MAIN
-            // Explicit target package — defensive against implicit-PendingIntent flags
-            // (CWE-927), matching ResumeNotifier.
-            setPackage(context.packageName)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context, 2, tapIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+    val text = meteredWifiNoticeText()
+    val notification = NotificationCompat.Builder(context, METERED_WIFI_CHANNEL_ID)
+        .setSmallIcon(R.drawable.ic_notification)
+        .setContentTitle("Fauxx")
+        .setContentText(text)
+        .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+        .setPriority(NotificationCompat.PRIORITY_LOW)
+        .setContentIntent(pendingIntent)
+        .setAutoCancel(true)
+        .setOnlyAlertOnce(true)
+        .build()
 
-        val text = meteredWifiNoticeText()
-        val notification = NotificationCompat.Builder(context, METERED_WIFI_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Fauxx")
-            .setContentText(text)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .setOnlyAlertOnce(true)
-            .build()
-
-        // Explicit SecurityException catch rather than leaning on the outer runCatching:
-        // lint's MissingPermission check only recognizes the explicit form, and
-        // POST_NOTIFICATIONS can be revoked between the check above and this call.
-        try {
-            NotificationManagerCompat.from(context)
-                .notify(METERED_WIFI_NOTIFICATION_ID, notification)
-        } catch (e: SecurityException) {
-            Timber.w(e, "Failed to post the metered-Wi-Fi notice (SecurityException)")
-        }
-    }.onFailure { Timber.w(it, "Failed to post the metered-Wi-Fi notice") }
+    // Explicit SecurityException catch: lint's MissingPermission check only recognizes this
+    // form, and POST_NOTIFICATIONS can be revoked between the check above and this call.
+    try {
+        NotificationManagerCompat.from(context)
+            .notify(METERED_WIFI_NOTIFICATION_ID, notification)
+    } catch (e: SecurityException) {
+        Timber.w(e, "Failed to post the metered-Wi-Fi notice (SecurityException)")
+    }
 }
