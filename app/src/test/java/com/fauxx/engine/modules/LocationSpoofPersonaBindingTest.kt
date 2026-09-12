@@ -5,6 +5,7 @@ import android.content.Context
 import android.location.LocationManager
 import com.fauxx.data.location.CityCoord
 import com.fauxx.data.location.CityDatabase
+import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
@@ -52,7 +53,12 @@ class LocationSpoofPersonaBindingTest {
         context = context,
         routeGenerator = mockk(relaxed = true),
         cityDatabase = cityDatabase,
-        profileRepo = mockk<PoisonProfileRepository>(relaxed = true),
+        // A REAL PoisonProfile rather than a relaxed mock: a relaxed mock hands back mocked
+        // field values instead of the shipped defaults, which silently changes what the
+        // module reads.
+        profileRepo = mockk<PoisonProfileRepository>(relaxed = true) {
+            every { getProfile() } returns PoisonProfile()
+        },
         personaLayer = mockk { every { personaForChannel(any()) } returns persona }
     )
 

@@ -221,6 +221,8 @@ class PoisonEngineFailClosedTest {
             every { loadFailed } returns blocklistLoadFailed
         }
         val queryBankManager: QueryBankManager = mockk {
+            // MarkovQueryGenerator reads this to know when its bigram model is stale (#256).
+            every { corpusGeneration } returns 0
             every { getQueries(any()) } returns listOf("test")
         }
         val crawlListManager: CrawlListManager = mockk {

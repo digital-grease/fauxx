@@ -1,17 +1,16 @@
 Fauxx is an open-source privacy tool that protects you by generating diverse, believable synthetic browsing activity in the background. By feeding data brokers and ad-tech platforms plausible off-demographic decoy activity that reads as real people, Fauxx makes your genuine behavioral signal indistinguishable from convincing fakes — deception, not easily-filterable noise.
 
-This is the FULL version distributed via F-Droid and GitHub. It includes all modules, including location spoofing and ad profile pollution, which are not available in the Play Store version due to Google's policies.
+This is the FULL version distributed via F-Droid and GitHub. It includes ad profile pollution, which is not available in the Play Store version due to Google's policies.
 
 HOW IT WORKS
 
-Fauxx runs quietly in the background and performs diverse browsing activities across many topic categories — searches, page visits, DNS lookups, a stable per-persona device identity, ad profile pollution, and GPS location spoofing. The goal is to bury your real interests under a stream of coherent, believable decoy activity so that data brokers can't tell which "you" is real.
+Fauxx runs quietly in the background and performs diverse browsing activities across many topic categories — searches, page visits, DNS lookups, a stable per-persona device identity, and ad profile pollution. The goal is to bury your real interests under a stream of coherent, believable decoy activity so that data brokers can't tell which "you" is real.
 
 FEATURES
 
-• Diverse search queries across Google, Bing, DuckDuckGo, and Yahoo on topics far from your real interests
+• Diverse search queries across Google, Bing, DuckDuckGo, Yahoo, and Yandex on topics far from your real interests, with per-engine opt-out
 • Varied website visits across dozens of content categories
 • Ad profile pollution — loads ad-heavy pages to inject off-demographic ad signals
-• GPS location spoofing — feeds fake coordinates via mock location provider (requires developer options)
 • Stable per-persona device identity — one coherent User-Agent + client hints per synthetic persona, not random rotation (plus canvas fingerprint noise)
 • DNS query diversification
 • Smart targeting engine with 3 layers of demographic distancing

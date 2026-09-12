@@ -72,7 +72,12 @@ class FakeRouteGenerator @Inject constructor(
         var lng = start.lng
         var bearing = random.nextDouble(0.0, 360.0)
         val baseTime = clock.currentTimeMillis() - count * intervalMs
-        val baseElapsedNanos = System.nanoTime() - count * intervalMs * 1_000_000L
+        // CLOCK_BOOTTIME, not CLOCK_MONOTONIC: Location.elapsedRealtimeNanos is defined on
+        // boot time, which keeps advancing through deep sleep. System.nanoTime() freezes while
+        // the device sleeps, so every fix arrived looking as stale as the device's accumulated
+        // sleep, which is routinely hours. Consumers compute fix age from this field.
+        val baseElapsedNanos =
+            clock.elapsedRealtime() * 1_000_000L - count * intervalMs * 1_000_000L
 
         for (i in 0 until count) {
             val (speed, accuracy) = when (mode) {

@@ -20,14 +20,25 @@ import org.junit.Test
  */
 class PoisonEngineWifiDetectionTest {
 
-    private fun caps(vararg transports: Int): NetworkCapabilities = mockk(relaxed = true) {
-        // Default: no transport returns true.
-        every { hasTransport(any()) } returns false
-        // Whitelisted transports return true.
-        for (transport in transports) {
-            every { hasTransport(transport) } returns true
+    /**
+     * An UNMETERED network with the given transports. `hasCapability` must be stubbed
+     * explicitly: the relaxed mock answers false for every unstubbed boolean, which
+     * `classifyTransport` would read as "metered" after issue #288.
+     */
+    private fun caps(vararg transports: Int): NetworkCapabilities = capsMetered(false, *transports)
+
+    /** As [caps], but the network reports itself as metered when [metered] is true. */
+    private fun capsMetered(metered: Boolean, vararg transports: Int): NetworkCapabilities =
+        mockk(relaxed = true) {
+            // Default: no transport returns true.
+            every { hasTransport(any()) } returns false
+            // Whitelisted transports return true.
+            for (transport in transports) {
+                every { hasTransport(transport) } returns true
+            }
+            every { hasCapability(any()) } returns false
+            every { hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) } returns !metered
         }
-    }
 
     @Test
     fun `null active caps returns false`() {
@@ -135,6 +146,66 @@ class PoisonEngineWifiDetectionTest {
         // engine can never exceed the user's mobile budget by accident.
         val activeVpn = caps(NetworkCapabilities.TRANSPORT_VPN)
         assertEquals(NetworkTransport.CELLULAR, PoisonEngine.classifyTransport(activeVpn) { emptyList() })
+    }
+
+    // --- metered WiFi (issue #288) ---
+
+    @Test
+    fun `classifyTransport maps metered WiFi to METERED_WIFI`() {
+        // The headline case: a tethered phone hotspot. Android clears NOT_METERED, and the
+        // engine must bill it against the mobile budget instead of the WiFi one.
+        val hotspot = capsMetered(true, NetworkCapabilities.TRANSPORT_WIFI)
+        assertEquals(NetworkTransport.METERED_WIFI, PoisonEngine.classifyTransport(hotspot) { emptyList() })
+    }
+
+    @Test
+    fun `classifyTransport maps metered ethernet to METERED_WIFI`() {
+        val ethernet = capsMetered(true, NetworkCapabilities.TRANSPORT_ETHERNET)
+        assertEquals(NetworkTransport.METERED_WIFI, PoisonEngine.classifyTransport(ethernet) { emptyList() })
+    }
+
+    @Test
+    fun `classifyTransport treats absent NOT_METERED as metered`() {
+        // Fail safe: a network that never declares the capability is billed as metered
+        // rather than silently spending an allowance the app can't see.
+        val unknown: NetworkCapabilities = mockk(relaxed = true) {
+            every { hasTransport(any()) } returns false
+            every { hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
+            every { hasCapability(any()) } returns false
+        }
+        assertEquals(NetworkTransport.METERED_WIFI, PoisonEngine.classifyTransport(unknown) { emptyList() })
+    }
+
+    @Test
+    fun `classifyTransport maps VPN over metered WiFi to METERED_WIFI`() {
+        // A VPN on a tethered hotspot: the underlying WiFi exists but is metered, so the
+        // pause reason should still name WiFi rather than claim plain cellular.
+        val activeVpn = caps(NetworkCapabilities.TRANSPORT_VPN)
+        val meteredWifi = capsMetered(true, NetworkCapabilities.TRANSPORT_WIFI)
+        assertEquals(
+            NetworkTransport.METERED_WIFI,
+            PoisonEngine.classifyTransport(activeVpn) { listOf(meteredWifi) }
+        )
+    }
+
+    @Test
+    fun `classifyTransport prefers an unmetered WiFi when several underlie a VPN`() {
+        // Mixed underlying list: one metered, one not. The unmetered one wins, so the
+        // engine doesn't downgrade a user who is genuinely on free WiFi.
+        val activeVpn = caps(NetworkCapabilities.TRANSPORT_VPN)
+        val meteredWifi = capsMetered(true, NetworkCapabilities.TRANSPORT_WIFI)
+        val freeWifi = caps(NetworkCapabilities.TRANSPORT_WIFI)
+        assertEquals(
+            NetworkTransport.WIFI,
+            PoisonEngine.classifyTransport(activeVpn) { listOf(meteredWifi, freeWifi) }
+        )
+    }
+
+    @Test
+    fun `isWifiActive reports false for metered WiFi`() {
+        // isWifiActive means the UNMETERED bucket specifically.
+        val hotspot = capsMetered(true, NetworkCapabilities.TRANSPORT_WIFI)
+        assertFalse(PoisonEngine.isWifiActive(hotspot) { emptyList() })
     }
 
     @Test

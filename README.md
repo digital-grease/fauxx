@@ -65,7 +65,7 @@ Fauxx poisons through seven complementary channels:
 
 ### 1. Search Poisoning
 
-Executes synthetic search queries across Google, Bing, DuckDuckGo, and Yahoo. Most queries are composed on-device by a per-install grammar model (with a Markov fallback) over a bundled corpus, so they read as natural, topically coherent searches rather than random gibberish. The grammar is styled per install, so no two devices emit the same query distribution for a broker to fingerprint. Each query is followed by 1–3 result clicks with random dwell time (2–30 seconds).
+Executes synthetic search queries across Google, Bing, DuckDuckGo, Yahoo, and Yandex, and you can switch off any engine you would rather spare. Most queries are composed on-device by a per-install grammar model (with a Markov fallback) over a bundled corpus, so they read as natural, topically coherent searches rather than random gibberish. The grammar is styled per install, so no two devices emit the same query distribution for a broker to fingerprint. Each query is followed by 1–3 result clicks with random dwell time (2–30 seconds).
 
 **Category-aware:** Query bank selection is weighted by your targeting engine output.
 
@@ -73,14 +73,15 @@ Executes synthetic search queries across Google, Bing, DuckDuckGo, and Yahoo. Mo
 
 Loads ad-heavy pages in background WebViews, clicks ads at sub-1% CTR (keeping it plausible), and visits ad preference dashboards. Designed to generate signals ad networks interpret as low intent, not botting.
 
-### 3. Location Spoofing
+### 3. Location Spoofing (experimental, off by default, see limits below)
 
-Uses Android's MockLocationProvider to feed fake GPS coordinates along plausible paths:
-- Walking routes (3–5 km/h)
-- Driving routes (30–100 km/h)
-- Stationary jitter around fake "home" locations
+Uses Android's MockLocationProvider to feed fake GPS coordinates along plausible paths, drawn from a database of 800+ world city centers. Routes are bound to the active persona's region.
 
-Powered by a database of 800+ world city centers. Location selection is weighted by your demographics—if you report yourself as US Midwest, spoofing favors distant regions.
+**This module does not currently do what its name suggests, and you should not rely on it.** Measured on Android 14: Fauxx registers an additional location provider of its own rather than replacing the system ones, so apps that ask for location the normal way (Play Services fused location, or the standard GPS provider) receive your real location, unaffected. Apps also do not select Fauxx's provider when asking the system to choose one. The fake coordinates are generated correctly and then largely go nowhere.
+
+Two further limits apply even if that is fixed. Android flags every coordinate from a mock provider, so any recipient that checks can discard them with a single call, and that flag cannot be suppressed without root. And spoofing GPS does not affect the other channels that reveal location anyway: your IP address, Wi-Fi and cell scanning, your timezone and SIM, or an address typed into an account.
+
+It is kept, off by default, because the surrounding scaffolding is sound and a future privileged approach could use it. It is not a reason to choose Fauxx.
 
 **Setup:** Android requires you to designate the mock-location app explicitly. Enable Developer Options (Settings → About phone → tap Build Number 7 times), then Developer Options → "Select mock location app" → Fauxx. The Location Spoofing toggle surfaces this dialog on first enable. The Play Store build does not include this module; F-Droid / sideload only.
 
@@ -213,9 +214,10 @@ Scrollable audit log of all actions with timestamps, types, and details. Export 
 
 Global controls:
 - **Wi-Fi intensity:** Low (light activity) / Medium (balanced) / High (aggressive) / Max (highest volume)
-- **Mobile data intensity:** a separate Off / Low / Medium / High / Max ladder for mobile data — Off (the default) never touches mobile data; any tier runs the engine on mobile at its own rate
+- **Mobile data intensity:** a separate Off / Low / Medium / High / Max ladder for mobile data — Off (the default) never touches mobile data; any tier runs the engine on mobile at its own rate. Wi-Fi networks the system reports as metered, a tethered phone hotspot or a network you marked metered in Android's Wi-Fi settings, are governed by this ladder too, so Fauxx does not quietly spend a data allowance it cannot see
 - **Battery threshold:** Minimum battery % to run actions (Can be adjusted individually while on battery and while charging)
 - **Active hours:** Time range when actions should run (e.g., 7am–11pm)
+- **Search engines:** Which engines receive synthetic queries. Turning one off spares it entirely. At least two stay active, because real people spread searches across engines and noise from a single one would be easy to filter out
 - **Clear all data:** Destructive button to reset everything
 
 ## Configuration
@@ -358,7 +360,7 @@ When Fauxx pauses for a long stretch, it releases its foreground service rather 
 You'll typically see this notification:
 
 - **In the morning,** if you have quiet hours configured (default 7am to 11pm). Rather than spin idle overnight, Fauxx steps down at the start of quiet hours and reappears as a tap-to-resume at the start of your next active window.
-- **After a long no-network pause,** if your mobile data intensity is Off and Wi-Fi is gone, or after a long low-battery pause. Sustained pauses past 30 minutes release the service rather than spinning idle.
+- **After a long no-network pause,** if your mobile data intensity is Off and Wi-Fi is gone or is a metered network, or after a long low-battery pause. Sustained pauses past 30 minutes release the service rather than spinning idle.
 - **After a reboot or an app update,** because Android won't let Fauxx restart its own foreground service from a boot or update event. Fauxx posts the resume notification instead.
 
 Tapping the notification opens Fauxx and restarts protection. Nothing is lost. Your settings, profile, persona, and action log are all persistent. This behavior is identical on the Play Store and F-Droid builds.

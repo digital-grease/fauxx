@@ -1,5 +1,7 @@
 package com.fauxx
 
+import com.fauxx.data.querybank.currentYear
+import com.fauxx.data.querybank.freshenRecencyYear
 import com.fauxx.safety.CorpusSafetyMatchers
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
@@ -83,7 +85,11 @@ class QueryBankCorpusAuditTest {
             banksDir.listFiles { f -> f.extension == "json" }
                 ?.sortedBy { it.name }
                 ?.forEach { file ->
-                    val queries: List<String> = gson.fromJson(file.readText(), stringListType)
+                    val raw: List<String> = gson.fromJson(file.readText(), stringListType)
+                    // Audit what actually dispatches: QueryBankManager resolves $YEAR$
+                    // before the blocklist runs, so the audit must resolve it too or it
+                    // would be checking text that never reaches a search engine (#256).
+                    val queries = raw.map { freshenRecencyYear(it, currentYear()) }
                     queries.forEachIndexed { idx, q ->
                         if (blocker(q)) {
                             allViolations += "[${target.tag}] ${file.name}[$idx]: \"$q\""

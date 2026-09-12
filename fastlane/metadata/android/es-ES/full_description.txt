@@ -1,17 +1,16 @@
 Fauxx es una herramienta de privacidad de código abierto que te protege generando en segundo plano una actividad de navegación sintética y diversa. Al alimentar a los corredores de datos y las plataformas publicitarias con actividad señuelo plausible y ajena a tu perfil que parece de personas reales, Fauxx hace que tu señal de comportamiento real sea indistinguible de imitaciones convincentes: engaño, no ruido fácil de filtrar.
 
-Esta es la versión COMPLETA distribuida a través de F-Droid y GitHub. Incluye todos los módulos, incluidos la suplantación de ubicación y la contaminación del perfil publicitario, que no están disponibles en la versión de Play Store debido a las políticas de Google.
+Esta es la versión COMPLETA distribuida a través de F-Droid y GitHub. Incluye la contaminación del perfil publicitario, que no está disponible en la versión de Play Store debido a las políticas de Google.
 
 CÓMO FUNCIONA
 
-Fauxx se ejecuta discretamente en segundo plano y realiza actividades de navegación diversas en muchas categorías temáticas: búsquedas, visitas a páginas, consultas DNS, una identidad de dispositivo estable por persona, contaminación del perfil publicitario y suplantación de ubicación GPS. El objetivo es enterrar tus intereses reales bajo un flujo de actividad señuelo coherente y creíble para que los corredores de datos no puedan saber cuál «tú» es real.
+Fauxx se ejecuta discretamente en segundo plano y realiza actividades de navegación diversas en muchas categorías temáticas: búsquedas, visitas a páginas, consultas DNS, una identidad de dispositivo estable por persona y contaminación del perfil publicitario. El objetivo es enterrar tus intereses reales bajo un flujo de actividad señuelo coherente y creíble para que los corredores de datos no puedan saber cuál «tú» es real.
 
 CARACTERÍSTICAS
 
 • Consultas de búsqueda diversas en Google, Bing, DuckDuckGo y Yahoo sobre temas alejados de tus intereses reales
 • Visitas variadas a sitios web en docenas de categorías de contenido
 • Contaminación del perfil publicitario: carga páginas con muchos anuncios para inyectar señales publicitarias ajenas a tu demografía
-• Suplantación de ubicación GPS: envía coordenadas falsas mediante el proveedor de ubicación simulada (requiere opciones de desarrollador)
 • Identidad de dispositivo estable por persona: un User-Agent coherente + client hints por cada persona sintética, sin rotación aleatoria (más ruido de canvas)
 • Diversificación de consultas DNS
 • Motor de segmentación inteligente con 3 capas de distanciamiento demográfico

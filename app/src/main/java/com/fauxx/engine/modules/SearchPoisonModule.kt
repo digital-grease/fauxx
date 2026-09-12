@@ -71,6 +71,53 @@ private val SEARCH_ENGINES = listOf(
 )
 
 /**
+ * Engine ids in pool order, for the Settings opt-out list (issue #281). Ids are the stable
+ * persisted keys; [searchEngineDisplayName] renders them.
+ */
+val SEARCH_ENGINE_IDS: List<String> = SEARCH_ENGINES.map { it.name }
+
+/** Brand names, identical in every locale, so these are not string resources. */
+fun searchEngineDisplayName(id: String): String = when (id) {
+    "google" -> "Google"
+    "bing" -> "Bing"
+    "duckduckgo" -> "DuckDuckGo"
+    "yahoo" -> "Yahoo"
+    "yandex" -> "Yandex"
+    else -> id.replaceFirstChar { it.uppercase() }
+}
+
+/**
+ * The engines synthetic searches may use, given the user's opt-outs (issue #281).
+ *
+ * Some users would rather not aim synthetic traffic at an engine they trust, which is a
+ * reasonable ask, but the pool exists to be diverse: real people do not run every search
+ * through one SERP, and collapsing onto a single engine would make the traffic easy to
+ * separate (the reason Yandex was added in #24). The Settings UI enforces
+ * [MIN_ACTIVE_SEARCH_ENGINES].
+ *
+ * The empty-pool branch is a genuine conflict of duties, not a free choice: honoring the
+ * exclusions would stop the search module entirely, while ignoring them sends traffic to an
+ * engine the user explicitly asked to spare. It resolves toward keeping the module alive,
+ * because the reachable causes are a preference outliving the pool it referred to (an engine
+ * removed in a later build, or a set synced from a device on a different version) rather than
+ * a considered "exclude everything" — which the UI cannot express. It is NOT silent: the
+ * override is logged at warning level, so an opt-out that stopped being honored is
+ * diagnosable from a log export rather than invisible.
+ */
+internal fun activeSearchEngines(
+    all: List<String>,
+    excluded: Set<String>,
+): List<String> {
+    val kept = all.filterNot { it in excluded }
+    if (kept.isNotEmpty()) return kept
+    Timber.w(
+        "Every search engine is excluded ($excluded); ignoring the opt-out to keep the " +
+            "search module running. The stored exclusions likely predate this engine pool."
+    )
+    return all
+}
+
+/**
  * Executes synthetic search activity as intent-chain SESSIONS (E5 #175): one onAction
  * call runs a whole session — a goal query, then in-topic refinements built from
  * [SearchRefinements] (so successive queries narrow the same subject instead of being
@@ -183,7 +230,12 @@ class SearchPoisonModule @Inject constructor(
         }
 
         val locale = localeManager.currentLocale
-        val engine = SEARCH_ENGINES.random(random)
+        // Honor the user's engine opt-outs (issue #281).
+        val allowed = activeSearchEngines(
+            SEARCH_ENGINE_IDS,
+            profileRepo.getProfile().excludedSearchEngines
+        ).toSet()
+        val engine = SEARCH_ENGINES.filter { it.name in allowed }.random(random)
         val goalUrl = engine.build(java.net.URLEncoder.encode(goal, "UTF-8"), locale)
         // Engine name suffix surfaces which SERP each search actually hit, so the user
         // can verify newly-added engines (e.g. Yandex per #24) are actually firing.

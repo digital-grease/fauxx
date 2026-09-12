@@ -56,6 +56,10 @@ class MarkovQueryGeneratorSafetyTest {
         )
 
         val bankManager: QueryBankManager = mockk {
+
+            // MarkovQueryGenerator reads this to know when its bigram model is stale (#256).
+
+            every { corpusGeneration } returns 0
             every { getQueries(any()) } returns safeQueries
             every { randomQuery(any()) } returns safeQueries.first()
         }
@@ -102,6 +106,10 @@ class MarkovQueryGeneratorSafetyTest {
         )
 
         val bankManager: QueryBankManager = mockk {
+
+            // MarkovQueryGenerator reads this to know when its bigram model is stale (#256).
+
+            every { corpusGeneration } returns 0
             every { getQueries(any()) } returns harmfulCorpus
             every { randomQuery(any()) } returns harmfulCorpus.first()
         }
@@ -137,6 +145,8 @@ class MarkovQueryGeneratorSafetyTest {
     @Test
     fun `generate does not throw when all candidates are blocked`() {
         val bankManager: QueryBankManager = mockk {
+            // MarkovQueryGenerator reads this to know when its bigram model is stale (#256).
+            every { corpusGeneration } returns 0
             every { getQueries(any()) } returns listOf("how to hang yourself")
             every { randomQuery(any()) } returns "how to hang yourself"
         }

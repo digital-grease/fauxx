@@ -273,7 +273,10 @@ class EngineResumeSchedulerIntegrationTest {
         }
         val actionLogDao: ActionLogDao = mockk(relaxed = true)
         val blocklist: DomainBlocklist = mockk { every { loadFailed } returns false }
-        val queryBankManager: QueryBankManager = mockk { every { getQueries(any()) } returns listOf("test") }
+        val queryBankManager: QueryBankManager = mockk {
+            every { getQueries(any()) } returns listOf("test")
+            every { corpusGeneration } returns 0
+        }
         val crawlListManager: CrawlListManager = mockk { every { corpusSize() } returns 100 }
         val cityDatabase: CityDatabase = mockk {
             every { cities } returns listOf(

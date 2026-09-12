@@ -1,7 +1,9 @@
 package com.fauxx
 
 import com.fauxx.data.db.ActionLogDao
+import com.fauxx.data.model.MIN_ACTIVE_SEARCH_ENGINES
 import com.fauxx.data.model.PoisonProfile
+import com.fauxx.engine.modules.SEARCH_ENGINE_IDS
 import com.fauxx.data.querybank.MarkovQueryGenerator
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.scheduling.CircadianObserver
@@ -22,6 +24,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -64,6 +67,63 @@ class SettingsViewModelTest {
         profileSnapshotDao, targetingEngine, encryptedFileTree, localeManager,
         markovGenerator, circadianObserver
     )
+
+    // --- #281 search-engine opt-out ---
+
+    @Test
+    fun `an engine can be opted out of the rotation`() = runTest {
+        val vm = viewModel()
+        vm.setSearchEngineEnabled("duckduckgo", false)
+        advanceUntilIdle()
+        assertTrue(
+            "the opted-out engine is recorded as excluded",
+            vm.uiState.value.excludedSearchEngines.contains("duckduckgo")
+        )
+    }
+
+    @Test
+    fun `opting an engine back in clears the exclusion`() = runTest {
+        val vm = viewModel()
+        vm.setSearchEngineEnabled("duckduckgo", false)
+        vm.setSearchEngineEnabled("duckduckgo", true)
+        advanceUntilIdle()
+        assertTrue(
+            "re-enabling removes the exclusion",
+            vm.uiState.value.excludedSearchEngines.isEmpty()
+        )
+    }
+
+    @Test
+    fun `the engine pool cannot be driven below the diversity floor`() = runTest {
+        // Collapsing synthetic search onto one SERP would make it trivially separable
+        // from real traffic, so the last two engines are pinned on.
+        val vm = viewModel()
+        SEARCH_ENGINE_IDS.forEach { vm.setSearchEngineEnabled(it, false) }
+        advanceUntilIdle()
+        val remaining = SEARCH_ENGINE_IDS.count { it !in vm.uiState.value.excludedSearchEngines }
+        assertEquals(
+            "at least MIN_ACTIVE_SEARCH_ENGINES engines must survive",
+            MIN_ACTIVE_SEARCH_ENGINES,
+            remaining
+        )
+    }
+
+    @Test
+    fun `isLastRequiredSearchEngine marks exactly the pinned engines`() = runTest {
+        val vm = viewModel()
+        // With all five active, none is pinned yet.
+        assertFalse(vm.uiState.value.isLastRequiredSearchEngine("google"))
+
+        SEARCH_ENGINE_IDS.forEach { vm.setSearchEngineEnabled(it, false) }
+        advanceUntilIdle()
+        val state = vm.uiState.value
+        val active = SEARCH_ENGINE_IDS.filter { it !in state.excludedSearchEngines }
+        assertTrue("every surviving engine is pinned", active.all { state.isLastRequiredSearchEngine(it) })
+        assertFalse(
+            "an already-excluded engine is not pinned",
+            state.excludedSearchEngines.any { state.isLastRequiredSearchEngine(it) }
+        )
+    }
 
     // --- #201 custom-UA quick wins ---
 
