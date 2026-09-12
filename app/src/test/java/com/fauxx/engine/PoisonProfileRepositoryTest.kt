@@ -27,7 +27,7 @@ import java.io.File
 
 /**
  * Unit test for [PoisonProfileRepository] (declared inside `PoisonEngine.kt`) — proves the
- * DataStore mapper round-trips every field of [PoisonProfile] and handles the customUserAgent
+ * DataStore mapper round-trips every field of [PoisonProfile] and handles the
  * null/blank-collapse contract.
  *
  * Read-back strategy: this test never asserts via [PoisonProfileRepository.getProfile]. That
@@ -105,7 +105,6 @@ class PoisonProfileRepositoryTest {
             layer3Enabled = false,                           // default true
             themeMode = ThemeMode.DARK,                      // default SYSTEM
             resumeOnBoot = false,                            // default true
-            customUserAgent = "Mozilla/5.0 (Fauxx-test-UA)", // default null
         )
 
         runBlocking { repo.saveProfile(input) }
@@ -129,23 +128,28 @@ class PoisonProfileRepositoryTest {
         assertEquals(input, readBack())
     }
 
+
+
     @Test
-    fun `null customUserAgent is persisted as key removal and reads back null`() {
-        // First persist a real UA so the key exists, then save null and confirm the
-        // key was removed (read-back is null, not a stale string).
+    fun `a legacy custom_user_agent value is cleared on the next save`() {
+        // #201 retired the custom UA. A profile written by an older build still carries the key,
+        // and leaving it in DataStore would keep dead state around indefinitely, so the next
+        // write must drop it.
         runBlocking {
-            repo.saveProfile(PoisonProfile(customUserAgent = "Mozilla/5.0 (set-first)"))
-            repo.saveProfile(PoisonProfile(customUserAgent = null))
+            dataStore.edit { it[PreferenceKeys.CUSTOM_USER_AGENT] = "Mozilla/5.0 (legacy-override)" }
         }
+        assertEquals(
+            "precondition: the legacy key is present",
+            "Mozilla/5.0 (legacy-override)",
+            runBlocking { dataStore.data.first()[PreferenceKeys.CUSTOM_USER_AGENT] }
+        )
 
-        assertNull(readBack().customUserAgent)
-    }
+        runBlocking { repo.saveProfile(PoisonProfile()) }
 
-    @Test
-    fun `blank customUserAgent collapses to null`() {
-        runBlocking { repo.saveProfile(PoisonProfile(customUserAgent = "   ")) }
-
-        assertNull(readBack().customUserAgent)
+        assertNull(
+            "the retired key must not survive a save",
+            runBlocking { dataStore.data.first()[PreferenceKeys.CUSTOM_USER_AGENT] }
+        )
     }
 
     @Test
@@ -277,7 +281,6 @@ class PoisonProfileRepositoryTest {
             intensity = IntensityLevel.HIGH,
             batteryThresholdBattery = 42,
             batteryThresholdCharging = 69,
-            customUserAgent = "Mozilla/5.0 (seeded)",
             mobileIntensity = IntensityLevel.MEDIUM,
         )
         runBlocking { repo.saveProfile(seeded) }

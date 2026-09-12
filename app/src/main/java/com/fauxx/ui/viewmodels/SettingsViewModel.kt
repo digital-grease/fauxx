@@ -42,7 +42,6 @@ data class SettingsUiState(
     val resumeOnBoot: Boolean = true,
     /** Search engines the user opted out of poisoning (issue #281). */
     val excludedSearchEngines: Set<String> = emptySet(),
-    val customUserAgent: String = ""
 ) {
     /** Engines still in the rotation, in pool order (issue #281). */
     val activeSearchEngineCount: Int
@@ -55,15 +54,6 @@ data class SettingsUiState(
      */
     fun isLastRequiredSearchEngine(id: String): Boolean =
         id !in excludedSearchEngines && activeSearchEngineCount <= MIN_ACTIVE_SEARCH_ENGINES
-
-    /**
-     * #201: true when a non-blank custom UA is NOT an Android-Chromium string, so it is silently
-     * dropped on the WebView path (a Firefox/Edge/iOS UA would otherwise mislead the user). The
-     * Settings screen surfaces a warning when this holds.
-     */
-    val customUserAgentIsNonChromium: Boolean
-        get() = customUserAgent.isNotBlank() &&
-            !com.fauxx.network.UserAgentPool.isChromiumAndroid(customUserAgent)
 }
 
 /**
@@ -141,14 +131,6 @@ class SettingsViewModel @Inject constructor(
         val remaining = SEARCH_ENGINE_IDS.count { it !in next }
         if (remaining < MIN_ACTIVE_SEARCH_ENGINES) state else state.copy(excludedSearchEngines = next)
     }
-    fun setCustomUserAgent(v: String) {
-        // #201: the system WebView's getDefaultUserAgent (the "use this device's browser" capture)
-        // always carries the Android WebView marker "; wv", which is itself a tell and which users
-        // were hand-editing out. Strip it here — the single funnel for both the capture and the
-        // text field — so the stored UA matches a real on-device Chrome. No-op for input without it.
-        val cleaned = if (v.contains("; wv")) v.replace("; wv", "").replace("  ", " ") else v
-        update { it.copy(customUserAgent = cleaned) }
-    }
 
     /**
      * Persist the user's app-language choice and trigger the activity recreate that
@@ -217,7 +199,6 @@ class SettingsViewModel @Inject constructor(
                     excludedSearchEngines = new.excludedSearchEngines,
                     // Empty string in UI-state collapses to null in profile so the
                     // engine treats "blank field" as "no override" cleanly.
-                    customUserAgent = new.customUserAgent.takeIf { it.isNotBlank() }
                 )
             }
         }
@@ -236,7 +217,6 @@ class SettingsViewModel @Inject constructor(
             themeMode = p.themeMode,
             resumeOnBoot = p.resumeOnBoot,
             excludedSearchEngines = p.excludedSearchEngines,
-            customUserAgent = p.customUserAgent.orEmpty()
         )
     }
 }

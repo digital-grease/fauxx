@@ -108,7 +108,7 @@ class NetworkClientTest {
 
     /**
      * A test pool whose UA list comes from the (mocked) asset stream rather than from a
-     * stubbed [UserAgentPool.random]. Two distinct UAs in the asset, customUserAgent = null,
+     * stubbed [UserAgentPool.random]. Two distinct UAs in the asset,
      * so [UserAgentPool.random] samples the pool (no override). Seeded [Random] makes the
      * rotation reproducible across runs.
      */
@@ -120,9 +120,9 @@ class NetworkClientTest {
             }
         }
         val profileRepo: PoisonProfileRepository = mockk {
-            every { getProfile() } returns PoisonProfile(customUserAgent = null)
+            every { getProfile() } returns PoisonProfile()
         }
-        return UserAgentPool(context, profileRepo, seededRandom())
+        return UserAgentPool(context, seededRandom())
     }
 
     @Test

@@ -42,11 +42,6 @@ import com.fauxx.ui.theme.ThemeMode
  *   [MIN_ACTIVE_SEARCH_ENGINES] engines active: a single-engine noise stream is itself a
  *   fingerprint, and engine diversity is the reason the pool was widened in the first place
  *   (issue #24).
- * @property customUserAgent When non-null/non-blank, overrides the persona's derived device
- *   User-Agent on the WebView path with the user's own (issue #7), so the noise blends with their
- *   real browser's activity; honored only when it is itself Android-Chromium (the WebView TLS
- *   constraint, issue #168). Null/blank = the active persona's stable device UA (issue #242), which
- *   replaced the old per-request UA rotation.
  */
 data class PoisonProfile(
     val enabled: Boolean = false,
@@ -70,8 +65,7 @@ data class PoisonProfile(
     val adversarialAllocationEnabled: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val resumeOnBoot: Boolean = true,
-    val excludedSearchEngines: Set<String> = emptySet(),
-    val customUserAgent: String? = null
+    val excludedSearchEngines: Set<String> = emptySet()
 )
 
 /**

@@ -321,14 +321,6 @@
     <string name="settings_log_retention_title">Log retention</string>
     <string name="settings_log_retention_value">%d days</string>
     <string name="settings_log_retention_description">Automatically delete action-log entries older than this. Keeps the on-device log from growing without limit.</string>
-    <string name="settings_custom_ua_title">Match my browser</string>
-    <string name="settings_custom_ua_description">By default, Fauxx rotates between many browser identifiers — but real people usually use one browser, so the variety can itself look like bot traffic. Tap below to use this device\'s built-in browser identifier instead, so the noise blends with your real activity. Leave blank to keep the default rotation.</string>
-    <string name="settings_custom_ua_use_device_button">Use this device\'s browser</string>
-    <string name="settings_custom_ua_field_label">Browser identifier (advanced — leave blank to auto-rotate)</string>
-    <string name="settings_custom_ua_placeholder">Mozilla/5.0 (…)</string>
-    <string name="settings_custom_ua_clear_button">Clear and resume rotation</string>
-    <!-- #201: shown when the custom UA is not an Android-Chromium string and so is ignored on the WebView path. -->
-    <string name="settings_custom_ua_non_chromium_warning">This isn\'t an Android Chrome user-agent, so it will be ignored for synthetic browsing (which runs through the system WebView). Use a Chrome-on-Android user-agent to have it applied.</string>
     <string name="settings_clear_all_data_button">Clear All Data</string>
     <string name="settings_export_debug_logs_button">Export Debug Logs</string>
     <string name="settings_about_privacy_button">About &amp; Privacy Policy</string>

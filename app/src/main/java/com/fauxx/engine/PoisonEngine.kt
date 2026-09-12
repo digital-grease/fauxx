@@ -1172,14 +1172,9 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.ADVERSARIAL_ALLOCATION_ENABLED] = p.adversarialAllocationEnabled
         prefs[com.fauxx.di.PreferenceKeys.THEME_MODE] = p.themeMode.name
         prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] = p.resumeOnBoot
-        // Persist customUserAgent only when set; clear the key on null so a
-        // subsequent prefsToProfile read returns null, not stale empty string.
-        val ua = p.customUserAgent
-        if (ua.isNullOrBlank()) {
-            prefs.remove(com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT)
-        } else {
-            prefs[com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT] = ua
-        }
+        // #201: the custom UA is retired; clear any value a previous version stored so it
+        // does not linger in DataStore.
+        prefs.remove(com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT)
     }
 
     /**
@@ -1245,7 +1240,6 @@ class PoisonProfileRepository @Inject constructor(
                 )
             }.getOrDefault(com.fauxx.ui.theme.ThemeMode.SYSTEM),
             resumeOnBoot = prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] ?: true,
-            customUserAgent = prefs[com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT]?.takeIf { it.isNotBlank() }
         )
     }
 
