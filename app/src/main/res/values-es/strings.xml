@@ -419,7 +419,7 @@
     <string name="targeting_import_mute_button">No volver a recordar</string>
 
     <string name="targeting_layer3_name">Capa 3 — Rotación de personas</string>
-    <string name="targeting_layer3_description">Mantiene personas sintéticas coherentes (rotan semanalmente)</string>
+    <string name="targeting_layer3_description">Mantiene personas sintéticas coherentes (rotan cada pocos meses)</string>
     <string name="targeting_layer3_status_active">Persona: %s</string>
     <string name="targeting_layer3_status_none">Aún sin persona</string>
     <string name="targeting_layer3_action_rotate_now">Rotar ahora</string>
@@ -469,7 +469,7 @@
     <string name="dashboard_category_other">otros</string>
     <string name="dashboard_chart_legend_entry">%1$s %2$d%%</string>
     <string name="dashboard_active_persona_title">PERSONA ACTIVA</string>
-    <string name="dashboard_active_persona_help">Una identidad sintética que el motor adopta durante aproximadamente una semana. La actividad se pondera hacia los intereses de esta persona para crear un ruido temporalmente coherente, lo que dificulta que los rastreadores filtren la señal falsa. Las personas sintéticas rotan automáticamente.</string>
+    <string name="dashboard_active_persona_help">Una identidad sintética que el motor adopta durante uno a tres meses. La actividad se pondera hacia los intereses de esta persona para crear un ruido temporalmente coherente, lo que dificulta que los rastreadores filtren la señal falsa. Las personas sintéticas rotan automáticamente.</string>
     <string name="dashboard_persona_subtitle">%1$s · %2$s</string>
     <string name="dashboard_battery_dialog_title">Mantener Fauxx funcionando en segundo plano</string>
     <string name="dashboard_battery_dialog_body_intro">Android pausa de forma agresiva las apps en segundo plano para ahorrar batería. Para envenenar perfiles de forma continua, Fauxx necesita estar exento de la optimización de batería.</string>

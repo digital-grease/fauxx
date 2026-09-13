@@ -29,6 +29,15 @@ class PersonaRotationChannelTest {
     private fun layer(): PersonaRotationLayer =
         PersonaRotationLayer(mockk(relaxed = true), mockk(relaxed = true), clock)
 
+    /**
+     * A mid-range persona lifetime for the current 30-90 day model. Lags are a percentage of
+     * this, so it has to be a realistic value rather than a token one.
+     */
+    private val lifetimeMs = TimeUnit.DAYS.toMillis(60)
+
+    /** The lag ceiling implied by [lifetimeMs]. */
+    private val maxLagMs = lifetimeMs * PersonaRotationLayer.CHANNEL_MAX_LAG_PERCENT / 100
+
     private fun persona(
         id: String,
         createdAt: Long,
@@ -36,16 +45,16 @@ class PersonaRotationChannelTest {
     ) = SyntheticPersona(
         id = id, name = "Test", ageRange = "AGE_25_34", profession = "ENGINEER",
         region = "US_WEST", interests = interests,
-        createdAt = createdAt, activeUntil = createdAt + TimeUnit.DAYS.toMillis(7)
+        createdAt = createdAt, activeUntil = createdAt + lifetimeMs
     )
 
     /**
-     * A persona id whose three channel lags are all >1h and pairwise distinct, found
-     * deterministically so the stagger assertions can't be defeated by a lag of 0.
+     * A persona whose channel lags are all >1h and pairwise distinct, found deterministically
+     * so the stagger assertions can't be defeated by a lag of 0.
      */
-    private fun staggeredId(layer: PersonaRotationLayer): String =
-        (0..999).asSequence().map { "persona-$it" }.first { id ->
-            val lags = PersonaChannel.entries.map { layer.adoptionLagMs(id, it) }
+    private fun staggeredPersona(layer: PersonaRotationLayer, createdAt: Long): SyntheticPersona =
+        (0..999).asSequence().map { persona("persona-$it", createdAt) }.first { candidate ->
+            val lags = PersonaChannel.entries.map { layer.adoptionLagMs(candidate, it) }
             lags.all { it > TimeUnit.HOURS.toMillis(1) } && lags.toSet().size == lags.size
         }
 
@@ -54,7 +63,7 @@ class PersonaRotationChannelTest {
         val layer = layer()
         layer.setPersonasForTest(
             current = persona("current", clock.nowMs),
-            previous = persona("previous", clock.nowMs - TimeUnit.DAYS.toMillis(8))
+            previous = persona("previous", clock.nowMs - lifetimeMs)
         )
 
         PersonaChannel.entries.forEach { assertNull(layer.personaForChannel(it)) }
@@ -71,15 +80,14 @@ class PersonaRotationChannelTest {
     @Test
     fun `channels keep the previous persona during their lag and adopt after it`() {
         val layer = layer()
-        val id = staggeredId(layer)
         val rotatedAt = clock.nowMs
-        val old = persona("old", rotatedAt - TimeUnit.DAYS.toMillis(8))
-        val fresh = persona(id, rotatedAt)
+        val old = persona("old", rotatedAt - lifetimeMs)
+        val fresh = staggeredPersona(layer, rotatedAt)
         layer.setPersonasForTest(current = fresh, previous = old)
         layer.setEnabled(true)
 
         PersonaChannel.entries.forEach { channel ->
-            val lag = layer.adoptionLagMs(id, channel)
+            val lag = layer.adoptionLagMs(fresh, channel)
 
             clock.nowMs = rotatedAt + lag - 1
             assertEquals(
@@ -98,12 +106,60 @@ class PersonaRotationChannelTest {
     @Test
     fun `adoption lags are deterministic, bounded, and channel-distinct`() {
         val layer = layer()
-        val id = staggeredId(layer)
-        val lags = PersonaChannel.entries.map { layer.adoptionLagMs(id, it) }
+        val fresh = staggeredPersona(layer, clock.nowMs)
+        val lags = PersonaChannel.entries.map { layer.adoptionLagMs(fresh, it) }
 
-        assertEquals(lags, PersonaChannel.entries.map { layer.adoptionLagMs(id, it) })
-        lags.forEach { assertTrue("lag $it out of bounds", it in 0 until PersonaRotationLayer.CHANNEL_MAX_LAG_MS) }
+        assertEquals(lags, PersonaChannel.entries.map { layer.adoptionLagMs(fresh, it) })
+        lags.forEach { assertTrue("lag $it out of bounds", it in 0 until maxLagMs) }
         assertEquals("channels must not adopt simultaneously", lags.size, lags.toSet().size)
+    }
+
+    @Test
+    fun `adoption lag scales with the persona's own lifetime, not a fixed duration`() {
+        // The regression this pins: a fixed 48h ceiling was ~22% of the old ~9-day lifetime but
+        // only ~2% of a 90-day one, which would collapse the stagger into the synchronized
+        // change-point it exists to prevent. Lags must widen as the lifetime widens.
+        val layer = layer()
+        val createdAt = clock.nowMs
+
+        fun lagsFor(days: Long): List<Long> {
+            val p = SyntheticPersona(
+                id = "scale-probe", name = "Test", ageRange = "AGE_25_34",
+                profession = "ENGINEER", region = "US_WEST",
+                interests = setOf(CategoryPool.COOKING),
+                createdAt = createdAt, activeUntil = createdAt + TimeUnit.DAYS.toMillis(days)
+            )
+            return PersonaChannel.entries.map { layer.adoptionLagMs(p, it) }
+        }
+
+        val short = lagsFor(30)
+        val long = lagsFor(90)
+
+        assertTrue(
+            "a 90-day persona must stagger over a wider window than a 30-day one",
+            long.max() > short.max()
+        )
+        short.forEach {
+            assertTrue("30-day lag $it exceeds its own ceiling", it < TimeUnit.DAYS.toMillis(30) * 20 / 100)
+        }
+        long.forEach {
+            assertTrue("90-day lag $it exceeds its own ceiling", it < TimeUnit.DAYS.toMillis(90) * 20 / 100)
+        }
+    }
+
+    @Test
+    fun `a persona with a non-positive lifetime gets no lag instead of a spurious one`() {
+        val layer = layer()
+        val createdAt = clock.nowMs
+        val malformed = SyntheticPersona(
+            id = "malformed", name = "Test", ageRange = "AGE_25_34", profession = "ENGINEER",
+            region = "US_WEST", interests = setOf(CategoryPool.COOKING),
+            createdAt = createdAt, activeUntil = createdAt
+        )
+
+        PersonaChannel.entries.forEach {
+            assertEquals(0L, layer.adoptionLagMs(malformed, it))
+        }
     }
 
     @Test
@@ -113,11 +169,12 @@ class PersonaRotationChannelTest {
         // change-point at rotation), and the REAL getWeights() flow emits values from
         // weightsFor — severing the computeWeights delegation turns this red.
         val layer = layer()
-        val id = staggeredId(layer)
         val rotatedAt = clock.nowMs
-        val old = persona("old", rotatedAt - TimeUnit.DAYS.toMillis(8),
+        val old = persona("old", rotatedAt - lifetimeMs,
             interests = setOf(CategoryPool.COOKING))
-        val fresh = persona(id, rotatedAt, interests = setOf(CategoryPool.GAMING))
+        // Interests don't enter the lag derivation (id, channel and lifetime do), so copying
+        // them onto the staggered persona keeps the lags the helper just verified.
+        val fresh = staggeredPersona(layer, rotatedAt).copy(interests = setOf(CategoryPool.GAMING))
         layer.setPersonasForTest(current = fresh, previous = old)
         layer.setEnabled(true)
 
@@ -136,7 +193,7 @@ class PersonaRotationChannelTest {
         )
 
         // Past every lag: the blend follows the NEW persona.
-        clock.nowMs = rotatedAt + PersonaRotationLayer.CHANNEL_MAX_LAG_MS
+        clock.nowMs = rotatedAt + maxLagMs
         layer.reevaluateWeightsForTest()
         val after = withTimeout(5_000) {
             layer.getWeights().first { it.getValue(CategoryPool.GAMING) == aligned }
