@@ -23,7 +23,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
 
-private val NINETY_DAYS_MS = TimeUnit.DAYS.toMillis(90)
 
 /**
  * Generates coherent [SyntheticPersona] instances and validates them against consistency
@@ -68,8 +67,45 @@ class PersonaGenerator @Inject constructor(
 
     companion object {
         private const val MAX_ATTEMPTS = 10
-        private val ROTATION_JITTER_DAYS = 1L..3L
-        private val BASE_ROTATION_DAYS = 7L
+
+        /**
+         * Persona lifetime bounds, redrawn every rotation.
+         *
+         * A persona is the engine's browsing identity for one to three months rather than the
+         * ~9 days it used to be. Two reasons, and the second is the load-bearing one:
+         *
+         * 1. DEPTH. Poisoning works by giving a broker a synthetic profile convincing enough to
+         *    keep. Nine days of accumulated cookies and site storage reads as a burner and is
+         *    cheap to discard as low-confidence; months of continuous accumulation is not.
+         * 2. NO PERIODIC CHANGE-POINT. Rotation resets the persona's whole story (region,
+         *    interests, rhythm, device) at once. Doing that ~40 times a year on a regular
+         *    cadence is itself a signature. Doing it 4-12 times at irregular intervals looks
+         *    like someone who cleared their browsing data or replaced a handset, which real
+         *    people do a few times a year.
+         *
+         * The interval is drawn uniformly across the whole range each cycle rather than being a
+         * fixed base plus small jitter, so there is no modal interval left to key on.
+         */
+        internal const val MIN_ROTATION_DAYS = 30L
+        internal const val MAX_ROTATION_DAYS = 90L
+
+        /**
+         * How many worst-case persona lifetimes the distinctness lookback spans.
+         *
+         * The lookback feeds the overlap check below, which rejects a candidate too similar to
+         * a recent persona, so it only means something if it covers several personas. A flat 90
+         * days covered about ten at the old ~9-day lifetime and would cover exactly one at a
+         * 90-day lifetime, quietly turning the check into a no-op.
+         *
+         * [PersonaRotationLayer] prunes persona history on this same window. Widening the
+         * lookback without widening retention would leave it silently truncated by pruning.
+         */
+        internal const val RECENT_PERSONA_CYCLES = 4L
+
+        /** Distinctness lookback: [RECENT_PERSONA_CYCLES] worst-case persona lifetimes. */
+        internal val RECENT_PERSONA_WINDOW_MS: Long =
+            TimeUnit.DAYS.toMillis(MAX_ROTATION_DAYS * RECENT_PERSONA_CYCLES)
+
         /** Reject personas matching user demographics on this many or more traits. */
         private const val MIN_DEMOGRAPHIC_MATCHES = 2
     }
@@ -79,7 +115,7 @@ class PersonaGenerator @Inject constructor(
      * [weightHints] can optionally bias interest selection toward high-weight categories.
      */
     suspend fun generate(weightHints: Map<CategoryPool, Float> = emptyMap()): SyntheticPersona {
-        val cutoff = clock.currentTimeMillis() - NINETY_DAYS_MS
+        val cutoff = clock.currentTimeMillis() - RECENT_PERSONA_WINDOW_MS
         val recentEntries = historyDao.getRecentPersonas(cutoff)
         val recentPersonas = recentEntries.mapNotNull { entry ->
             runCatching {
@@ -105,11 +141,14 @@ class PersonaGenerator @Inject constructor(
         return buildFallbackPersona()
     }
 
-    /** Calculate the next rotation timestamp with jitter. */
+    /**
+     * Next rotation timestamp: a fresh uniform draw over
+     * [MIN_ROTATION_DAYS]..[MAX_ROTATION_DAYS], so successive lifetimes are independent and
+     * no fixed base interval sits underneath the jitter.
+     */
     fun nextRotationTime(): Long {
-        val jitterDays = random.nextLong(ROTATION_JITTER_DAYS.first, ROTATION_JITTER_DAYS.last + 1)
-        val totalDays = BASE_ROTATION_DAYS + jitterDays
-        return clock.currentTimeMillis() + TimeUnit.DAYS.toMillis(totalDays)
+        val days = random.nextLong(MIN_ROTATION_DAYS, MAX_ROTATION_DAYS + 1)
+        return clock.currentTimeMillis() + TimeUnit.DAYS.toMillis(days)
     }
 
     private fun buildPersona(weightHints: Map<CategoryPool, Float>): SyntheticPersona {

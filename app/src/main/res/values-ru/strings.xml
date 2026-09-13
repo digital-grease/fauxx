@@ -163,7 +163,7 @@
 
     <!-- Dashboard screen -->
     <string name="dashboard_category_distribution_help">Показывает, как твой синтетический шум распределён по тематическим категориям. Чем шире разброс, тем более запутанный профиль видят трекеры. Категории взвешиваются движком таргетинга, чтобы максимально отдалить шум от твоих реальных интересов.</string>
-    <string name="dashboard_active_persona_help">Синтетическая личность, которую движок использует примерно неделю. Активность смещается в сторону интересов этой персоны, чтобы создавать согласованный во времени шум — так трекерам сложнее отфильтровать поддельный сигнал. Персоны меняются автоматически.</string>
+    <string name="dashboard_active_persona_help">Синтетическая личность, которую движок использует от одного до трёх месяцев. Активность смещается в сторону интересов этой персоны, чтобы создавать согласованный во времени шум — так трекерам сложнее отфильтровать поддельный сигнал. Персоны меняются автоматически.</string>
     <string name="dashboard_battery_dialog_title">Пусть Fauxx работает в фоне</string>
 
     <!-- Targeting screen -->
@@ -448,7 +448,7 @@
     <string name="targeting_layer1_description">Усиливает шум, уводя его от заявленных тобой демографических данных</string>
     <string name="targeting_layer1_status_set">Профиль задан</string>
     <string name="targeting_layer1_status_unset">Нет профиля</string>
-    <string name="targeting_layer3_description">Поддерживает связные синтетические персоны (ротация еженедельно)</string>
+    <string name="targeting_layer3_description">Поддерживает связные синтетические персоны (ротация раз в несколько месяцев)</string>
     <string name="targeting_layer3_status_active">Персона: %s</string>
     <string name="targeting_layer3_status_none">Персоны пока нет</string>
     <string name="targeting_layer3_action_rotate_now">Сменить сейчас</string>

@@ -4,8 +4,8 @@ import com.fauxx.data.querybank.CategoryPool
 
 /**
  * A generated synthetic persona used by Layer 3 to add temporal coherence to noise patterns.
- * Personas are rotated on a jittered schedule to prevent pattern detection: a 7-day base plus
- * 1 to 3 days of random jitter, re-rolled each cycle, so roughly every 8 to 10 days.
+ * Personas are rotated on a jittered schedule to prevent pattern detection: a lifetime drawn
+ * uniformly over 30 to 90 days, re-rolled each cycle, so there is no modal interval to key on.
  *
  * @property id Unique identifier for this persona.
  * @property name Generated human-like name.

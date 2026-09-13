@@ -419,7 +419,7 @@
     <string name="targeting_import_mute_button">Ne plus rappeler</string>
 
     <string name="targeting_layer3_name">Couche 3 — Rotation de personas</string>
-    <string name="targeting_layer3_description">Maintient des personas synthétiques cohérents (rotation hebdomadaire)</string>
+    <string name="targeting_layer3_description">Maintient des personas synthétiques cohérents (rotation tous les quelques mois)</string>
     <string name="targeting_layer3_status_active">Persona : %s</string>
     <string name="targeting_layer3_status_none">Aucun persona pour le moment</string>
     <string name="targeting_layer3_action_rotate_now">Faire tourner maintenant</string>
@@ -469,7 +469,7 @@
     <string name="dashboard_category_other">autre</string>
     <string name="dashboard_chart_legend_entry">%1$s %2$d%%</string>
     <string name="dashboard_active_persona_title">PERSONA ACTIVE</string>
-    <string name="dashboard_active_persona_help">Une identité synthétique que le moteur adopte pendant environ une semaine. L\'activité est pondérée vers les centres d\'intérêt de cette persona pour créer un bruit cohérent dans le temps — ce qui complique le filtrage du faux signal par les traqueurs. Les personas tournent automatiquement.</string>
+    <string name="dashboard_active_persona_help">Une identité synthétique que le moteur adopte pendant un à trois mois. L\'activité est pondérée vers les centres d\'intérêt de cette persona pour créer un bruit cohérent dans le temps — ce qui complique le filtrage du faux signal par les traqueurs. Les personas tournent automatiquement.</string>
     <string name="dashboard_persona_subtitle">%1$s · %2$s</string>
     <string name="dashboard_battery_dialog_title">Garder Fauxx actif en arrière-plan</string>
     <string name="dashboard_battery_dialog_body_intro">Android met fortement en pause les apps en arrière-plan pour économiser la batterie. Pour empoisonner les profils en continu, Fauxx doit être exempté de l\'optimisation de la batterie.</string>

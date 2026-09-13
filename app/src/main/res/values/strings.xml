@@ -416,7 +416,7 @@
     <string name="targeting_import_mute_button">Don\'t remind me</string>
 
     <string name="targeting_layer3_name">Layer 3 — Persona Rotation</string>
-    <string name="targeting_layer3_description">Maintains coherent synthetic personas (rotates weekly)</string>
+    <string name="targeting_layer3_description">Maintains coherent synthetic personas (rotates every few months)</string>
     <string name="targeting_layer3_status_active">Persona: %s</string>
     <string name="targeting_layer3_status_none">No persona yet</string>
     <string name="targeting_layer3_action_rotate_now">Rotate Now</string>
@@ -465,7 +465,7 @@
     <string name="dashboard_category_other">other</string>
     <string name="dashboard_chart_legend_entry">%1$s %2$d%%</string>
     <string name="dashboard_active_persona_title">ACTIVE PERSONA</string>
-    <string name="dashboard_active_persona_help">A synthetic identity the engine adopts for about a week. Activity is weighted toward this persona\'s interests to create temporally coherent noise — making it harder for trackers to filter out the fake signal. Personas rotate automatically.</string>
+    <string name="dashboard_active_persona_help">A synthetic identity the engine adopts for one to three months. Activity is weighted toward this persona\'s interests to create temporally coherent noise — making it harder for trackers to filter out the fake signal. Personas rotate automatically.</string>
     <string name="dashboard_persona_subtitle">%1$s · %2$s</string>
     <string name="dashboard_battery_dialog_title">Keep Fauxx running in the background</string>
     <string name="dashboard_battery_dialog_body_intro">Android aggressively pauses background apps to save battery. For continuous profile poisoning, Fauxx needs to be exempt from battery optimization.</string>
