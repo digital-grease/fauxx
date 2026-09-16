@@ -69,7 +69,7 @@ kotest-property = { group = "io.kotest", name = "kotest-property-jvm", version.r
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 sqlcipher = { group = "net.zetetic", name = "sqlcipher-android", version.ref = "sqlcipher" }
-sqlite-ktx = { group = "androidx.sqlite", name = "sqlite-ktx", version = "2.7.0" }
+sqlite-ktx = { group = "androidx.sqlite", name = "sqlite-ktx", version = "2.7.1" }
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 tink-android = { group = "com.google.crypto.tink", name = "tink-android", version.ref = "tink" }
