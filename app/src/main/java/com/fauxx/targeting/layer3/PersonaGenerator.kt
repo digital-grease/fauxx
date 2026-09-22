@@ -102,9 +102,16 @@ class PersonaGenerator @Inject constructor(
          */
         internal const val RECENT_PERSONA_CYCLES = 4L
 
+        /**
+         * Worst-case legitimate persona lifetime. Anything longer did not come from
+         * [nextRotationTime] and should be treated as malformed rather than honoured: LAN
+         * sync (#234) validates that a wire persona's `activeUntil` is PRESENT, not that it
+         * is plausible.
+         */
+        internal val MAX_LIFETIME_MS: Long = TimeUnit.DAYS.toMillis(MAX_ROTATION_DAYS)
+
         /** Distinctness lookback: [RECENT_PERSONA_CYCLES] worst-case persona lifetimes. */
-        internal val RECENT_PERSONA_WINDOW_MS: Long =
-            TimeUnit.DAYS.toMillis(MAX_ROTATION_DAYS * RECENT_PERSONA_CYCLES)
+        internal val RECENT_PERSONA_WINDOW_MS: Long = MAX_LIFETIME_MS * RECENT_PERSONA_CYCLES
 
         /** Reject personas matching user demographics on this many or more traits. */
         private const val MIN_DEMOGRAPHIC_MATCHES = 2

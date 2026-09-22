@@ -11,7 +11,7 @@ FEATURES
 • Diverse search queries across Google, Bing, DuckDuckGo, Yahoo, and Yandex on topics far from your real interests, with per-engine opt-out
 • Varied website visits across dozens of content categories
 • Ad profile pollution — loads ad-heavy pages to inject off-demographic ad signals
-• Stable per-persona device identity — one coherent User-Agent + client hints per synthetic persona, not random rotation (plus canvas fingerprint noise)
+• Stable per-persona device identity: one coherent User-Agent plus matching navigator values per synthetic persona, not random rotation (plus canvas fingerprint noise)
 • DNS query diversification
 • Smart targeting engine with 3 layers of demographic distancing
 • Synthetic persona rotation — adopts a new fake identity every week

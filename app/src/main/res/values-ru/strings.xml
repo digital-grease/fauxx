@@ -35,7 +35,7 @@
     <string name="onboarding_intro">Fauxx защищает твою приватность, создавая синтетическую активность в браузере в фоновом режиме. Вот что он делает:</string>
     <string name="onboarding_bullet_search">Выполняет веб-поиск в Google, Bing, DuckDuckGo, Yahoo и Yandex на разные темы</string>
     <string name="onboarding_bullet_browse">Посещает разные сайты, чтобы разнообразить твой профиль браузинга</string>
-    <string name="onboarding_bullet_fingerprint">Представляет стабильную идентичность устройства для каждой личности (User-Agent, client hints)</string>
+    <string name="onboarding_bullet_fingerprint">Представляет стабильную идентичность устройства для каждой личности (User-Agent, значения navigator)</string>
     <string name="onboarding_bullet_dns">Создает DNS-запросы к разным доменам</string>
     <string name="onboarding_bullet_battery">Вся активность выполняется в фоне и расходует заряд батареи и трафик</string>
     <string name="onboarding_optional_profile">При желании расскажи о себе на следующих экранах. Эти данные останутся на твоём устройстве и помогут генерировать шум, отличающийся от твоего реального профиля. Пропусти, если хочешь равномерный шум.</string>
@@ -65,7 +65,7 @@
     <string name="consent_intro">Fauxx будет выполнять следующие фоновые действия:</string>
     <string name="consent_bullet_search">Искать разные темы в Google, Bing, DuckDuckGo, Yahoo и Yandex</string>
     <string name="consent_bullet_browse">Посещать разные сайты, чтобы расширить твой профиль браузинга</string>
-    <string name="consent_bullet_fingerprint">Представлять стабильную идентичность устройства для каждой личности (User-Agent, client hints)</string>
+    <string name="consent_bullet_fingerprint">Представлять стабильную идентичность устройства для каждой личности (User-Agent, значения navigator)</string>
     <!-- PENDING NATIVE-SPEAKER REVIEW -->
     <string name="consent_bullet_location">Если вы включите подмену местоположения: зарегистрировать Fauxx как системный источник фиктивных координат (настройка уровня устройства)</string>
     <string name="consent_bullet_dns">Создавать DNS-запросы к разным доменам</string>
@@ -350,7 +350,7 @@
     <string name="module_search_description">Выполняет поисковые запросы в Google, Bing, DuckDuckGo, Yahoo, Yandex</string>
     <string name="module_cookie_description">Посещает 10 000+ URL в фоне, чтобы накопить разнообразные трекерные куки</string>
     <string name="module_dns_description">Резолвит разнообразные домены, чтобы создать видимый ISP шум DNS-запросов</string>
-    <string name="module_fingerprint_description">Представляет стабильное устройство для каждой личности (User-Agent, client hints, navigator) плюс шум canvas</string>
+    <string name="module_fingerprint_description">Представляет стабильное устройство для каждой личности (User-Agent, значения navigator) плюс шум canvas</string>
     <string name="module_ad_description">Загружает страницы с большим количеством рекламы и посещает панели рекламных настроек</string>
     <string name="module_location_description">Подаёт синтетические GPS-маршруты через MockLocationProvider</string>
     <string name="module_location_setup_hint">Требует включённые «Для разработчиков» и выбор Fauxx в качестве приложения для имитации местоположения</string>
@@ -452,6 +452,7 @@
     <string name="targeting_layer3_status_active">Персона: %s</string>
     <string name="targeting_layer3_status_none">Персоны пока нет</string>
     <string name="targeting_layer3_action_rotate_now">Сменить сейчас</string>
+    <string name="targeting_layer3_action_rotate_hint">Переключает все каналы на новую персону одновременно. Автоматическая ротация происходит постепенно, чтобы избежать заметной точки смены, поэтому используйте это редко.</string>
     <string name="targeting_adversarial_name">Состязательное распределение (эксперимент)</string>
     <string name="targeting_adversarial_description">Направляет шум туда, где он сильнее всего меняет профиль, выводимый брокером, в пределах бюджета правдоподобия</string>
     <string name="targeting_adversarial_status">Требуется включённый Layer 1 или Layer 2</string>

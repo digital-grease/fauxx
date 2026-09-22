@@ -148,6 +148,39 @@ class PersonaRotationChannelTest {
     }
 
     @Test
+    fun `an absurd lifetime is clamped rather than overflowing into a huge lag`() {
+        // A LAN-synced persona (#234) carries whatever activeUntil the peer sent, and sync
+        // only validates that the field is PRESENT (SyncMessage.kt required-field list), not
+        // that it is plausible. An unclamped `lifetime * percent` overflows for such values.
+        //
+        // The second case is the one that matters and the reason this test names an exact
+        // number. Long.MAX_VALUE happens to wrap NEGATIVE, which the non-positive guard
+        // catches by luck, so testing only that would pass with or without the clamp. The
+        // lifetime below wraps POSITIVE to a ~11,574-day lag that the guard sails straight
+        // past, pinning every channel on the previous persona effectively forever.
+        val layer = layer()
+        val createdAt = clock.nowMs
+        val ceiling =
+            PersonaGenerator.MAX_LIFETIME_MS * PersonaRotationLayer.CHANNEL_MAX_LAG_PERCENT / 100
+
+        fun probe(label: String, activeUntil: Long) {
+            val p = SyntheticPersona(
+                id = "absurd", name = "Test", ageRange = "AGE_25_34", profession = "ENGINEER",
+                region = "US_WEST", interests = setOf(CategoryPool.COOKING),
+                createdAt = createdAt, activeUntil = activeUntil
+            )
+            PersonaChannel.entries.forEach { channel ->
+                val lag = layer.adoptionLagMs(p, channel)
+                assertTrue("$label: lag $lag must be non-negative", lag >= 0L)
+                assertTrue("$label: lag $lag must not exceed clamped ceiling $ceiling", lag < ceiling)
+            }
+        }
+
+        probe("wraps negative", Long.MAX_VALUE)
+        probe("wraps positive", createdAt + 922_342_203_685_477_580L)
+    }
+
+    @Test
     fun `a persona with a non-positive lifetime gets no lag instead of a spurious one`() {
         val layer = layer()
         val createdAt = clock.nowMs

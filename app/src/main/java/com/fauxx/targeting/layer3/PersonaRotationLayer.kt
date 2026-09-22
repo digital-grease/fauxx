@@ -113,16 +113,39 @@ class PersonaRotationLayer @Inject constructor(
      * Scaling off the persona's `activeUntil - createdAt` rather than a fixed duration keeps
      * the stagger proportionate however long the persona lives, including for personas
      * restored from history or adopted from a paired device (#234), which arrive carrying the
-     * lifetime they were minted with. A persona with a non-positive lifetime (malformed, or a
-     * synced entry whose clock disagreed) gets no lag rather than a spurious one.
+     * lifetime they were minted with.
+     *
+     * The lifetime is clamped to [PersonaGenerator.MAX_LIFETIME_MS] before use, and a
+     * non-positive one yields no lag. Both guards are about untrusted input rather than
+     * tidiness: a persona arriving over LAN sync carries whatever `activeUntil` the peer sent,
+     * sync only checks that the field exists, and an unclamped lifetime near `Long.MAX_VALUE`
+     * would overflow the percentage multiply. That overflow can wrap POSITIVE, so a bare
+     * non-positive check would pass it through as a multi-thousand-day lag, pinning a channel
+     * on the previous persona indefinitely.
      */
     @androidx.annotation.VisibleForTesting
     internal fun adoptionLagMs(persona: SyntheticPersona, channel: PersonaChannel): Long {
-        val lifetimeMs = persona.activeUntil - persona.createdAt
+        val lifetimeMs = (persona.activeUntil - persona.createdAt)
+            .coerceAtMost(PersonaGenerator.MAX_LIFETIME_MS)
         val maxLagMs = lifetimeMs * CHANNEL_MAX_LAG_PERCENT / 100
         if (maxLagMs <= 0L) return 0L
         return "${persona.id}:${channel.name}".hashCode().toLong().mod(maxLagMs)
     }
+
+    /**
+     * Ids of every persona some channel could still be serving: the current one, plus the
+     * previous one while any channel is inside its adoption lag.
+     *
+     * Exists for per-persona storage (issue #242). A retired persona's cookie jar is deleted when
+     * it leaves this set, so returning too few ids would delete a jar out from under a channel
+     * that is still phasing the old identity out, which can be a fortnight after rotation at a
+     * 90-day lifetime. Returning a stale id is merely one extra jar until the next sweep, so this
+     * errs toward keeping.
+     */
+    fun livePersonaIds(): Set<String> = setOfNotNull(
+        _currentPersona.value?.id,
+        _previousPersona.value?.id,
+    )
 
     @androidx.annotation.VisibleForTesting
     internal fun setPersonasForTest(current: SyntheticPersona?, previous: SyntheticPersona?) {
@@ -269,6 +292,23 @@ class PersonaRotationLayer @Inject constructor(
             val now = clock.currentTimeMillis()
             if (now > persona.activeUntil) {
                 Timber.i("LAN sync: ignoring already-expired synced persona ${persona.id}")
+                return
+            }
+            // Bound activeUntil from ABOVE as well, against the LOCAL clock. SyncMessage
+            // validates only that the field is present, and the realistic trigger is not a
+            // hostile peer but a paired device whose clock is months fast: it mints a perfectly
+            // legitimate 30-90 day persona, so clamping the LIFETIME would never engage, yet the
+            // receiver sees an activeUntil far in its own future. Every rotation decision reads
+            // activeUntil raw (the expiry ticker, needsPersonaRefresh, and the restore election),
+            // so adopting it would stop Layer 3 rotating for the life of the process.
+            val latestPlausible = now + PersonaGenerator.MAX_LIFETIME_MS
+            if (persona.activeUntil > latestPlausible) {
+                Timber.w(
+                    "LAN sync: ignoring persona ${persona.id} expiring " +
+                        "${(persona.activeUntil - now) / 86_400_000L} days out, beyond the " +
+                        "${PersonaGenerator.MAX_LIFETIME_MS / 86_400_000L}-day maximum lifetime " +
+                        "(peer clock skew?)"
+                )
                 return
             }
             if (_currentPersona.value?.id == persona.id) return // idempotent: already active

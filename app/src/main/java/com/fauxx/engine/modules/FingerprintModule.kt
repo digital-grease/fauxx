@@ -6,8 +6,11 @@ import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.device.DeviceDeriver
 import com.fauxx.data.device.DeviceProfile
 import com.fauxx.data.model.ActionType
+import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.engine.webview.JarSwap
+import com.fauxx.engine.webview.PersonaJarStore
 import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.network.UserAgentPool
 import com.fauxx.targeting.layer3.PersonaChannel
@@ -37,12 +40,45 @@ class FingerprintModule @Inject constructor(
     private val profileRepo: PoisonProfileRepository,
     private val personaRotationLayer: PersonaRotationLayer,
     private val deviceDeriver: DeviceDeriver,
+    private val jarStore: PersonaJarStore,
 ) : Module {
 
+    /**
+     * Bind the active persona's device AND its cookie jar (issue #242), then retire any jar no
+     * live persona owns.
+     *
+     * The two must move together. The jar is keyed on the same [PersonaChannel.DEVICE] persona
+     * that supplies the User-Agent, so storage and device identity turn over in one instant. A
+     * jar that outlived its handset model would be a contradiction a tracker reads in a single
+     * pass, since a cookie cannot follow someone from a Pixel to a Galaxy.
+     *
+     * The sweep runs only on an actual rotation, not on every action: enumerating profiles is not
+     * free, and nothing can have been retired if the jar did not change.
+     */
+    private suspend fun bindPersonaDevice(persona: SyntheticPersona) {
+        // Jar FIRST, device second. If the swap was deferred or failed, the pool is still serving
+        // the PREVIOUS persona's jar, and presenting this persona's User-Agent over it would
+        // produce exactly the contradiction the feature removes: a cookie set under one handset
+        // model being replayed under another. Hold the old device until the jar catches up; the
+        // next fingerprint action retries. UNSUPPORTED is not a mismatch, it means no device
+        // identity would ever be applied on that whole population of devices.
+        val swap = webViewPool.setPersonaJar(persona.id)
+        if (!swap.jarMatchesPersona) {
+            Timber.d("Holding previous device identity: jar swap $swap")
+            return
+        }
+        webViewPool.setDevice(deviceDeriver.mobileFor(persona))
+        if (swap == JarSwap.SWAPPED) {
+            val live = personaRotationLayer.livePersonaIds().map(jarStore::jarKeyFor).toSet()
+            runCatching { jarStore.deleteJarsExcept(live) }
+                .onFailure { Timber.w(it, "Persona jar sweep failed; retrying next rotation") }
+        }
+    }
+
     override suspend fun start() {
-        val device = currentDevice()
-        if (device != null) {
-            webViewPool.setDevice(device)
+        val persona = currentPersona()
+        if (persona != null) {
+            bindPersonaDevice(persona)
         } else {
             // No active persona (Layer 3 off): seed a stable UA once; never churn per action.
             webViewPool.setUserAgentIfUnset(userAgentPool.randomChromiumAndroid())
@@ -55,10 +91,12 @@ class FingerprintModule @Inject constructor(
     override fun isEnabled(): Boolean = profileRepo.getProfile().fingerprintEnabled
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
-        val device = currentDevice()
-        return if (device != null) {
-            // Idempotent re-assert of the persona's stable device (changes only on persona rotation).
-            webViewPool.setDevice(device)
+        val persona = currentPersona()
+        return if (persona != null) {
+            // Idempotent re-assert of the persona's stable device + jar (both change only on
+            // persona rotation, and setPersonaJar short-circuits on an unchanged jar).
+            val device = deviceDeriver.mobileFor(persona)
+            bindPersonaDevice(persona)
             ActionLogEntity(
                 actionType = ActionType.FINGERPRINT_ROTATE,
                 category = category,
@@ -77,6 +115,6 @@ class FingerprintModule @Inject constructor(
     }
 
     /** The active persona's mobile device via the staggered DEVICE channel, or null when Layer 3 is off. */
-    private fun currentDevice(): DeviceProfile? =
-        personaRotationLayer.personaForChannel(PersonaChannel.DEVICE)?.let { deviceDeriver.mobileFor(it) }
+    private fun currentPersona(): SyntheticPersona? =
+        personaRotationLayer.personaForChannel(PersonaChannel.DEVICE)
 }

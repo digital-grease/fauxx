@@ -11,7 +11,7 @@ FONCTIONNALITÉS
 • Requêtes de recherche variées sur Google, Bing, DuckDuckGo et Yahoo sur des sujets éloignés de vos intérêts réels
 • Visites de sites web diversifiées dans des dizaines de catégories de contenu
 • Pollution du profil publicitaire : charge des pages riches en publicités pour injecter des signaux publicitaires étrangers à votre démographie
-• Identité d'appareil stable par persona : un User-Agent cohérent + client hints par persona synthétique, sans rotation aléatoire (plus le bruit de canvas)
+• Identité d'appareil stable par persona : un User-Agent cohérent et des valeurs navigator correspondantes par persona synthétique, sans rotation aléatoire (plus le bruit de canvas)
 • Diversification des requêtes DNS
 • Moteur de ciblage intelligent avec 3 couches de distanciation démographique
 • Rotation de personas synthétiques : adopte une nouvelle fausse identité chaque semaine

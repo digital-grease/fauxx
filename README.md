@@ -87,11 +87,13 @@ It is kept, off by default, because the surrounding scaffolding is sound and a f
 
 ### 4. Device Identity
 
-Presents a **stable, coherent device identity** per synthetic persona rather than churning random User-Agents. Each persona gets one believable Android device — a consistent User-Agent plus matching client-hint and `navigator` values (hardware concurrency, device memory, screen) — derived deterministically from the persona, so the synthetic traffic reads as one real device instead of the User-Agent-hopping pattern anti-fraud systems trivially flag and discard. The browser version drifts slowly over time to mimic real auto-updates. Canvas fingerprint noise is still injected via JavaScript to blunt pixel-level fingerprinting.
+Presents a **stable, coherent device identity** per synthetic persona rather than churning random User-Agents. Each persona gets one believable Android device, a consistent User-Agent plus matching `navigator` values (hardware concurrency, device memory), derived deterministically from the persona, so the synthetic traffic reads as one real device instead of the User-Agent-hopping pattern anti-fraud systems trivially flag and discard. The browser version drifts slowly over time to mimic real auto-updates. Canvas fingerprint noise is still injected via JavaScript to blunt pixel-level fingerprinting.
 
 ### 5. Cookie Saturation
 
-Visits 2,400+ categorized URLs in isolated background WebViews, accumulating tracker cookies across diverse categories. Each URL load respects a per-domain rate limit (minimum 5 seconds between hits). WebViews are pooled and process-isolated to avoid contaminating your real browser cookies.
+Visits 2,400+ categorized URLs in isolated background WebViews, accumulating tracker cookies across diverse categories. Each URL load respects a per-domain rate limit (minimum 5 seconds between hits). WebViews are pooled and confined to Fauxx's own WebView data directory, so synthetic traffic never touches your real browser's cookies.
+
+**Per-persona cookie jars:** each synthetic persona browses with a cookie jar, site storage and cache of its own. When Fauxx rotates to a new persona, the browser identity and everything stored under the old one change together, so nothing a tracker stored under one persona can be read back under the next. This needs a recent Android System WebView; where that support is missing, all personas share one jar as before. Every persona still browses from the same phone and the same network address, and Fauxx does not fake the hardware signals a fingerprinting script reads, so a tracker that fingerprints rather than reads cookies can still tell they are one device.
 
 **Category-aware:** URL selection weighted by your targeting engine.
 

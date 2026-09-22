@@ -24,7 +24,7 @@
     <string name="onboarding_intro">Fauxx protege tu privacidad generando actividad de navegación sintética en segundo plano. Esto es lo que hace:</string>
     <string name="onboarding_bullet_search">Realiza búsquedas web en Google, Bing, DuckDuckGo, Yahoo y Yandex sobre temas variados</string>
     <string name="onboarding_bullet_browse">Visita una amplia variedad de sitios web para diversificar tu perfil de navegación</string>
-    <string name="onboarding_bullet_fingerprint">Presenta una identidad de dispositivo estable por persona (User-Agent, client hints)</string>
+    <string name="onboarding_bullet_fingerprint">Presenta una identidad de dispositivo estable por persona (User-Agent, valores de navigator)</string>
     <string name="onboarding_bullet_dns">Genera consultas DNS hacia distintos dominios</string>
     <string name="onboarding_bullet_battery">Toda la actividad se ejecuta en segundo plano y consume batería y datos</string>
     <string name="onboarding_optional_profile">Si quieres, cuéntanos algo sobre ti en las pantallas siguientes. Esta información se queda en tu dispositivo y nos ayuda a generar ruido distinto al de tu perfil real. Sáltatelo si prefieres ruido uniforme.</string>
@@ -54,7 +54,7 @@
     <string name="consent_intro">Fauxx realizará las siguientes actividades en segundo plano:</string>
     <string name="consent_bullet_search">Buscar temas variados en Google, Bing, DuckDuckGo, Yahoo y Yandex</string>
     <string name="consent_bullet_browse">Visitar una variedad de sitios web para ampliar tu perfil de navegación</string>
-    <string name="consent_bullet_fingerprint">Presentar una identidad de dispositivo estable por persona (User-Agent, client hints)</string>
+    <string name="consent_bullet_fingerprint">Presentar una identidad de dispositivo estable por persona (User-Agent, valores de navigator)</string>
     <!-- PENDING NATIVE-SPEAKER REVIEW -->
     <string name="consent_bullet_location">Si activas la Simulación de ubicación: registrar Fauxx como proveedor de ubicación simulada del sistema (un ajuste de todo el dispositivo)</string>
     <string name="consent_bullet_dns">Generar consultas DNS hacia dominios variados</string>
@@ -276,7 +276,7 @@
     <string name="module_dns_name">Ruido de DNS</string>
     <string name="module_dns_description">Resuelve dominios variados para generar ruido de consultas DNS visible para el ISP</string>
     <string name="module_fingerprint_name">Identidad del dispositivo</string>
-    <string name="module_fingerprint_description">Presenta un dispositivo estable por persona (User-Agent, client hints, navigator) más ruido de canvas</string>
+    <string name="module_fingerprint_description">Presenta un dispositivo estable por persona (User-Agent, valores de navigator) más ruido de canvas</string>
     <string name="module_ad_name">Contaminación publicitaria</string>
     <string name="module_ad_description">Carga páginas saturadas de anuncios y visita paneles de preferencias publicitarias</string>
     <string name="module_location_name">Suplantación de ubicación</string>
@@ -423,6 +423,7 @@
     <string name="targeting_layer3_status_active">Persona: %s</string>
     <string name="targeting_layer3_status_none">Aún sin persona</string>
     <string name="targeting_layer3_action_rotate_now">Rotar ahora</string>
+    <string name="targeting_layer3_action_rotate_hint">Cambia todos los canales a la nueva persona a la vez. Las rotaciones automáticas se aplican de forma gradual para evitar un punto de cambio evidente, así que úsalo con moderación.</string>
     <string name="targeting_adversarial_name">Asignación adversaria (experimental)</string>
     <string name="targeting_adversarial_description">Dirige el ruido donde más altera el perfil que inferiría un broker, dentro de un margen de realismo</string>
     <string name="targeting_adversarial_status">Requiere la Capa 1 o la Capa 2 activada</string>

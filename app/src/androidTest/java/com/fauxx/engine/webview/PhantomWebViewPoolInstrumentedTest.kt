@@ -32,7 +32,7 @@ class PhantomWebViewPoolInstrumentedTest {
 
     @Test
     fun acquiredWebView_locksDownLocalAccessAndKeepsPoolContract() = runBlocking {
-        val pool = PhantomWebViewPool(context, mockk<DomainBlocklist>(relaxed = true))
+        val pool = PhantomWebViewPool(context, mockk<DomainBlocklist>(relaxed = true), PersonaJarStore())
         pool.initialize()
         val webView = pool.acquire()
         try {
