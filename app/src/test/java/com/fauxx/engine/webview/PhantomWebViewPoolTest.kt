@@ -8,6 +8,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -50,17 +51,60 @@ class PhantomWebViewPoolTest {
 
     private lateinit var pool: PhantomWebViewPool
 
+    /** Records what the pool asked for, so the tests can assert it asked at all. */
+    private class RecordingIdentityProvider(var personaId: String?) : PhantomIdentityProvider {
+        var activeQueries = 0
+        override fun activePersonaId(): String? { activeQueries++; return personaId }
+        override fun livePersonaIds(): Set<String> = setOfNotNull(personaId)
+    }
+
+    private lateinit var identity: RecordingIdentityProvider
+
     @Before
     fun setUp() {
         // A REAL PersonaJarStore, not a mock: under Robolectric the MULTI_PROFILE feature check
         // fails, so isSupported is false and the store returns the process-global jar. That makes
         // these tests exercise the unsupported-device fallback, which is the path every handset
         // with an older WebView APK takes.
+        identity = RecordingIdentityProvider(personaId = "persona-under-test")
         pool = PhantomWebViewPool(
             RuntimeEnvironment.getApplication(),
             mockk<DomainBlocklist>(relaxed = true),
             PersonaJarStore(),
+            identity,
         )
+    }
+
+    @Test
+    fun `the pool resolves the persona jar itself, with no module involved`() {
+        // The defect this pins: per-persona storage used to be bound by FingerprintModule, which
+        // does not browse and which a user can switch off. The four modules that DO accumulate
+        // tracker cookies would then keep crawling on one shared jar, isolation silently gone,
+        // and because a disabled module is never dispatched it could not be fixed from inside it.
+        // The pool must therefore ask for the identity on its own, without any module's help.
+        drive { pool.initialize() }
+        val afterInit = identity.activeQueries
+        assertTrue(
+            "initialize must resolve the jar before building, not after",
+            afterInit > 0
+        )
+
+        val wv = drive { pool.acquire() }
+        assertTrue(
+            "every acquire must re-check the jar, so any module gets the right one",
+            identity.activeQueries > afterInit
+        )
+        drive { pool.release(wv) }
+    }
+
+    @Test
+    fun `no active persona leaves the pool usable on the shared jar`() {
+        // Layer 3 off, or no persona generated yet. Browsing must still work.
+        identity.personaId = null
+        drive { pool.initialize() }
+        val wv = drive { pool.acquire() }
+        assertNotNull("pool must still hand out a WebView with no persona", wv)
+        drive { pool.release(wv) }
     }
 
     @Test

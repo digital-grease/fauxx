@@ -110,7 +110,8 @@ private const val REBUILD_DRAIN_TIMEOUT_MS = 15_000L
 class PhantomWebViewPool @Inject constructor(
     @ApplicationContext private val context: Context,
     private val blocklist: DomainBlocklist,
-    private val jarStore: PersonaJarStore
+    private val jarStore: PersonaJarStore,
+    private val identityProvider: PhantomIdentityProvider = PhantomIdentityProvider.NONE,
 ) {
     private val pool = mutableListOf<WebView>()
     private var initialized = false
@@ -227,6 +228,23 @@ class PhantomWebViewPool @Inject constructor(
     }
 
     /**
+     * Point the pool at whatever persona is active right now, and retire any jar no live persona
+     * owns. Safe to call on every acquire: the unchanged case is one atomic read.
+     *
+     * Deliberately NOT gated on any module's enable flag. Storage isolation is a property of the
+     * pool, so it holds for every consumer whether or not the device-identity module is running.
+     */
+    private suspend fun ensureJarForActivePersona() {
+        val personaId = identityProvider.activePersonaId() ?: return
+        val swap = setPersonaJar(personaId)
+        if (swap == JarSwap.SWAPPED) {
+            val live = identityProvider.livePersonaIds().map(jarStore::jarKeyFor).toSet()
+            runCatching { jarStore.deleteJarsExcept(live) }
+                .onFailure { Timber.w(it, "Persona jar sweep failed; retrying next rotation") }
+        }
+    }
+
+    /**
      * Tear the pool down and rebuild it bound to [jarKey]. See [setPersonaJar] for why this is a
      * rebuild rather than a re-bind, and why failing to drain is a no-op rather than a forced
      * teardown.
@@ -294,9 +312,16 @@ class PhantomWebViewPool @Inject constructor(
      * Initialize the WebView pool on the main thread.
      * Must be called before [acquire].
      */
-    suspend fun initialize() = withContext(Dispatchers.Main) {
-        if (initialized) return@withContext
-        ensurePool()
+    suspend fun initialize() {
+        // Resolve the jar BEFORE the first WebView exists, so startup binds directly instead of
+        // building unbound and then tearing both instances down to rebuild.
+        if (!initialized) {
+            identityProvider.activePersonaId()?.let { currentJarKey.compareAndSet(null, jarStore.jarKeyFor(it)) }
+        }
+        withContext(Dispatchers.Main) {
+            if (initialized) return@withContext
+            ensurePool()
+        }
     }
 
     /**
@@ -331,6 +356,17 @@ class PhantomWebViewPool @Inject constructor(
      * leak it.
      */
     suspend fun acquire(): WebView {
+        // Bind the active persona's jar BEFORE taking a permit. Two reasons, and the second is a
+        // deadlock, not a preference:
+        //
+        // 1. Every browsing module acquires from this pool, so doing it here is what makes
+        //    isolation unconditional. It used to live in FingerprintModule, which does not browse
+        //    and which a user can switch off, leaving the four modules that DO accumulate tracker
+        //    cookies sharing one jar with the isolation silently gone.
+        // 2. A jar change drains every permit to rebuild the pool. Holding one while asking for
+        //    the swap would make that drain impossible, so the rotation would defer forever.
+        ensureJarForActivePersona()
+
         val gotPermit = withContext(Dispatchers.IO) {
             poolSemaphore.tryAcquire(ACQUIRE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         }
