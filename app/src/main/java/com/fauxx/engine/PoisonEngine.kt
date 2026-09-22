@@ -374,11 +374,32 @@ class PoisonEngine @Inject constructor(
         return todayActionCount.get()
     }
 
-    /** All modules in order of dispatch preference. */
+    /**
+     * Every module. Dispatch picks from this uniformly at random (see [runLoop]), so the order
+     * here carries no dispatch weight despite the historical name; it is also the stop order,
+     * where order does not matter either.
+     */
     private val allModules: List<Module> get() = listOf(
         searchModule, cookieModule, dnsModule,
         fingerprintModule, locationModule, adModule, appSignalModule
     )
+
+    /**
+     * Start order. [fingerprintModule] MUST come first (issue #242).
+     *
+     * It is the module that resolves the active persona and publishes its cookie jar to
+     * [PhantomWebViewPool]. Search and Cookie both call `initialize()` in their own `start()`,
+     * and a pool built before the jar is known is built UNBOUND, so Fingerprint then has to tear
+     * both WebViews down and rebuild them on the jar. With the default profile (search, cookie,
+     * fingerprint and Layer 3 all enabled) that made every engine start do four main-thread
+     * WebView constructions plus two destroys instead of two constructions, and turned the
+     * rebuild path from a once-per-30-90-days event into a once-per-start one.
+     *
+     * Starting Fingerprint first takes the free `!initialized` branch in `setPersonaJar` instead.
+     * Kept separate from [allModules] so this ordering cannot perturb random dispatch selection.
+     */
+    private val startOrderedModules: List<Module> get() =
+        listOf(fingerprintModule) + allModules.filterNot { it === fingerprintModule }
 
     /**
      * Register a handler invoked when [runLoop] decides the engine should resign
@@ -466,7 +487,7 @@ class PoisonEngine @Inject constructor(
         // Startup asset health check — verify critical data loaded successfully.
         _healthWarnings.value = checkAssetHealth()
 
-        allModules.filter { it.isEnabled() }.forEach { module ->
+        startOrderedModules.filter { it.isEnabled() }.forEach { module ->
             try {
                 module.start()
             } catch (e: Exception) {

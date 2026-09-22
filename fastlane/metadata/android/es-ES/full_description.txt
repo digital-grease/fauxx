@@ -11,7 +11,7 @@ CARACTERÍSTICAS
 • Consultas de búsqueda diversas en Google, Bing, DuckDuckGo y Yahoo sobre temas alejados de tus intereses reales
 • Visitas variadas a sitios web en docenas de categorías de contenido
 • Contaminación del perfil publicitario: carga páginas con muchos anuncios para inyectar señales publicitarias ajenas a tu demografía
-• Identidad de dispositivo estable por persona: un User-Agent coherente + client hints por cada persona sintética, sin rotación aleatoria (más ruido de canvas)
+• Identidad de dispositivo estable por persona: un User-Agent coherente más valores de navigator coincidentes por cada persona sintética, sin rotación aleatoria (más ruido de canvas)
 • Diversificación de consultas DNS
 • Motor de segmentación inteligente con 3 capas de distanciamiento demográfico
 • Rotación de personas sintéticas: adopta una nueva identidad falsa cada semana

@@ -18,6 +18,7 @@ okhttp = "5.5.0"
 coroutines = "1.11.0"
 sqlcipher = "4.19.0"
 securityCrypto = "1.1.0"
+webkit = "1.17.0"
 datastore = "1.2.1"
 tink = "1.23.0"
 gson = "2.14.0"
@@ -71,6 +72,7 @@ coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-
 sqlcipher = { group = "net.zetetic", name = "sqlcipher-android", version.ref = "sqlcipher" }
 sqlite-ktx = { group = "androidx.sqlite", name = "sqlite-ktx", version = "2.7.1" }
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 tink-android = { group = "com.google.crypto.tink", name = "tink-android", version.ref = "tink" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }

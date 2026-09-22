@@ -52,9 +52,14 @@ class PhantomWebViewPoolTest {
 
     @Before
     fun setUp() {
+        // A REAL PersonaJarStore, not a mock: under Robolectric the MULTI_PROFILE feature check
+        // fails, so isSupported is false and the store returns the process-global jar. That makes
+        // these tests exercise the unsupported-device fallback, which is the path every handset
+        // with an older WebView APK takes.
         pool = PhantomWebViewPool(
             RuntimeEnvironment.getApplication(),
             mockk<DomainBlocklist>(relaxed = true),
+            PersonaJarStore(),
         )
     }
 
