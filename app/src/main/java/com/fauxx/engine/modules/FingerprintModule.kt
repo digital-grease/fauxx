@@ -9,8 +9,6 @@ import com.fauxx.data.model.ActionType
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
-import com.fauxx.engine.webview.JarSwap
-import com.fauxx.engine.webview.PersonaJarStore
 import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.network.UserAgentPool
 import com.fauxx.targeting.layer3.PersonaChannel
@@ -40,39 +38,21 @@ class FingerprintModule @Inject constructor(
     private val profileRepo: PoisonProfileRepository,
     private val personaRotationLayer: PersonaRotationLayer,
     private val deviceDeriver: DeviceDeriver,
-    private val jarStore: PersonaJarStore,
 ) : Module {
 
     /**
-     * Bind the active persona's device AND its cookie jar (issue #242), then retire any jar no
-     * live persona owns.
+     * Bind the active persona's device identity: its User-Agent and the fixed navigator values
+     * injected on page load.
      *
-     * The two must move together. The jar is keyed on the same [PersonaChannel.DEVICE] persona
-     * that supplies the User-Agent, so storage and device identity turn over in one instant. A
-     * jar that outlived its handset model would be a contradiction a tracker reads in a single
-     * pass, since a cookie cannot follow someone from a Pixel to a Galaxy.
-     *
-     * The sweep runs only on an actual rotation, not on every action: enumerating profiles is not
-     * free, and nothing can have been retired if the jar did not change.
+     * This module does NOT bind the cookie jar. Storage isolation belongs to
+     * [PhantomWebViewPool], which resolves it on every acquire (issue #242). It used to live
+     * here, which meant a user turning this module off also silently turned off per-persona
+     * storage for the four modules that actually accumulate tracker cookies, none of which is
+     * this one. A disabled module is never dispatched, so it could not have been fixed from
+     * inside this class.
      */
-    private suspend fun bindPersonaDevice(persona: SyntheticPersona) {
-        // Jar FIRST, device second. If the swap was deferred or failed, the pool is still serving
-        // the PREVIOUS persona's jar, and presenting this persona's User-Agent over it would
-        // produce exactly the contradiction the feature removes: a cookie set under one handset
-        // model being replayed under another. Hold the old device until the jar catches up; the
-        // next fingerprint action retries. UNSUPPORTED is not a mismatch, it means no device
-        // identity would ever be applied on that whole population of devices.
-        val swap = webViewPool.setPersonaJar(persona.id)
-        if (!swap.jarMatchesPersona) {
-            Timber.d("Holding previous device identity: jar swap $swap")
-            return
-        }
+    private fun bindPersonaDevice(persona: SyntheticPersona) {
         webViewPool.setDevice(deviceDeriver.mobileFor(persona))
-        if (swap == JarSwap.SWAPPED) {
-            val live = personaRotationLayer.livePersonaIds().map(jarStore::jarKeyFor).toSet()
-            runCatching { jarStore.deleteJarsExcept(live) }
-                .onFailure { Timber.w(it, "Persona jar sweep failed; retrying next rotation") }
-        }
     }
 
     override suspend fun start() {
@@ -93,8 +73,7 @@ class FingerprintModule @Inject constructor(
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
         val persona = currentPersona()
         return if (persona != null) {
-            // Idempotent re-assert of the persona's stable device + jar (both change only on
-            // persona rotation, and setPersonaJar short-circuits on an unchanged jar).
+            // Idempotent re-assert of the persona's stable device; it changes only on rotation.
             val device = deviceDeriver.mobileFor(persona)
             bindPersonaDevice(persona)
             ActionLogEntity(
