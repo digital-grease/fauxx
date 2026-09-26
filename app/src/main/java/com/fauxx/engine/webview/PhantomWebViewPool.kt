@@ -1,7 +1,6 @@
 package com.fauxx.engine.webview
 
 import android.content.Context
-import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
 import com.fauxx.data.crawllist.DomainBlocklist
@@ -24,6 +23,39 @@ import timber.log.Timber
 private const val POOL_SIZE = 2
 
 /**
+ * Outcome of [PhantomWebViewPool.setPersonaJar] (issue #242).
+ *
+ * Deliberately not a Boolean. Three different situations used to collapse to `false`, and the
+ * caller has to tell them apart: on [UNSUPPORTED] it must still apply the persona's User-Agent
+ * (that whole population of devices would otherwise freeze on one UA forever), while on
+ * [DEFERRED] and [FAILED] it must NOT, because the pool is still serving the previous persona's
+ * jar and pairing it with the new persona's UA is exactly the cookie-cannot-change-handsets
+ * contradiction the feature exists to remove.
+ */
+enum class JarSwap {
+    /** The pool is now on this persona's jar. */
+    SWAPPED,
+
+    /** Already on this jar; nothing to do. */
+    UNCHANGED,
+
+    /** No multi-profile support on this device; the shared jar is in use and always will be. */
+    UNSUPPORTED,
+
+    /** The pool was busy and the swap was abandoned; the old jar is still live. Retry later. */
+    DEFERRED,
+
+    /** The rebuild threw. The pool was left for re-initialization and the jar is unpublished. */
+    FAILED;
+
+    /**
+     * Whether the pool's jar matches the persona the caller asked for, and therefore whether it
+     * is safe to present that persona's device identity.
+     */
+    val jarMatchesPersona: Boolean get() = this == SWAPPED || this == UNCHANGED || this == UNSUPPORTED
+}
+
+/**
  * Max time to wait for a free pooled WebView before giving up and failing the action, instead of
  * blocking forever. Bounds the [Semaphore] wait so a leaked permit can't permanently stall the
  * engine loop (issue #124).
@@ -38,6 +70,14 @@ private const val ACQUIRE_TIMEOUT_MS = 30_000L
 private const val MAIN_OP_TIMEOUT_MS = 10_000L
 
 /**
+ * Per-permit wait when draining the pool for a persona jar rotation (issue #242). Generous
+ * because a crawl page load legitimately takes seconds; if the pool is still busy after this the
+ * rotation is deferred to the next fingerprint action rather than forced, so a long load is never
+ * destroyed mid-flight for the sake of a jar swap.
+ */
+private const val REBUILD_DRAIN_TIMEOUT_MS = 15_000L
+
+/**
  * Manages a pool of reusable background [WebView] instances with:
  * - JavaScript enabled for realistic page loading
  * - Third-party cookies accepted (needed for tracker accumulation)
@@ -48,10 +88,16 @@ private const val MAIN_OP_TIMEOUT_MS = 10_000L
  * and its cookies + DOM storage live in Fauxx's own WebView data directory — set once at app
  * startup via `WebView.setDataDirectorySuffix("fauxx_phantom")` (API 28+; see
  * [com.fauxx.FauxxApp]) — separate from the platform-default WebView store. The user's real
- * browser is a different app in a different process and shares no WebView state with Fauxx. The
- * two pooled instances intentionally share this store so trackers accumulate across reuse;
- * per-instance cookie jars are not an Android primitive (`CookieManager` is process-global) and
- * are not wanted here.
+ * browser is a different app in a different process and shares no WebView state with Fauxx.
+ *
+ * Within that directory the pool is further partitioned PER PERSONA (issue #242): see
+ * [setPersonaJar] and [PersonaJarStore]. The two pooled instances share the ACTIVE persona's jar,
+ * so trackers still accumulate across reuse, but a jar does not outlive the persona and device
+ * it belongs to. This KDoc previously claimed per-instance cookie jars "are not an Android
+ * primitive (`CookieManager` is process-global)". That holds for [android.webkit.CookieManager]'s
+ * process-global instance and not for WebView as a whole: `androidx.webkit`'s multi-profile API
+ * gives each named profile its own cookie store. On a device whose WebView lacks that API the
+ * pool silently keeps the old single-jar behaviour.
  *
  * All WebViews use [PhantomWebViewClient] which blocks blocklisted domains.
  *
@@ -63,7 +109,9 @@ private const val MAIN_OP_TIMEOUT_MS = 10_000L
 @Singleton
 class PhantomWebViewPool @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val blocklist: DomainBlocklist
+    private val blocklist: DomainBlocklist,
+    private val jarStore: PersonaJarStore,
+    private val identityProvider: PhantomIdentityProvider = PhantomIdentityProvider.NONE,
 ) {
     private val pool = mutableListOf<WebView>()
     private var initialized = false
@@ -101,6 +149,19 @@ class PhantomWebViewPool @Inject constructor(
     private val currentDevice = AtomicReference<DeviceProfile?>(null)
 
     /**
+     * Jar the pooled WebViews are currently bound to (issue #242), or null for the shared
+     * process-global jar (no persona yet, or a device without multi-profile support).
+     *
+     * Only ever written from [setPersonaJar]'s rebuild, and only once the new instances exist,
+     * so it always names the jar the live WebViews actually read. Writing it earlier would point
+     * cookie reads at a jar the pool is not on.
+     */
+    private val currentJarKey = AtomicReference<String?>(null)
+
+    /** Jar the pool is currently bound to, or null for the shared jar. Diagnostics and tests. */
+    fun boundJarKey(): String? = currentJarKey.get()
+
+    /**
      * Set the User-Agent string that will be applied to WebViews when they are acquired.
      * Called by FingerprintModule when a UA rotation action fires.
      */
@@ -129,16 +190,159 @@ class PhantomWebViewPool @Inject constructor(
     }
 
     /**
+     * Point the pool at [personaId]'s own cookie jar and site storage (issue #242).
+     *
+     * Called on every fingerprint action, so the unchanged case must stay free: it is a single
+     * atomic read. When the jar HAS changed, the pooled WebViews have to be rebuilt, because
+     * `setProfile` cannot re-profile a live WebView. The jar therefore turns over in the same
+     * instant as the persona's User-Agent, which is the coherence the whole change exists for:
+     * a cookie cannot follow a user from one handset model to another, so a jar that outlived
+     * its device would be a contradiction a tracker could read in a single pass.
+     *
+     * A rebuild first drains every pool permit, so no in-flight crawl has its WebView destroyed
+     * underneath it. If the pool cannot be drained (a wedged or long-running load), the rotation
+     * is ABANDONED rather than forced: [currentJarKey] is left alone, the old jar stays live, and
+     * the next fingerprint action retries. Continuing to accumulate into the previous persona's
+     * jar for a few more minutes is a much smaller problem than tearing down a WebView mid-load.
+     */
+    suspend fun setPersonaJar(personaId: String): JarSwap {
+        if (!jarStore.isSupported) return JarSwap.UNSUPPORTED
+        val jarKey = jarStore.jarKeyFor(personaId)
+        if (currentJarKey.get() == jarKey) return JarSwap.UNCHANGED
+        // `initialized` is written on the main thread, so test it there rather than from the
+        // caller's dispatcher. Reading it here raced a queued destroy() and could run a rebuild
+        // and an initialize() against the same empty pool, leaving four WebViews with duplicate
+        // tags; the later twin then overwrote resourceCounters/loadErrors while acquire() kept
+        // handing out the earlier one, silently reverting issues #268 and #73 for the session.
+        val needsRebuild = withContext(Dispatchers.Main) {
+            if (initialized) {
+                true
+            } else {
+                // Nothing to rebuild yet; initialize() binds this jar when it builds the pool.
+                currentJarKey.set(jarKey)
+                false
+            }
+        }
+        if (!needsRebuild) return JarSwap.SWAPPED
+        return rebuildForJar(jarKey)
+    }
+
+    /**
+     * Point the pool at whatever persona is active right now, and retire any jar no live persona
+     * owns. Safe to call on every acquire: the unchanged case is one atomic read.
+     *
+     * Deliberately NOT gated on any module's enable flag. Storage isolation is a property of the
+     * pool, so it holds for every consumer whether or not the device-identity module is running.
+     */
+    private suspend fun ensureJarForActivePersona() {
+        val personaId = identityProvider.activePersonaId() ?: return
+        val swap = setPersonaJar(personaId)
+        if (swap == JarSwap.SWAPPED) {
+            val live = identityProvider.livePersonaIds().map(jarStore::jarKeyFor).toSet()
+            runCatching { jarStore.deleteJarsExcept(live) }
+                .onFailure { Timber.w(it, "Persona jar sweep failed; retrying next rotation") }
+        }
+    }
+
+    /**
+     * Tear the pool down and rebuild it bound to [jarKey]. See [setPersonaJar] for why this is a
+     * rebuild rather than a re-bind, and why failing to drain is a no-op rather than a forced
+     * teardown.
+     */
+    private suspend fun rebuildForJar(jarKey: String): JarSwap {
+        // `drained` lives OUTSIDE the withContext and the try wraps the drain itself.
+        // tryAcquire(timeout) is a blocking JDK call that coroutine cancellation cannot
+        // interrupt, so permits are genuinely taken; if cancellation then discarded the
+        // withContext result, the finally never ran and the permits were lost for the life of
+        // the singleton (destroy() resets the pool, not the semaphore). One lost permit defers
+        // every future rotation forever; two make every acquire() fail.
+        var drained = 0
+        try {
+            withContext(Dispatchers.IO) {
+                repeat(POOL_SIZE) {
+                    if (poolSemaphore.tryAcquire(REBUILD_DRAIN_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                        drained++
+                    }
+                }
+            }
+            if (drained < POOL_SIZE) {
+                Timber.w(
+                    "Jar rotation deferred: drained $drained/$POOL_SIZE permits, pool still busy"
+                )
+                return JarSwap.DEFERRED
+            }
+            return withContext(Dispatchers.Main) {
+                runCatching { jarStore.cookieManagerFor(currentJarKey.get()).flush() }
+                pool.forEach { runCatching { it.destroy() } }
+                pool.clear()
+                // Build into a local list and swap in only once ALL instances exist. A partial
+                // build used to leave the pool short with initialized still true, which made
+                // acquire()'s pool.first{} throw on every action until the service restarted,
+                // with currentJarKey already advanced so no later rotation would retry.
+                // Throwable, not Exception: the realistic failure is OutOfMemoryError while
+                // allocating two fresh WebViews right after destroying two.
+                val rebuilt = mutableListOf<WebView>()
+                try {
+                    currentJarKey.set(jarKey)
+                    repeat(POOL_SIZE) { index -> rebuilt.add(createWebView(tag = "pool_$index")) }
+                } catch (t: Throwable) {
+                    rebuilt.forEach { runCatching { it.destroy() } }
+                    // Unpublish the jar so the next fingerprint action retries the swap, then
+                    // rebuild UNBOUND so the engine keeps crawling on the shared jar instead of
+                    // stalling. A degraded identity beats a dead pool, and nothing else calls
+                    // initialize() mid-session to recover one.
+                    currentJarKey.set(null)
+                    initialized = false
+                    runCatching { ensurePool() }
+                        .onFailure { Timber.e(it, "Pool heal after failed jar rebuild also failed") }
+                    Timber.e(t, "Jar rebuild failed; pool rebuilt on the shared jar")
+                    return@withContext JarSwap.FAILED
+                }
+                pool.addAll(rebuilt)
+                initialized = true
+                Timber.d("Rebuilt phantom pool on the active persona's jar")
+                JarSwap.SWAPPED
+            }
+        } finally {
+            repeat(drained) { poolSemaphore.release() }
+        }
+    }
+
+    /**
      * Initialize the WebView pool on the main thread.
      * Must be called before [acquire].
      */
-    suspend fun initialize() = withContext(Dispatchers.Main) {
-        if (initialized) return@withContext
-        repeat(POOL_SIZE) { index ->
-            val webView = createWebView(tag = "pool_$index")
-            pool.add(webView)
+    suspend fun initialize() {
+        // Resolve the jar BEFORE the first WebView exists, so startup binds directly instead of
+        // building unbound and then tearing both instances down to rebuild.
+        if (!initialized) {
+            identityProvider.activePersonaId()?.let { currentJarKey.compareAndSet(null, jarStore.jarKeyFor(it)) }
         }
-        initialized = true
+        withContext(Dispatchers.Main) {
+            if (initialized) return@withContext
+            ensurePool()
+        }
+    }
+
+    /**
+     * Fill the pool up to [POOL_SIZE], reusing whichever tags are free. Main thread only.
+     *
+     * Idempotent and self-healing, which matters because a failed jar rebuild can leave the pool
+     * short or empty part-way through a session. Nothing calls [initialize] after module start,
+     * so without a heal on the [acquire] path every subsequent action would throw
+     * `NoSuchElementException` out of `pool.first {}` until the foreground service restarted.
+     *
+     * Tags are assigned from the free set rather than from the loop index so a partial pool does
+     * not end up with duplicates, which would silently detach `resourceCounters` and `loadErrors`
+     * from the instance [acquire] hands out (issues #268 and #73).
+     */
+    private fun ensurePool() {
+        while (pool.size < POOL_SIZE) {
+            val used = pool.mapNotNull { it.tag as? String }.toSet()
+            val tag = (0 until POOL_SIZE).map { "pool_$it" }.firstOrNull { it !in used } ?: break
+            pool.add(createWebView(tag = tag))
+        }
+        initialized = pool.isNotEmpty()
     }
 
     /**
@@ -152,6 +356,17 @@ class PhantomWebViewPool @Inject constructor(
      * leak it.
      */
     suspend fun acquire(): WebView {
+        // Bind the active persona's jar BEFORE taking a permit. Two reasons, and the second is a
+        // deadlock, not a preference:
+        //
+        // 1. Every browsing module acquires from this pool, so doing it here is what makes
+        //    isolation unconditional. It used to live in FingerprintModule, which does not browse
+        //    and which a user can switch off, leaving the four modules that DO accumulate tracker
+        //    cookies sharing one jar with the isolation silently gone.
+        // 2. A jar change drains every permit to rebuild the pool. Holding one while asking for
+        //    the swap would make that drain impossible, so the rotation would defer forever.
+        ensureJarForActivePersona()
+
         val gotPermit = withContext(Dispatchers.IO) {
             poolSemaphore.tryAcquire(ACQUIRE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         }
@@ -161,6 +376,8 @@ class PhantomWebViewPool @Inject constructor(
         return try {
             withTimeoutOrNull(MAIN_OP_TIMEOUT_MS) {
                 withContext(Dispatchers.Main) {
+                    // Heal a pool left short by a failed jar rebuild before picking from it.
+                    if (pool.size < POOL_SIZE) ensurePool()
                     val wv = pool.first { acquired.putIfAbsent(it.tag as String, true) == null }
                     resourceCounters[wv.tag as String]?.set(0)
                     loadErrors[wv.tag as String]?.set(null)
@@ -212,7 +429,8 @@ class PhantomWebViewPool @Inject constructor(
             webView.title?.takeIf { it.isNotBlank() && it != "about:blank" }
         }.getOrNull()
         val cookieCount = runCatching {
-            CookieManager.getInstance().getCookie(url)?.split(";")?.count { it.isNotBlank() }
+            jarStore.cookieManagerFor(currentJarKey.get())
+                .getCookie(url)?.split(";")?.count { it.isNotBlank() }
         }.getOrNull()
         val resourceCount = runCatching {
             resourceCounters[webView.tag as? String]?.get()
@@ -272,7 +490,7 @@ class PhantomWebViewPool @Inject constructor(
     suspend fun destroy() = withContext(Dispatchers.Main) {
         // Persist the accumulated cookie jar to Fauxx's WebView data directory before tearing the
         // instances down, so tracker state survives the next process start.
-        runCatching { CookieManager.getInstance().flush() }
+        runCatching { jarStore.cookieManagerFor(currentJarKey.get()).flush() }
         pool.forEach { it.destroy() }
         pool.clear()
         initialized = false
@@ -310,6 +528,14 @@ class PhantomWebViewPool @Inject constructor(
         val webView = WebView(context)
         webView.tag = tag
 
+        // Bind the persona's jar FIRST (issue #242). setProfile throws once the WebView has
+        // navigated or run script, and a WebView can never be re-profiled, so construction is
+        // the only moment this can happen. That is also why a jar change rebuilds the pool
+        // instead of re-binding it in place. A failed or unsupported bind returns null and the
+        // instance stays on the shared jar rather than the engine losing a WebView.
+        val requestedJarKey = currentJarKey.get()
+        val boundJarKey = requestedJarKey?.takeIf { jarStore.bind(webView, it) }
+
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -335,9 +561,13 @@ class PhantomWebViewPool @Inject constructor(
             allowUniversalAccessFromFileURLs = false
         }
 
-        // Enable third-party cookies for realistic tracker accumulation
-        CookieManager.getInstance().setAcceptCookie(true)
-        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
+        // Enable third-party cookies for realistic tracker accumulation. This MUST be the
+        // jar the WebView was just bound to: acceptance is configured per CookieManager, so
+        // configuring the global one while the WebView reads a profile-scoped one would stop
+        // accumulation entirely, with no crash and no log line to notice it by.
+        val cookies = jarStore.cookieManagerFor(boundJarKey)
+        cookies.setAcceptCookie(true)
+        cookies.setAcceptThirdPartyCookies(webView, true)
 
         val resourceCounter = AtomicInteger(0)
         resourceCounters[tag] = resourceCounter

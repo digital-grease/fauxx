@@ -16,10 +16,12 @@ import com.fauxx.targeting.layer2.CategoryMapper
 import com.fauxx.targeting.layer2.PlatformProfileDao
 import com.fauxx.engine.scheduling.CompositeRateModulator
 import com.fauxx.engine.scheduling.RateModulator
+import com.fauxx.engine.webview.PhantomIdentityProvider
 import com.fauxx.locale.LocaleManager
 import com.fauxx.targeting.layer3.PersonaDistribution
 import com.fauxx.targeting.layer3.PersonaGenerator
 import com.fauxx.targeting.layer3.PersonaHistoryDao
+import com.fauxx.targeting.layer3.PersonaChannel
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import dagger.Module
 import dagger.Provides
@@ -34,6 +36,25 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object TargetingModule {
+
+    /**
+     * Lets [com.fauxx.engine.webview.PhantomWebViewPool] resolve the active persona without the
+     * webview package depending on `targeting.layer3` (issue #242).
+     *
+     * Bound on [PersonaChannel.DEVICE] deliberately: the cookie jar and the User-Agent must key
+     * on the SAME persona, or a jar would outlive the handset model it belongs to, which is a
+     * contradiction a tracker reads in one pass.
+     */
+    @Provides
+    @Singleton
+    fun providePhantomIdentityProvider(
+        personaRotationLayer: PersonaRotationLayer,
+    ): PhantomIdentityProvider = object : PhantomIdentityProvider {
+        override fun activePersonaId(): String? =
+            personaRotationLayer.personaForChannel(PersonaChannel.DEVICE)?.id
+
+        override fun livePersonaIds(): Set<String> = personaRotationLayer.livePersonaIds()
+    }
 
     @Provides
     @Singleton

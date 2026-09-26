@@ -12,13 +12,17 @@ import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.network.UserAgentPool
 import com.fauxx.targeting.layer3.PersonaChannel
 import com.fauxx.targeting.layer3.PersonaRotationLayer
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 /**
@@ -91,4 +95,12 @@ class FingerprintModuleTest {
         assertEquals(ActionType.FINGERPRINT_ROTATE, result.actionType)
         assertTrue("detail must note the held state; was: ${result.detail}", result.detail.contains("held"))
     }
+
+
+
+
+
+
+
+
 }

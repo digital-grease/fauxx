@@ -178,7 +178,13 @@ fun TargetingScreen(
             statusText = uiState.currentPersonaName?.let { stringResource(R.string.targeting_layer3_status_active, it) }
                 ?: stringResource(R.string.targeting_layer3_status_none),
             actionLabel = stringResource(R.string.targeting_layer3_action_rotate_now),
-            onAction = { viewModel.rotatePersona() }
+            onAction = { viewModel.rotatePersona() },
+            // Manual rotation sets previousPersona to null, so every channel switches at once
+            // rather than phasing in over its adoption lag. That is the synchronized
+            // change-point staggered adoption exists to blur, and at a 30-90 day persona
+            // lifetime a user seeing no visible change for months is exactly the person
+            // likely to press this repeatedly. Say what it costs.
+            actionHint = stringResource(R.string.targeting_layer3_action_rotate_hint)
         )
 
         // Adversarial allocation stage (E4 #180) — post-combine optimization, off by default;
@@ -313,7 +319,9 @@ private fun LayerToggleCard(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     actionEnabled: Boolean = true,
-    actionEmphasizeError: Boolean = false
+    actionEmphasizeError: Boolean = false,
+    /** Optional note under the action button, for actions whose cost is not self-evident. */
+    actionHint: String? = null
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -356,6 +364,14 @@ private fun LayerToggleCard(
                         actionLabel,
                         color = if (actionEmphasizeError) MaterialTheme.colorScheme.error
                         else Color.Unspecified
+                    )
+                }
+                if (actionHint != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = actionHint,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

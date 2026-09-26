@@ -51,13 +51,13 @@ Fauxx imports the ad-interest profile the platforms have already built about you
 
 ### Layer 3: Synthetic Persona Rotation (Active When L1 or L2 Enabled)
 
-To avoid a predictable change-point, Fauxx rotates to a fresh coherent persona on a jittered schedule: a 7-day base plus 1 to 3 days of random jitter, re-rolled every cycle, so rotations never land on a fixed weekly tick. This persona (a fake age, profession, interests, and region) becomes the decoy identity that shapes the next stretch of activity: a believable person who isn't you. And it doesn't all flip at once. The persona's channels (device, location, queries, rhythm, category weights) phase in over hours through staggered adoption, so a broker sees no single synchronized change-point to lock onto.
+To avoid a predictable change-point, Fauxx rotates to a fresh coherent persona on a jittered schedule: a lifetime drawn uniformly over 30 to 90 days, re-rolled every cycle, so rotations never land on a fixed tick. This persona (a fake age, profession, interests, and region) becomes the decoy identity that shapes the next stretch of activity: a believable person who isn't you. And it doesn't all flip at once. The persona's channels (device, location, queries, rhythm, category weights) phase in over days through staggered adoption, so a broker sees no single synchronized change-point to lock onto.
 
 ### How Weights Combine
 
 All layers produce a weight map across content categories. These weights multiply together and normalize, so the final distribution sums to 1.0. Categories are clamped with a minimum weight of 0.001—absence is still a signal.
 
-Example: If you report yourself as a 25-year-old software engineer, Layer 1 drops RETIREMENT and PARENTING to 0.15× (away-from) and boosts GAMING and TECHNOLOGY to 2.5× (toward other interests). When Layer 2 imports your ad profile and sees Google has tagged you with TECH, it further suppresses TECH (0.05×) and boosts categories Google has never associated with you (3.0×). These multiply together, then Layer 3 blends in the weekly persona's preferences. The result: a decoy profile that reads like a real person, just not you.
+Example: If you report yourself as a 25-year-old software engineer, Layer 1 drops RETIREMENT and PARENTING to 0.15× (away-from) and boosts GAMING and TECHNOLOGY to 2.5× (toward other interests). When Layer 2 imports your ad profile and sees Google has tagged you with TECH, it further suppresses TECH (0.05×) and boosts categories Google has never associated with you (3.0×). These multiply together, then Layer 3 blends in the current persona's preferences. The result: a decoy profile that reads like a real person, just not you.
 
 ## Modules
 
@@ -87,11 +87,13 @@ It is kept, off by default, because the surrounding scaffolding is sound and a f
 
 ### 4. Device Identity
 
-Presents a **stable, coherent device identity** per synthetic persona rather than churning random User-Agents. Each persona gets one believable Android device — a consistent User-Agent plus matching client-hint and `navigator` values (hardware concurrency, device memory, screen) — derived deterministically from the persona, so the synthetic traffic reads as one real device instead of the User-Agent-hopping pattern anti-fraud systems trivially flag and discard. The browser version drifts slowly over time to mimic real auto-updates. Canvas fingerprint noise is still injected via JavaScript to blunt pixel-level fingerprinting.
+Presents a **stable, coherent device identity** per synthetic persona rather than churning random User-Agents. Each persona gets one believable Android device, a consistent User-Agent plus matching `navigator` values (hardware concurrency, device memory), derived deterministically from the persona, so the synthetic traffic reads as one real device instead of the User-Agent-hopping pattern anti-fraud systems trivially flag and discard. The browser version drifts slowly over time to mimic real auto-updates. Canvas fingerprint noise is still injected via JavaScript to blunt pixel-level fingerprinting.
 
 ### 5. Cookie Saturation
 
-Visits 2,400+ categorized URLs in isolated background WebViews, accumulating tracker cookies across diverse categories. Each URL load respects a per-domain rate limit (minimum 5 seconds between hits). WebViews are pooled and process-isolated to avoid contaminating your real browser cookies.
+Visits 2,400+ categorized URLs in isolated background WebViews, accumulating tracker cookies across diverse categories. Each URL load respects a per-domain rate limit (minimum 5 seconds between hits). WebViews are pooled and confined to Fauxx's own WebView data directory, so synthetic traffic never touches your real browser's cookies.
+
+**Per-persona cookie jars:** each synthetic persona browses with a cookie jar, site storage and cache of its own. When Fauxx rotates to a new persona, the browser identity and everything stored under the old one change together, so nothing a tracker stored under one persona can be read back under the next. This needs a recent Android System WebView; where that support is missing, all personas share one jar as before. Every persona still browses from the same phone and the same network address, and Fauxx does not fake the hardware signals a fingerprinting script reads, so a tracker that fingerprints rather than reads cookies can still tell they are one device.
 
 **Category-aware:** URL selection weighted by your targeting engine.
 
@@ -228,7 +230,7 @@ All configurable values are exposed in the app UI and backed by Room preferences
 - **Action timing:** Poisson-distributed with human-like bursts (3–7 actions, then 5–20 min gaps)
 - **Cross-niche dwell:** Lognormal dwell-time multiplier on category transitions (e.g., Finance → Legal) with a 30s floor — defeats heuristic bot detection that flags sub-second niche switches
 - **Circadian pattern:** Near-zero activity 11pm–7am local time
-- **Layer 3 rotation:** 7-day base + 1–3 days random jitter (~8–10 days), re-rolled each cycle; channels phase in via staggered adoption
+- **Layer 3 rotation:** lifetime drawn uniformly over 30–90 days, re-rolled each cycle; channels phase in via staggered adoption over up to 20% of that lifetime
 - **Layer 2 re-import reminder:** about 90 days (the import is manual, not scheduled)
 
 ## Project Structure
