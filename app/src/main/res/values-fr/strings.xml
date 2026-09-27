@@ -24,7 +24,7 @@
     <string name="onboarding_intro">Fauxx protège ta vie privée en générant une activité de navigation synthétique en arrière-plan. Voici ce qu\'il fait :</string>
     <string name="onboarding_bullet_search">Effectue des recherches web sur Google, Bing, DuckDuckGo, Yahoo et Yandex sur des sujets variés</string>
     <string name="onboarding_bullet_browse">Visite une grande variété de sites pour diversifier ton profil de navigation</string>
-    <string name="onboarding_bullet_fingerprint">Présente une identité d\'appareil stable par persona (User-Agent, client hints)</string>
+    <string name="onboarding_bullet_fingerprint">Présente une identité d\'appareil stable par persona (User-Agent, valeurs navigator)</string>
     <string name="onboarding_bullet_dns">Génère des requêtes DNS vers des domaines variés</string>
     <string name="onboarding_bullet_battery">Toute l\'activité s\'exécute en arrière-plan et consomme de la batterie et des données</string>
     <string name="onboarding_optional_profile">Si tu le souhaites, parle-nous de toi sur les écrans suivants. Ces informations restent sur ton appareil et nous aident à générer un bruit différent de ton vrai profil. Passe cette étape si tu préfères un bruit uniforme.</string>
@@ -54,7 +54,7 @@
     <string name="consent_intro">Fauxx effectuera les activités suivantes en arrière-plan :</string>
     <string name="consent_bullet_search">Rechercher des sujets variés sur Google, Bing, DuckDuckGo, Yahoo et Yandex</string>
     <string name="consent_bullet_browse">Visiter divers sites pour élargir ton profil de navigation</string>
-    <string name="consent_bullet_fingerprint">Présenter une identité d\'appareil stable par persona (User-Agent, client hints)</string>
+    <string name="consent_bullet_fingerprint">Présenter une identité d\'appareil stable par persona (User-Agent, valeurs navigator)</string>
     <!-- PENDING NATIVE-SPEAKER REVIEW -->
     <string name="consent_bullet_location">Si vous activez la simulation de position : enregistrer Fauxx comme fournisseur de position fictive du système (un réglage valable pour tout l\'appareil)</string>
     <string name="consent_bullet_dns">Générer des requêtes DNS vers des domaines variés</string>
@@ -276,7 +276,7 @@
     <string name="module_dns_name">Bruit DNS</string>
     <string name="module_dns_description">Résout des domaines variés pour générer un bruit de requêtes DNS visible par le FAI</string>
     <string name="module_fingerprint_name">Identité de l\'appareil</string>
-    <string name="module_fingerprint_description">Présente un appareil stable par persona (User-Agent, client hints, navigator) plus le bruit canvas</string>
+    <string name="module_fingerprint_description">Présente un appareil stable par persona (User-Agent, valeurs navigator) plus le bruit canvas</string>
     <string name="module_ad_name">Pollution publicitaire</string>
     <string name="module_ad_description">Charge des pages saturées de publicités et visite les tableaux de bord des préférences publicitaires</string>
     <string name="module_location_name">Simulation de position</string>
@@ -419,10 +419,11 @@
     <string name="targeting_import_mute_button">Ne plus rappeler</string>
 
     <string name="targeting_layer3_name">Couche 3 — Rotation de personas</string>
-    <string name="targeting_layer3_description">Maintient des personas synthétiques cohérents (rotation hebdomadaire)</string>
+    <string name="targeting_layer3_description">Maintient des personas synthétiques cohérents (rotation tous les quelques mois)</string>
     <string name="targeting_layer3_status_active">Persona : %s</string>
     <string name="targeting_layer3_status_none">Aucun persona pour le moment</string>
     <string name="targeting_layer3_action_rotate_now">Faire tourner maintenant</string>
+    <string name="targeting_layer3_action_rotate_hint">Bascule tous les canaux vers la nouvelle persona d\'un seul coup. Les rotations automatiques s\'appliquent progressivement pour éviter un point de bascule évident : à utiliser avec parcimonie.</string>
     <string name="targeting_adversarial_name">Allocation antagoniste (expérimental)</string>
     <string name="targeting_adversarial_description">Cible le bruit là où il modifie le plus le profil déduit par un courtier, dans une limite de réalisme</string>
     <string name="targeting_adversarial_status">Nécessite la Couche 1 ou la Couche 2 activée</string>
@@ -469,7 +470,7 @@
     <string name="dashboard_category_other">autre</string>
     <string name="dashboard_chart_legend_entry">%1$s %2$d%%</string>
     <string name="dashboard_active_persona_title">PERSONA ACTIVE</string>
-    <string name="dashboard_active_persona_help">Une identité synthétique que le moteur adopte pendant environ une semaine. L\'activité est pondérée vers les centres d\'intérêt de cette persona pour créer un bruit cohérent dans le temps — ce qui complique le filtrage du faux signal par les traqueurs. Les personas tournent automatiquement.</string>
+    <string name="dashboard_active_persona_help">Une identité synthétique que le moteur adopte pendant un à trois mois. L\'activité est pondérée vers les centres d\'intérêt de cette persona pour créer un bruit cohérent dans le temps — ce qui complique le filtrage du faux signal par les traqueurs. Les personas tournent automatiquement.</string>
     <string name="dashboard_persona_subtitle">%1$s · %2$s</string>
     <string name="dashboard_battery_dialog_title">Garder Fauxx actif en arrière-plan</string>
     <string name="dashboard_battery_dialog_body_intro">Android met fortement en pause les apps en arrière-plan pour économiser la batterie. Pour empoisonner les profils en continu, Fauxx doit être exempté de l\'optimisation de la batterie.</string>

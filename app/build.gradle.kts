@@ -182,6 +182,11 @@ ksp {
 
 dependencies {
     implementation(libs.core.ktx)
+    // androidx.webkit: multi-profile WebView (issue #242). Supplies ProfileStore /
+    // WebViewCompat.setProfile, which is what gives each persona its own cookie jar and site
+    // storage. Apache 2.0, AOSP, no native blob and no traffic-path code, so it does not touch
+    // the OkHttp-free invariant that OkHttpOrphanGuardTest enforces.
+    implementation(libs.webkit)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.compose)

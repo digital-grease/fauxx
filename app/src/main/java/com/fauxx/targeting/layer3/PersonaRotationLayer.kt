@@ -46,8 +46,8 @@ private const val UNIFORM_BASELINE_WEIGHT = 0.6f
 /**
  * Layer 3 of the Demographic Distancing Engine — persona rotation targeting.
  *
- * Generates a new [SyntheticPersona] roughly every 8-10 days (a 7-day base plus 1-3 days of
- * jitter, re-rolled each cycle) and returns category weights from the
+ * Generates a new [SyntheticPersona] every 30 to 90 days (drawn uniformly, re-rolled each
+ * cycle) and returns category weights from the
  * raw constants (ALIGNED 2.0 / MISALIGNED 0.3) blended at PERSONA_FOLLOW_FRACTION with
  * the uniform baseline; 1.0 (neutral) when the layer is disabled or has no persona.
  *
@@ -63,7 +63,7 @@ private const val UNIFORM_BASELINE_WEIGHT = 0.6f
  * persona's blend until its [PersonaChannel.WEIGHTS] lag elapses, so the category
  * distribution does not step in the same instant as the other bound channels. A
  * user-forced [rotateNow] adopts immediately on all channels — an explicit user action
- * should produce visible change, and it is not the weekly automatic change-point.
+ * should produce visible change, and it is not the automatic rotation change-point.
  */
 @Singleton
 class PersonaRotationLayer @Inject constructor(
@@ -91,24 +91,61 @@ class PersonaRotationLayer @Inject constructor(
      * rotation would be a synchronized multi-channel change-point (region, interest
      * mix, and daily rhythm all stepping together) — a clean segmentation boundary no
      * real human produces. Each channel therefore keeps serving the PREVIOUS persona
-     * for a deterministic per-(persona, channel) lag of up to [CHANNEL_MAX_LAG_MS]
-     * after rotation, so the new identity phases in channel by channel over hours to
-     * days. The previous persona is held in memory only: after a process restart a
-     * channel still inside its lag window adopts the current persona early, which
-     * degrades smoothly (one fewer staggered step) rather than incoherently.
+     * for a deterministic per-(persona, channel) lag of up to [CHANNEL_MAX_LAG_PERCENT]%
+     * of that persona's own lifetime after rotation, so the new identity phases in
+     * channel by channel over days to weeks. The previous persona is held in memory
+     * only: after a process restart a channel still inside its lag window adopts the
+     * current persona early, which degrades smoothly (one fewer staggered step) rather
+     * than incoherently.
      */
     fun personaForChannel(channel: PersonaChannel): SyntheticPersona? {
         if (!_enabled.value) return null
         val current = _currentPersona.value ?: return null
         val previous = _previousPersona.value ?: return current
         val sinceRotation = clock.currentTimeMillis() - current.createdAt
-        return if (sinceRotation < adoptionLagMs(current.id, channel)) previous else current
+        return if (sinceRotation < adoptionLagMs(current, channel)) previous else current
     }
 
-    /** Deterministic adoption lag in 0..[CHANNEL_MAX_LAG_MS] per (persona, channel). */
+    /**
+     * Deterministic adoption lag for one (persona, channel), in
+     * `0 until` [CHANNEL_MAX_LAG_PERCENT]% of that persona's own lifetime.
+     *
+     * Scaling off the persona's `activeUntil - createdAt` rather than a fixed duration keeps
+     * the stagger proportionate however long the persona lives, including for personas
+     * restored from history or adopted from a paired device (#234), which arrive carrying the
+     * lifetime they were minted with.
+     *
+     * The lifetime is clamped to [PersonaGenerator.MAX_LIFETIME_MS] before use, and a
+     * non-positive one yields no lag. Both guards are about untrusted input rather than
+     * tidiness: a persona arriving over LAN sync carries whatever `activeUntil` the peer sent,
+     * sync only checks that the field exists, and an unclamped lifetime near `Long.MAX_VALUE`
+     * would overflow the percentage multiply. That overflow can wrap POSITIVE, so a bare
+     * non-positive check would pass it through as a multi-thousand-day lag, pinning a channel
+     * on the previous persona indefinitely.
+     */
     @androidx.annotation.VisibleForTesting
-    internal fun adoptionLagMs(personaId: String, channel: PersonaChannel): Long =
-        "$personaId:${channel.name}".hashCode().mod(CHANNEL_MAX_LAG_MS.toInt()).toLong()
+    internal fun adoptionLagMs(persona: SyntheticPersona, channel: PersonaChannel): Long {
+        val lifetimeMs = (persona.activeUntil - persona.createdAt)
+            .coerceAtMost(PersonaGenerator.MAX_LIFETIME_MS)
+        val maxLagMs = lifetimeMs * CHANNEL_MAX_LAG_PERCENT / 100
+        if (maxLagMs <= 0L) return 0L
+        return "${persona.id}:${channel.name}".hashCode().toLong().mod(maxLagMs)
+    }
+
+    /**
+     * Ids of every persona some channel could still be serving: the current one, plus the
+     * previous one while any channel is inside its adoption lag.
+     *
+     * Exists for per-persona storage (issue #242). A retired persona's cookie jar is deleted when
+     * it leaves this set, so returning too few ids would delete a jar out from under a channel
+     * that is still phasing the old identity out, which can be a fortnight after rotation at a
+     * 90-day lifetime. Returning a stale id is merely one extra jar until the next sweep, so this
+     * errs toward keeping.
+     */
+    fun livePersonaIds(): Set<String> = setOfNotNull(
+        _currentPersona.value?.id,
+        _previousPersona.value?.id,
+    )
 
     @androidx.annotation.VisibleForTesting
     internal fun setPersonasForTest(current: SyntheticPersona?, previous: SyntheticPersona?) {
@@ -170,7 +207,7 @@ class PersonaRotationLayer @Inject constructor(
         // (process restarts on reboot/app-update and after long-pause resigns)
         // caused setEnabled() to fire on a fresh process with `_currentPersona ==
         // null`, generating a brand-new persona every restart. Users perceived
-        // "persona rotates daily" instead of weekly.
+        // "persona rotates daily" instead of monthly.
         // Restore the most-recent still-active persona from history before falling
         // back to generation.
         //
@@ -242,7 +279,7 @@ class PersonaRotationLayer @Inject constructor(
      * The adoption body (internal + suspend so tests can await it deterministically, mirroring
      * [restoreMostRecentActivePersona]).
      *
-     * A push is an explicit convergence event, not the weekly automatic change-point, so the new
+     * A push is an explicit convergence event, not the automatic rotation change-point, so the new
      * identity is adopted on ALL channels at once (previous persona cleared) rather than staggered.
      * An already-expired incoming persona is ignored (adopting a dead identity would immediately
      * rotate it out), and re-delivery of the persona already active is a no-op. The persona is
@@ -255,6 +292,23 @@ class PersonaRotationLayer @Inject constructor(
             val now = clock.currentTimeMillis()
             if (now > persona.activeUntil) {
                 Timber.i("LAN sync: ignoring already-expired synced persona ${persona.id}")
+                return
+            }
+            // Bound activeUntil from ABOVE as well, against the LOCAL clock. SyncMessage
+            // validates only that the field is present, and the realistic trigger is not a
+            // hostile peer but a paired device whose clock is months fast: it mints a perfectly
+            // legitimate 30-90 day persona, so clamping the LIFETIME would never engage, yet the
+            // receiver sees an activeUntil far in its own future. Every rotation decision reads
+            // activeUntil raw (the expiry ticker, needsPersonaRefresh, and the restore election),
+            // so adopting it would stop Layer 3 rotating for the life of the process.
+            val latestPlausible = now + PersonaGenerator.MAX_LIFETIME_MS
+            if (persona.activeUntil > latestPlausible) {
+                Timber.w(
+                    "LAN sync: ignoring persona ${persona.id} expiring " +
+                        "${(persona.activeUntil - now) / 86_400_000L} days out, beyond the " +
+                        "${PersonaGenerator.MAX_LIFETIME_MS / 86_400_000L}-day maximum lifetime " +
+                        "(peer clock skew?)"
+                )
                 return
             }
             if (_currentPersona.value?.id == persona.id) return // idempotent: already active
@@ -275,7 +329,7 @@ class PersonaRotationLayer @Inject constructor(
 
     /**
      * Force immediate persona rotation (e.g., user clicked "Rotate Now"). Unlike the
-     * automatic weekly rotation, the new persona is adopted on ALL channels at once:
+     * automatic rotation, the new persona is adopted on ALL channels at once:
      * an explicit user action should produce visible change, and it is not the
      * recurring change-point the staggered adoption exists to blur.
      */
@@ -340,11 +394,31 @@ class PersonaRotationLayer @Inject constructor(
     }
 
     companion object {
-        /** 90 days in milliseconds. */
-        private const val HISTORY_RETENTION_MS = 90L * 24 * 60 * 60 * 1000
+        /**
+         * How long persona history is kept.
+         *
+         * Two independent floors, and this window clears both. It must cover
+         * [PersonaGenerator.RECENT_PERSONA_WINDOW_MS], because the generator's distinctness
+         * check reads history over that window and anything already pruned is invisible to it.
+         * It must also comfortably exceed one persona lifetime, because history is what
+         * [restoreMostRecentActivePersona] reads after a process restart: pruning an entry
+         * whose `activeUntil` is still in the future would drop a live persona and force an
+         * early rotation. At the old ~9-day lifetime a flat 90 days cleared both without
+         * anyone having to think about it; at a 90-day lifetime it clears neither.
+         */
+        private val HISTORY_RETENTION_MS = PersonaGenerator.RECENT_PERSONA_WINDOW_MS
 
-        /** Upper bound for per-channel persona adoption lag: 48 hours. */
-        internal const val CHANNEL_MAX_LAG_MS = 48L * 60 * 60 * 1000
+        /**
+         * Ceiling on a channel's adoption lag, as a percentage of the persona's own lifetime.
+         *
+         * Deliberately a fraction rather than a fixed duration. This used to be a flat 48h,
+         * which was ~22% of the old ~9-day lifetime and smeared rotation across a fifth of the
+         * cycle. Against a 30-90 day lifetime that same 48h would be 2-3%, collapsing the
+         * stagger back into the synchronized multi-channel change-point it exists to prevent,
+         * so lengthening the persona lifetime would have sharpened the very edge it is meant
+         * to soften.
+         */
+        internal const val CHANNEL_MAX_LAG_PERCENT = 20L
 
         /**
          * The E9 persona blend as a pure function (also the unit-test seam for the

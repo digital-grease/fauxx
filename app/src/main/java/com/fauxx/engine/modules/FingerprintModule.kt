@@ -6,6 +6,7 @@ import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.device.DeviceDeriver
 import com.fauxx.data.device.DeviceProfile
 import com.fauxx.data.model.ActionType
+import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.webview.PhantomWebViewPool
@@ -39,10 +40,25 @@ class FingerprintModule @Inject constructor(
     private val deviceDeriver: DeviceDeriver,
 ) : Module {
 
+    /**
+     * Bind the active persona's device identity: its User-Agent and the fixed navigator values
+     * injected on page load.
+     *
+     * This module does NOT bind the cookie jar. Storage isolation belongs to
+     * [PhantomWebViewPool], which resolves it on every acquire (issue #242). It used to live
+     * here, which meant a user turning this module off also silently turned off per-persona
+     * storage for the four modules that actually accumulate tracker cookies, none of which is
+     * this one. A disabled module is never dispatched, so it could not have been fixed from
+     * inside this class.
+     */
+    private fun bindPersonaDevice(persona: SyntheticPersona) {
+        webViewPool.setDevice(deviceDeriver.mobileFor(persona))
+    }
+
     override suspend fun start() {
-        val device = currentDevice()
-        if (device != null) {
-            webViewPool.setDevice(device)
+        val persona = currentPersona()
+        if (persona != null) {
+            bindPersonaDevice(persona)
         } else {
             // No active persona (Layer 3 off): seed a stable UA once; never churn per action.
             webViewPool.setUserAgentIfUnset(userAgentPool.randomChromiumAndroid())
@@ -55,10 +71,11 @@ class FingerprintModule @Inject constructor(
     override fun isEnabled(): Boolean = profileRepo.getProfile().fingerprintEnabled
 
     override suspend fun onAction(category: CategoryPool): ActionLogEntity {
-        val device = currentDevice()
-        return if (device != null) {
-            // Idempotent re-assert of the persona's stable device (changes only on persona rotation).
-            webViewPool.setDevice(device)
+        val persona = currentPersona()
+        return if (persona != null) {
+            // Idempotent re-assert of the persona's stable device; it changes only on rotation.
+            val device = deviceDeriver.mobileFor(persona)
+            bindPersonaDevice(persona)
             ActionLogEntity(
                 actionType = ActionType.FINGERPRINT_ROTATE,
                 category = category,
@@ -77,6 +94,6 @@ class FingerprintModule @Inject constructor(
     }
 
     /** The active persona's mobile device via the staggered DEVICE channel, or null when Layer 3 is off. */
-    private fun currentDevice(): DeviceProfile? =
-        personaRotationLayer.personaForChannel(PersonaChannel.DEVICE)?.let { deviceDeriver.mobileFor(it) }
+    private fun currentPersona(): SyntheticPersona? =
+        personaRotationLayer.personaForChannel(PersonaChannel.DEVICE)
 }
