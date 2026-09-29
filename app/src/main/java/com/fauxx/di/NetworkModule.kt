@@ -37,8 +37,7 @@ object NetworkModule {
     @Singleton
     fun provideUserAgentPool(
         @ApplicationContext context: Context,
-        profileRepo: com.fauxx.engine.PoisonProfileRepository
-    ): UserAgentPool = UserAgentPool(context, profileRepo)
+    ): UserAgentPool = UserAgentPool(context)
 
     @Provides
     @Singleton

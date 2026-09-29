@@ -1,7 +1,6 @@
 package com.fauxx.network
 
 import android.content.Context
-import com.fauxx.engine.PoisonProfileRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import com.google.gson.Gson
@@ -14,47 +13,35 @@ import kotlin.random.Random
  * Curated pool of real User-Agent strings loaded from assets/user_agents.json.
  * Covers Chrome, Firefox, Samsung Browser across a range of Android versions.
  *
- * Issue #7: when the user has set a custom User-Agent in Settings, [random]
- * returns that string instead of picking from the pool — used when the user
- * wants synthetic traffic to match their real browser's UA so the noise
- * blends with their actual activity rather than being filterable as
- * UA-rotating bot traffic.
+ * Only reached when Layer 3 is off. With a persona active, the per-persona device identity
+ * (#242) supplies the User-Agent, so this pool is the no-persona fallback rather than the
+ * primary source. The custom-UA override that used to live here was retired in #201: a bare
+ * UA could not carry matching screen and navigator values, so it contradicted the device it
+ * claimed to be.
  */
 @Singleton
 class UserAgentPool @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val profileRepo: PoisonProfileRepository,
     private val random: Random = Random.Default,
 ) {
     private val agents: List<String> by lazy { loadAgents() }
 
     /**
-     * Returns a User-Agent string. Honors `PoisonProfile.customUserAgent` when
-     * the user has set one (Settings → "Use my own User-Agent"); otherwise
-     * picks at random from the pool. Falls back to [DEFAULT_UA] if the pool
-     * is empty (asset failed to load).
+     * A User-Agent from the bundled pool, or [DEFAULT_UA] if the asset failed to load.
+     * Only reached when Layer 3 is off; with a persona active the device identity (#242)
+     * supplies the UA instead.
      */
-    fun random(): String {
-        profileRepo.getProfile().customUserAgent
-            ?.takeIf { it.isNotBlank() }
-            ?.let { return it }
-        return if (agents.isNotEmpty()) agents.random(random) else DEFAULT_UA
-    }
+    fun random(): String = if (agents.isNotEmpty()) agents.random(random) else DEFAULT_UA
 
     /**
      * Returns an Android-Chromium-family User-Agent (Chrome or Samsung Browser on
      * Android) for the WebView path. The System WebView always performs an
-     * Android-Chromium TLS handshake, so applying a non-Chromium UA there would
-     * recreate the "Chrome UA over non-Chrome TLS" contradiction that issue #168
-     * closes. A custom UA is honored only when it is itself Chromium-on-Android;
-     * otherwise a pool string is used. Falls back to [DEFAULT_UA] (a Pixel Chrome UA).
+     * Android-Chromium TLS handshake, so a non-Chromium UA here would recreate the
+     * "Chrome UA over non-Chrome TLS" contradiction that issue #168 closes. Falls back to
+     * [DEFAULT_UA] (a Pixel Chrome UA).
      */
-    fun randomChromiumAndroid(): String {
-        profileRepo.getProfile().customUserAgent
-            ?.takeIf { it.isNotBlank() && isChromiumAndroid(it) }
-            ?.let { return it }
-        return if (chromiumAndroidAgents.isNotEmpty()) chromiumAndroidAgents.random(random) else DEFAULT_UA
-    }
+    fun randomChromiumAndroid(): String =
+        if (chromiumAndroidAgents.isNotEmpty()) chromiumAndroidAgents.random(random) else DEFAULT_UA
 
     private val chromiumAndroidAgents: List<String> by lazy { agents.filter { isChromiumAndroid(it) } }
 

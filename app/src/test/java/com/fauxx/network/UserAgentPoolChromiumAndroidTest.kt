@@ -1,11 +1,8 @@
 package com.fauxx.network
 
 import android.content.Context
-import com.fauxx.data.model.PoisonProfile
-import com.fauxx.engine.PoisonProfileRepository
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -17,6 +14,10 @@ import kotlin.random.Random
  * only ever return Android-Chromium strings, so the WebView path's UA is coherent with the System
  * WebView's always-Android-Chromium TLS handshake. A future asset edit that reintroduces
  * non-Chromium UAs into the search path would fail these tests.
+ *
+ * The custom-UA override this file used to cover was retired in #201: with a persona active the
+ * device identity (#242) supplies the User-Agent, and a bare override could not carry the
+ * matching screen and navigator values.
  */
 class UserAgentPoolChromiumAndroidTest {
 
@@ -32,17 +33,14 @@ class UserAgentPoolChromiumAndroidTest {
     )
     private val acceptable = setOf(mixed[0], mixed[1])
 
-    private fun pool(customUa: String? = null): UserAgentPool {
+    private fun pool(): UserAgentPool {
         val json = mixed.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }.toByteArray()
         val context: Context = mockk {
             every { assets } returns mockk {
                 every { open("user_agents.json") } answers { ByteArrayInputStream(json) }
             }
         }
-        val profileRepo: PoisonProfileRepository = mockk {
-            every { getProfile() } returns PoisonProfile(customUserAgent = customUa)
-        }
-        return UserAgentPool(context, profileRepo, Random(42))
+        return UserAgentPool(context, Random(42))
     }
 
     @Test
@@ -57,17 +55,5 @@ class UserAgentPoolChromiumAndroidTest {
         }
     }
 
-    @Test
-    fun `a non-Chrome custom UA is ignored on the WebView path`() {
-        val p = pool(customUa = "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0")
-        repeat(50) { assertTrue(p.randomChromiumAndroid() in acceptable) }
-    }
 
-    @Test
-    fun `a Chromium-Android custom UA is honored`() {
-        val custom = "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
-        val p = pool(customUa = custom)
-        assertEquals(custom, p.randomChromiumAndroid())
-    }
 }

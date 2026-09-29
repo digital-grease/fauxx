@@ -458,69 +458,6 @@ fun SettingsScreen(
             )
         }
 
-        // Custom User-Agent (issue #7)
-        SettingsCard {
-            Text(
-                stringResource(R.string.settings_custom_ua_title),
-                style = MaterialTheme.typography.titleSmall
-            )
-            Text(
-                stringResource(R.string.settings_custom_ua_description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(8.dp))
-            val ctx = LocalContext.current
-            OutlinedButton(
-                onClick = {
-                    val deviceUa = runCatching {
-                        // System WebView UA — what most Chromium-based browsers
-                        // (Chrome, Edge, Brave, etc.) and any in-app browser send.
-                        // Close enough for "match my browser" without asking the user
-                        // to know what a User-Agent string is.
-                        android.webkit.WebSettings.getDefaultUserAgent(ctx)
-                    }.getOrNull()
-                    if (!deviceUa.isNullOrBlank()) viewModel.setCustomUserAgent(deviceUa)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) { Text(stringResource(R.string.settings_custom_ua_use_device_button)) }
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = uiState.customUserAgent,
-                onValueChange = { viewModel.setCustomUserAgent(it) },
-                modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text(
-                        stringResource(R.string.settings_custom_ua_field_label),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                },
-                placeholder = {
-                    Text(
-                        stringResource(R.string.settings_custom_ua_placeholder),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                },
-                singleLine = true
-            )
-            // #201: a non-Android-Chromium custom UA is silently dropped on the WebView path, so
-            // warn rather than let the user believe a Firefox/Edge/iOS string is in effect.
-            if (uiState.customUserAgentIsNonChromium) {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    stringResource(R.string.settings_custom_ua_non_chromium_warning),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-            if (uiState.customUserAgent.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
-                TextButton(
-                    onClick = { viewModel.setCustomUserAgent("") }
-                ) { Text(stringResource(R.string.settings_custom_ua_clear_button)) }
-            }
-        }
-
         Spacer(Modifier.height(8.dp))
 
         // Clear all data

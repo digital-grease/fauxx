@@ -325,13 +325,6 @@
     <string name="settings_log_retention_title">Retención del registro</string>
     <string name="settings_log_retention_value">%d días</string>
     <string name="settings_log_retention_description">Elimina automáticamente las entradas del registro más antiguas que esto. Evita que el registro del dispositivo crezca sin límite.</string>
-    <string name="settings_custom_ua_title">Imitar mi navegador</string>
-    <string name="settings_custom_ua_description">Por defecto, Fauxx alterna entre muchos identificadores de navegador, pero la gente real suele usar un solo navegador, por lo que la variedad en sí puede parecer tráfico automatizado. Pulsa abajo para usar el identificador del navegador integrado del dispositivo, así el ruido se mezcla con tu actividad real. Déjalo en blanco para mantener la rotación por defecto.</string>
-    <string name="settings_custom_ua_use_device_button">Usar el navegador de este dispositivo</string>
-    <string name="settings_custom_ua_field_label">Identificador de navegador (avanzado — déjalo en blanco para rotar automáticamente)</string>
-    <string name="settings_custom_ua_placeholder">Mozilla/5.0 (…)</string>
-    <string name="settings_custom_ua_clear_button">Borrar y reanudar la rotación</string>
-    <string name="settings_custom_ua_non_chromium_warning">Este no es un user-agent de Chrome en Android, así que se ignorará para la navegación sintética (que usa el WebView del sistema). Usa un user-agent de Chrome en Android para que se aplique.</string>
     <string name="settings_clear_all_data_button">Borrar todos los datos</string>
     <string name="settings_export_debug_logs_button">Exportar registros de depuración</string>
     <string name="settings_about_privacy_button">Información y política de privacidad</string>

@@ -101,6 +101,12 @@ object PreferenceKeys {
     // instead of randomizing across the user_agents.json pool. Lets users match
     // the synthetic-traffic UA to their real browser so the noise blends with
     // their actual activity. Null/missing = default per-request rotation.
+    /**
+     * Retired in #201. The per-persona device identity (#242) owns the User-Agent now, and a
+     * bare UA override could not carry the matching screen/navigator values, so it produced
+     * exactly the cross-layer contradiction #168/#169 removed elsewhere. Kept only so
+     * profileToPrefs can clear any stored value; remove once enough releases have passed.
+     */
     val CUSTOM_USER_AGENT = stringPreferencesKey("custom_user_agent")
 
     // App language override. Null/missing = follow system locale (filtered to a
