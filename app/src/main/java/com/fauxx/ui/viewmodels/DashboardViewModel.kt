@@ -27,6 +27,8 @@ import com.fauxx.util.Clock
 import com.fauxx.util.SystemClockImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.fauxx.engine.webview.WebViewCapabilities
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +39,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -86,7 +89,18 @@ class DashboardViewModel @Inject constructor(
     private val profileSnapshotDao: ProfileSnapshotDao,
     private val profileDriftMetric: ProfileDriftMetric,
     private val clock: Clock = SystemClockImpl(),
+    private val webViewCapabilities: WebViewCapabilities = WebViewCapabilities.SYSTEM,
 ) : ViewModel() {
+
+    /**
+     * True when the installed WebView cannot stop `X-Requested-With` from naming Fauxx, so every
+     * site it visits can tell the requests come from the app. The dashboard warns (and keeps
+     * browsing) until the user updates their WebView. Checked once, off the main thread: the first
+     * feature query can load the WebView provider, which is what hung the main thread in #55.
+     */
+    val webViewNamesApp: StateFlow<Boolean> = flow { emit(!webViewCapabilities.canHidePackageName()) }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _enabled = MutableStateFlow(profileRepo.getProfile().enabled)
 

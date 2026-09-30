@@ -1,5 +1,6 @@
 package com.fauxx.engine.webview
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.view.View.MeasureSpec
 import android.webkit.WebSettings
@@ -118,6 +119,7 @@ class PhantomWebViewPool @Inject constructor(
     private val blocklist: DomainBlocklist,
     private val jarStore: PersonaJarStore,
     private val identityProvider: PhantomIdentityProvider = PhantomIdentityProvider.NONE,
+    private val browsingPrefs: PhantomBrowsingPrefs = PhantomBrowsingPrefs.NONE,
 ) {
     private val pool = mutableListOf<WebView>()
     private var initialized = false
@@ -203,6 +205,9 @@ class PhantomWebViewPool @Inject constructor(
      * hints that still say "Android WebView" is a sharper contradiction than the WebView's own
      * consistent identity.
      */
+    // Gated: webViewDefaults is only ever set when USER_AGENT_METADATA is supported (see
+    // captureWebViewDefaults). Lint cannot follow that, hence the suppression.
+    @SuppressLint("RequiresFeature")
     private fun applyIdentity(webView: WebView) {
         val defaults = webViewDefaults.get() ?: return
         val identity = presentedIdentity() ?: return
@@ -424,6 +429,7 @@ class PhantomWebViewPool @Inject constructor(
                     resourceCounters[wv.tag as String]?.set(0)
                     loadErrors[wv.tag as String]?.set(null)
                     applyIdentity(wv)
+                    applyImagePolicy(wv)
                     wv
                 }
             } ?: throw IllegalStateException("Acquiring a pooled WebView timed out after ${MAIN_OP_TIMEOUT_MS}ms")
@@ -585,7 +591,8 @@ class PhantomWebViewPool @Inject constructor(
             useWideViewPort = true
             setSupportZoom(false)
             mediaPlaybackRequiresUserGesture = true
-            blockNetworkImage = true // Don't download images
+            // Images off until acquire applies the user's choice (applyImagePolicy).
+            blockNetworkImage = true
             loadsImagesAutomatically = false
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
@@ -603,22 +610,9 @@ class PhantomWebViewPool @Inject constructor(
             allowUniversalAccessFromFileURLs = false
         }
 
-        // Capture the WebView's own client-hint metadata once, from an instance nothing has
-        // overridden yet. BrowserIdentity derives the presented brands and version from it.
-        if (webViewDefaults.get() == null && isSupported(WebViewFeature.USER_AGENT_METADATA)) {
-            runCatching { WebSettingsCompat.getUserAgentMetadata(webView.settings) }
-                .onSuccess { webViewDefaults.compareAndSet(null, it) }
-                .onFailure { Timber.w(it, "Could not read the WebView's user-agent metadata") }
-        }
-
+        captureWebViewDefaults(webView)
         blankRequestedWith(webView)
-
-        // Inject at document start where supported: before any page script runs, and in every
-        // frame, not just the main one. The onPageStarted fallback in PhantomWebViewClient races
-        // inline <head> scripts and never reaches iframes.
-        val documentStartInjected = isSupported(WebViewFeature.DOCUMENT_START_SCRIPT) && runCatching {
-            WebViewCompat.addDocumentStartJavaScript(webView, JSInjector.PAGE_SCRIPT, setOf("*"))
-        }.isSuccess
+        val documentStartInjected = registerDocumentStartScript(webView)
 
         layoutAsViewport(webView)
 
@@ -648,6 +642,32 @@ class PhantomWebViewPool @Inject constructor(
 
         return webView
     }
+
+    /**
+     * Capture the WebView's own client-hint metadata once, from an instance nothing has overridden
+     * yet. [BrowserIdentity] derives the presented brands and version from it. Gated by
+     * [isSupported], which wraps the feature check so Robolectric answers false instead of
+     * throwing; lint cannot follow the wrapper, hence the suppression.
+     */
+    @SuppressLint("RequiresFeature")
+    private fun captureWebViewDefaults(webView: WebView) {
+        if (webViewDefaults.get() != null || !isSupported(WebViewFeature.USER_AGENT_METADATA)) return
+        runCatching { WebSettingsCompat.getUserAgentMetadata(webView.settings) }
+            .onSuccess { webViewDefaults.compareAndSet(null, it) }
+            .onFailure { Timber.w(it, "Could not read the WebView's user-agent metadata") }
+    }
+
+    /**
+     * Inject [JSInjector.PAGE_SCRIPT] at document start where supported: before any page script
+     * runs, and in every frame, not just the main one. The onPageStarted fallback in
+     * [PhantomWebViewClient] races inline `<head>` scripts and never reaches iframes. Returns
+     * whether it registered. Gated by [isSupported] (see [captureWebViewDefaults] on the suppression).
+     */
+    @SuppressLint("RequiresFeature")
+    private fun registerDocumentStartScript(webView: WebView): Boolean =
+        isSupported(WebViewFeature.DOCUMENT_START_SCRIPT) && runCatching {
+            WebViewCompat.addDocumentStartJavaScript(webView, JSInjector.PAGE_SCRIPT, setOf("*"))
+        }.isSuccess
 
     /**
      * Give the never-attached WebView real geometry (spike s3, gap 8). Without this, pages read
@@ -689,8 +709,10 @@ class PhantomWebViewPool @Inject constructor(
      * no-op anyway.) A WebView without MULTI_PROFILE, such as 113, still sends the package name, and
      * nothing an app can call changes that.
      */
+    // Gated by WebViewCapabilities.supportsPackageNameHiding(), which lint cannot follow.
+    @SuppressLint("RequiresFeature")
     private fun blankRequestedWith(webView: WebView) {
-        if (isSupported(WebViewFeature.MULTI_PROFILE) && isSupported(WebViewFeature.CUSTOM_REQUEST_HEADERS)) {
+        if (WebViewCapabilities.supportsPackageNameHiding()) {
             runCatching {
                 val profile = WebViewCompat.getProfile(webView)
                 if (!profile.hasCustomHeader(REQUESTED_WITH)) {
@@ -700,8 +722,18 @@ class PhantomWebViewPool @Inject constructor(
         }
     }
 
-    private fun isSupported(feature: String): Boolean =
-        runCatching { WebViewFeature.isFeatureSupported(feature) }.getOrDefault(false)
+    /**
+     * Apply the user's image choice (`PoisonProfile.loadImages`). Per acquire rather than per
+     * instance, so flipping the setting takes effect on the next page load without a pool rebuild.
+     * Main thread only.
+     */
+    private fun applyImagePolicy(webView: WebView) {
+        val load = browsingPrefs.loadImages()
+        webView.settings.loadsImagesAutomatically = load
+        webView.settings.blockNetworkImage = !load
+    }
+
+    private fun isSupported(feature: String): Boolean = WebViewCapabilities.isSupported(feature)
 
     private companion object {
         const val PLATFORM_ANDROID = "Android"

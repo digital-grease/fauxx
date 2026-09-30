@@ -315,6 +315,8 @@
     <string name="settings_mobile_intensity_off_description">En pausa con datos móviles</string>
     <string name="settings_resume_on_boot_title">Reanudar tras reiniciar</string>
     <string name="settings_resume_on_boot_description">Tras reiniciar el dispositivo, mostrar una notificación para reanudar la protección. Android impide que las apps se inicien solas en segundo plano, así que es necesario un toque.</string>
+    <string name="settings_load_images_title">Cargar imágenes en páginas sintéticas</string>
+    <string name="settings_load_images_description">Activado: las páginas cargan imágenes como un navegador real, así que los píxeles de seguimiento se activan y cada visita parece normal para el sitio. Desactivado: se omiten las imágenes, lo que ahorra muchos datos porque las imágenes son la mayor parte del tamaño de una página, pero un navegador que nunca carga imágenes es poco habitual, y los rastreadores basados en píxeles nunca registran la visita.</string>
     <string name="settings_battery_threshold_battery_title">Pausar por debajo de (batería)</string>
     <string name="settings_battery_threshold_charging_title">Pausar por debajo de (cargando)</string>
     <string name="settings_active_hours_title">Horas activas</string>
@@ -504,4 +506,7 @@
     <string name="settings_search_engines_title">Motores de búsqueda</string>
     <string name="settings_search_engines_description">Elige qué motores de búsqueda reciben consultas sintéticas. Al desactivar uno queda excluido por completo.</string>
     <string name="settings_search_engines_minimum_notice">Se mantienen activos al menos %1$d motores: las personas reales reparten sus búsquedas entre varios, así que el ruido de uno solo sería fácil de filtrar.</string>
+    <string name="dashboard_webview_leak_title">Los sitios pueden saber que este tráfico viene de Fauxx</string>
+    <string name="dashboard_webview_leak_body">Tu WebView es demasiado antiguo para ocultar el nombre de la app, así que cada petición de Fauxx lo lleva en la cabecera X-Requested-With. La protección sigue funcionando, pero los sitios pueden reconocer y descartar este tráfico. Actualizar Android System WebView lo soluciona.</string>
+    <string name="dashboard_webview_leak_action">Actualizar WebView</string>
 </resources>

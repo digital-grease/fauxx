@@ -35,6 +35,9 @@ import com.fauxx.ui.theme.ThemeMode
  * @property resumeOnBoot When true, show a "tap to resume" notification after device
  *   reboot if the engine was enabled pre-reboot. True FGS auto-start is blocked by
  *   Android 14+ for our FGS types.
+ * @property loadImages When true, synthetic page loads fetch images like a real browser, so
+ *   `<img>` tracking pixels fire and a page view looks normal to the server. Off by default
+ *   because images are most of a page's bytes, which matters on metered connections.
  * @property excludedSearchEngines Names of search engines the user has opted OUT of poisoning
  *   (issue #281), e.g. a privacy-respecting engine they would rather not send synthetic traffic
  *   to. Stored as exclusions rather than inclusions so the default is empty and any engine added
@@ -65,6 +68,7 @@ data class PoisonProfile(
     val adversarialAllocationEnabled: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val resumeOnBoot: Boolean = true,
+    val loadImages: Boolean = false,
     val excludedSearchEngines: Set<String> = emptySet()
 )
 

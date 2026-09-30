@@ -15,6 +15,7 @@ import com.fauxx.data.model.SyntheticPersona
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -82,6 +83,38 @@ class FingerprintProbeInstrumentedTest {
             activeUntil = System.currentTimeMillis() + 86_400_000L,
         )
         runPass("persona", device = DeviceDeriver(context).mobileFor(persona))
+    }
+
+    @Test
+    fun trackingPixelFiresOnlyWhenImagesAreOn() = runBlocking {
+        for (loadImages in listOf(false, true)) {
+            val server = ProbeServer().apply { start() }
+            val prefs = object : PhantomBrowsingPrefs {
+                override fun loadImages(): Boolean = loadImages
+            }
+            val pool = PhantomWebViewPool(
+                context, mockk<DomainBlocklist>(relaxed = true), PersonaJarStore(),
+                PhantomIdentityProvider.NONE, prefs,
+            )
+            try {
+                pool.initialize()
+                val webView = pool.acquire()
+                try {
+                    InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                        webView.loadUrl("http://127.0.0.1:${server.port}/page", SYNTHETIC_WEBVIEW_HEADERS)
+                    }
+                    server.reports.await(20, TimeUnit.SECONDS)
+                } finally {
+                    pool.release(webView)
+                }
+                val pixelFetched = server.requests.any { it.startsWith("GET /pixel.gif") }
+                log("images.loadImages=$loadImages.pixelFetched", pixelFetched.toString())
+                assertEquals("tracking pixel fetched with loadImages=$loadImages", loadImages, pixelFetched)
+            } finally {
+                pool.destroy()
+                server.stop()
+            }
+        }
     }
 
     private suspend fun runPass(pass: String, device: DeviceProfile?) {

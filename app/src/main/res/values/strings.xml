@@ -311,6 +311,8 @@
     <string name="settings_mobile_intensity_off_description">Paused on mobile data</string>
     <string name="settings_resume_on_boot_title">Resume after reboot</string>
     <string name="settings_resume_on_boot_description">After a reboot, show a notification to resume protection. Android blocks apps from silently starting themselves in the background, so a tap is required.</string>
+    <string name="settings_load_images_title">Load images on synthetic pages</string>
+    <string name="settings_load_images_description">On: pages load images like a real browser, so tracking pixels fire and each visit looks normal to the site. Off: images are skipped, which saves a lot of data because images are most of a page\'s size, but a browser that never loads images is unusual, and pixel-based trackers never record the visit.</string>
     <string name="settings_battery_threshold_battery_title">Pause below (Battery)</string>
     <string name="settings_battery_threshold_charging_title">Pause below (Charging)</string>
     <string name="settings_active_hours_title">Active Hours</string>
@@ -502,4 +504,7 @@
     <string name="settings_search_engines_title">Search engines</string>
     <string name="settings_search_engines_description">Choose which search engines receive synthetic queries. Turning one off spares it entirely.</string>
     <string name="settings_search_engines_minimum_notice">At least %1$d engines stay active: real people spread searches across engines, so noise from a single one would be easy to filter out.</string>
+    <string name="dashboard_webview_leak_title">Sites can tell this traffic comes from Fauxx</string>
+    <string name="dashboard_webview_leak_body">Your WebView is too old to hide the app\'s name, so every request Fauxx makes carries it in the X-Requested-With header. Protection keeps running, but sites can recognise and discard this traffic. Updating Android System WebView fixes it.</string>
+    <string name="dashboard_webview_leak_action">Update WebView</string>
 </resources>

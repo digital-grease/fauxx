@@ -377,6 +377,8 @@
     <string name="settings_theme_dark_subtitle">Всегда тёмная</string>
     <string name="settings_resume_on_boot_title">Возобновлять после перезагрузки</string>
     <string name="settings_resume_on_boot_description">После перезагрузки показать уведомление для возобновления защиты. Android запрещает приложениям молча запускаться в фоне, так что нужно касание.</string>
+    <string name="settings_load_images_title">Загружать изображения на синтетических страницах</string>
+    <string name="settings_load_images_description">Вкл.: страницы загружают изображения, как настоящий браузер, поэтому пиксели отслеживания срабатывают, а каждое посещение выглядит для сайта обычным. Выкл.: изображения пропускаются, что сильно экономит трафик, ведь изображения составляют большую часть объёма страницы, но браузер, который никогда не загружает изображения, выглядит необычно, а трекеры на основе пикселей никогда не регистрируют посещение.</string>
     <string name="settings_battery_threshold_battery_title">Пауза при заряде ниже (от батареи)</string>
     <string name="settings_battery_threshold_charging_title">Пауза при заряде ниже (при зарядке)</string>
     <string name="settings_active_hours_start_label">Начало</string>
@@ -524,4 +526,7 @@
     <string name="settings_search_engines_title">Поисковые системы</string>
     <string name="settings_search_engines_description">Выберите, какие поисковые системы получают синтетические запросы. Отключённая исключается полностью.</string>
     <string name="settings_search_engines_minimum_notice">Активными остаются минимум %1$d системы: реальные люди распределяют запросы между несколькими, поэтому шум от одной легко отфильтровать.</string>
+    <string name="dashboard_webview_leak_title">Сайты могут понять, что этот трафик идёт от Fauxx</string>
+    <string name="dashboard_webview_leak_body">Ваш WebView слишком старый, чтобы скрыть название приложения, поэтому каждый запрос Fauxx передаёт его в заголовке X-Requested-With. Защита продолжает работать, но сайты могут распознать и отбросить этот трафик. Обновление Android System WebView решает проблему.</string>
+    <string name="dashboard_webview_leak_action">Обновить WebView</string>
 </resources>

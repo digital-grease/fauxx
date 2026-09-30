@@ -105,6 +105,7 @@ class PoisonProfileRepositoryTest {
             layer3Enabled = false,                           // default true
             themeMode = ThemeMode.DARK,                      // default SYSTEM
             resumeOnBoot = false,                            // default true
+            loadImages = true,                               // default false
         )
 
         runBlocking { repo.saveProfile(input) }
