@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug-build override of src/main/res/xml/network_security_config.xml. Identical except that
+    cleartext is permitted to the loopback address, and only there, so FingerprintProbeInstrumentedTest
+    can serve its probe page from an in-process HTTP server. 127.0.0.1 over http:// is still a
+    potentially trustworthy origin, so Chromium sends client hints to it exactly as it would over
+    https. Release builds never see this file.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

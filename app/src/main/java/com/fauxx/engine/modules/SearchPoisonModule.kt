@@ -18,7 +18,6 @@ import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.engine.webview.SYNTHETIC_WEBVIEW_HEADERS
 import com.fauxx.locale.AcceptLanguageVariants
-import com.fauxx.network.UserAgentPool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -158,7 +157,6 @@ class SearchPoisonModule @Inject constructor(
     private val grammarGenerator: GrammarQueryGenerator,
     private val profileRepo: PoisonProfileRepository,
     private val webViewPool: PhantomWebViewPool,
-    private val userAgentPool: UserAgentPool,
     private val blocklist: DomainBlocklist,
     private val demographicDao: DemographicProfileDao,
     private val customInterestMapper: CustomInterestMapper,
@@ -172,9 +170,6 @@ class SearchPoisonModule @Inject constructor(
     override suspend fun start() {
         Timber.d("SearchPoisonModule started")
         webViewPool.initialize()
-        // Guarantee a coherent Android-Chromium UA on the search path even when
-        // FingerprintModule (the usual UA source) is disabled (issue #168).
-        webViewPool.setUserAgentIfUnset(userAgentPool.randomChromiumAndroid())
         injectCustomInterestSeeds()
     }
 

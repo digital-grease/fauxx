@@ -87,7 +87,7 @@ It is kept, off by default, because the surrounding scaffolding is sound and a f
 
 ### 4. Device Identity
 
-Presents a **stable, coherent device identity** per synthetic persona rather than churning random User-Agents. Each persona gets one believable Android device, a consistent User-Agent plus matching `navigator` values (hardware concurrency, device memory), derived deterministically from the persona, so the synthetic traffic reads as one real device instead of the User-Agent-hopping pattern anti-fraud systems trivially flag and discard. The browser version drifts slowly over time to mimic real auto-updates. Canvas fingerprint noise is still injected via JavaScript to blunt pixel-level fingerprinting.
+Presents a **stable, coherent device identity** per synthetic persona rather than churning random User-Agents. Each persona gets one believable Android handset, presented the way Chrome for Android presents it: the reduced Chrome User-Agent, with the handset model and Android version carried in the matching client hints (`Sec-CH-UA*` and `navigator.userAgentData`). The Chrome version is always the installed WebView's, so the version a page is told agrees with the engine it can probe, and the synthetic traffic reads as one real device instead of the User-Agent-hopping pattern anti-fraud systems trivially flag and discard. Fauxx no longer injects canvas noise or overrides `navigator` values: on-device measurement showed each override was itself a contradiction a page could read, so pages now see the real engine.
 
 ### 5. Cookie Saturation
 

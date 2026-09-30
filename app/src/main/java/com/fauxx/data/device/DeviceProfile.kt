@@ -22,7 +22,12 @@ data class Brand(val name: String, val version: String)
  */
 data class DeviceProfile(
     val formFactor: FormFactor,
-    /** Fully materialized User-Agent (the Chrome major already substituted). */
+    /**
+     * Fully materialized User-Agent (the Chrome major already substituted). The desktop companion
+     * emits this verbatim. The phone does NOT: it presents [com.fauxx.engine.webview.BrowserIdentity]'s
+     * reduced Chrome UA at the installed WebView's version, with [model] and [platformVersion] carried
+     * in the client hints, because that is how Chrome for Android presents a handset.
+     */
     val userAgent: String,
     /** `navigator.userAgentData.platform`: "Android" | "Windows" | "macOS" | "Linux". */
     val platform: String,

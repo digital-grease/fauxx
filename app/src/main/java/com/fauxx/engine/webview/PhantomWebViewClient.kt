@@ -14,7 +14,6 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.fauxx.data.crawllist.DomainBlocklist
-import com.fauxx.data.device.DeviceProfile
 import java.util.concurrent.atomic.AtomicInteger
 
 /** MIME types that should not be loaded in background WebViews. */
@@ -28,7 +27,8 @@ private val BLOCKED_MIME_TYPES = setOf(
  *
  * - Blocks dangerous/non-HTML content types
  * - Checks all URLs against [DomainBlocklist]
- * - Injects fingerprint-noise JavaScript on page start
+ * - Injects the Global Privacy Control DOM signal ([JSInjector.PAGE_SCRIPT]) when the pool could
+ *   not register it as a document-start script
  * - Handles SSL errors conservatively (aborts on error rather than proceeding)
  */
 class PhantomWebViewClient(
@@ -41,10 +41,9 @@ class PhantomWebViewClient(
     // can destroy the broken instance and swap in a fresh one. onRenderProcessGone ALWAYS returns
     // true regardless, so Android never terminates the whole app process on a renderer death.
     private val onRenderGone: ((WebView) -> Unit)? = null,
-    // Issue #242: supplies the active persona's device at injection time, so the navigator
-    // overrides (hardwareConcurrency/deviceMemory) match the persona's stable device rather than
-    // being per-read random. Read per navigation so a persona rotation is reflected on the next load.
-    private val deviceProvider: () -> DeviceProfile? = { null },
+    // False when the pool registered JSInjector.PAGE_SCRIPT as a document-start script, which runs
+    // earlier and in every frame. True is the fallback for WebViews without DOCUMENT_START_SCRIPT.
+    private val injectOnPageStarted: Boolean = true,
     // Issue #268: invoked with a short description when the MAIN FRAME fails to load (DNS failure,
     // connection refused, HTTP 4xx/5xx). Without this the failure was logged and dropped, and the
     // module still recorded the action as a success — a DNS-blocked load (Pi-hole and friends,
@@ -54,19 +53,12 @@ class PhantomWebViewClient(
 
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
-        // On high-scrutiny endpoints (search engines) inject only the benign GPC signal;
-        // the automation-shaped overrides are themselves a detection tell there (#168/#169).
-        val scripts = if (isHighScrutiny(url)) JSInjector.MINIMAL_SCRIPTS else JSInjector.allScripts(deviceProvider())
-        view.evaluateJavascript(scripts) { result ->
+        if (!injectOnPageStarted) return
+        view.evaluateJavascript(JSInjector.PAGE_SCRIPT) { result ->
             if (result != null && result != "null" && result.contains("error", ignoreCase = true)) {
                 Timber.w("JS injection may have failed on $url: $result")
             }
         }
-    }
-
-    private fun isHighScrutiny(url: String): Boolean {
-        val host = runCatching { android.net.Uri.parse(url).host }.getOrNull() ?: return false
-        return HIGH_SCRUTINY_HOST_SUFFIXES.any { host == it || host.endsWith(".$it") }
     }
 
     override fun onPageFinished(view: WebView, url: String) {
@@ -168,16 +160,5 @@ class PhantomWebViewClient(
             return true
         }
         return false
-    }
-
-    companion object {
-        /**
-         * Hosts where the automation-shaped JSInjector overrides are suppressed because the
-         * endpoint runs aggressive bot-detection (search engines, #168/#169). Mirrors the
-         * SEARCH_ENGINES in SearchPoisonModule.
-         */
-        val HIGH_SCRUTINY_HOST_SUFFIXES = setOf(
-            "google.com", "bing.com", "duckduckgo.com", "yahoo.com", "yandex.com"
-        )
     }
 }

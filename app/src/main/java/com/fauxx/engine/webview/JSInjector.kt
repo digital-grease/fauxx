@@ -1,168 +1,44 @@
 package com.fauxx.engine.webview
 
-import com.fauxx.data.device.DeviceProfile
-
 /**
- * JavaScript payloads injected into background WebViews to reduce fingerprinting consistency.
- * These scripts override browser APIs commonly used for fingerprinting.
+ * The JavaScript injected into phantom WebView pages.
+ *
+ * This used to carry a bundle of anti-fingerprinting overrides: per-read canvas noise, an
+ * OffscreenCanvas width jitter, fixed `hardwareConcurrency`/`deviceMemory` getters, and WebAssembly,
+ * Worker, ServiceWorker and `eval` blockers. Measured on WebView 151 (FingerprintProbeInstrumentedTest),
+ * every one of them was a tell rather than a defence:
+ * - `'WebAssembly' in window` was true while `typeof WebAssembly` was `undefined`, and `eval('1+1')`
+ *   returned `undefined`: states no Chrome can be in.
+ * - Two `getImageData` reads of one canvas disagreed in 1,500+ bytes, and `new OffscreenCanvas(300, 150)`
+ *   was 301 wide about half the time.
+ * - The injected `deviceMemory` (8) contradicted the `Device-Memory` request header (the real 2),
+ *   which a WebView cannot rewrite on subresources.
+ * - None of it reached iframes or workers, so a same-origin iframe reported the real
+ *   `hardwareConcurrency` and a native WebAssembly next to the main frame's overridden values.
+ * - The getters were own properties of `navigator` whose source was readable (`() => 8`).
+ *
+ * The page now sees the real engine, which is at least a device that exists. Spike s3
+ * (`.devloop/spikes/s3-persona-device-coherence.md`) covers why none of these surfaces can be
+ * impersonated from an unprivileged WebView. Persona identity travels through the User-Agent and
+ * client hints instead (see [BrowserIdentity]), which the engine itself emits consistently.
  */
 object JSInjector {
 
-    /** Fallback navigator values when no persona device is bound (Layer 3 off). Fixed, not random. */
-    const val DEFAULT_HARDWARE_CONCURRENCY = 8
-    const val DEFAULT_DEVICE_MEMORY_GB = 8
-
     /**
-     * Canvas fingerprint noise: adds subtle random pixel offsets to canvas draw calls,
-     * making the resulting image slightly different on each page load.
+     * Global Privacy Control DOM signal, the in-page counterpart to the `Sec-GPC: 1` header in
+     * [SYNTHETIC_WEBVIEW_HEADERS]. Chrome does not implement GPC, so this is shaped the way a
+     * page-world GPC extension sets it: a plain data property on the `navigator` instance, with no
+     * getter whose source a page could read. Fixed value, never randomized.
      */
-    val CANVAS_NOISE_SCRIPT = """
-        (function() {
-            const origGetContext = HTMLCanvasElement.prototype.getContext;
-            HTMLCanvasElement.prototype.getContext = function(type, attrs) {
-                const ctx = origGetContext.call(this, type, attrs);
-                if (!ctx || type !== '2d') return ctx;
-                const origGetImageData = ctx.getImageData.bind(ctx);
-                ctx.getImageData = function(sx, sy, sw, sh) {
-                    const imageData = origGetImageData(sx, sy, sw, sh);
-                    for (let i = 0; i < imageData.data.length; i += 4) {
-                        imageData.data[i] += Math.floor(Math.random() * 3) - 1;
-                        imageData.data[i+1] += Math.floor(Math.random() * 3) - 1;
-                        imageData.data[i+2] += Math.floor(Math.random() * 3) - 1;
-                    }
-                    return imageData;
-                };
-                return ctx;
-            };
-        })();
-    """.trimIndent()
-
-    /**
-     * Navigator property overrides for the persona's device (issue #242).
-     *
-     * The old version returned a fresh `Math.random()` value on EVERY read of
-     * `navigator.hardwareConcurrency`/`deviceMemory` — a real device never varies these, so reading
-     * the same property twice and getting different numbers was itself an automation tell, and it
-     * contradicted the persona's stable User-Agent. This emits the persona [device]'s FIXED,
-     * coherent values instead (falling back to common fixed defaults when Layer 3 is off, never
-     * per-read random).
-     */
-    fun navigatorOverrideScript(device: DeviceProfile?): String {
-        // Bounded plain Ints (values come from the bundled device catalog, never user input). The
-        // coerce guarantees only digits reach the script — no interpolation/injection surface.
-        val cores: Int = (device?.hardwareConcurrency ?: DEFAULT_HARDWARE_CONCURRENCY).coerceIn(1, 64)
-        val memory: Int = (device?.deviceMemory ?: DEFAULT_DEVICE_MEMORY_GB).coerceIn(1, 64)
-        return """
-            (function() {
-                Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => $cores });
-                Object.defineProperty(navigator, 'deviceMemory', { get: () => $memory });
-            })();
-        """.trimIndent()
-    }
-
-    /**
-     * Font enumeration spoofing: returns a consistent but randomized font list
-     * to prevent font-based fingerprinting.
-     */
-    val FONT_SPOOF_SCRIPT = """
-        (function() {
-            // No direct font enumeration API in web — this blocks timing-based font detection
-            const origOffscreenCanvas = window.OffscreenCanvas;
-            if (origOffscreenCanvas) {
-                window.OffscreenCanvas = function(w, h) {
-                    const c = new origOffscreenCanvas(w + (Math.random() > 0.5 ? 1 : 0), h);
-                    return c;
-                };
-            }
-        })();
-    """.trimIndent()
-
-    /**
-     * Disables WebAssembly and Web Workers to prevent cryptominers and other
-     * resource-intensive background scripts from running in phantom WebViews.
-     */
-    val WASM_WORKER_BLOCK_SCRIPT = """
-        (function() {
-            // Kill WebAssembly — cryptominers rely on this for near-native performance
-            if (typeof WebAssembly !== 'undefined') {
-                Object.defineProperty(window, 'WebAssembly', {
-                    get: function() { return undefined; },
-                    configurable: false
-                });
-            }
-            // Kill Worker/SharedWorker — miners offload hashing to background threads
-            window.Worker = function() { throw new TypeError('Workers are disabled'); };
-            window.SharedWorker = function() { throw new TypeError('SharedWorkers are disabled'); };
-            // Kill ServiceWorker registration
-            if (navigator.serviceWorker) {
-                Object.defineProperty(navigator, 'serviceWorker', {
-                    get: function() { return { register: function() { return Promise.reject(); } }; },
-                    configurable: false
-                });
-            }
-        })();
-    """.trimIndent()
-
-    /**
-     * Blocks eval() and the Function constructor to harden against exploit kits
-     * and obfuscated malicious payloads that rely on dynamic code generation.
-     */
-    val EVAL_BLOCK_SCRIPT = """
-        (function() {
-            // Block eval
-            window.eval = function() { return undefined; };
-            // Block Function constructor (new Function('code'))
-            var OrigFunction = Function;
-            window.Function = function() {
-                if (arguments.length > 0) { return function() {}; }
-                return new OrigFunction();
-            };
-            window.Function.prototype = OrigFunction.prototype;
-            // Block setTimeout/setInterval with string arguments (implicit eval)
-            var origSetTimeout = window.setTimeout;
-            window.setTimeout = function(fn, delay) {
-                if (typeof fn === 'string') return 0;
-                return origSetTimeout.apply(window, arguments);
-            };
-            var origSetInterval = window.setInterval;
-            window.setInterval = function(fn, delay) {
-                if (typeof fn === 'string') return 0;
-                return origSetInterval.apply(window, arguments);
-            };
-        })();
-    """.trimIndent()
-
-    /**
-     * Global Privacy Control DOM signal: exposes `navigator.globalPrivacyControl === true`
-     * so scripts that read the GPC property (the in-page counterpart to the Sec-GPC header)
-     * see the opt-out. Fixed value, not randomized.
-     */
-    val GPC_SCRIPT = """
+    val PAGE_SCRIPT = """
         (function() {
             try {
                 Object.defineProperty(navigator, 'globalPrivacyControl', {
-                    get: function() { return true; },
-                    configurable: false
+                    value: true,
+                    enumerable: true,
+                    configurable: true
                 });
             } catch (e) {}
         })();
     """.trimIndent()
-
-    /** Combined script injected on every non-high-scrutiny page load, tailored to [device]. */
-    fun allScripts(device: DeviceProfile?): String = listOf(
-        WASM_WORKER_BLOCK_SCRIPT,
-        EVAL_BLOCK_SCRIPT,
-        CANVAS_NOISE_SCRIPT,
-        navigatorOverrideScript(device),
-        FONT_SPOOF_SCRIPT,
-        GPC_SCRIPT
-    ).joinToString("\n\n")
-
-    /**
-     * Reduced script set for high-scrutiny endpoints (search engines). Drops the
-     * automation-shaped overrides (per-load navigator randomization, WebAssembly/Worker
-     * removal, eval blocking) that a SERP's bot-detection can flag, keeping only the
-     * benign Global Privacy Control signal. Gated by host in PhantomWebViewClient (#168/#169).
-     */
-    val MINIMAL_SCRIPTS = GPC_SCRIPT
 }
