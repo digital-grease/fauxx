@@ -10,7 +10,6 @@ import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.webview.PhantomWebViewPool
-import com.fauxx.network.UserAgentPool
 import com.fauxx.targeting.layer3.PersonaChannel
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import javax.inject.Inject
@@ -27,13 +26,12 @@ import javax.inject.Singleton
  * presenting dozens of unrelated UAs is textbook automation, which gets synthetic traffic filtered out
  * before it can poison a broker profile.
  *
- * When Layer 3 is disabled (no active persona), it seeds a single stable Android-Chromium UA once and
- * holds it, rather than rotating. The UA stays Android-Chromium because the System WebView always does
- * an Android-Chromium TLS handshake (issue #168).
+ * When Layer 3 is disabled (no active persona), it clears the device and the pool presents its fixed
+ * default handset, so the identity is still one stable, coherent Chrome for Android rather than a
+ * random string from a UA list (which contradicted the client hints; see BrowserIdentity).
  */
 @Singleton
 class FingerprintModule @Inject constructor(
-    private val userAgentPool: UserAgentPool,
     private val webViewPool: PhantomWebViewPool,
     private val profileRepo: PoisonProfileRepository,
     private val personaRotationLayer: PersonaRotationLayer,
@@ -60,8 +58,8 @@ class FingerprintModule @Inject constructor(
         if (persona != null) {
             bindPersonaDevice(persona)
         } else {
-            // No active persona (Layer 3 off): seed a stable UA once; never churn per action.
-            webViewPool.setUserAgentIfUnset(userAgentPool.randomChromiumAndroid())
+            // No active persona (Layer 3 off): present the pool's fixed default handset.
+            webViewPool.clearDevice()
         }
         Timber.d("FingerprintModule started")
     }
@@ -79,12 +77,12 @@ class FingerprintModule @Inject constructor(
             ActionLogEntity(
                 actionType = ActionType.FINGERPRINT_ROTATE,
                 category = category,
-                detail = "Persona device: ${device.model} — ${device.userAgent.take(72)}…",
-                metadata = LogMetadata.toJson(LogMetadata.USER_AGENT to device.userAgent),
+                detail = "Persona device: ${device.model}",
+                metadata = LogMetadata.toJson(LogMetadata.USER_AGENT to webViewPool.presentedUserAgent()),
             )
         } else {
-            // Layer 3 disabled: hold one stable Android-Chromium UA rather than rotating per action.
-            webViewPool.setUserAgentIfUnset(userAgentPool.randomChromiumAndroid())
+            // Layer 3 disabled: hold the pool's default handset rather than rotating per action.
+            webViewPool.clearDevice()
             ActionLogEntity(
                 actionType = ActionType.FINGERPRINT_ROTATE,
                 category = category,

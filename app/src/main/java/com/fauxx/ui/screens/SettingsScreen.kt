@@ -288,6 +288,29 @@ fun SettingsScreen(
             }
         }
 
+        // Image loading on synthetic pages: realism and tracking pixels versus data use
+        SettingsCard {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_load_images_title), style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        stringResource(R.string.settings_load_images_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = uiState.loadImages,
+                    onCheckedChange = { viewModel.setLoadImages(it) }
+                )
+            }
+        }
+
         // Battery threshold
         SettingsCard {
             // While on Battery

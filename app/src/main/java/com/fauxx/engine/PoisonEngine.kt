@@ -1177,6 +1177,7 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.ADVERSARIAL_ALLOCATION_ENABLED] = p.adversarialAllocationEnabled
         prefs[com.fauxx.di.PreferenceKeys.THEME_MODE] = p.themeMode.name
         prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] = p.resumeOnBoot
+        prefs[com.fauxx.di.PreferenceKeys.LOAD_IMAGES] = p.loadImages
         // #201: the custom UA is retired; clear any value a previous version stored so it
         // does not linger in DataStore.
         prefs.remove(com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT)
@@ -1245,6 +1246,7 @@ class PoisonProfileRepository @Inject constructor(
                 )
             }.getOrDefault(com.fauxx.ui.theme.ThemeMode.SYSTEM),
             resumeOnBoot = prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] ?: true,
+            loadImages = prefs[com.fauxx.di.PreferenceKeys.LOAD_IMAGES] ?: false,
         )
     }
 

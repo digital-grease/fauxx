@@ -11,7 +11,6 @@ import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
-import com.fauxx.network.UserAgentPool
 import com.fauxx.support.MainDispatcherRule
 import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicProfileDao
@@ -68,7 +67,6 @@ class SearchPoisonModuleTest {
     private val webViewPool: PhantomWebViewPool = mockk<PhantomWebViewPool>(relaxed = true).apply {
         every { lastLoadError(any()) } returns null
     }
-    private val userAgentPool: UserAgentPool = mockk(relaxed = true)
     private val blocklist: DomainBlocklist = mockk(relaxed = true)
     private val demographicDao: DemographicProfileDao = mockk(relaxed = true)
     private val customInterestMapper: CustomInterestMapper = mockk(relaxed = true)
@@ -85,7 +83,6 @@ class SearchPoisonModuleTest {
         grammarGenerator = grammarGenerator,
         profileRepo = profileRepo,
         webViewPool = webViewPool,
-        userAgentPool = userAgentPool,
         blocklist = blocklist,
         demographicDao = demographicDao,
         customInterestMapper = customInterestMapper,
@@ -443,16 +440,17 @@ class SearchPoisonModuleTest {
         assertEquals(0 to 0, SearchPoisonModule.sessionBounds(com.fauxx.data.model.IntensityLevel.EXTREME.actionsPerHour))
     }
 
-    // (e) Toggle-decoupling: start() seeds an Android-Chromium UA even if FingerprintModule is off.
+    // (e) The search path no longer seeds its own User-Agent: the pool presents one coherent
+    // identity (UA plus matching client hints) for every module, so a random UA string pushed from
+    // here would contradict the hints (see BrowserIdentity).
     @Test
-    fun `start seeds a chromium-android UA independent of FingerprintModule`() = runTest(testDispatcher) {
-        val chromeUa = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36"
-        every { userAgentPool.randomChromiumAndroid() } returns chromeUa
+    fun `start initializes the pool without touching its identity`() = runTest(testDispatcher) {
         coEvery { demographicDao.get() } returns null
 
         newModule().start()
 
-        verify(exactly = 1) { webViewPool.setUserAgentIfUnset(chromeUa) }
+        coVerify(exactly = 1) { webViewPool.initialize() }
+        verify(exactly = 0) { webViewPool.setDevice(any()) }
+        verify(exactly = 0) { webViewPool.clearDevice() }
     }
 }

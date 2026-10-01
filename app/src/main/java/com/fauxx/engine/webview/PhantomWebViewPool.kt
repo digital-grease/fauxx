@@ -1,8 +1,15 @@
 package com.fauxx.engine.webview
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.view.View.MeasureSpec
 import android.webkit.WebSettings
 import android.webkit.WebView
+import androidx.webkit.CustomHeader
+import androidx.webkit.UserAgentMetadata
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.device.DeviceProfile
@@ -112,6 +119,7 @@ class PhantomWebViewPool @Inject constructor(
     private val blocklist: DomainBlocklist,
     private val jarStore: PersonaJarStore,
     private val identityProvider: PhantomIdentityProvider = PhantomIdentityProvider.NONE,
+    private val browsingPrefs: PhantomBrowsingPrefs = PhantomBrowsingPrefs.NONE,
 ) {
     private val pool = mutableListOf<WebView>()
     private var initialized = false
@@ -136,17 +144,18 @@ class PhantomWebViewPool @Inject constructor(
     private val rendererDeaths = AtomicInteger(0)
 
     /**
-     * Current User-Agent string to apply to WebViews on acquire.
-     * Updated by [FingerprintModule] on each rotation action.
-     */
-    private val currentUserAgent = AtomicReference<String?>(null)
-
-    /**
-     * Current persona device (issue #242): its UA is applied to WebViews on acquire and its fixed
-     * navigator values are injected on page load (via the client's device provider). Null when Layer
-     * 3 is off, in which case the injected navigator values fall back to fixed defaults.
+     * Current persona device (issue #242). Its handset model and Android version are presented
+     * through the client-hint metadata on acquire (see [BrowserIdentity]). Null when Layer 3 is off,
+     * in which case the pool presents [BrowserIdentity]'s default handset.
      */
     private val currentDevice = AtomicReference<DeviceProfile?>(null)
+
+    /**
+     * The installed WebView's own client-hint metadata, captured from the first instance before
+     * anything overrides it. [BrowserIdentity] derives the presented brands and version from it.
+     * Stays null on a WebView without `USER_AGENT_METADATA`, which leaves the identity untouched.
+     */
+    private val webViewDefaults = AtomicReference<UserAgentMetadata?>(null)
 
     /**
      * Jar the pooled WebViews are currently bound to (issue #242), or null for the shared
@@ -162,31 +171,69 @@ class PhantomWebViewPool @Inject constructor(
     fun boundJarKey(): String? = currentJarKey.get()
 
     /**
-     * Set the User-Agent string that will be applied to WebViews when they are acquired.
-     * Called by FingerprintModule when a UA rotation action fires.
-     */
-    fun setUserAgent(ua: String) {
-        currentUserAgent.set(ua)
-    }
-
-    /**
-     * Bind the active persona's [device] (issue #242): applies its UA on the next acquire and makes
-     * the injected navigator overrides use its fixed hardwareConcurrency/deviceMemory. Called by
+     * Bind the active persona's [device] (issue #242). Takes effect on the next [acquire]. Called by
      * FingerprintModule when a persona is active.
      */
     fun setDevice(device: DeviceProfile) {
         currentDevice.set(device)
-        currentUserAgent.set(device.userAgent)
+    }
+
+    /** Drop the persona device (Layer 3 off); the pool falls back to the default handset. */
+    fun clearDevice() {
+        currentDevice.set(null)
     }
 
     /**
-     * Seed the User-Agent only if none has been set yet. Lets a module (e.g.
-     * SearchPoisonModule) guarantee a coherent Android-Chromium UA on the WebView
-     * path even when FingerprintModule (the usual UA source) is disabled, without
-     * clobbering a UA that Fingerprint has already rotated in.
+     * The User-Agent the pool presents on the next [acquire], or null while it presents the
+     * WebView's untouched default (before the first instance exists, or on a WebView without
+     * `USER_AGENT_METADATA`). For the action log.
      */
-    fun setUserAgentIfUnset(ua: String) {
-        currentUserAgent.compareAndSet(null, ua)
+    fun presentedUserAgent(): String? = presentedIdentity()?.userAgent
+
+    private fun presentedIdentity(): ChromeIdentity? {
+        val defaults = webViewDefaults.get() ?: return null
+        val fullVersion = defaults.fullVersion ?: return null
+        val brands = defaults.brandVersionList.map { BrandEntry(it.brand, it.majorVersion, it.fullVersion) }
+        return BrowserIdentity.forDevice(currentDevice.get(), brands, fullVersion)
+    }
+
+    /**
+     * Present [BrowserIdentity]'s Chrome identity on [webView]: the User-Agent and the matching
+     * client-hint metadata, together or not at all. Main thread only.
+     *
+     * If the metadata cannot be applied, the UA override is reverted too. A Chrome UA over client
+     * hints that still say "Android WebView" is a sharper contradiction than the WebView's own
+     * consistent identity.
+     */
+    // Gated: webViewDefaults is only ever set when USER_AGENT_METADATA is supported (see
+    // captureWebViewDefaults). Lint cannot follow that, hence the suppression.
+    @SuppressLint("RequiresFeature")
+    private fun applyIdentity(webView: WebView) {
+        val defaults = webViewDefaults.get() ?: return
+        val identity = presentedIdentity() ?: return
+        runCatching {
+            val metadata = UserAgentMetadata.Builder(defaults)
+                .setBrandVersionList(
+                    identity.brands.map {
+                        UserAgentMetadata.BrandVersion.Builder()
+                            .setBrand(it.brand)
+                            .setMajorVersion(it.majorVersion)
+                            .setFullVersion(it.fullVersion)
+                            .build()
+                    },
+                )
+                .setFullVersion(identity.fullVersion)
+                .setPlatform(PLATFORM_ANDROID)
+                .setPlatformVersion(identity.platformVersion)
+                .setModel(identity.model)
+                .setMobile(true)
+                .build()
+            WebSettingsCompat.setUserAgentMetadata(webView.settings, metadata)
+            webView.settings.userAgentString = identity.userAgent
+        }.onFailure {
+            Timber.w(it, "Could not apply the browser identity; presenting the WebView default")
+            webView.settings.userAgentString = null
+        }
     }
 
     /**
@@ -381,7 +428,8 @@ class PhantomWebViewPool @Inject constructor(
                     val wv = pool.first { acquired.putIfAbsent(it.tag as String, true) == null }
                     resourceCounters[wv.tag as String]?.set(0)
                     loadErrors[wv.tag as String]?.set(null)
-                    currentUserAgent.get()?.let { wv.settings.userAgentString = it }
+                    applyIdentity(wv)
+                    applyImagePolicy(wv)
                     wv
                 }
             } ?: throw IllegalStateException("Acquiring a pooled WebView timed out after ${MAIN_OP_TIMEOUT_MS}ms")
@@ -543,7 +591,8 @@ class PhantomWebViewPool @Inject constructor(
             useWideViewPort = true
             setSupportZoom(false)
             mediaPlaybackRequiresUserGesture = true
-            blockNetworkImage = true // Don't download images
+            // Images off until acquire applies the user's choice (applyImagePolicy).
+            blockNetworkImage = true
             loadsImagesAutomatically = false
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
@@ -561,6 +610,12 @@ class PhantomWebViewPool @Inject constructor(
             allowUniversalAccessFromFileURLs = false
         }
 
+        captureWebViewDefaults(webView)
+        blankRequestedWith(webView)
+        val documentStartInjected = registerDocumentStartScript(webView)
+
+        layoutAsViewport(webView)
+
         // Enable third-party cookies for realistic tracker accumulation. This MUST be the
         // jar the WebView was just bound to: acceptance is configured per CookieManager, so
         // configuring the global one while the WebView reads a profile-scoped one would stop
@@ -577,7 +632,7 @@ class PhantomWebViewPool @Inject constructor(
             blocklist,
             resourceCounter = resourceCounter,
             onRenderGone = ::handleRendererGone,
-            deviceProvider = { currentDevice.get() },
+            injectOnPageStarted = !documentStartInjected,
             // Issue #268: record only the FIRST main-frame error of a load. A failed navigation can
             // emit several callbacks, and the first one is the one that describes what went wrong.
             onMainFrameError = { loadError.compareAndSet(null, it) },
@@ -586,5 +641,105 @@ class PhantomWebViewPool @Inject constructor(
         webView.isFocusable = false
 
         return webView
+    }
+
+    /**
+     * Capture the WebView's own client-hint metadata once, from an instance nothing has overridden
+     * yet. [BrowserIdentity] derives the presented brands and version from it. Gated by
+     * [isSupported], which wraps the feature check so Robolectric answers false instead of
+     * throwing; lint cannot follow the wrapper, hence the suppression.
+     */
+    @SuppressLint("RequiresFeature")
+    private fun captureWebViewDefaults(webView: WebView) {
+        if (webViewDefaults.get() != null || !isSupported(WebViewFeature.USER_AGENT_METADATA)) return
+        runCatching { WebSettingsCompat.getUserAgentMetadata(webView.settings) }
+            .onSuccess { webViewDefaults.compareAndSet(null, it) }
+            .onFailure { Timber.w(it, "Could not read the WebView's user-agent metadata") }
+    }
+
+    /**
+     * Inject [JSInjector.PAGE_SCRIPT] at document start where supported: before any page script
+     * runs, and in every frame, not just the main one. The onPageStarted fallback in
+     * [PhantomWebViewClient] races inline `<head>` scripts and never reaches iframes. Returns
+     * whether it registered. Gated by [isSupported] (see [captureWebViewDefaults] on the suppression).
+     */
+    @SuppressLint("RequiresFeature")
+    private fun registerDocumentStartScript(webView: WebView): Boolean =
+        isSupported(WebViewFeature.DOCUMENT_START_SCRIPT) && runCatching {
+            WebViewCompat.addDocumentStartJavaScript(webView, JSInjector.PAGE_SCRIPT, setOf("*"))
+        }.isSuccess
+
+    /**
+     * Give the never-attached WebView real geometry (spike s3, gap 8). Without this, pages read
+     * `innerWidth`/`innerHeight` as 0x0 (measured on WebView 151), a state no real browser is in.
+     *
+     * The size is the host display's, less an allowance for the status bar and Chrome's toolbar,
+     * so `innerWidth` never exceeds `screen.width`: the screen is the real one and cannot be
+     * spoofed from an unprivileged WebView, so the viewport has to agree with it rather than with
+     * the persona's catalog screen.
+     */
+    private fun layoutAsViewport(webView: WebView) {
+        runCatching {
+            val metrics = context.resources.displayMetrics
+            val width = metrics.widthPixels
+            val height = metrics.heightPixels - (BROWSER_CHROME_DP * metrics.density).toInt()
+            if (width <= 0 || height <= 0) return
+            webView.measure(
+                MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY),
+            )
+            webView.layout(0, 0, width, height)
+        }.onFailure { Timber.w(it, "Could not lay out the phantom WebView") }
+    }
+
+    /**
+     * Stop `X-Requested-With` from naming Fauxx on every request.
+     *
+     * WebView adds the header with the embedding app's package name. The removal Google announced
+     * in 2023 only ever reached about 5% of stable WebView traffic, and the allow-list API only
+     * matters on that 5%: measured on WebView 151, `com.fauxx.full` went out on EVERY request, main
+     * frame and subresources alike, even with the allow-list empty. That let any server drop every
+     * Fauxx request by matching one string.
+     *
+     * A profile custom header with an empty value overrides it on every request the profile makes
+     * (measured: all of them, iframes and fetches included). The header cannot be removed outright,
+     * but empty carries no identity, where the package name named the app. Custom headers belong to
+     * the profile, so this runs for every instance, after [PersonaJarStore.bind] has chosen one.
+     * (The allow-list API is not used: androidx now restricts its feature flag, and it measured as a
+     * no-op anyway.) A WebView without MULTI_PROFILE, such as 113, still sends the package name, and
+     * nothing an app can call changes that.
+     */
+    // Gated by WebViewCapabilities.supportsPackageNameHiding(), which lint cannot follow.
+    @SuppressLint("RequiresFeature")
+    private fun blankRequestedWith(webView: WebView) {
+        if (WebViewCapabilities.supportsPackageNameHiding()) {
+            runCatching {
+                val profile = WebViewCompat.getProfile(webView)
+                if (!profile.hasCustomHeader(REQUESTED_WITH)) {
+                    profile.addCustomHeader(CustomHeader(REQUESTED_WITH, "", setOf("*")))
+                }
+            }.onFailure { Timber.w(it, "Could not blank X-Requested-With") }
+        }
+    }
+
+    /**
+     * Apply the user's image choice (`PoisonProfile.loadImages`). Per acquire rather than per
+     * instance, so flipping the setting takes effect on the next page load without a pool rebuild.
+     * Main thread only.
+     */
+    private fun applyImagePolicy(webView: WebView) {
+        val load = browsingPrefs.loadImages()
+        webView.settings.loadsImagesAutomatically = load
+        webView.settings.blockNetworkImage = !load
+    }
+
+    private fun isSupported(feature: String): Boolean = WebViewCapabilities.isSupported(feature)
+
+    private companion object {
+        const val PLATFORM_ANDROID = "Android"
+        const val REQUESTED_WITH = "X-Requested-With"
+
+        /** Status bar (24dp) plus Chrome for Android's toolbar (56dp). */
+        const val BROWSER_CHROME_DP = 80
     }
 }

@@ -24,7 +24,7 @@
     <string name="onboarding_intro">Fauxx protege tu privacidad generando actividad de navegación sintética en segundo plano. Esto es lo que hace:</string>
     <string name="onboarding_bullet_search">Realiza búsquedas web en Google, Bing, DuckDuckGo, Yahoo y Yandex sobre temas variados</string>
     <string name="onboarding_bullet_browse">Visita una amplia variedad de sitios web para diversificar tu perfil de navegación</string>
-    <string name="onboarding_bullet_fingerprint">Presenta una identidad de dispositivo estable por persona (User-Agent, valores de navigator)</string>
+    <string name="onboarding_bullet_fingerprint">Presenta una identidad de dispositivo estable por persona (User-Agent y client hints)</string>
     <string name="onboarding_bullet_dns">Genera consultas DNS hacia distintos dominios</string>
     <string name="onboarding_bullet_battery">Toda la actividad se ejecuta en segundo plano y consume batería y datos</string>
     <string name="onboarding_optional_profile">Si quieres, cuéntanos algo sobre ti en las pantallas siguientes. Esta información se queda en tu dispositivo y nos ayuda a generar ruido distinto al de tu perfil real. Sáltatelo si prefieres ruido uniforme.</string>
@@ -54,7 +54,7 @@
     <string name="consent_intro">Fauxx realizará las siguientes actividades en segundo plano:</string>
     <string name="consent_bullet_search">Buscar temas variados en Google, Bing, DuckDuckGo, Yahoo y Yandex</string>
     <string name="consent_bullet_browse">Visitar una variedad de sitios web para ampliar tu perfil de navegación</string>
-    <string name="consent_bullet_fingerprint">Presentar una identidad de dispositivo estable por persona (User-Agent, valores de navigator)</string>
+    <string name="consent_bullet_fingerprint">Presentar una identidad de dispositivo estable por persona (User-Agent y client hints)</string>
     <!-- PENDING NATIVE-SPEAKER REVIEW -->
     <string name="consent_bullet_location">Si activas la Simulación de ubicación: registrar Fauxx como proveedor de ubicación simulada del sistema (un ajuste de todo el dispositivo)</string>
     <string name="consent_bullet_dns">Generar consultas DNS hacia dominios variados</string>
@@ -276,7 +276,7 @@
     <string name="module_dns_name">Ruido de DNS</string>
     <string name="module_dns_description">Resuelve dominios variados para generar ruido de consultas DNS visible para el ISP</string>
     <string name="module_fingerprint_name">Identidad del dispositivo</string>
-    <string name="module_fingerprint_description">Presenta un dispositivo estable por persona (User-Agent, valores de navigator) más ruido de canvas</string>
+    <string name="module_fingerprint_description">Presenta un dispositivo Chrome estable por persona (User-Agent y client hints)</string>
     <string name="module_ad_name">Contaminación publicitaria</string>
     <string name="module_ad_description">Carga páginas saturadas de anuncios y visita paneles de preferencias publicitarias</string>
     <string name="module_location_name">Suplantación de ubicación</string>
@@ -315,6 +315,8 @@
     <string name="settings_mobile_intensity_off_description">En pausa con datos móviles</string>
     <string name="settings_resume_on_boot_title">Reanudar tras reiniciar</string>
     <string name="settings_resume_on_boot_description">Tras reiniciar el dispositivo, mostrar una notificación para reanudar la protección. Android impide que las apps se inicien solas en segundo plano, así que es necesario un toque.</string>
+    <string name="settings_load_images_title">Cargar imágenes en páginas sintéticas</string>
+    <string name="settings_load_images_description">Activado: las páginas cargan imágenes como un navegador real, así que los píxeles de seguimiento se activan y cada visita parece normal para el sitio. Desactivado: se omiten las imágenes, lo que ahorra muchos datos porque las imágenes son la mayor parte del tamaño de una página, pero un navegador que nunca carga imágenes es poco habitual, y los rastreadores basados en píxeles nunca registran la visita.</string>
     <string name="settings_battery_threshold_battery_title">Pausar por debajo de (batería)</string>
     <string name="settings_battery_threshold_charging_title">Pausar por debajo de (cargando)</string>
     <string name="settings_active_hours_title">Horas activas</string>
@@ -504,4 +506,7 @@
     <string name="settings_search_engines_title">Motores de búsqueda</string>
     <string name="settings_search_engines_description">Elige qué motores de búsqueda reciben consultas sintéticas. Al desactivar uno queda excluido por completo.</string>
     <string name="settings_search_engines_minimum_notice">Se mantienen activos al menos %1$d motores: las personas reales reparten sus búsquedas entre varios, así que el ruido de uno solo sería fácil de filtrar.</string>
+    <string name="dashboard_webview_leak_title">Los sitios pueden saber que este tráfico viene de Fauxx</string>
+    <string name="dashboard_webview_leak_body">Tu WebView es demasiado antiguo para ocultar el nombre de la app, así que cada petición de Fauxx lo lleva en la cabecera X-Requested-With. La protección sigue funcionando, pero los sitios pueden reconocer y descartar este tráfico. Actualizar Android System WebView lo soluciona.</string>
+    <string name="dashboard_webview_leak_action">Actualizar WebView</string>
 </resources>

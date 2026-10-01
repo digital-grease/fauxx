@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.R
 import com.fauxx.data.querybank.CategoryPool
@@ -76,6 +77,7 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val showConsent by viewModel.showConsentDialog.collectAsState()
     val showFullVersionNotice by viewModel.showFullVersionNotice.collectAsState()
+    val webViewNamesApp by viewModel.webViewNamesApp.collectAsState()
     val context = LocalContext.current
 
     // POST_NOTIFICATIONS permission (Android 13+)
@@ -182,6 +184,17 @@ fun DashboardScreen(
                 text = stringResource(R.string.dashboard_warning_battery_optimized),
                 actionLabel = stringResource(R.string.dashboard_warning_action_allow),
                 onAction = { showBatteryExplainer = true }
+            )
+        }
+
+        // The installed WebView cannot hide X-Requested-With, so every site sees "com.fauxx.full".
+        // Warn and keep running: the fix is a WebView update, which only the user can do.
+        if (webViewNamesApp) {
+            WarningCard(
+                text = stringResource(R.string.dashboard_webview_leak_title) + "\n\n" +
+                    stringResource(R.string.dashboard_webview_leak_body),
+                actionLabel = stringResource(R.string.dashboard_webview_leak_action),
+                onAction = { openWebViewStorePage(context) }
             )
         }
 
@@ -680,6 +693,22 @@ private fun WarningCard(
             }
         }
     }
+}
+
+/**
+ * Open the store page of whichever WebView the device actually uses (Google's, a vendor's, or a
+ * hardened build), so the update the dashboard asks for is one tap away. `market://` is also
+ * handled by F-Droid-style stores; the Play web page is the fallback.
+ */
+private fun openWebViewStorePage(context: android.content.Context) {
+    val pkg = runCatching { androidx.webkit.WebViewCompat.getCurrentWebViewPackage(context)?.packageName }
+        .getOrNull() ?: "com.google.android.webview"
+    val market = Intent(Intent.ACTION_VIEW, "market://details?id=$pkg".toUri())
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val web = Intent(Intent.ACTION_VIEW, "https://play.google.com/store/apps/details?id=$pkg".toUri())
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(market) }
+        .recoverCatching { context.startActivity(web) }
 }
 
 @Composable

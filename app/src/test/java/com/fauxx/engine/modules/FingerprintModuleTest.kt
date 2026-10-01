@@ -9,7 +9,6 @@ import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.webview.PhantomWebViewPool
-import com.fauxx.network.UserAgentPool
 import com.fauxx.targeting.layer3.PersonaChannel
 import com.fauxx.targeting.layer3.PersonaRotationLayer
 import io.mockk.coEvery
@@ -28,21 +27,19 @@ import org.junit.Test
 /**
  * [FingerprintModule.onAction] presents the ACTIVE PERSONA'S stable device (issue #242): it reads the
  * persona via the staggered [PersonaChannel.DEVICE] accessor, derives the mobile [DeviceProfile], and
- * pushes its UA to [PhantomWebViewPool]. It no longer draws a fresh random UA per action. With no
- * active persona (Layer 3 off) it holds one stable UA instead of rotating. Plain-JVM test (no
+ * binds it to [PhantomWebViewPool], which presents it. It never draws a random UA. With no active
+ * persona (Layer 3 off) it clears the device so the pool presents its fixed default handset. Plain-JVM test (no
  * Robolectric); the actual JS injection lives at the WebView layer.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class FingerprintModuleTest {
 
-    private val userAgentPool: UserAgentPool = mockk(relaxed = true)
     private val webViewPool: PhantomWebViewPool = mockk(relaxed = true)
     private val profileRepo: PoisonProfileRepository = mockk(relaxed = true)
     private val personaRotationLayer: PersonaRotationLayer = mockk(relaxed = true)
     private val deviceDeriver: DeviceDeriver = mockk(relaxed = true)
 
     private fun newModule() = FingerprintModule(
-        userAgentPool = userAgentPool,
         webViewPool = webViewPool,
         profileRepo = profileRepo,
         personaRotationLayer = personaRotationLayer,
@@ -75,23 +72,20 @@ class FingerprintModuleTest {
 
         // The whole device is bound (UA + fixed navigator values), not just a UA string.
         verify(exactly = 1) { webViewPool.setDevice(dev) }
-        verify(exactly = 0) { userAgentPool.randomChromiumAndroid() }
         assertEquals(ActionType.FINGERPRINT_ROTATE, result.actionType)
         assertEquals(CategoryPool.GAMING, result.category)
         assertTrue("detail must name the persona device; was: ${result.detail}", result.detail.contains("Persona device"))
     }
 
     @Test
-    fun `onAction holds a single stable UA when there is no active persona (Layer 3 off)`() = runTest {
+    fun `onAction falls back to the pool's default handset when there is no active persona (Layer 3 off)`() = runTest {
         every { personaRotationLayer.personaForChannel(PersonaChannel.DEVICE) } returns null
-        every { userAgentPool.randomChromiumAndroid() } returns "UA-seed"
 
         val result = newModule().onAction(CategoryPool.GAMING)
 
-        // Seed-if-unset (stable), never a per-action device/UA churn.
-        verify(exactly = 1) { webViewPool.setUserAgentIfUnset("UA-seed") }
+        // The pool presents its fixed default identity; no random UA string is drawn or pushed.
+        verify(exactly = 1) { webViewPool.clearDevice() }
         verify(exactly = 0) { webViewPool.setDevice(any()) }
-        verify(exactly = 0) { webViewPool.setUserAgent(any()) }
         assertEquals(ActionType.FINGERPRINT_ROTATE, result.actionType)
         assertTrue("detail must note the held state; was: ${result.detail}", result.detail.contains("held"))
     }

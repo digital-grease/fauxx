@@ -23,8 +23,9 @@ import javax.inject.Singleton
  * the real Chromium WebView (PhantomWebViewPool), NO engine module consumes the [OkHttpClient]
  * provided here any more, and DnsNoiseModule uses raw InetAddress. The client,
  * [BlocklistInterceptor], and [HeaderRandomizerInterceptor] are deliberately kept (they retain
- * unit-test coverage, and [UserAgentPool] is still live for the WebView path) but have no outbound
- * consumer. Any NEW OkHttp consumer would ship OkHttp's constant JA3/JA4 TLS fingerprint and fixed
+ * unit-test coverage) but have no outbound consumer. [UserAgentPool] now serves only
+ * [HeaderRandomizerInterceptor]: the WebView path presents BrowserIdentity's coherent Chrome
+ * identity instead of a random UA string, which contradicted its client hints. Any NEW OkHttp consumer would ship OkHttp's constant JA3/JA4 TLS fingerprint and fixed
  * header order, re-opening the exact tell #168 / #169 closed. Route any synthetic or search traffic
  * through the Chromium WebView, never OkHttp. The OkHttpOrphanGuardTest fails the build if a new
  * OkHttp request/execution path reappears under app/src/main.

@@ -11,6 +11,7 @@ import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.EngineState
 import com.fauxx.engine.PoisonEngine
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.engine.webview.WebViewCapabilities
 import com.fauxx.support.FakeClock
 import com.fauxx.support.MainDispatcherRule
 import com.fauxx.targeting.TargetingEngine
@@ -19,11 +20,16 @@ import com.fauxx.ui.viewmodels.DashboardViewModel
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -99,5 +105,32 @@ class DashboardViewModelTest {
                 "construction); boundaries=$boundaries",
             maxAfter != null && maxAfter > maxBefore!!
         )
+    }
+
+    private fun newViewModel(canHidePackageName: Boolean) = DashboardViewModel(
+        context, actionLogDao, profileRepo, poisonEngine, targetingEngine, personaLayer, dataStore,
+        mockk<com.fauxx.targeting.layer2.ProfileSnapshotDao>(relaxed = true) {
+            every { observeAll() } returns MutableStateFlow(emptyList<com.fauxx.targeting.layer2.ProfileSnapshot>())
+        },
+        com.fauxx.targeting.layer2.ProfileDriftMetric(), FakeClock(0L),
+        object : WebViewCapabilities {
+            override fun canHidePackageName(): Boolean = canHidePackageName
+        },
+    )
+
+    @Test
+    fun `warns when the WebView cannot hide the package name`() = runBlocking {
+        every { actionLogDao.countSince(any()) } returns MutableStateFlow(0)
+        val vm = newViewModel(canHidePackageName = false)
+        // The check runs on Dispatchers.Default, a real thread, so wait for it rather than assume.
+        assertTrue(withTimeout(5_000) { vm.webViewNamesApp.first { it } })
+    }
+
+    @Test
+    fun `stays quiet when the WebView can hide the package name`() = runBlocking {
+        every { actionLogDao.countSince(any()) } returns MutableStateFlow(0)
+        val vm = newViewModel(canHidePackageName = true)
+        delay(200)
+        assertFalse(vm.webViewNamesApp.value)
     }
 }

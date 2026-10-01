@@ -98,6 +98,33 @@ class PhantomWebViewPoolTest {
     }
 
     @Test
+    fun `acquire applies the image setting, and a change takes effect on the next acquire`() {
+        var loadImages = false
+        pool = PhantomWebViewPool(
+            RuntimeEnvironment.getApplication(),
+            mockk<DomainBlocklist>(relaxed = true),
+            PersonaJarStore(),
+            identity,
+            object : PhantomBrowsingPrefs {
+                override fun loadImages(): Boolean = loadImages
+            },
+        )
+        drive { pool.initialize() }
+
+        var wv = drive { pool.acquire() }
+        assertTrue("images are skipped by default", wv.settings.blockNetworkImage)
+        assertFalse(wv.settings.loadsImagesAutomatically)
+        drive { pool.release(wv) }
+
+        // No pool rebuild: the next acquire picks the new value up.
+        loadImages = true
+        wv = drive { pool.acquire() }
+        assertFalse("images load once the user turns them on", wv.settings.blockNetworkImage)
+        assertTrue(wv.settings.loadsImagesAutomatically)
+        drive { pool.release(wv) }
+    }
+
+    @Test
     fun `no active persona leaves the pool usable on the shared jar`() {
         // Layer 3 off, or no persona generated yet. Browsing must still work.
         identity.personaId = null

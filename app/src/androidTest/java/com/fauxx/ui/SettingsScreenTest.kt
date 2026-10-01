@@ -177,4 +177,15 @@ class SettingsScreenTest {
         }
         composeRule.onNodeWithText("Resume after reboot").performScrollTo().assertIsDisplayed()
     }
+
+    @Test
+    fun loadImagesToggle_isDisplayedWithItsTradeoff() {
+        composeRule.setContent {
+            FauxxTheme {
+                SettingsScreen()
+            }
+        }
+        composeRule.onNodeWithText("Load images on synthetic pages").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("tracking pixels fire", substring = true).performScrollTo().assertIsDisplayed()
+    }
 }

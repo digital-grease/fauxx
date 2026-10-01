@@ -97,6 +97,9 @@ object PreferenceKeys {
     // BOOT_COMPLETED for our FGS types; this gates the notification path only.
     val RESUME_ON_BOOT = booleanPreferencesKey("resume_on_boot")
 
+    // Whether synthetic page loads fetch images (tracking pixels fire) or skip them to save data.
+    val LOAD_IMAGES = booleanPreferencesKey("load_images")
+
     // Issue #7: when set, the engine uses this UA for ALL synthetic traffic
     // instead of randomizing across the user_agents.json pool. Lets users match
     // the synthetic-traffic UA to their real browser so the noise blends with

@@ -40,6 +40,8 @@ data class SettingsUiState(
     val logRetentionDays: Int = 7,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val resumeOnBoot: Boolean = true,
+    /** Whether synthetic page loads fetch images (see [com.fauxx.data.model.PoisonProfile.loadImages]). */
+    val loadImages: Boolean = false,
     /** Search engines the user opted out of poisoning (issue #281). */
     val excludedSearchEngines: Set<String> = emptySet(),
 ) {
@@ -119,6 +121,7 @@ class SettingsViewModel @Inject constructor(
     fun setLogRetentionDays(v: Int) { update { it.copy(logRetentionDays = v) } }
     fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
     fun setResumeOnBoot(v: Boolean) { update { it.copy(resumeOnBoot = v) } }
+    fun setLoadImages(v: Boolean) { update { it.copy(loadImages = v) } }
 
 
     /**
@@ -196,6 +199,7 @@ class SettingsViewModel @Inject constructor(
                     logRetentionDays = new.logRetentionDays,
                     themeMode = new.themeMode,
                     resumeOnBoot = new.resumeOnBoot,
+                    loadImages = new.loadImages,
                     excludedSearchEngines = new.excludedSearchEngines,
                     // Empty string in UI-state collapses to null in profile so the
                     // engine treats "blank field" as "no override" cleanly.
@@ -216,6 +220,7 @@ class SettingsViewModel @Inject constructor(
             logRetentionDays = p.logRetentionDays,
             themeMode = p.themeMode,
             resumeOnBoot = p.resumeOnBoot,
+            loadImages = p.loadImages,
             excludedSearchEngines = p.excludedSearchEngines,
         )
     }
