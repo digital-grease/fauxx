@@ -43,6 +43,13 @@ import com.fauxx.ui.theme.ThemeMode
  *   companion), or `DohPresets.CUSTOM_ID` to use [dohCustomUrl].
  * @property dohCustomUrl The user's own https DoH endpoint, e.g. a NextDNS profile URL. That URL
  *   identifies the user, so it is scrubbed from exported logs.
+ * @property plainDnsServer The plain DNS server for [DnsMode.PLAIN], as `ip` or `ip:port`
+ *   (IPv6 bracketed when a port is given). By IP only, never by name.
+ * @property preferredCustomDnsMode The custom mode (DOH or PLAIN) the user last chose, so switching
+ *   custom DNS off and on again restores it instead of silently landing on DoH.
+ * @property routeDnsNoise Whether the DNS-noise module's lookups also go to the custom resolver.
+ *   Off by default: DNS noise exists to fill the device's resolver logs (the ISP's or the
+ *   network's), and on a custom resolver it fills only that resolver's.
  * @property excludedSearchEngines Names of search engines the user has opted OUT of poisoning
  *   (issue #281), e.g. a privacy-respecting engine they would rather not send synthetic traffic
  *   to. Stored as exclusions rather than inclusions so the default is empty and any engine added
@@ -77,6 +84,9 @@ data class PoisonProfile(
     val dnsMode: DnsMode = DnsMode.SYSTEM,
     val dohProvider: String = "quad9",
     val dohCustomUrl: String = "",
+    val plainDnsServer: String = "",
+    val routeDnsNoise: Boolean = false,
+    val preferredCustomDnsMode: DnsMode = DnsMode.DOH,
     val excludedSearchEngines: Set<String> = emptySet()
 )
 

@@ -222,6 +222,9 @@ dependencies {
     // DNS-over-HTTPS for the opt-in custom resolver (#227). Same version ref as okhttp so the two
     // can never drift apart.
     implementation(libs.okhttp.dnsoverhttps)
+    // Plain DNS (UDP with TCP fallback) for the opt-in custom resolver (#227). A mature parser for
+    // untrusted DNS packets rather than a hand-rolled one.
+    implementation(libs.minidns.client)
 
     // Coroutines
     implementation(libs.coroutines.android)

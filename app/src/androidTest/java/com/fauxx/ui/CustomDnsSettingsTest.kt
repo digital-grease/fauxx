@@ -31,8 +31,9 @@ import javax.inject.Inject
 
 /**
  * The "Custom DNS for Fauxx" card in [SettingsScreen] (#227), driven through the real UI and the
- * real profile repository: the Custom chip's hint, URL validation, removing a stored URL, and the
- * unsaved draft surviving a saved-state round trip (rotation, process death).
+ * real profile repository: the Custom chip's hint, URL validation, removing a stored URL, the
+ * unsaved draft surviving a saved-state round trip (rotation, process death), the plain-DNS
+ * server path, and the DNS-noise toggle.
  *
  * The card's settings are reset before and after every test, since the repository is the app's
  * real DataStore and would otherwise carry state into later tests.
@@ -60,7 +61,16 @@ class CustomDnsSettingsTest {
     @After
     fun tearDown() = resetDns()
 
-    private fun resetDns() = setDns(DnsMode.SYSTEM, DohPresets.DEFAULT_ID, "")
+    private fun resetDns() {
+        setDns(DnsMode.SYSTEM, DohPresets.DEFAULT_ID, "")
+        runBlocking { profileRepo.updateProfile { it.copy(plainDnsServer = "", routeDnsNoise = false) } }
+        val deadline = System.currentTimeMillis() + 5_000
+        while (System.currentTimeMillis() < deadline) {
+            val p = profileRepo.getProfile()
+            if (p.plainDnsServer.isEmpty() && !p.routeDnsNoise) return
+            Thread.sleep(20)
+        }
+    }
 
     /**
      * Write the card's settings and wait until the repository's cache reflects them: getProfile()
@@ -143,5 +153,46 @@ class CustomDnsSettingsTest {
 
         composeRule.onNodeWithText("Custom DNS-over-HTTPS URL").performScrollTo()
             .assertTextContains("https://half-typed.example", substring = true)
+    }
+
+    @Test
+    fun plainChipWithoutASavedServer_explainsInsteadOfSwitching() {
+        setContent()
+        composeRule.onNodeWithText("Unencrypted DNS server").performScrollTo().performClick()
+        composeRule.onNodeWithText("Save a server address below to use it.").performScrollTo().assertIsDisplayed()
+        assertEquals(DnsMode.DOH, profileRepo.getProfile().dnsMode)
+    }
+
+    @Test
+    fun aHostnameIsRejected_andAnIpIsSavedAndSwitchesToPlain() {
+        setContent()
+        composeRule.onNodeWithText("Unencrypted DNS server").performScrollTo().performClick()
+        val field = composeRule.onNodeWithText("DNS server IP address")
+        field.performScrollTo().performTextInput("dns.example")
+        composeRule.onNodeWithText("Save and use").performScrollTo().performClick()
+        composeRule.onNodeWithText("Use an IP address, optionally with :port").performScrollTo().assertIsDisplayed()
+
+        field.performTextReplacement("9.9.9.9")
+        composeRule.onNodeWithText("Save and use").performScrollTo().performClick()
+        awaitProfile { profileRepo.getProfile().dnsMode == DnsMode.PLAIN }
+        assertEquals("9.9.9.9", profileRepo.getProfile().plainDnsServer)
+    }
+
+    @Test
+    fun theDnsNoiseToggleIsStored() {
+        setContent()
+        composeRule.onNodeWithText("Also use it for DNS noise").performScrollTo().performClick()
+        awaitProfile { profileRepo.getProfile().routeDnsNoise }
+    }
+
+    @Test
+    fun tappingDohAfterAnUnsavedPlainAttempt_returnsToTheDohSection() {
+        setContent()
+        composeRule.onNodeWithText("Unencrypted DNS server").performScrollTo().performClick()
+        composeRule.onNodeWithText("DNS server IP address").performScrollTo().assertIsDisplayed()
+
+        composeRule.onNodeWithText("Encrypted (DNS-over-HTTPS)").performScrollTo().performClick()
+        composeRule.onNodeWithText("Quad9").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("DNS server IP address").assertDoesNotExist()
     }
 }

@@ -13,8 +13,12 @@ sealed interface DnsHealth {
     /** The custom resolver is answering. */
     data object Healthy : DnsHealth
 
-    /** Custom DNS stopped working at [sinceMs] (wall clock); lookups use the system resolver. */
-    data class Degraded(val sinceMs: Long, val reason: String) : DnsHealth
+    /**
+     * Custom DNS is not doing its job since [sinceMs] (wall clock). [intercepted] says why in the one
+     * case the dashboard must word differently: answers ARE arriving, from another app that
+     * captures port 53, not from the user's server and not from the device's own DNS either.
+     */
+    data class Degraded(val sinceMs: Long, val reason: String, val intercepted: Boolean = false) : DnsHealth
 }
 
 /**

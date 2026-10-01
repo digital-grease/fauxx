@@ -3,6 +3,7 @@ package com.fauxx.ui.viewmodels
 import com.fauxx.data.model.DnsMode
 import com.fauxx.engine.webview.WebViewCapabilities
 import com.fauxx.network.dns.DohPresets
+import com.fauxx.network.dns.PlainDnsServer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -52,6 +53,9 @@ data class SettingsUiState(
     val dnsMode: DnsMode = DnsMode.SYSTEM,
     val dohProvider: String = DohPresets.DEFAULT_ID,
     val dohCustomUrl: String = "",
+    val plainDnsServer: String = "",
+    val routeDnsNoise: Boolean = false,
+    val preferredCustomDnsMode: DnsMode = DnsMode.DOH,
     /** Search engines the user opted out of poisoning (issue #281). */
     val excludedSearchEngines: Set<String> = emptySet(),
 ) {
@@ -142,7 +146,50 @@ class SettingsViewModel @Inject constructor(
     fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
     fun setResumeOnBoot(v: Boolean) { update { it.copy(resumeOnBoot = v) } }
     fun setLoadImages(v: Boolean) { update { it.copy(loadImages = v) } }
-    fun setCustomDnsEnabled(v: Boolean) { update { it.copy(dnsMode = if (v) DnsMode.DOH else DnsMode.SYSTEM) } }
+    /**
+     * Turning custom DNS on restores the mode the user last chose (plain only if its server is still
+     * valid), instead of always landing on DoH and silently dropping a plain setup.
+     */
+    fun setCustomDnsEnabled(v: Boolean) {
+        update {
+            val restored = if (it.preferredCustomDnsMode == DnsMode.PLAIN && PlainDnsServer.parse(it.plainDnsServer) != null) {
+                DnsMode.PLAIN
+            } else {
+                DnsMode.DOH
+            }
+            it.copy(dnsMode = if (v) restored else DnsMode.SYSTEM)
+        }
+    }
+
+    /** Pick encrypted or plain DNS. Plain is only selectable once a server address is saved. */
+    fun setDnsMode(mode: DnsMode): Boolean {
+        if (mode == DnsMode.PLAIN && PlainDnsServer.parse(_uiState.value.plainDnsServer) == null) return false
+        update { it.copy(dnsMode = mode, preferredCustomDnsMode = if (mode == DnsMode.SYSTEM) it.preferredCustomDnsMode else mode) }
+        return true
+    }
+
+    fun setRouteDnsNoise(v: Boolean) { update { it.copy(routeDnsNoise = v) } }
+
+    /**
+     * Save a plain DNS server (an IP, optionally with a port) and switch to it. Saved on an explicit
+     * tap, like the DoH URL, since every saved change restarts the proxy. A blank save removes the
+     * stored server, falling back to encrypted DNS if plain was in use.
+     */
+    fun savePlainDnsServer(text: String): Boolean {
+        if (text.isBlank()) {
+            update {
+                it.copy(
+                    plainDnsServer = "",
+                    dnsMode = if (it.dnsMode == DnsMode.PLAIN) DnsMode.DOH else it.dnsMode,
+                    preferredCustomDnsMode = DnsMode.DOH,
+                )
+            }
+            return true
+        }
+        if (PlainDnsServer.parse(text) == null) return false
+        update { it.copy(plainDnsServer = text.trim(), dnsMode = DnsMode.PLAIN, preferredCustomDnsMode = DnsMode.PLAIN) }
+        return true
+    }
     fun setDohProvider(id: String) { update { it.copy(dohProvider = id) } }
 
     /**
@@ -249,6 +296,9 @@ class SettingsViewModel @Inject constructor(
                     dnsMode = new.dnsMode,
                     dohProvider = new.dohProvider,
                     dohCustomUrl = new.dohCustomUrl,
+                    plainDnsServer = new.plainDnsServer,
+                    routeDnsNoise = new.routeDnsNoise,
+                    preferredCustomDnsMode = new.preferredCustomDnsMode,
                     excludedSearchEngines = new.excludedSearchEngines,
                     // Empty string in UI-state collapses to null in profile so the
                     // engine treats "blank field" as "no override" cleanly.
@@ -273,6 +323,9 @@ class SettingsViewModel @Inject constructor(
             dnsMode = p.dnsMode,
             dohProvider = p.dohProvider,
             dohCustomUrl = p.dohCustomUrl,
+            plainDnsServer = p.plainDnsServer,
+            routeDnsNoise = p.routeDnsNoise,
+            preferredCustomDnsMode = p.preferredCustomDnsMode,
             excludedSearchEngines = p.excludedSearchEngines,
         )
     }

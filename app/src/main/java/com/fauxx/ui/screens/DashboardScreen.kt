@@ -64,6 +64,7 @@ import com.fauxx.engine.EngineState
 import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.format.personaAgeRangeRes
 import com.fauxx.ui.format.personaProfessionRes
+import com.fauxx.ui.viewmodels.CustomDnsNotice
 import com.fauxx.ui.viewmodels.DashboardViewModel
 
 /**
@@ -78,7 +79,7 @@ fun DashboardScreen(
     val showConsent by viewModel.showConsentDialog.collectAsState()
     val showFullVersionNotice by viewModel.showFullVersionNotice.collectAsState()
     val webViewNamesApp by viewModel.webViewNamesApp.collectAsState()
-    val customDnsDegraded by viewModel.customDnsDegraded.collectAsState()
+    val customDnsNotice by viewModel.customDnsNotice.collectAsState()
     val context = LocalContext.current
 
     // POST_NOTIFICATIONS permission (Android 13+)
@@ -201,9 +202,14 @@ fun DashboardScreen(
 
         // Custom DNS fell back to the device's DNS (#227). One quiet line, not a warning card:
         // nothing is broken, browsing continues, the user just gets to know.
-        if (customDnsDegraded) {
+        customDnsNotice?.let { notice ->
             Text(
-                text = stringResource(R.string.dashboard_custom_dns_degraded),
+                text = stringResource(
+                    when (notice) {
+                        CustomDnsNotice.FALLBACK -> R.string.dashboard_custom_dns_degraded
+                        CustomDnsNotice.INTERCEPTED -> R.string.dashboard_custom_dns_intercepted
+                    }
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

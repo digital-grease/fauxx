@@ -48,6 +48,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** The quiet custom-DNS dashboard line (#227). */
+enum class CustomDnsNotice { FALLBACK, INTERCEPTED }
+
 data class DashboardUiState(
     val engineEnabled: Boolean = false,
     val engineState: EngineState = EngineState.STOPPED,
@@ -96,13 +99,19 @@ class DashboardViewModel @Inject constructor(
 ) : ViewModel() {
 
     /**
-     * True while the user's custom DNS resolver is not answering and Fauxx has fallen back to the
-     * device's DNS (#227). Shown as one quiet line, per the owner's fail-open decision: browsing
+     * Which quiet custom-DNS line to show, or null for none (#227). [CustomDnsNotice.INTERCEPTED] is
+     * worded apart because then Fauxx is NOT on the device's DNS: another app is answering. Shown as one quiet line, per the owner's fail-open decision: browsing
      * continues, the user just gets to know.
      */
-    val customDnsDegraded: StateFlow<Boolean> = customDns.health
-        .map { it is DnsHealth.Degraded }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val customDnsNotice: StateFlow<CustomDnsNotice?> = customDns.health
+        .map { h ->
+            when {
+                h !is DnsHealth.Degraded -> null
+                h.intercepted -> CustomDnsNotice.INTERCEPTED
+                else -> CustomDnsNotice.FALLBACK
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     /**
      * True when the installed WebView cannot stop `X-Requested-With` from naming Fauxx, so every

@@ -15,6 +15,7 @@ hiltNavCompose = "1.4.0"
 work = "2.11.2"
 hiltWork = "1.4.0"
 okhttp = "5.5.0"
+minidns = "1.1.1"
 coroutines = "1.11.0"
 sqlcipher = "4.19.0"
 securityCrypto = "1.1.0"
@@ -66,6 +67,7 @@ hilt-work-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 okhttp-dnsoverhttps = { group = "com.squareup.okhttp3", name = "okhttp-dnsoverhttps", version.ref = "okhttp" }
+minidns-client = { group = "org.minidns", name = "minidns-client", version.ref = "minidns" }
 mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
 kotest-property = { group = "io.kotest", name = "kotest-property-jvm", version.ref = "kotest" }
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }

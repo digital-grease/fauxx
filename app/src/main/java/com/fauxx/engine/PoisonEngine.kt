@@ -1209,6 +1209,9 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.DNS_MODE] = p.dnsMode.name
         prefs[com.fauxx.di.PreferenceKeys.DOH_PROVIDER] = p.dohProvider
         prefs[com.fauxx.di.PreferenceKeys.DOH_CUSTOM_URL] = p.dohCustomUrl
+        prefs[com.fauxx.di.PreferenceKeys.PLAIN_DNS_SERVER] = p.plainDnsServer
+        prefs[com.fauxx.di.PreferenceKeys.ROUTE_DNS_NOISE] = p.routeDnsNoise
+        prefs[com.fauxx.di.PreferenceKeys.PREFERRED_CUSTOM_DNS_MODE] = p.preferredCustomDnsMode.name
         // #201: the custom UA is retired; clear any value a previous version stored so it
         // does not linger in DataStore.
         prefs.remove(com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT)
@@ -1285,6 +1288,13 @@ class PoisonProfileRepository @Inject constructor(
             }.getOrDefault(com.fauxx.data.model.DnsMode.SYSTEM),
             dohProvider = prefs[com.fauxx.di.PreferenceKeys.DOH_PROVIDER] ?: "quad9",
             dohCustomUrl = prefs[com.fauxx.di.PreferenceKeys.DOH_CUSTOM_URL] ?: "",
+            plainDnsServer = prefs[com.fauxx.di.PreferenceKeys.PLAIN_DNS_SERVER] ?: "",
+            routeDnsNoise = prefs[com.fauxx.di.PreferenceKeys.ROUTE_DNS_NOISE] ?: false,
+            preferredCustomDnsMode = runCatching {
+                com.fauxx.data.model.DnsMode.valueOf(
+                    prefs[com.fauxx.di.PreferenceKeys.PREFERRED_CUSTOM_DNS_MODE] ?: com.fauxx.data.model.DnsMode.DOH.name
+                )
+            }.getOrDefault(com.fauxx.data.model.DnsMode.DOH),
         )
     }
 
