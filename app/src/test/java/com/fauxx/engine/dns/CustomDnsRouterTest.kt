@@ -9,7 +9,9 @@ import com.fauxx.network.dns.DohPresets
 import com.fauxx.support.FakeClock
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -24,14 +26,24 @@ import java.net.Socket
 
 class CustomDnsRouterTest {
 
-    private class FakeOverride(var supported: Boolean = true, var accept: Boolean = true) : WebViewProxyOverride {
+    private class FakeOverride(
+        var supported: Boolean = true,
+        var accept: Boolean = true,
+        var clears: Boolean = true,
+        var clearDelayMs: Long = 0L,
+    ) : WebViewProxyOverride {
         val calls = mutableListOf<String>()
         @Volatile var port: Int? = null
         override fun isSupported() = supported
         override suspend fun set(port: Int): Boolean {
             calls += "set"; if (accept) this.port = port; return accept
         }
-        override suspend fun clear(): Boolean { calls += "clear"; port = null; return true }
+        override suspend fun clear(): Boolean {
+            calls += "clear"
+            if (clearDelayMs > 0) delay(clearDelayMs)
+            if (clears) port = null
+            return clears
+        }
     }
 
     private val profile = MutableStateFlow(PoisonProfile())
@@ -127,7 +139,9 @@ class CustomDnsRouterTest {
         withTimeout(5_000) { while (override.port == null || override.port == firstPort) delay(20) }
 
         assertNotEquals(firstRealm, realmOf(override.port!!))
-        assertNull(router.credentialsFor("127.0.0.1", firstRealm))
+        // The old proxy is gone; its credentials stay answerable only so challenges already in
+        // flight during the swap do not fail a page load, and they open nothing.
+        assertTrue("the old proxy must be stopped", runCatching { Socket("127.0.0.1", firstPort).close() }.isFailure)
     }
 
     @Test
@@ -137,5 +151,50 @@ class CustomDnsRouterTest {
         profile.value = PoisonProfile()
         withTimeout(5_000) { while (override.port != null) delay(20) }
         assertEquals(DnsHealth.Off, router.health.value)
+    }
+
+    @Test
+    fun `a clear that fails keeps the proxy running instead of black-holing the WebView`() = runBlocking {
+        profile.value = doh()
+        router.start()
+        val port = override.port!!
+        val realm = realmOf(port)
+
+        override.clears = false
+        profile.value = PoisonProfile()
+        withTimeout(5_000) { while (router.health.value !is DnsHealth.Degraded) delay(20) }
+
+        // The WebView may still point at the old port, so it must still answer and authenticate.
+        assertEquals("the stranded proxy must still be serving", realm, realmOf(port))
+        assertNotNull(router.credentialsFor("127.0.0.1", realm))
+
+        // A later successful clear finally retires it.
+        override.clears = true
+        profile.value = doh(provider = DohPresets.CLOUDFLARE.id)
+        withTimeout(5_000) { while (override.port == null || override.port == port) delay(20) }
+        val refused = runCatching { Socket("127.0.0.1", port).close() }.isFailure
+        assertTrue("the stranded proxy must be stopped once a clear succeeds", refused)
+    }
+
+    @Test
+    fun `an unknown preset id falls back to the default instead of degrading`() = runBlocking {
+        profile.value = doh(provider = "a-preset-from-a-future-version")
+        router.start()
+        assertNotNull(override.port)
+        assertEquals(DnsHealth.Healthy, router.health.value)
+    }
+
+    @Test
+    fun `stop completes its teardown even when the caller is cancelled`() = runBlocking {
+        profile.value = doh()
+        router.start()
+        val port = override.port!!
+        override.clearDelayMs = 300L
+        // Start inside stop() and get stuck in the slow clear, THEN cancel the caller.
+        val job = launch(start = CoroutineStart.UNDISPATCHED) { router.stop() }
+        job.cancel()
+        job.join()
+        withTimeout(5_000) { while (runCatching { Socket("127.0.0.1", port).close() }.isSuccess) delay(20) }
+        assertNull(override.port)
     }
 }

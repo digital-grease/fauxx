@@ -2,6 +2,7 @@ package com.fauxx.network.dns
 
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -58,7 +59,7 @@ class LoopbackProxyTest {
     private fun request(vararg lines: String): Pair<Socket, String> {
         val s = Socket("127.0.0.1", proxy.port).apply { soTimeout = 5_000 }
         s.getOutputStream().write((lines.joinToString("\r\n") + "\r\n\r\n").toByteArray())
-        val head = LoopbackProxy.readHead(s.getInputStream()) ?: ""
+        val head = LoopbackProxy.readHead(s, 5_000) ?: ""
         return s to head
     }
 
@@ -133,6 +134,9 @@ class LoopbackProxyTest {
 
     @Test
     fun `authority parsing`() {
+        assertNull("an unbracketed colon is ambiguous and refused", LoopbackProxy.parseAuthority("a:b:443"))
+        assertNull(LoopbackProxy.parseAuthority("[not-v6]:443"))
+        assertNull(LoopbackProxy.parseAuthority("example.com:+443"))
         assertEquals("example.com" to 443, LoopbackProxy.parseAuthority("example.com:443"))
         assertEquals("2001:db8::1" to 8443, LoopbackProxy.parseAuthority("[2001:db8::1]:8443"))
         assertNull(LoopbackProxy.parseAuthority("example.com"))
@@ -148,5 +152,110 @@ class LoopbackProxyTest {
         val b = ProxyCredentials.random()
         assertTrue(a.secret != b.secret && a.realm != b.realm)
         assertTrue(a.realm.startsWith("fauxx-"))
+    }
+
+    @Test
+    fun `a client that trickles its request head is cut off at the total deadline`() {
+        val slow = LoopbackProxy(resolver = { resolution }, credentials = credentials, headDeadlineMs = 300)
+        slow.start()
+        try {
+            Socket("127.0.0.1", slow.port).use { s ->
+                s.soTimeout = 5_000
+                val started = System.nanoTime()
+                // One byte, well inside any per-read timeout, then nothing more.
+                s.getOutputStream().apply { write('C'.code); flush() }
+                assertEquals("the proxy must close the connection", -1, runCatching { s.getInputStream().read() }.getOrDefault(-1))
+                val ms = (System.nanoTime() - started) / 1_000_000
+                assertTrue("cut off after ${ms}ms", ms < 3_000)
+            }
+        } finally {
+            slow.stop()
+        }
+    }
+
+    @Test
+    fun `idle unauthenticated connections cannot exhaust the tunnel slots`() {
+        val small = LoopbackProxy(
+            resolver = { resolution }, credentials = credentials, connector = toEcho,
+            maxPending = 2, maxTunnels = 4, headDeadlineMs = 5_000,
+        )
+        small.start()
+        val idle = List(2) { Socket("127.0.0.1", small.port) }
+        try {
+            Thread.sleep(200)
+            // Pending slots are full; a third unauthenticated connection is turned away...
+            Socket("127.0.0.1", small.port).use { s ->
+                s.soTimeout = 5_000
+                val head = LoopbackProxy.readHead(s, 5_000) ?: ""
+                assertTrue(head, head.startsWith("HTTP/1.1 503"))
+            }
+            // ...but once the idle ones time out or close, real tunnels get through.
+            idle.forEach { it.close() }
+            Thread.sleep(200)
+            Socket("127.0.0.1", small.port).use { s ->
+                s.soTimeout = 5_000
+                s.getOutputStream().write(("CONNECT example.com:443 HTTP/1.1\r\n" + auth() + "\r\n\r\n").toByteArray())
+                val head = LoopbackProxy.readHead(s, 5_000) ?: ""
+                assertTrue(head, head.startsWith("HTTP/1.1 200"))
+            }
+        } finally {
+            idle.forEach { runCatching { it.close() } }
+            small.stop()
+        }
+    }
+
+    @Test
+    fun `LAN, CGNAT and sinkhole targets are refused whether literal or resolved`() {
+        for (literal in listOf("192.168.1.1", "10.0.0.1", "169.254.169.254", "100.64.0.1", "0.0.0.0", "[fd00::1]", "[fe80::1]")) {
+            val (s, head) = request("CONNECT $literal:443 HTTP/1.1", auth())
+            s.close()
+            assertTrue("$literal -> $head", head.startsWith("HTTP/1.1 502"))
+        }
+        resolution = Resolution.Addresses(listOf(InetAddress.getByName("192.168.1.1")))
+        val (s, head) = request("CONNECT rebind.example:443 HTTP/1.1", auth())
+        s.close()
+        assertTrue("a name rebound to the LAN -> $head", head.startsWith("HTTP/1.1 502"))
+    }
+
+    @Test
+    fun `IP literal detection is strict`() {
+        assertEquals(InetAddress.getByName("203.0.113.7"), LoopbackProxy.parseIpLiteral("203.0.113.7"))
+        assertEquals(InetAddress.getByName("2001:db8::1"), LoopbackProxy.parseIpLiteral("2001:db8::1"))
+        for (name in listOf("999.1.1.1", "01.2.3.4", "1.2.3", "example.com", "a:b", "dead:beef")) {
+            assertNull("$name must be treated as a name", LoopbackProxy.parseIpLiteral(name))
+        }
+    }
+
+    @Test
+    fun `credential matching rejects near misses`() {
+        assertTrue(credentials.matches("Basic " + Base64.getEncoder().encodeToString("fauxx:s3cret".toByteArray())))
+        assertFalse(credentials.matches("Basic " + Base64.getEncoder().encodeToString("fauxx:s3creT".toByteArray())))
+        assertFalse(credentials.matches(null))
+        assertFalse(credentials.matches(""))
+    }
+
+    @Test
+    fun `stopping the proxy while a connection is racing addresses crashes nothing`() {
+        val escaped = java.util.Collections.synchronizedList(mutableListOf<Throwable>())
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, e -> escaped += e }
+        val v6 = InetAddress.getByName("2001:db8::7")
+        val hanging = LoopbackProxy(
+            resolver = { Resolution.Addresses(listOf(v6, remote)) },
+            credentials = credentials,
+            connector = { _, _, _ -> Thread.sleep(10_000); throw IOException("never") },
+        )
+        hanging.start()
+        try {
+            val s = Socket("127.0.0.1", hanging.port)
+            s.getOutputStream().write(("CONNECT example.com:443 HTTP/1.1\r\n" + auth() + "\r\n\r\n").toByteArray())
+            Thread.sleep(300) // the worker is now inside the address race
+            hanging.stop()
+            Thread.sleep(300)
+            s.close()
+            assertTrue("nothing may escape a proxy worker: $escaped", escaped.isEmpty())
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previous)
+        }
     }
 }

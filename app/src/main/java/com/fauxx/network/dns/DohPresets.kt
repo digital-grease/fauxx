@@ -41,10 +41,12 @@ object DohPresets {
 
     /**
      * Whether [url] is usable as a custom DoH endpoint: https only (a resolver reached in the clear
-     * would hand the whole browsing list to the network it is meant to route around), with a host.
+     * would hand the whole browsing list to the network it is meant to route around), with a host,
+     * and no `user:password@` part (credentials have no place in a DoH URL, and would end up
+     * stored in plain preferences).
      */
     fun isValidCustomUrl(url: String): Boolean {
         val parsed = url.trim().toHttpUrlOrNull() ?: return false
-        return parsed.isHttps && parsed.host.isNotBlank()
+        return parsed.isHttps && parsed.host.isNotBlank() && parsed.username.isEmpty() && parsed.password.isEmpty()
     }
 }

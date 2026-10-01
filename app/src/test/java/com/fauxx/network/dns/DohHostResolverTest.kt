@@ -87,6 +87,44 @@ class DohHostResolverTest {
         assertTrue("expected Failure, got $result", result is Resolution.Failure)
     }
 
+    @Test
+    fun `SERVFAIL is a failure, so the breaker trips instead of every page failing`() {
+        server.dispatcher = dnsDispatcher { header(FLAGS_SERVFAIL, answers = 0) }
+        server.start()
+
+        val result = resolverFor(server).resolve("example.com")
+
+        assertTrue("expected Failure, got $result", result is Resolution.Failure)
+    }
+
+    @Test
+    fun `a DoH endpoint whose own name cannot be resolved is a failure, not no-such-host`() {
+        // The Pi-hole case: DoH-bypass blocklists answer NXDOMAIN for dns.nextdns.io and friends.
+        server.start()
+        val url = "http://doh.test:${server.port}/dns-query"
+
+        val result = DohHostResolver(url, bootstrap = emptyList(), endpointResolver = { Resolution.NoSuchHost })
+            .resolve("example.com")
+
+        assertTrue("expected Failure, got $result", result is Resolution.Failure)
+    }
+
+    @Test
+    fun `stale bootstrap addresses fall back to resolving the endpoint's name`() {
+        server.dispatcher = dnsDispatcher { qtype -> if (qtype == TYPE_A) answerA(byteArrayOf(93, -72, -40, 34)) else noError() }
+        server.start()
+        val url = "http://doh.test:${server.port}/dns-query"
+        // 127.0.0.2 refuses the connection at once, like a bootstrap IP the provider retired.
+        val stale = listOf(InetAddress.getByName("127.0.0.2"))
+        val endpoint = HostResolver { host ->
+            if (host == "doh.test") Resolution.Addresses(listOf(InetAddress.getByName("127.0.0.1"))) else Resolution.NoSuchHost
+        }
+
+        val result = DohHostResolver(url, bootstrap = stale, endpointResolver = endpoint).resolve("example.com")
+
+        assertEquals(Resolution.Addresses(listOf(InetAddress.getByName("93.184.216.34"))), result)
+    }
+
     // --- Minimal DNS wire format ------------------------------------------------------------
 
     private fun dnsDispatcher(answer: (qtype: Int) -> Buffer) = object : Dispatcher() {
@@ -121,5 +159,6 @@ class DohHostResolverTest {
         const val TYPE_A = 1
         const val FLAGS_NOERROR = 0x8180
         const val FLAGS_NXDOMAIN = 0x8183
+        const val FLAGS_SERVFAIL = 0x8182
     }
 }

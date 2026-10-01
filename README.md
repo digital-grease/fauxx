@@ -352,8 +352,10 @@ How it works: Android's WebView has no DNS setting of its own, so Fauxx runs a s
 
 Things to know:
 
-- If a VPN or firewall app (Rethink, for example) filters DNS, allow Fauxx's encrypted DNS through it. It is ordinary HTTPS on port 443.
+- If a VPN or firewall app filters DNS, exempt Fauxx from it. In Rethink, set Fauxx to bypass DNS and firewall: its "block when DNS is bypassed" rule would otherwise block the connections Fauxx makes with its own DNS answers.
+- If you use your own resolver URL (a NextDNS profile, for example), Fauxx looks up that resolver's own address through its default resolver first, since DoH-bypass blocklists often block those hostnames.
 - It gets around DNS-level blocking only. Blocking by IP address or by TLS server name still applies.
+- While it is on, sites that support HTTP/3 are reached over HTTP/2: browsers do not use HTTP/3 through a proxy.
 - If your WebView is too old to route through a proxy, the setting is unavailable until you update Android System WebView.
 
 ### How does Layer 2 (Ad-Profile Import) work, and what do I import?

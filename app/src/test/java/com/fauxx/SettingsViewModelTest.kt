@@ -90,6 +90,15 @@ class SettingsViewModelTest {
         assertEquals("https://dns.nextdns.io/abc123", vm.uiState.value.dohCustomUrl)
     }
 
+    @Test
+    fun `saving a blank URL removes the stored one and leaves the custom provider`() = runTest {
+        val vm = viewModel()
+        vm.saveDohCustomUrl("https://dns.nextdns.io/abc123")
+        assertTrue(vm.saveDohCustomUrl("   "))
+        assertEquals("", vm.uiState.value.dohCustomUrl)
+        assertEquals(com.fauxx.network.dns.DohPresets.DEFAULT_ID, vm.uiState.value.dohProvider)
+    }
+
     // --- #281 search-engine opt-out ---
 
     @Test

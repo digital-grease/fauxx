@@ -5,17 +5,21 @@ import com.fauxx.data.model.PoisonProfile
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.webview.PhantomProxyAuth
 import com.fauxx.engine.webview.WebViewProxyOverride
+import com.fauxx.network.dns.CachingResolver
 import com.fauxx.network.dns.DnsHealth
 import com.fauxx.network.dns.DohHostResolver
 import com.fauxx.network.dns.DohPresets
 import com.fauxx.network.dns.FailOpenResolver
+import com.fauxx.network.dns.HostResolver
 import com.fauxx.network.dns.LoopbackProxy
 import com.fauxx.network.dns.ProxyCredentials
+import com.fauxx.network.dns.Resolution
 import com.fauxx.network.dns.SystemHostResolver
 import com.fauxx.util.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +29,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -53,11 +58,16 @@ interface CustomDns {
  * Runs the loopback proxy that gives Fauxx's WebView traffic the user's chosen resolver (#227),
  * and points the WebView at it.
  *
- * Fail-OPEN throughout (owner decision): any way this can break ends with the WebView override
- * cleared and browsing continuing on the system resolver, with [health] saying so. That covers a
- * dead resolver (the [FailOpenResolver] breaker), a WebView without `PROXY_OVERRIDE`, an override
- * that never confirms, an invalid custom URL, and the proxy's accept loop dying underneath a live
- * override, which would otherwise black-hole every page: an accidental fail-CLOSED.
+ * Fail-OPEN throughout (owner decision): every way this can break ends with browsing continuing
+ * on the system resolver and [health] saying so, never with the WebView pointed at a dead port.
+ * That covers a dead or slow resolver (the [FailOpenResolver] breaker), a WebView without
+ * `PROXY_OVERRIDE`, an override that never confirms, the proxy's accept loop dying under a live
+ * override, and an override that cannot be CLEARED: then the old proxy is kept running (it still
+ * forwards, falling back to the system resolver) until a later clear succeeds, because stopping it
+ * would black-hole every page.
+ *
+ * Teardown runs under [NonCancellable]: cancelled half-way, it would leave either a live proxy
+ * nobody owns or a WebView override pointing at a stopped one.
  *
  * Settings changes while running are picked up live; each change gets a fresh proxy with fresh
  * credentials.
@@ -76,6 +86,13 @@ class CustomDnsRouter @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutex = Mutex()
     @Volatile private var running: Running? = null
+
+    /** A previous proxy whose override could not be cleared; kept alive until a clear succeeds. */
+    @Volatile private var stranded: Running? = null
+
+    /** Credentials of the proxy just replaced, still answered while its last challenges drain. */
+    @Volatile private var retired: ProxyCredentials? = null
+
     private var active = false
     private var settingsJob: Job? = null
     private var healthJob: Job? = null
@@ -87,36 +104,42 @@ class CustomDnsRouter @Inject constructor(
         mutex.withLock {
             active = true
             applyLocked(settingsOf(profileRepo.getProfile()))
-        }
-        settingsJob?.cancel()
-        // No drop(1): a change landing between the apply above and this subscription would arrive
-        // as the flow's first value, and dropping it would lose the change. applyLocked is
-        // idempotent for unchanged settings, so seeing the current value again costs nothing.
-        settingsJob = scope.launch {
-            profileRepo.profiles.map(::settingsOf).distinctUntilChanged().collect { settings ->
-                mutex.withLock { if (active) applyLocked(settings) }
+            settingsJob?.cancel()
+            // No drop(1): a change landing between the apply above and this subscription would
+            // arrive as the flow's first value, and dropping it would lose the change. applyLocked
+            // is idempotent for unchanged settings, so seeing the current value again costs nothing.
+            settingsJob = scope.launch {
+                profileRepo.profiles.map(::settingsOf).distinctUntilChanged().collect { settings ->
+                    mutex.withLock { if (active) applyLocked(settings) }
+                }
             }
         }
     }
 
     override suspend fun stop() {
-        settingsJob?.cancel()
-        settingsJob = null
-        mutex.withLock {
-            active = false
-            teardownLocked()
-            _health.value = DnsHealth.Off
+        withContext(NonCancellable) {
+            mutex.withLock {
+                active = false
+                settingsJob?.cancel()
+                settingsJob = null
+                teardownLocked()
+                // Nothing is left to answer for (a stranded proxy keeps its own credentials).
+                retired = null
+                _health.value = DnsHealth.Off
+            }
         }
     }
 
     override fun credentialsFor(host: String, realm: String): Pair<String, String>? {
-        val creds = running?.credentials ?: return null
-        return if (host == LoopbackProxy.LOOPBACK && realm == creds.realm) creds.user to creds.secret else null
+        if (host != LoopbackProxy.LOOPBACK) return null
+        val creds = listOfNotNull(running?.credentials, stranded?.credentials, retired).firstOrNull { it.realm == realm }
+        return creds?.let { it.user to it.secret }
     }
 
     private suspend fun applyLocked(settings: Settings) {
-        if (running?.settings == settings) return
+        if (running?.settings == settings && stranded == null) return
         teardownLocked()
+        if (stranded != null) return // could not restore direct connections; teardownLocked degraded
         if (settings.mode == DnsMode.SYSTEM) {
             _health.value = DnsHealth.Off
             return
@@ -129,9 +152,11 @@ class CustomDnsRouter @Inject constructor(
             degrade("The custom DNS-over-HTTPS URL is not a valid https address")
             return
         }
-        val resolver = FailOpenResolver(doh, SystemHostResolver, clock)
+        val failOpen = FailOpenResolver(doh, SystemHostResolver, clock)
+        val resolver = CachingResolver(failOpen, clock)
         val credentials = ProxyCredentials.random()
-        val proxy = LoopbackProxy(resolver, credentials, onDied = { onProxyDied() })
+        lateinit var proxy: LoopbackProxy
+        proxy = LoopbackProxy(resolver, credentials, onDied = { onProxyDied(proxy) })
         val port = try {
             proxy.start()
         } catch (e: Exception) {
@@ -147,25 +172,43 @@ class CustomDnsRouter @Inject constructor(
             degrade("The WebView did not accept the proxy")
             return
         }
-        _health.value = resolver.health.value
-        healthJob = scope.launch { resolver.health.collect { _health.value = it } }
+        _health.value = failOpen.health.value
+        healthJob = scope.launch { failOpen.health.collect { _health.value = it } }
         Timber.i("Custom DNS active (%s) on 127.0.0.1:%d", settings.provider, port)
     }
 
-    /** Clear the override FIRST, so the WebView is never left pointing at a dead port. */
-    private suspend fun teardownLocked() {
+    /**
+     * Clear the override FIRST, then stop the proxy. If the clear does not confirm, the proxy is
+     * NOT stopped (the WebView may still be pointing at it) and is kept as [stranded] until a later
+     * clear succeeds. Never cancelled half-way (see the class KDoc).
+     */
+    private suspend fun teardownLocked() = withContext(NonCancellable) {
         healthJob?.cancel()
         healthJob = null
-        val current = running ?: return
+        val current = running ?: stranded ?: return@withContext
         running = null
-        override.clear()
-        current.proxy.stop()
+        retired = current.credentials
+        val cleared = try {
+            override.clear()
+        } catch (e: Exception) {
+            Timber.w(e, "Clearing the WebView proxy override failed")
+            false
+        }
+        if (cleared) {
+            stranded?.proxy?.stop()
+            stranded = null
+            current.proxy.stop()
+        } else {
+            stranded = current
+            degrade("Could not restore direct connections; keeping the proxy running")
+        }
     }
 
-    private fun onProxyDied() {
+    private fun onProxyDied(proxy: LoopbackProxy) {
         scope.launch {
             mutex.withLock {
-                if (running == null) return@withLock
+                // Only the proxy that died: a late callback must not tear down its replacement.
+                if (running?.proxy !== proxy) return@withLock
                 teardownLocked()
                 degrade("The custom DNS proxy stopped")
             }
@@ -178,12 +221,24 @@ class CustomDnsRouter @Inject constructor(
     }
 
     private fun dohFor(settings: Settings): DohHostResolver? {
-        val preset = DohPresets.byId(settings.provider)
-        return when {
-            preset != null -> DohHostResolver(preset.url, preset.bootstrapAddresses())
-            settings.provider == DohPresets.CUSTOM_ID && DohPresets.isValidCustomUrl(settings.customUrl) ->
-                DohHostResolver(settings.customUrl.trim(), bootstrap = emptyList())
-            else -> null
+        if (settings.provider == DohPresets.CUSTOM_ID) {
+            if (!DohPresets.isValidCustomUrl(settings.customUrl)) return null
+            // A custom endpoint has no built-in addresses. Resolve its hostname over the default
+            // preset's DoH first: DoH-bypass blocklists on the very Pi-hole or VPN being routed
+            // around often block hosts like dns.nextdns.io. The system resolver is the fallback.
+            return DohHostResolver(settings.customUrl.trim(), bootstrap = emptyList(), endpointResolver = defaultThenSystem)
+        }
+        // An id this build does not know (a preset removed in a later version) means the default,
+        // not a broken setting.
+        val preset = DohPresets.byId(settings.provider) ?: DohPresets.byId(DohPresets.DEFAULT_ID)!!
+        return DohHostResolver(preset.url, preset.bootstrapAddresses())
+    }
+
+    private val defaultThenSystem: HostResolver by lazy {
+        val preset = DohPresets.byId(DohPresets.DEFAULT_ID)!!
+        val viaDefault = DohHostResolver(preset.url, preset.bootstrapAddresses())
+        HostResolver { host ->
+            viaDefault.resolve(host).takeIf { it is Resolution.Addresses } ?: SystemHostResolver.resolve(host)
         }
     }
 

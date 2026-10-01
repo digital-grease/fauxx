@@ -319,8 +319,9 @@
     <string name="settings_dns_provider_custom">Custom</string>
     <string name="settings_dns_custom_label">Custom DNS-over-HTTPS URL</string>
     <string name="settings_dns_custom_invalid">Use a full https:// address</string>
+    <string name="settings_dns_custom_needed">Save a custom URL below to use it.</string>
     <string name="settings_dns_custom_save">Save and use</string>
-    <string name="settings_dns_help">If a VPN or firewall app filters DNS, let Fauxx\'s encrypted DNS through it (HTTPS, port 443). This gets around DNS-level blocking only, not blocking by IP address. If the resolver stops answering, Fauxx falls back to your device\'s DNS and says so on the dashboard.</string>
+    <string name="settings_dns_help">If a VPN or firewall app filters DNS, exempt Fauxx from it (in Rethink, set Fauxx to bypass DNS and firewall); otherwise it may block Fauxx\'s encrypted DNS, or the connections made with its answers. This gets around DNS-level blocking only, not blocking by IP address. While it is on, sites that support HTTP/3 are reached over HTTP/2. If custom DNS stops working, Fauxx falls back to your device\'s DNS and says so on the dashboard.</string>
     <string name="settings_battery_threshold_battery_title">Pause below (Battery)</string>
     <string name="settings_battery_threshold_charging_title">Pause below (Charging)</string>
     <string name="settings_active_hours_title">Active Hours</string>
@@ -515,5 +516,5 @@
     <string name="dashboard_webview_leak_title">Sites can tell this traffic comes from Fauxx</string>
     <string name="dashboard_webview_leak_body">Your WebView is too old to hide the app\'s name, so every request Fauxx makes carries it in the X-Requested-With header. Protection keeps running, but sites can recognise and discard this traffic. Updating Android System WebView fixes it.</string>
     <string name="dashboard_webview_leak_action">Update WebView</string>
-    <string name="dashboard_custom_dns_degraded">Custom DNS isn\'t answering, so Fauxx is using your device\'s DNS for now.</string>
+    <string name="dashboard_custom_dns_degraded">Custom DNS isn\'t working right now, so Fauxx is using your device\'s DNS.</string>
 </resources>

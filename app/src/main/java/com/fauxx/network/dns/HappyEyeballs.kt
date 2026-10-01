@@ -1,6 +1,7 @@
 package com.fauxx.network.dns
 
 import java.io.IOException
+import java.io.InterruptedIOException
 import java.net.Inet6Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -76,37 +77,50 @@ object HappyEyeballs {
         }
 
         startNext()
-        while (finished < started || started < ordered.size) {
-            val remainingMs = TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime())
-            if (remainingMs <= 0) break
-            val wait = if (started < ordered.size) minOf(staggerMs, remainingMs) else remainingMs
-            val next = results.poll(wait, TimeUnit.MILLISECONDS)
-            when {
-                next == null -> if (started < ordered.size) startNext()
-                next.isSuccess -> {
-                    finished++
-                    winners += next.getOrThrow()
-                    break
-                }
-                else -> {
-                    finished++
-                    lastError = next.exceptionOrNull()
-                    if (started < ordered.size) startNext()
+        try {
+            raceLoop@ while (finished < started || started < ordered.size) {
+                val remainingMs = TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime())
+                if (remainingMs <= 0) break
+                val wait = if (started < ordered.size) minOf(staggerMs, remainingMs) else remainingMs
+                val next = results.poll(wait, TimeUnit.MILLISECONDS)
+                when {
+                    next == null -> if (started < ordered.size) startNext()
+                    next.isSuccess -> {
+                        finished++
+                        winners += next.getOrThrow()
+                        break@raceLoop
+                    }
+                    else -> {
+                        finished++
+                        lastError = next.exceptionOrNull()
+                        if (started < ordered.size) startNext()
+                    }
                 }
             }
+        } catch (e: InterruptedException) {
+            // The proxy is stopping (its executor interrupts workers). This must not escape as an
+            // InterruptedException: the caller's thread is a pool worker, and an uncaught throwable
+            // there reaches the app's default handler and kills the process. Close what connected,
+            // reap what is still in flight, and report it as an ordinary I/O failure.
+            winners.forEach { runCatching { it.close() } }
+            reap(results, started - finished, timeoutMs)
+            Thread.currentThread().interrupt()
+            throw InterruptedIOException("connect interrupted").apply { initCause(e) }
         }
 
         // Any attempt still in flight may connect later; close it when it does.
-        val stragglers = started - finished
-        if (stragglers > 0) {
-            thread(isDaemon = true, name = "fauxx-he-reaper") {
-                repeat(stragglers) {
-                    results.poll(timeoutMs.toLong(), TimeUnit.MILLISECONDS)?.getOrNull()?.let { runCatching { it.close() } }
-                }
-            }
-        }
+        reap(results, started - finished, timeoutMs)
 
         return winners.firstOrNull()
             ?: throw IOException("could not connect to any of ${ordered.size} addresses on port $port", lastError)
+    }
+
+    private fun reap(results: LinkedBlockingQueue<Result<Socket>>, stragglers: Int, timeoutMs: Int) {
+        if (stragglers <= 0) return
+        thread(isDaemon = true, name = "fauxx-he-reaper") {
+            repeat(stragglers) {
+                results.poll(timeoutMs.toLong(), TimeUnit.MILLISECONDS)?.getOrNull()?.let { runCatching { it.close() } }
+            }
+        }
     }
 }

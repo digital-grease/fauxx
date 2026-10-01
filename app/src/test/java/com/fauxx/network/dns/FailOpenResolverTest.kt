@@ -6,6 +6,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
 import java.net.InetAddress
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.concurrent.thread
 
 class FailOpenResolverTest {
 
@@ -94,5 +98,57 @@ class FailOpenResolverTest {
         customResult = failure
         repeat(2) { resolver.resolve("a.example") }
         assertEquals(DnsHealth.Healthy, resolver.health.value)
+    }
+
+    @Test
+    fun `after the cooldown only ONE lookup probes the custom resolver, the rest use the system`() {
+        val dead = AtomicBoolean(true)
+        val probing = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val r = FailOpenResolver(
+            custom = HostResolver {
+                if (dead.get()) failure else { probing.countDown(); release.await(); customAddr }
+            },
+            system = system, clock = clock, failureThreshold = 1, cooldownMs = 1_000L,
+        )
+        r.resolve("open-it")
+        assertTrue(r.health.value is DnsHealth.Degraded)
+
+        dead.set(false)
+        clock.nowMs += 1_001L
+        val probe = thread { r.resolve("probe") }
+        assertTrue(probing.await(5, TimeUnit.SECONDS))
+
+        val before = systemCalls
+        assertEquals(systemAddr, r.resolve("concurrent"))
+        assertEquals("a second lookup during the probe must use the system resolver", before + 1, systemCalls)
+
+        release.countDown()
+        probe.join(5_000)
+        assertEquals("a good probe closes the breaker", DnsHealth.Healthy, r.health.value)
+    }
+
+    @Test
+    fun `a success from a lookup that started before the breaker opened does not close it`() {
+        val failing = AtomicBoolean(false)
+        val stragglerStarted = CountDownLatch(1)
+        val finishStraggler = CountDownLatch(1)
+        val r = FailOpenResolver(
+            custom = HostResolver { host ->
+                if (host == "straggler") { stragglerStarted.countDown(); finishStraggler.await(); customAddr }
+                else if (failing.get()) failure else customAddr
+            },
+            system = system, clock = clock, failureThreshold = 1, cooldownMs = 60_000L, slowMs = Long.MAX_VALUE,
+        )
+        val straggler = thread { r.resolve("straggler") }
+        assertTrue(stragglerStarted.await(5, TimeUnit.SECONDS))
+
+        failing.set(true)
+        r.resolve("a.example")
+        assertTrue(r.health.value is DnsHealth.Degraded)
+
+        finishStraggler.countDown()
+        straggler.join(5_000)
+        assertTrue("a straggler's success must not close the breaker", r.health.value is DnsHealth.Degraded)
     }
 }

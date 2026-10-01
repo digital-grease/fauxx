@@ -215,6 +215,14 @@ class PoisonEngine @Inject constructor(
     private var engineJob: Job? = null
 
     /**
+     * The asynchronous teardown launched by [stop] or [destroy]. A new session joins it before
+     * starting anything (#227): otherwise an off/on toggle lets the old teardown, still waiting out
+     * module stops, reach `customDns.stop()` AFTER the new session's `customDns.start()`, silently
+     * turning custom DNS off for the whole new session.
+     */
+    @Volatile private var teardownJob: Job? = null
+
+    /**
      * Set by [PhantomForegroundService] before starting the engine. When [runLoop]
      * decides to resign during a long pause (see [decidePauseAction]), it invokes this
      * callback with the resume spec; the service is expected to schedule a
@@ -448,6 +456,7 @@ class PoisonEngine @Inject constructor(
      * the engine [scope] / [loopDispatcher].
      */
     private suspend fun runEngineSession() {
+        teardownJob?.join()
         // Sync targeting layer enable flags from persisted profile
         val savedProfile = profile.getProfile()
         targetingEngine.setLayer1Enabled(savedProfile.layer1Enabled)
@@ -480,7 +489,13 @@ class PoisonEngine @Inject constructor(
 
         // Custom DNS before any module browses (#227). Fail-open: a failure here only means the
         // system resolver stays in use, never that the engine does not start.
-        runCatching { customDns.start() }.onFailure { Timber.w(it, "Custom DNS failed to start") }
+        try {
+            customDns.start()
+        } catch (ce: CancellationException) {
+            throw ce // stop() during start: do not go on to start modules
+        } catch (e: Exception) {
+            Timber.w(e, "Custom DNS failed to start")
+        }
 
         allModules.filter { it.isEnabled() }.forEach { module ->
             try {
@@ -508,7 +523,7 @@ class PoisonEngine @Inject constructor(
         onActive = null
         unregisterConstraintReceivers()
         val modules = allModules
-        scope.launch {
+        teardownJob = scope.launch {
             withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
                 modules.forEach { runCatching { it.stop() } }
             } ?: Timber.w("Module stop timed out after ${MODULE_STOP_TIMEOUT_MS}ms")
@@ -531,7 +546,7 @@ class PoisonEngine @Inject constructor(
         val modules = allModules
         // Fire-and-forget teardown; scope is cancelled after a short grace period so the
         // launched stop coroutine has a chance to run. Bounded by timeout to avoid leaks.
-        scope.launch {
+        teardownJob = scope.launch {
             withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
                 modules.forEach { runCatching { it.stop() } }
             }

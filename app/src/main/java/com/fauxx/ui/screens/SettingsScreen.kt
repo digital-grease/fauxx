@@ -1,5 +1,8 @@
 package com.fauxx.ui.screens
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -607,8 +610,16 @@ private fun CustomDnsCard(
 ) {
     val enabled = uiState.dnsMode == DnsMode.DOH
     SettingsCard {
+        // One toggleable row, so TalkBack announces the title with the switch state.
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = enabled && available,
+                    enabled = available,
+                    role = Role.Switch,
+                    onValueChange = onEnabledChange,
+                ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -621,9 +632,14 @@ private fun CustomDnsCard(
                 )
             }
             Spacer(Modifier.width(8.dp))
-            Switch(checked = enabled && available, enabled = available, onCheckedChange = onEnabledChange)
+            Switch(checked = enabled && available, enabled = available, onCheckedChange = null)
         }
         if (!enabled || !available) return@SettingsCard
+
+        // rememberSaveable: an unsaved URL survives rotation and other configuration changes.
+        var draft by rememberSaveable { mutableStateOf(uiState.dohCustomUrl) }
+        var invalid by rememberSaveable { mutableStateOf(false) }
+        var needsUrl by rememberSaveable { mutableStateOf(false) }
 
         Spacer(Modifier.height(8.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -636,29 +652,33 @@ private fun CustomDnsCard(
             }
             ElevatedFilterChip(
                 selected = uiState.dohProvider == DohPresets.CUSTOM_ID,
-                onClick = { if (DohPresets.isValidCustomUrl(uiState.dohCustomUrl)) onProviderChange(DohPresets.CUSTOM_ID) },
+                onClick = {
+                    // No saved URL yet: say so instead of silently ignoring the tap.
+                    if (DohPresets.isValidCustomUrl(uiState.dohCustomUrl)) onProviderChange(DohPresets.CUSTOM_ID) else needsUrl = true
+                },
                 label = { Text(stringResource(R.string.settings_dns_provider_custom)) }
             )
         }
 
-        var draft by remember { mutableStateOf(uiState.dohCustomUrl) }
-        var invalid by remember { mutableStateOf(false) }
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = draft,
-            onValueChange = { draft = it; invalid = false },
+            onValueChange = { draft = it; invalid = false; needsUrl = false },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             label = { Text(stringResource(R.string.settings_dns_custom_label)) },
             placeholder = { Text("https://dns.example/dns-query") },
             isError = invalid,
-            supportingText = if (invalid) {
-                { Text(stringResource(R.string.settings_dns_custom_invalid)) }
-            } else null,
+            supportingText = when {
+                invalid -> { { Text(stringResource(R.string.settings_dns_custom_invalid)) } }
+                needsUrl -> { { Text(stringResource(R.string.settings_dns_custom_needed)) } }
+                else -> null
+            },
         )
         TextButton(
-            onClick = { invalid = !onSaveCustomUrl(draft) },
-            enabled = draft.isNotBlank() && draft.trim() != uiState.dohCustomUrl,
+            // A blank save removes the stored URL (see SettingsViewModel.saveDohCustomUrl).
+            onClick = { invalid = !onSaveCustomUrl(draft); if (!invalid) needsUrl = false },
+            enabled = draft.trim() != uiState.dohCustomUrl,
             modifier = Modifier.align(Alignment.End)
         ) { Text(stringResource(R.string.settings_dns_custom_save)) }
 

@@ -36,5 +36,6 @@ class DohPresetsTest {
         assertFalse(DohPresets.isValidCustomUrl("dns.example"))
         assertFalse(DohPresets.isValidCustomUrl(""))
         assertFalse(DohPresets.isValidCustomUrl("https://"))
+        assertFalse("no credentials in a resolver URL", DohPresets.isValidCustomUrl("https://user:pass@dns.example/dns-query"))
     }
 }

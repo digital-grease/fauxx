@@ -149,8 +149,21 @@ class SettingsViewModel @Inject constructor(
      * Save the user's own DoH URL and select it. Rejects anything but a valid https URL, and is
      * called on an explicit save rather than per keystroke: every saved change restarts the
      * loopback proxy, and each prefix of a URL being typed would otherwise be a restart.
+     *
+     * Saving a blank URL REMOVES the stored one (a personal resolver URL identifies its owner, so
+     * deleting it must not require clearing all data), falling back to the default preset if the
+     * custom one was selected.
      */
     fun saveDohCustomUrl(url: String): Boolean {
+        if (url.isBlank()) {
+            update {
+                it.copy(
+                    dohCustomUrl = "",
+                    dohProvider = if (it.dohProvider == DohPresets.CUSTOM_ID) DohPresets.DEFAULT_ID else it.dohProvider,
+                )
+            }
+            return true
+        }
         if (!DohPresets.isValidCustomUrl(url)) return false
         update { it.copy(dohProvider = DohPresets.CUSTOM_ID, dohCustomUrl = url.trim()) }
         return true

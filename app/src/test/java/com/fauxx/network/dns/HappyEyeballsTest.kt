@@ -61,4 +61,22 @@ class HappyEyeballsTest {
             assertTrue(e.message!!.contains("2 addresses"))
         }
     }
+
+    @Test
+    fun `an interrupt surfaces as an IOException, never as InterruptedException`() {
+        var thrown: Throwable? = null
+        val worker = Thread {
+            try {
+                HappyEyeballs.connect(listOf(v6a, v4a), 443, timeoutMs = 10_000, staggerMs = 5_000,
+                    connector = { _, _, _ -> Thread.sleep(10_000); throw IOException("never") })
+            } catch (t: Throwable) {
+                thrown = t
+            }
+        }
+        worker.start()
+        Thread.sleep(200)
+        worker.interrupt()
+        worker.join(5_000)
+        assertTrue("expected InterruptedIOException, got $thrown", thrown is java.io.InterruptedIOException)
+    }
 }
