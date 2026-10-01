@@ -1,5 +1,11 @@
 package com.fauxx.ui.viewmodels
 
+import com.fauxx.data.model.DnsMode
+import com.fauxx.engine.webview.WebViewCapabilities
+import com.fauxx.network.dns.DohPresets
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fauxx.BuildConfig
@@ -42,6 +48,10 @@ data class SettingsUiState(
     val resumeOnBoot: Boolean = true,
     /** Whether synthetic page loads fetch images (see [com.fauxx.data.model.PoisonProfile.loadImages]). */
     val loadImages: Boolean = false,
+    /** Custom DNS for Fauxx's own traffic (#227). */
+    val dnsMode: DnsMode = DnsMode.SYSTEM,
+    val dohProvider: String = DohPresets.DEFAULT_ID,
+    val dohCustomUrl: String = "",
     /** Search engines the user opted out of poisoning (issue #281). */
     val excludedSearchEngines: Set<String> = emptySet(),
 ) {
@@ -84,8 +94,18 @@ class SettingsViewModel @Inject constructor(
     private val encryptedFileTree: EncryptedFileTree,
     private val localeManager: LocaleManager,
     private val markovGenerator: MarkovQueryGenerator,
-    private val circadianObserver: CircadianObserver
+    private val circadianObserver: CircadianObserver,
+    private val webViewCapabilities: WebViewCapabilities = WebViewCapabilities.SYSTEM,
 ) : ViewModel() {
+
+    /**
+     * Whether custom DNS can be offered at all (#227): it needs a WebView with `PROXY_OVERRIDE`.
+     * Checked once, off the main thread, since the first feature query can load the WebView
+     * provider (#55). Starts true so the section does not flash disabled on capable devices.
+     */
+    val customDnsAvailable: StateFlow<Boolean> = flow { emit(webViewCapabilities.canUseProxy()) }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     private val _uiState = MutableStateFlow(loadFromProfile())
     val uiState: StateFlow<SettingsUiState> = _uiState
@@ -122,6 +142,32 @@ class SettingsViewModel @Inject constructor(
     fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
     fun setResumeOnBoot(v: Boolean) { update { it.copy(resumeOnBoot = v) } }
     fun setLoadImages(v: Boolean) { update { it.copy(loadImages = v) } }
+    fun setCustomDnsEnabled(v: Boolean) { update { it.copy(dnsMode = if (v) DnsMode.DOH else DnsMode.SYSTEM) } }
+    fun setDohProvider(id: String) { update { it.copy(dohProvider = id) } }
+
+    /**
+     * Save the user's own DoH URL and select it. Rejects anything but a valid https URL, and is
+     * called on an explicit save rather than per keystroke: every saved change restarts the
+     * loopback proxy, and each prefix of a URL being typed would otherwise be a restart.
+     *
+     * Saving a blank URL REMOVES the stored one (a personal resolver URL identifies its owner, so
+     * deleting it must not require clearing all data), falling back to the default preset if the
+     * custom one was selected.
+     */
+    fun saveDohCustomUrl(url: String): Boolean {
+        if (url.isBlank()) {
+            update {
+                it.copy(
+                    dohCustomUrl = "",
+                    dohProvider = if (it.dohProvider == DohPresets.CUSTOM_ID) DohPresets.DEFAULT_ID else it.dohProvider,
+                )
+            }
+            return true
+        }
+        if (!DohPresets.isValidCustomUrl(url)) return false
+        update { it.copy(dohProvider = DohPresets.CUSTOM_ID, dohCustomUrl = url.trim()) }
+        return true
+    }
 
 
     /**
@@ -200,6 +246,9 @@ class SettingsViewModel @Inject constructor(
                     themeMode = new.themeMode,
                     resumeOnBoot = new.resumeOnBoot,
                     loadImages = new.loadImages,
+                    dnsMode = new.dnsMode,
+                    dohProvider = new.dohProvider,
+                    dohCustomUrl = new.dohCustomUrl,
                     excludedSearchEngines = new.excludedSearchEngines,
                     // Empty string in UI-state collapses to null in profile so the
                     // engine treats "blank field" as "no override" cleanly.
@@ -221,6 +270,9 @@ class SettingsViewModel @Inject constructor(
             themeMode = p.themeMode,
             resumeOnBoot = p.resumeOnBoot,
             loadImages = p.loadImages,
+            dnsMode = p.dnsMode,
+            dohProvider = p.dohProvider,
+            dohCustomUrl = p.dohCustomUrl,
             excludedSearchEngines = p.excludedSearchEngines,
         )
     }

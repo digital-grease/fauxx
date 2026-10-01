@@ -5,6 +5,7 @@ import android.net.http.SslError
 import android.os.Build
 import androidx.annotation.RequiresApi
 import timber.log.Timber
+import android.webkit.HttpAuthHandler
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.SafeBrowsingResponse
 import android.webkit.SslErrorHandler
@@ -48,8 +49,20 @@ class PhantomWebViewClient(
     // connection refused, HTTP 4xx/5xx). Without this the failure was logged and dropped, and the
     // module still recorded the action as a success — a DNS-blocked load (Pi-hole and friends,
     // which most Fauxx users run) produced an error page but a "Success" action-log line.
-    private val onMainFrameError: ((String) -> Unit)? = null
+    private val onMainFrameError: ((String) -> Unit)? = null,
+    // Issue #227: answers the loopback DNS proxy's password challenge, and nothing else's.
+    private val proxyAuth: PhantomProxyAuth = PhantomProxyAuth.NONE,
 ) : WebViewClient() {
+
+    /**
+     * Issue #227: the custom-DNS loopback proxy demands a per-run password so other apps on the
+     * device cannot use it to slip past a firewall. Answer only the proxy's own challenge; any
+     * other HTTP auth prompt is cancelled, as WebView does by default.
+     */
+    override fun onReceivedHttpAuthRequest(view: WebView, handler: HttpAuthHandler, host: String, realm: String) {
+        val credentials = proxyAuth.credentialsFor(host, realm)
+        if (credentials != null) handler.proceed(credentials.first, credentials.second) else handler.cancel()
+    }
 
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)

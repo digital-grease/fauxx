@@ -14,6 +14,12 @@ import java.io.File
  * `okhttp3.Request` reference (import or fully-qualified use) or a `.newCall(` execution. If OkHttp
  * is genuinely needed again, route synthetic/search traffic through the WebView for the TLS path,
  * then update this guard with the reviewed exception.
+ *
+ * Reviewed exception, #227: `network/dns/DohHostResolver` uses OkHttp through `okhttp-dnsoverhttps`
+ * for the opt-in custom resolver. That traffic only ever reaches the DNS-over-HTTPS resolver the
+ * user chose, never a tracker or a search engine, so OkHttp's TLS fingerprint there is not the tell
+ * this guard exists for. The library builds its requests itself, so no `okhttp3.Request` or
+ * `.newCall(` appears in src/main and the check below needs no carve-out.
  */
 class OkHttpOrphanGuardTest {
 

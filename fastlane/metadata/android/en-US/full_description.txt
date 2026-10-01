@@ -12,6 +12,7 @@ FEATURES
 • Varied website visits across dozens of content categories
 • Ad profile pollution — loads ad-heavy pages to inject off-demographic ad signals
 • Stable per-persona device identity: a coherent Chrome User-Agent and matching client hints per synthetic persona, not random rotation
+• Optional encrypted DNS (DNS-over-HTTPS) for Fauxx's own traffic, so a Pi-hole or VPN that blocks tracker domains does not stop it
 • DNS query diversification
 • Smart targeting engine with 3 layers of demographic distancing
 • Synthetic persona rotation — adopts a new fake identity every week

@@ -120,6 +120,7 @@ class PhantomWebViewPool @Inject constructor(
     private val jarStore: PersonaJarStore,
     private val identityProvider: PhantomIdentityProvider = PhantomIdentityProvider.NONE,
     private val browsingPrefs: PhantomBrowsingPrefs = PhantomBrowsingPrefs.NONE,
+    private val proxyAuth: PhantomProxyAuth = PhantomProxyAuth.NONE,
 ) {
     private val pool = mutableListOf<WebView>()
     private var initialized = false
@@ -633,6 +634,7 @@ class PhantomWebViewPool @Inject constructor(
             resourceCounter = resourceCounter,
             onRenderGone = ::handleRendererGone,
             injectOnPageStarted = !documentStartInjected,
+            proxyAuth = proxyAuth,
             // Issue #268: record only the FIRST main-frame error of a load. A failed navigation can
             // emit several callbacks, and the first one is the one that describes what went wrong.
             onMainFrameError = { loadError.compareAndSet(null, it) },

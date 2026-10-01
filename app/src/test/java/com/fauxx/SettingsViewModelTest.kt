@@ -68,6 +68,37 @@ class SettingsViewModelTest {
         markovGenerator, circadianObserver
     )
 
+    // --- #227 custom DNS ---
+
+    @Test
+    fun `the custom DNS switch maps to DoH and back to the system resolver`() = runTest {
+        val vm = viewModel()
+        vm.setCustomDnsEnabled(true)
+        assertEquals(com.fauxx.data.model.DnsMode.DOH, vm.uiState.value.dnsMode)
+        vm.setCustomDnsEnabled(false)
+        assertEquals(com.fauxx.data.model.DnsMode.SYSTEM, vm.uiState.value.dnsMode)
+    }
+
+    @Test
+    fun `a custom DoH URL is saved and selected only when it is https`() = runTest {
+        val vm = viewModel()
+        assertFalse(vm.saveDohCustomUrl("http://dns.example/dns-query"))
+        assertEquals(com.fauxx.network.dns.DohPresets.DEFAULT_ID, vm.uiState.value.dohProvider)
+
+        assertTrue(vm.saveDohCustomUrl("  https://dns.nextdns.io/abc123 "))
+        assertEquals(com.fauxx.network.dns.DohPresets.CUSTOM_ID, vm.uiState.value.dohProvider)
+        assertEquals("https://dns.nextdns.io/abc123", vm.uiState.value.dohCustomUrl)
+    }
+
+    @Test
+    fun `saving a blank URL removes the stored one and leaves the custom provider`() = runTest {
+        val vm = viewModel()
+        vm.saveDohCustomUrl("https://dns.nextdns.io/abc123")
+        assertTrue(vm.saveDohCustomUrl("   "))
+        assertEquals("", vm.uiState.value.dohCustomUrl)
+        assertEquals(com.fauxx.network.dns.DohPresets.DEFAULT_ID, vm.uiState.value.dohProvider)
+    }
+
     // --- #281 search-engine opt-out ---
 
     @Test

@@ -1,5 +1,8 @@
 package com.fauxx.ui.screens
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,6 +49,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.network.dns.DohPresets
+import com.fauxx.data.model.DnsMode
 import com.fauxx.BuildConfig
 import com.fauxx.R
 import com.fauxx.data.model.IntensityLevel
@@ -56,6 +61,7 @@ import com.fauxx.engine.modules.searchEngineDisplayName
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.theme.ThemeMode
+import com.fauxx.ui.viewmodels.SettingsUiState
 import com.fauxx.ui.viewmodels.SettingsViewModel
 import kotlin.math.roundToInt
 
@@ -310,6 +316,16 @@ fun SettingsScreen(
                 )
             }
         }
+
+        // Custom DNS for Fauxx's own traffic (#227)
+        val customDnsAvailable by viewModel.customDnsAvailable.collectAsState()
+        CustomDnsCard(
+            uiState = uiState,
+            available = customDnsAvailable,
+            onEnabledChange = viewModel::setCustomDnsEnabled,
+            onProviderChange = viewModel::setDohProvider,
+            onSaveCustomUrl = viewModel::saveDohCustomUrl,
+        )
 
         // Battery threshold
         SettingsCard {
@@ -577,6 +593,100 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp), content = content)
+    }
+}
+
+/**
+ * Custom DNS (#227): route the sites Fauxx visits through a DNS-over-HTTPS resolver. The custom URL
+ * is saved on an explicit tap, not per keystroke, because every saved change restarts the proxy.
+ */
+@Composable
+private fun CustomDnsCard(
+    uiState: SettingsUiState,
+    available: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    onProviderChange: (String) -> Unit,
+    onSaveCustomUrl: (String) -> Boolean,
+) {
+    val enabled = uiState.dnsMode == DnsMode.DOH
+    SettingsCard {
+        // One toggleable row, so TalkBack announces the title with the switch state.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = enabled && available,
+                    enabled = available,
+                    role = Role.Switch,
+                    onValueChange = onEnabledChange,
+                ),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.settings_dns_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(if (available) R.string.settings_dns_description else R.string.settings_dns_unavailable),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Switch(checked = enabled && available, enabled = available, onCheckedChange = null)
+        }
+        if (!enabled || !available) return@SettingsCard
+
+        // rememberSaveable: an unsaved URL survives rotation and other configuration changes.
+        var draft by rememberSaveable { mutableStateOf(uiState.dohCustomUrl) }
+        var invalid by rememberSaveable { mutableStateOf(false) }
+        var needsUrl by rememberSaveable { mutableStateOf(false) }
+
+        Spacer(Modifier.height(8.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (preset in DohPresets.ALL) {
+                ElevatedFilterChip(
+                    selected = uiState.dohProvider == preset.id,
+                    onClick = { onProviderChange(preset.id) },
+                    label = { Text(preset.label) }
+                )
+            }
+            ElevatedFilterChip(
+                selected = uiState.dohProvider == DohPresets.CUSTOM_ID,
+                onClick = {
+                    // No saved URL yet: say so instead of silently ignoring the tap.
+                    if (DohPresets.isValidCustomUrl(uiState.dohCustomUrl)) onProviderChange(DohPresets.CUSTOM_ID) else needsUrl = true
+                },
+                label = { Text(stringResource(R.string.settings_dns_provider_custom)) }
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = draft,
+            onValueChange = { draft = it; invalid = false; needsUrl = false },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text(stringResource(R.string.settings_dns_custom_label)) },
+            placeholder = { Text("https://dns.example/dns-query") },
+            isError = invalid,
+            supportingText = when {
+                invalid -> { { Text(stringResource(R.string.settings_dns_custom_invalid)) } }
+                needsUrl -> { { Text(stringResource(R.string.settings_dns_custom_needed)) } }
+                else -> null
+            },
+        )
+        TextButton(
+            // A blank save removes the stored URL (see SettingsViewModel.saveDohCustomUrl).
+            onClick = { invalid = !onSaveCustomUrl(draft); if (!invalid) needsUrl = false },
+            enabled = draft.trim() != uiState.dohCustomUrl,
+            modifier = Modifier.align(Alignment.End)
+        ) { Text(stringResource(R.string.settings_dns_custom_save)) }
+
+        Text(
+            stringResource(R.string.settings_dns_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

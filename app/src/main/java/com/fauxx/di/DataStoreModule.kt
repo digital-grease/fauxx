@@ -100,6 +100,11 @@ object PreferenceKeys {
     // Whether synthetic page loads fetch images (tracking pixels fire) or skip them to save data.
     val LOAD_IMAGES = booleanPreferencesKey("load_images")
 
+    // Custom DNS for Fauxx's own traffic (#227): mode, DoH preset id, and the user's own DoH URL.
+    val DNS_MODE = stringPreferencesKey("dns_mode")
+    val DOH_PROVIDER = stringPreferencesKey("doh_provider")
+    val DOH_CUSTOM_URL = stringPreferencesKey("doh_custom_url")
+
     // Issue #7: when set, the engine uses this UA for ALL synthetic traffic
     // instead of randomizing across the user_agents.json pool. Lets users match
     // the synthetic-traffic UA to their real browser so the noise blends with

@@ -16,10 +16,14 @@ interface WebViewCapabilities {
      */
     fun canHidePackageName(): Boolean
 
+    /** Whether custom DNS (#227) can work: it routes the WebView through a loopback proxy. */
+    fun canUseProxy(): Boolean
+
     companion object {
         /** The real answer from the installed WebView. */
         val SYSTEM: WebViewCapabilities = object : WebViewCapabilities {
             override fun canHidePackageName(): Boolean = supportsPackageNameHiding()
+            override fun canUseProxy(): Boolean = isSupported(WebViewFeature.PROXY_OVERRIDE)
         }
 
         /**

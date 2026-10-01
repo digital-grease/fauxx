@@ -317,6 +317,15 @@
     <string name="settings_resume_on_boot_description">Après un redémarrage, afficher une notification pour reprendre la protection. Android empêche les applications de démarrer silencieusement en arrière-plan, donc un appui est requis.</string>
     <string name="settings_load_images_title">Charger les images des pages synthétiques</string>
     <string name="settings_load_images_description">Activé : les pages chargent les images comme un vrai navigateur, donc les pixels de suivi se déclenchent et chaque visite paraît normale au site. Désactivé : les images sont ignorées, ce qui économise beaucoup de données car elles représentent l\'essentiel du poids d\'une page, mais un navigateur qui ne charge jamais d\'images est inhabituel, et les traqueurs à pixel n\'enregistrent jamais la visite.</string>
+    <string name="settings_dns_title">DNS personnalisé pour Fauxx</string>
+    <string name="settings_dns_description">Résout les sites que Fauxx visite via un DNS chiffré (DNS-over-HTTPS) plutôt que le DNS de votre appareil. Utile quand Pi-hole, NextDNS ou une application VPN bloque les domaines de suivi que Fauxx doit atteindre. Seule la navigation de Fauxx l\'utilise.</string>
+    <string name="settings_dns_unavailable">Votre WebView est trop ancien pour faire passer la navigation de Fauxx par un DNS personnalisé. Mettre à jour Android System WebView le rend disponible.</string>
+    <string name="settings_dns_provider_custom">Personnalisé</string>
+    <string name="settings_dns_custom_label">URL DNS-over-HTTPS personnalisée</string>
+    <string name="settings_dns_custom_invalid">Utilisez une adresse https:// complète</string>
+    <string name="settings_dns_custom_needed">Enregistrez d\'abord une URL personnalisée ci-dessous.</string>
+    <string name="settings_dns_custom_save">Enregistrer et utiliser</string>
+    <string name="settings_dns_help">Si une application VPN ou pare-feu filtre le DNS, exemptez-en Fauxx (dans Rethink, réglez Fauxx pour contourner DNS et pare-feu) ; sinon elle peut bloquer le DNS chiffré de Fauxx, ou les connexions établies avec ses réponses. Cela contourne uniquement le blocage au niveau DNS, pas le blocage par adresse IP. Tant que c\'est activé, les sites compatibles HTTP/3 sont joints en HTTP/2. Si le DNS personnalisé cesse de fonctionner, Fauxx revient au DNS de l\'appareil et l\'indique sur le tableau de bord.</string>
     <string name="settings_battery_threshold_battery_title">Mettre en pause sous (batterie)</string>
     <string name="settings_battery_threshold_charging_title">Mettre en pause sous (en charge)</string>
     <string name="settings_active_hours_title">Heures actives</string>
@@ -509,4 +518,5 @@
     <string name="dashboard_webview_leak_title">Les sites peuvent savoir que ce trafic vient de Fauxx</string>
     <string name="dashboard_webview_leak_body">Votre WebView est trop ancien pour masquer le nom de l\'application : chaque requête de Fauxx le transmet dans l\'en-tête X-Requested-With. La protection continue, mais les sites peuvent reconnaître et écarter ce trafic. Mettre à jour Android System WebView corrige le problème.</string>
     <string name="dashboard_webview_leak_action">Mettre à jour WebView</string>
+    <string name="dashboard_custom_dns_degraded">Le DNS personnalisé ne fonctionne pas pour le moment : Fauxx utilise le DNS de votre appareil.</string>
 </resources>

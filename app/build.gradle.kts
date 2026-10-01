@@ -219,6 +219,9 @@ dependencies {
     // OkHttp
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
+    // DNS-over-HTTPS for the opt-in custom resolver (#227). Same version ref as okhttp so the two
+    // can never drift apart.
+    implementation(libs.okhttp.dnsoverhttps)
 
     // Coroutines
     implementation(libs.coroutines.android)

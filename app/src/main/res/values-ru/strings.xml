@@ -379,6 +379,15 @@
     <string name="settings_resume_on_boot_description">После перезагрузки показать уведомление для возобновления защиты. Android запрещает приложениям молча запускаться в фоне, так что нужно касание.</string>
     <string name="settings_load_images_title">Загружать изображения на синтетических страницах</string>
     <string name="settings_load_images_description">Вкл.: страницы загружают изображения, как настоящий браузер, поэтому пиксели отслеживания срабатывают, а каждое посещение выглядит для сайта обычным. Выкл.: изображения пропускаются, что сильно экономит трафик, ведь изображения составляют большую часть объёма страницы, но браузер, который никогда не загружает изображения, выглядит необычно, а трекеры на основе пикселей никогда не регистрируют посещение.</string>
+    <string name="settings_dns_title">Свой DNS для Fauxx</string>
+    <string name="settings_dns_description">Разрешает адреса сайтов, которые посещает Fauxx, через зашифрованный DNS (DNS-over-HTTPS), а не через DNS устройства. Используйте, если Pi-hole, NextDNS или VPN-приложение блокирует домены трекеров, до которых Fauxx должен дотянуться. Используется только для синтетического просмотра сайтов Fauxx.</string>
+    <string name="settings_dns_unavailable">Ваш WebView слишком старый, чтобы направлять трафик Fauxx через свой DNS. Обновление Android System WebView сделает эту функцию доступной.</string>
+    <string name="settings_dns_provider_custom">Свой</string>
+    <string name="settings_dns_custom_label">Свой адрес DNS-over-HTTPS</string>
+    <string name="settings_dns_custom_invalid">Укажите полный адрес https://</string>
+    <string name="settings_dns_custom_needed">Сначала сохраните свой адрес ниже.</string>
+    <string name="settings_dns_custom_save">Сохранить и использовать</string>
+    <string name="settings_dns_help">Если VPN-приложение или файрвол фильтрует DNS, сделайте для Fauxx исключение (в Rethink разрешите Fauxx обходить DNS и файрвол); иначе он может блокировать зашифрованный DNS Fauxx или соединения по его ответам. Это обходит только блокировку на уровне DNS, но не по IP-адресу. Пока функция включена, сайты с поддержкой HTTP/3 открываются по HTTP/2. Если свой DNS перестанет работать, Fauxx вернётся к DNS устройства и сообщит об этом на главном экране.</string>
     <string name="settings_battery_threshold_battery_title">Пауза при заряде ниже (от батареи)</string>
     <string name="settings_battery_threshold_charging_title">Пауза при заряде ниже (при зарядке)</string>
     <string name="settings_active_hours_start_label">Начало</string>
@@ -529,4 +538,5 @@
     <string name="dashboard_webview_leak_title">Сайты могут понять, что этот трафик идёт от Fauxx</string>
     <string name="dashboard_webview_leak_body">Ваш WebView слишком старый, чтобы скрыть название приложения, поэтому каждый запрос Fauxx передаёт его в заголовке X-Requested-With. Защита продолжает работать, но сайты могут распознать и отбросить этот трафик. Обновление Android System WebView решает проблему.</string>
     <string name="dashboard_webview_leak_action">Обновить WebView</string>
+    <string name="dashboard_custom_dns_degraded">Свой DNS сейчас не работает, поэтому Fauxx использует DNS устройства.</string>
 </resources>

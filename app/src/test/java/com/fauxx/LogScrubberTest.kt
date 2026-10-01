@@ -163,4 +163,25 @@ class LogScrubberTest {
         val url = "https://example.com/news/some-article"
         assertEquals(url, LogScrubber.scrubForExport(ActionType.PAGE_VISIT, url))
     }
+
+    @Test
+    fun `personal DNS-over-HTTPS URLs are scrubbed (#227)`() {
+        for (leak in listOf(
+            "PoisonProfile(dnsMode=DOH, dohProvider=custom, dohCustomUrl=https://dns.nextdns.io/abc123)",
+            "resolver https://dns.nextdns.io/abc123 failed",
+            "resolver https://dns.controld.com/xyz789 failed",
+            "resolver https://d.adguard-dns.com/dns-query/myid failed",
+        )) {
+            val out = LogScrubber.scrub(leak)
+            for (id in listOf("abc123", "xyz789", "myid")) {
+                assertFalse("$id leaked from: $out", out.contains(id))
+            }
+        }
+    }
+
+    @Test
+    fun `public DoH preset URLs are left alone`() {
+        val line = "Custom DNS active via https://dns.quad9.net/dns-query"
+        assertEquals(line, LogScrubber.scrub(line))
+    }
 }

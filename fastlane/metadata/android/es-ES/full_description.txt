@@ -12,6 +12,7 @@ CARACTERÍSTICAS
 • Visitas variadas a sitios web en docenas de categorías de contenido
 • Contaminación del perfil publicitario: carga páginas con muchos anuncios para inyectar señales publicitarias ajenas a tu demografía
 • Identidad de dispositivo estable por persona: un User-Agent de Chrome coherente y client hints coincidentes por cada persona sintética, sin rotación aleatoria
+• DNS cifrado opcional (DNS-over-HTTPS) solo para el tráfico de Fauxx, para que un Pi-hole o una VPN que bloquee dominios de rastreo no lo detenga
 • Diversificación de consultas DNS
 • Motor de segmentación inteligente con 3 capas de distanciamiento demográfico
 • Rotación de personas sintéticas: adopta una nueva identidad falsa cada semana

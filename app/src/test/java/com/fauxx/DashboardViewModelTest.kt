@@ -107,7 +107,10 @@ class DashboardViewModelTest {
         )
     }
 
-    private fun newViewModel(canHidePackageName: Boolean) = DashboardViewModel(
+    private fun newViewModel(
+        canHidePackageName: Boolean,
+        customDns: com.fauxx.engine.dns.CustomDns = com.fauxx.engine.dns.CustomDns.NONE,
+    ) = DashboardViewModel(
         context, actionLogDao, profileRepo, poisonEngine, targetingEngine, personaLayer, dataStore,
         mockk<com.fauxx.targeting.layer2.ProfileSnapshotDao>(relaxed = true) {
             every { observeAll() } returns MutableStateFlow(emptyList<com.fauxx.targeting.layer2.ProfileSnapshot>())
@@ -115,7 +118,9 @@ class DashboardViewModelTest {
         com.fauxx.targeting.layer2.ProfileDriftMetric(), FakeClock(0L),
         object : WebViewCapabilities {
             override fun canHidePackageName(): Boolean = canHidePackageName
+            override fun canUseProxy(): Boolean = true
         },
+        customDns,
     )
 
     @Test
@@ -132,5 +137,22 @@ class DashboardViewModelTest {
         val vm = newViewModel(canHidePackageName = true)
         delay(200)
         assertFalse(vm.webViewNamesApp.value)
+    }
+
+    @Test
+    fun `the quiet DNS line follows the custom resolver's health`() = runBlocking {
+        every { actionLogDao.countSince(any()) } returns MutableStateFlow(0)
+        val health = MutableStateFlow<com.fauxx.network.dns.DnsHealth>(com.fauxx.network.dns.DnsHealth.Healthy)
+        val dns = object : com.fauxx.engine.dns.CustomDns {
+            override val health = health
+            override suspend fun start() {}
+            override suspend fun stop() {}
+        }
+        val vm = newViewModel(canHidePackageName = true, customDns = dns)
+        val job = launch(kotlinx.coroutines.Dispatchers.Unconfined) { vm.customDnsDegraded.collect {} }
+        assertFalse(vm.customDnsDegraded.value)
+        health.value = com.fauxx.network.dns.DnsHealth.Degraded(0L, "down")
+        assertTrue(withTimeout(5_000) { vm.customDnsDegraded.first { it } })
+        job.cancel()
     }
 }
