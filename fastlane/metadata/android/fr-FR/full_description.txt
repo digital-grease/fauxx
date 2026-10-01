@@ -12,6 +12,7 @@ FONCTIONNALITÉS
 • Visites de sites web diversifiées dans des dizaines de catégories de contenu
 • Pollution du profil publicitaire : charge des pages riches en publicités pour injecter des signaux publicitaires étrangers à votre démographie
 • Identité d'appareil stable par persona : un User-Agent Chrome cohérent et des client hints correspondants par persona synthétique, sans rotation aléatoire
+• DNS chiffré facultatif (DNS-over-HTTPS) pour le seul trafic de Fauxx, afin qu'un Pi-hole ou un VPN qui bloque les domaines de suivi ne l'arrête pas
 • Diversification des requêtes DNS
 • Moteur de ciblage intelligent avec 3 couches de distanciation démographique
 • Rotation de personas synthétiques : adopte une nouvelle fausse identité chaque semaine

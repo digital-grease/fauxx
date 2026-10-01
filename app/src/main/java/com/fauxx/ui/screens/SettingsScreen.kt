@@ -46,6 +46,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fauxx.network.dns.DohPresets
+import com.fauxx.data.model.DnsMode
 import com.fauxx.BuildConfig
 import com.fauxx.R
 import com.fauxx.data.model.IntensityLevel
@@ -56,6 +58,7 @@ import com.fauxx.engine.modules.searchEngineDisplayName
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.theme.ThemeMode
+import com.fauxx.ui.viewmodels.SettingsUiState
 import com.fauxx.ui.viewmodels.SettingsViewModel
 import kotlin.math.roundToInt
 
@@ -310,6 +313,16 @@ fun SettingsScreen(
                 )
             }
         }
+
+        // Custom DNS for Fauxx's own traffic (#227)
+        val customDnsAvailable by viewModel.customDnsAvailable.collectAsState()
+        CustomDnsCard(
+            uiState = uiState,
+            available = customDnsAvailable,
+            onEnabledChange = viewModel::setCustomDnsEnabled,
+            onProviderChange = viewModel::setDohProvider,
+            onSaveCustomUrl = viewModel::saveDohCustomUrl,
+        )
 
         // Battery threshold
         SettingsCard {
@@ -577,6 +590,83 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp), content = content)
+    }
+}
+
+/**
+ * Custom DNS (#227): route the sites Fauxx visits through a DNS-over-HTTPS resolver. The custom URL
+ * is saved on an explicit tap, not per keystroke, because every saved change restarts the proxy.
+ */
+@Composable
+private fun CustomDnsCard(
+    uiState: SettingsUiState,
+    available: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    onProviderChange: (String) -> Unit,
+    onSaveCustomUrl: (String) -> Boolean,
+) {
+    val enabled = uiState.dnsMode == DnsMode.DOH
+    SettingsCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.settings_dns_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(if (available) R.string.settings_dns_description else R.string.settings_dns_unavailable),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Switch(checked = enabled && available, enabled = available, onCheckedChange = onEnabledChange)
+        }
+        if (!enabled || !available) return@SettingsCard
+
+        Spacer(Modifier.height(8.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (preset in DohPresets.ALL) {
+                ElevatedFilterChip(
+                    selected = uiState.dohProvider == preset.id,
+                    onClick = { onProviderChange(preset.id) },
+                    label = { Text(preset.label) }
+                )
+            }
+            ElevatedFilterChip(
+                selected = uiState.dohProvider == DohPresets.CUSTOM_ID,
+                onClick = { if (DohPresets.isValidCustomUrl(uiState.dohCustomUrl)) onProviderChange(DohPresets.CUSTOM_ID) },
+                label = { Text(stringResource(R.string.settings_dns_provider_custom)) }
+            )
+        }
+
+        var draft by remember { mutableStateOf(uiState.dohCustomUrl) }
+        var invalid by remember { mutableStateOf(false) }
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = draft,
+            onValueChange = { draft = it; invalid = false },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text(stringResource(R.string.settings_dns_custom_label)) },
+            placeholder = { Text("https://dns.example/dns-query") },
+            isError = invalid,
+            supportingText = if (invalid) {
+                { Text(stringResource(R.string.settings_dns_custom_invalid)) }
+            } else null,
+        )
+        TextButton(
+            onClick = { invalid = !onSaveCustomUrl(draft) },
+            enabled = draft.isNotBlank() && draft.trim() != uiState.dohCustomUrl,
+            modifier = Modifier.align(Alignment.End)
+        ) { Text(stringResource(R.string.settings_dns_custom_save)) }
+
+        Text(
+            stringResource(R.string.settings_dns_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

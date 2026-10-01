@@ -12,6 +12,7 @@ import android.os.Build
 import androidx.annotation.VisibleForTesting
 import androidx.work.NetworkType
 import com.fauxx.di.IoDispatcher
+import com.fauxx.engine.dns.CustomDns
 import com.fauxx.service.ResumeSpec
 import com.fauxx.util.Clock
 import kotlinx.coroutines.CancellationException
@@ -194,6 +195,12 @@ class PoisonEngine @Inject constructor(
      * active. Defaults to a no-op so engine tests need not stand one up.
      */
     private val usageObserver: UsageObserver = UsageObserver.NONE,
+    /**
+     * Opt-in custom DNS for the WebView's traffic (#227). Started before any module so the first
+     * page load already goes through the user's resolver; stopped after the modules. Defaults to
+     * a no-op so engine tests need not stand one up.
+     */
+    private val customDns: CustomDns = CustomDns.NONE,
 ) {
     /**
      * Backstop for an uncaught exception in a direct child of [scope] (issue #197). A
@@ -471,6 +478,10 @@ class PoisonEngine @Inject constructor(
         // Startup asset health check — verify critical data loaded successfully.
         _healthWarnings.value = checkAssetHealth()
 
+        // Custom DNS before any module browses (#227). Fail-open: a failure here only means the
+        // system resolver stays in use, never that the engine does not start.
+        runCatching { customDns.start() }.onFailure { Timber.w(it, "Custom DNS failed to start") }
+
         allModules.filter { it.isEnabled() }.forEach { module ->
             try {
                 module.start()
@@ -501,6 +512,7 @@ class PoisonEngine @Inject constructor(
             withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
                 modules.forEach { runCatching { it.stop() } }
             } ?: Timber.w("Module stop timed out after ${MODULE_STOP_TIMEOUT_MS}ms")
+            runCatching { customDns.stop() }
             Timber.i("PoisonEngine stopped")
         }
     }
@@ -523,6 +535,7 @@ class PoisonEngine @Inject constructor(
             withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
                 modules.forEach { runCatching { it.stop() } }
             }
+            runCatching { customDns.stop() }
             scope.cancel()
             Timber.i("PoisonEngine destroyed")
         }
@@ -1178,6 +1191,9 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.THEME_MODE] = p.themeMode.name
         prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] = p.resumeOnBoot
         prefs[com.fauxx.di.PreferenceKeys.LOAD_IMAGES] = p.loadImages
+        prefs[com.fauxx.di.PreferenceKeys.DNS_MODE] = p.dnsMode.name
+        prefs[com.fauxx.di.PreferenceKeys.DOH_PROVIDER] = p.dohProvider
+        prefs[com.fauxx.di.PreferenceKeys.DOH_CUSTOM_URL] = p.dohCustomUrl
         // #201: the custom UA is retired; clear any value a previous version stored so it
         // does not linger in DataStore.
         prefs.remove(com.fauxx.di.PreferenceKeys.CUSTOM_USER_AGENT)
@@ -1247,6 +1263,13 @@ class PoisonProfileRepository @Inject constructor(
             }.getOrDefault(com.fauxx.ui.theme.ThemeMode.SYSTEM),
             resumeOnBoot = prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] ?: true,
             loadImages = prefs[com.fauxx.di.PreferenceKeys.LOAD_IMAGES] ?: false,
+            dnsMode = runCatching {
+                com.fauxx.data.model.DnsMode.valueOf(
+                    prefs[com.fauxx.di.PreferenceKeys.DNS_MODE] ?: com.fauxx.data.model.DnsMode.SYSTEM.name
+                )
+            }.getOrDefault(com.fauxx.data.model.DnsMode.SYSTEM),
+            dohProvider = prefs[com.fauxx.di.PreferenceKeys.DOH_PROVIDER] ?: "quad9",
+            dohCustomUrl = prefs[com.fauxx.di.PreferenceKeys.DOH_CUSTOM_URL] ?: "",
         )
     }
 

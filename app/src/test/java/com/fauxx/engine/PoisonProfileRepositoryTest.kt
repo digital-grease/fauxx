@@ -106,6 +106,9 @@ class PoisonProfileRepositoryTest {
             themeMode = ThemeMode.DARK,                      // default SYSTEM
             resumeOnBoot = false,                            // default true
             loadImages = true,                               // default false
+            dnsMode = com.fauxx.data.model.DnsMode.DOH,      // default SYSTEM
+            dohProvider = "mullvad",                         // default quad9
+            dohCustomUrl = "https://dns.example/dns-query",  // default empty
         )
 
         runBlocking { repo.saveProfile(input) }

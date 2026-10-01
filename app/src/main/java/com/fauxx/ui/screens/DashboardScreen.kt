@@ -78,6 +78,7 @@ fun DashboardScreen(
     val showConsent by viewModel.showConsentDialog.collectAsState()
     val showFullVersionNotice by viewModel.showFullVersionNotice.collectAsState()
     val webViewNamesApp by viewModel.webViewNamesApp.collectAsState()
+    val customDnsDegraded by viewModel.customDnsDegraded.collectAsState()
     val context = LocalContext.current
 
     // POST_NOTIFICATIONS permission (Android 13+)
@@ -195,6 +196,16 @@ fun DashboardScreen(
                     stringResource(R.string.dashboard_webview_leak_body),
                 actionLabel = stringResource(R.string.dashboard_webview_leak_action),
                 onAction = { openWebViewStorePage(context) }
+            )
+        }
+
+        // Custom DNS fell back to the device's DNS (#227). One quiet line, not a warning card:
+        // nothing is broken, browsing continues, the user just gets to know.
+        if (customDnsDegraded) {
+            Text(
+                text = stringResource(R.string.dashboard_custom_dns_degraded),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 

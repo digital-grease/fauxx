@@ -1,8 +1,12 @@
 package com.fauxx.di
 
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.engine.dns.CustomDns
+import com.fauxx.engine.dns.CustomDnsRouter
 import com.fauxx.engine.webview.PhantomBrowsingPrefs
+import com.fauxx.engine.webview.PhantomProxyAuth
 import com.fauxx.engine.webview.WebViewCapabilities
+import com.fauxx.engine.webview.WebViewProxyOverride
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,4 +29,15 @@ object WebViewModule {
     @Provides
     @Singleton
     fun provideWebViewCapabilities(): WebViewCapabilities = WebViewCapabilities.SYSTEM
+
+    /** Custom DNS (#227): one router serves the engine's lifecycle and the WebView's proxy auth. */
+    @Provides
+    @Singleton
+    fun provideWebViewProxyOverride(): WebViewProxyOverride = WebViewProxyOverride.SYSTEM
+
+    @Provides
+    fun provideCustomDns(router: CustomDnsRouter): CustomDns = router
+
+    @Provides
+    fun providePhantomProxyAuth(router: CustomDnsRouter): PhantomProxyAuth = router
 }

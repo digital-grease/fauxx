@@ -317,6 +317,14 @@
     <string name="settings_resume_on_boot_description">Tras reiniciar el dispositivo, mostrar una notificación para reanudar la protección. Android impide que las apps se inicien solas en segundo plano, así que es necesario un toque.</string>
     <string name="settings_load_images_title">Cargar imágenes en páginas sintéticas</string>
     <string name="settings_load_images_description">Activado: las páginas cargan imágenes como un navegador real, así que los píxeles de seguimiento se activan y cada visita parece normal para el sitio. Desactivado: se omiten las imágenes, lo que ahorra muchos datos porque las imágenes son la mayor parte del tamaño de una página, pero un navegador que nunca carga imágenes es poco habitual, y los rastreadores basados en píxeles nunca registran la visita.</string>
+    <string name="settings_dns_title">DNS personalizado para Fauxx</string>
+    <string name="settings_dns_description">Resuelve los sitios que visita Fauxx con DNS cifrado (DNS-over-HTTPS) en lugar del DNS de tu dispositivo. Úsalo cuando Pi-hole, NextDNS o una app de VPN bloqueen los dominios de rastreo a los que Fauxx necesita llegar. Solo lo usa la navegación propia de Fauxx.</string>
+    <string name="settings_dns_unavailable">Tu WebView es demasiado antiguo para enviar la navegación de Fauxx por un DNS personalizado. Actualizar Android System WebView lo habilita.</string>
+    <string name="settings_dns_provider_custom">Personalizado</string>
+    <string name="settings_dns_custom_label">URL de DNS-over-HTTPS personalizada</string>
+    <string name="settings_dns_custom_invalid">Usa una dirección https:// completa</string>
+    <string name="settings_dns_custom_save">Guardar y usar</string>
+    <string name="settings_dns_help">Si una app de VPN o cortafuegos filtra el DNS, deja pasar el DNS cifrado de Fauxx (HTTPS, puerto 443). Esto solo evita el bloqueo a nivel de DNS, no el bloqueo por dirección IP. Si el resolutor deja de responder, Fauxx vuelve al DNS del dispositivo y lo indica en el panel.</string>
     <string name="settings_battery_threshold_battery_title">Pausar por debajo de (batería)</string>
     <string name="settings_battery_threshold_charging_title">Pausar por debajo de (cargando)</string>
     <string name="settings_active_hours_title">Horas activas</string>
@@ -509,4 +517,5 @@
     <string name="dashboard_webview_leak_title">Los sitios pueden saber que este tráfico viene de Fauxx</string>
     <string name="dashboard_webview_leak_body">Tu WebView es demasiado antiguo para ocultar el nombre de la app, así que cada petición de Fauxx lo lleva en la cabecera X-Requested-With. La protección sigue funcionando, pero los sitios pueden reconocer y descartar este tráfico. Actualizar Android System WebView lo soluciona.</string>
     <string name="dashboard_webview_leak_action">Actualizar WebView</string>
+    <string name="dashboard_custom_dns_degraded">El DNS personalizado no responde, así que Fauxx usa por ahora el DNS de tu dispositivo.</string>
 </resources>

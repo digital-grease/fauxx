@@ -38,6 +38,11 @@ import com.fauxx.ui.theme.ThemeMode
  * @property loadImages When true, synthetic page loads fetch images like a real browser, so
  *   `<img>` tracking pixels fire and a page view looks normal to the server. Off by default
  *   because images are most of a page's bytes, which matters on metered connections.
+ * @property dnsMode Resolver for Fauxx's own synthetic traffic (#227). Device-local, never synced.
+ * @property dohProvider Preset id from `DohPresets` (default Quad9, matching the desktop
+ *   companion), or `DohPresets.CUSTOM_ID` to use [dohCustomUrl].
+ * @property dohCustomUrl The user's own https DoH endpoint, e.g. a NextDNS profile URL. That URL
+ *   identifies the user, so it is scrubbed from exported logs.
  * @property excludedSearchEngines Names of search engines the user has opted OUT of poisoning
  *   (issue #281), e.g. a privacy-respecting engine they would rather not send synthetic traffic
  *   to. Stored as exclusions rather than inclusions so the default is empty and any engine added
@@ -69,6 +74,9 @@ data class PoisonProfile(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val resumeOnBoot: Boolean = true,
     val loadImages: Boolean = false,
+    val dnsMode: DnsMode = DnsMode.SYSTEM,
+    val dohProvider: String = "quad9",
+    val dohCustomUrl: String = "",
     val excludedSearchEngines: Set<String> = emptySet()
 )
 

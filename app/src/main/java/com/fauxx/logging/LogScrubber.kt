@@ -26,6 +26,11 @@ object LogScrubber {
         Regex("""(?i)(personaName|personaAge|personaInterests|syntheticPersona|archetype)\s*[=:]\s*[^\n,}\]]+"""),
         // Platform cache / scraper data
         Regex("""(?i)(scrapedCategories|platformName|lastScraped)\s*[=:]\s*[^\n,}\]]+"""),
+        // Custom DNS-over-HTTPS endpoints (#227). A personal resolver URL carries an account or
+        // profile id (NextDNS, ControlD, AdGuard), which identifies the user as surely as an email.
+        Regex("""(?i)dohCustomUrl\s*[=:]\s*[^\s,)}\]]+"""),
+        Regex("""(?i)https://(dns\.nextdns\.io|dns\.controld\.com)/[^\s,)}\]]+"""),
+        Regex("""(?i)https://[^\s/]+/dns-query/[^\s,)}\]]+"""),
         // Email addresses
         Regex("""[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"""),
         // Phone numbers (various formats)

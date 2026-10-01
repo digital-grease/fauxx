@@ -27,7 +27,9 @@ import com.fauxx.util.Clock
 import com.fauxx.util.SystemClockImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.fauxx.engine.dns.CustomDns
 import com.fauxx.engine.webview.WebViewCapabilities
+import com.fauxx.network.dns.DnsHealth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -90,7 +92,17 @@ class DashboardViewModel @Inject constructor(
     private val profileDriftMetric: ProfileDriftMetric,
     private val clock: Clock = SystemClockImpl(),
     private val webViewCapabilities: WebViewCapabilities = WebViewCapabilities.SYSTEM,
+    customDns: CustomDns = CustomDns.NONE,
 ) : ViewModel() {
+
+    /**
+     * True while the user's custom DNS resolver is not answering and Fauxx has fallen back to the
+     * device's DNS (#227). Shown as one quiet line, per the owner's fail-open decision: browsing
+     * continues, the user just gets to know.
+     */
+    val customDnsDegraded: StateFlow<Boolean> = customDns.health
+        .map { it is DnsHealth.Degraded }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     /**
      * True when the installed WebView cannot stop `X-Requested-With` from naming Fauxx, so every

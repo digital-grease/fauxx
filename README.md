@@ -220,6 +220,8 @@ Global controls:
 - **Battery threshold:** Minimum battery % to run actions (Can be adjusted individually while on battery and while charging)
 - **Active hours:** Time range when actions should run (e.g., 7am–11pm)
 - **Search engines:** Which engines receive synthetic queries. Turning one off spares it entirely. At least two stay active, because real people spread searches across engines and noise from a single one would be easy to filter out
+- **Load images on synthetic pages:** Off by default. On, pages load images like a real browser, so tracking pixels fire and each visit looks normal to the site; off saves a lot of data, since images are most of a page's size, but a browser that never loads images is unusual
+- **Custom DNS for Fauxx:** Off by default. On, the sites Fauxx visits are looked up over encrypted DNS (DNS-over-HTTPS: Quad9, Cloudflare, Mullvad, Google, or your own URL) instead of your device's DNS, so a Pi-hole, NextDNS profile or VPN app that blocks tracker domains does not stop Fauxx reaching them. Only Fauxx's own browsing uses it. If the resolver stops answering, Fauxx falls back to your device's DNS and says so on the dashboard
 - **Clear all data:** Destructive button to reset everything
 
 ## Configuration
@@ -341,6 +343,18 @@ What it *doesn't* measure: the *quality* of the decoy activity — whether it's 
 If you want to see where the decoy activity is actually going, the **Targeting screen's category-weight chart** is more useful: red bars are categories Fauxx is suppressing (because they match your demographic profile), green bars are categories it's boosting (off-profile decoys), gray is neutral.
 
 A future release will move Noise Ratio toward a quality-aware metric rather than pure throughput. Tracked as a planned improvement.
+
+### My Pi-hole, NextDNS or VPN blocks tracker domains, so Fauxx can't reach them. What can I do?
+
+Turn on **Settings → Custom DNS for Fauxx**. Fauxx then looks up the sites it visits over encrypted DNS (DNS-over-HTTPS) with a resolver you pick, while every other app on your phone keeps using your normal DNS and its blocking.
+
+How it works: Android's WebView has no DNS setting of its own, so Fauxx runs a small proxy on your phone's loopback address and points its own WebView at it. The proxy looks each name up through your chosen resolver and passes the connection through untouched; TLS stays end to end between the WebView and the site. The proxy requires a password that changes every run, so other apps on your phone cannot use it to get around a firewall.
+
+Things to know:
+
+- If a VPN or firewall app (Rethink, for example) filters DNS, allow Fauxx's encrypted DNS through it. It is ordinary HTTPS on port 443.
+- It gets around DNS-level blocking only. Blocking by IP address or by TLS server name still applies.
+- If your WebView is too old to route through a proxy, the setting is unavailable until you update Android System WebView.
 
 ### How does Layer 2 (Ad-Profile Import) work, and what do I import?
 
