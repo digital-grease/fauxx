@@ -52,7 +52,12 @@ class CustomDnsRouterTest {
         every { profiles } returns profile
     }
     private val override = FakeOverride()
-    private val router = CustomDnsRouter(repo, FakeClock(0L), override)
+    @Volatile private var intercepted = false
+    private val networkChanged = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 8)
+    private val router = CustomDnsRouter(
+        repo, FakeClock(0L), override, DnsInterceptionProbe { intercepted },
+        object : NetworkChanges { override val changes = networkChanged },
+    )
 
     @After
     fun tearDown() = runBlocking { router.stop() }
@@ -103,12 +108,12 @@ class CustomDnsRouterTest {
     }
 
     @Test
-    fun `a WebView without proxy support degrades instead of routing`() = runBlocking {
+    fun `a WebView without proxy support never touches the override`() = runBlocking {
         override.supported = false
         profile.value = doh()
         router.start()
         assertTrue(override.calls.isEmpty())
-        assertTrue(router.health.value is DnsHealth.Degraded)
+        assertEquals(DnsHealth.Off, router.health.value)
     }
 
     @Test
@@ -196,5 +201,83 @@ class CustomDnsRouterTest {
         job.join()
         withTimeout(5_000) { while (runCatching { Socket("127.0.0.1", port).close() }.isSuccess) delay(20) }
         assertNull(override.port)
+    }
+
+    private fun plain(server: String = "9.9.9.9", routeNoise: Boolean = false) =
+        PoisonProfile(dnsMode = DnsMode.PLAIN, plainDnsServer = server, routeDnsNoise = routeNoise)
+
+    @Test
+    fun `plain DNS routes through the proxy like DoH`() = runBlocking {
+        profile.value = plain()
+        router.start()
+        assertNotNull(override.port)
+        assertEquals(DnsHealth.Healthy, router.health.value)
+    }
+
+    @Test
+    fun `an invalid plain server degrades instead of routing`() = runBlocking {
+        profile.value = plain(server = "dns.example")
+        router.start()
+        assertTrue(override.calls.isEmpty())
+        assertTrue(router.health.value is DnsHealth.Degraded)
+    }
+
+    @Test
+    fun `intercepted plain DNS is reported even though answers keep arriving`() = runBlocking {
+        intercepted = true
+        profile.value = plain()
+        router.start()
+        withTimeout(5_000) { while (router.health.value !is DnsHealth.Degraded) delay(20) }
+        assertTrue((router.health.value as DnsHealth.Degraded).intercepted)
+        assertNotNull("browsing keeps going: fail-open", override.port)
+    }
+
+    @Test
+    fun `a network change re-probes, and a clean result clears the interception warning`() = runBlocking {
+        intercepted = true
+        profile.value = plain()
+        router.start()
+        withTimeout(5_000) { while (router.health.value !is DnsHealth.Degraded) delay(20) }
+
+        intercepted = false // the user exempted Fauxx in their VPN app, say
+        networkChanged.emit(Unit)
+        withTimeout(5_000) { while (router.health.value != DnsHealth.Healthy) delay(20) }
+
+        intercepted = true // and later joins a network that hijacks DNS
+        networkChanged.emit(Unit)
+        withTimeout(5_000) { while (router.health.value !is DnsHealth.Degraded) delay(20) }
+    }
+
+    @Test
+    fun `a WebView without proxy support stays quietly off, with no dashboard line`() = runBlocking {
+        override.supported = false
+        profile.value = plain()
+        router.start()
+        assertEquals(DnsHealth.Off, router.health.value)
+    }
+
+    @Test
+    fun `interception is only checked for plain DNS`() = runBlocking {
+        intercepted = true
+        profile.value = doh()
+        router.start()
+        delay(300)
+        assertEquals(DnsHealth.Healthy, router.health.value)
+    }
+
+    @Test
+    fun `DNS noise uses the custom resolver only when the user turned it on`() = runBlocking {
+        profile.value = plain(routeNoise = false)
+        router.start()
+        assertNull(router.noiseResolver())
+
+        profile.value = plain(routeNoise = true)
+        // The toggle is read live; flipping it must not restart the proxy.
+        val port = override.port
+        withTimeout(5_000) { while (router.noiseResolver() == null) delay(20) }
+        assertEquals(port, override.port)
+
+        router.stop()
+        assertNull("nothing to route through once stopped", router.noiseResolver())
     }
 }

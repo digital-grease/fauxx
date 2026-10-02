@@ -104,6 +104,9 @@ object PreferenceKeys {
     val DNS_MODE = stringPreferencesKey("dns_mode")
     val DOH_PROVIDER = stringPreferencesKey("doh_provider")
     val DOH_CUSTOM_URL = stringPreferencesKey("doh_custom_url")
+    val PLAIN_DNS_SERVER = stringPreferencesKey("plain_dns_server")
+    val ROUTE_DNS_NOISE = booleanPreferencesKey("route_dns_noise")
+    val PREFERRED_CUSTOM_DNS_MODE = stringPreferencesKey("preferred_custom_dns_mode")
 
     // Issue #7: when set, the engine uses this UA for ALL synthetic traffic
     // instead of randomizing across the user_agents.json pool. Lets users match

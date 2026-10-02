@@ -7,6 +7,8 @@ import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
+import com.fauxx.engine.dns.CustomDns
+import com.fauxx.network.dns.Resolution
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -17,11 +19,16 @@ import javax.inject.Singleton
 /**
  * Resolves diverse domain names to generate DNS query noise visible to ISP and
  * network-level trackers. Uses domains from the crawl URL corpus.
+ *
+ * Lookups go to the device's resolver, whose logs (the ISP's, the network's) are the point. When
+ * the user has custom DNS active and turned on "also use it for DNS noise" (#227), they go to the
+ * custom resolver instead, so only that resolver's logs see them.
  */
 @Singleton
 class DnsNoiseModule @Inject constructor(
     private val crawlListManager: CrawlListManager,
-    private val profileRepo: PoisonProfileRepository
+    private val profileRepo: PoisonProfileRepository,
+    private val customDns: CustomDns = CustomDns.NONE,
 ) : Module {
 
     override suspend fun start() {}
@@ -51,12 +58,20 @@ class DnsNoiseModule @Inject constructor(
 
         var ipCount: Int? = null
         val success = withContext(Dispatchers.IO) {
-            try {
-                ipCount = InetAddress.getAllByName(entry.domain).size
-                true
-            } catch (e: Exception) {
-                Timber.d("DNS lookup failed for ${entry.domain}: ${e.message}")
-                false
+            val custom = customDns.noiseResolver()
+            if (custom != null) {
+                when (val r = custom.resolve(entry.domain)) {
+                    is Resolution.Addresses -> { ipCount = r.addresses.size; true }
+                    Resolution.NoSuchHost, is Resolution.Failure -> false
+                }
+            } else {
+                try {
+                    ipCount = InetAddress.getAllByName(entry.domain).size
+                    true
+                } catch (e: Exception) {
+                    Timber.d("DNS lookup failed for ${entry.domain}: ${e.message}")
+                    false
+                }
             }
         }
 

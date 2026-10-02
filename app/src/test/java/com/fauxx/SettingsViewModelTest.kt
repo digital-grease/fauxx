@@ -99,6 +99,46 @@ class SettingsViewModelTest {
         assertEquals(com.fauxx.network.dns.DohPresets.DEFAULT_ID, vm.uiState.value.dohProvider)
     }
 
+    @Test
+    fun `plain DNS cannot be selected before a server is saved`() = runTest {
+        val vm = viewModel()
+        vm.setCustomDnsEnabled(true)
+        assertFalse(vm.setDnsMode(com.fauxx.data.model.DnsMode.PLAIN))
+        assertEquals(com.fauxx.data.model.DnsMode.DOH, vm.uiState.value.dnsMode)
+    }
+
+    @Test
+    fun `saving a plain server validates it, selects it, and a blank save removes it`() = runTest {
+        val vm = viewModel()
+        vm.setCustomDnsEnabled(true)
+        assertFalse(vm.savePlainDnsServer("dns.example"))
+        assertTrue(vm.savePlainDnsServer(" 9.9.9.9:5353 "))
+        assertEquals("9.9.9.9:5353", vm.uiState.value.plainDnsServer)
+        assertEquals(com.fauxx.data.model.DnsMode.PLAIN, vm.uiState.value.dnsMode)
+
+        assertTrue(vm.savePlainDnsServer(""))
+        assertEquals("", vm.uiState.value.plainDnsServer)
+        assertEquals("falls back to encrypted DNS", com.fauxx.data.model.DnsMode.DOH, vm.uiState.value.dnsMode)
+    }
+
+    @Test
+    fun `switching custom DNS off and on restores plain mode`() = runTest {
+        val vm = viewModel()
+        vm.setCustomDnsEnabled(true)
+        vm.savePlainDnsServer("9.9.9.9")
+        vm.setCustomDnsEnabled(false)
+        assertEquals(com.fauxx.data.model.DnsMode.SYSTEM, vm.uiState.value.dnsMode)
+        vm.setCustomDnsEnabled(true)
+        assertEquals(com.fauxx.data.model.DnsMode.PLAIN, vm.uiState.value.dnsMode)
+    }
+
+    @Test
+    fun `the DNS-noise toggle is stored`() = runTest {
+        val vm = viewModel()
+        vm.setRouteDnsNoise(true)
+        assertTrue(vm.uiState.value.routeDnsNoise)
+    }
+
     // --- #281 search-engine opt-out ---
 
     @Test

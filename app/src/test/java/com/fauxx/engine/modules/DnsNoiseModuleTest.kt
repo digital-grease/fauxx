@@ -12,6 +12,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -63,5 +64,40 @@ class DnsNoiseModuleTest {
         assertEquals(ActionType.DNS_LOOKUP, result.actionType)
         assertEquals("detail must be the resolved domain", "example.com", result.detail)
         assertEquals(CategoryPool.GAMING, result.category)
+    }
+
+    private fun customDns(resolver: com.fauxx.network.dns.HostResolver?) = object : com.fauxx.engine.dns.CustomDns {
+        override val health = kotlinx.coroutines.flow.MutableStateFlow<com.fauxx.network.dns.DnsHealth>(com.fauxx.network.dns.DnsHealth.Off)
+        override suspend fun start() {}
+        override suspend fun stop() {}
+        override fun noiseResolver() = resolver
+    }
+
+    @Test
+    fun `with the noise toggle on, lookups go to the custom resolver (#227)`() = runTest {
+        every { crawlListManager.nextUrlOrWait(any()) } returns
+            PendingCrawlEntry(CrawlEntry("https://example.com/page", "example.com", CategoryPool.GAMING), waitMs = 0L)
+        val asked = mutableListOf<String>()
+        val resolver = com.fauxx.network.dns.HostResolver { host ->
+            asked += host
+            com.fauxx.network.dns.Resolution.Addresses(listOf(java.net.InetAddress.getByName("192.0.2.1"), java.net.InetAddress.getByName("192.0.2.2")))
+        }
+
+        val result = DnsNoiseModule(crawlListManager, profileRepo, customDns(resolver)).onAction(CategoryPool.GAMING)
+
+        assertEquals(listOf("example.com"), asked)
+        assertTrue(result.success)
+        assertTrue("the address count is logged", result.metadata!!.contains("2"))
+    }
+
+    @Test
+    fun `a no-such-host answer from the custom resolver is a failed lookup`() = runTest {
+        every { crawlListManager.nextUrlOrWait(any()) } returns
+            PendingCrawlEntry(CrawlEntry("https://blocked.example/page", "blocked.example", CategoryPool.GAMING), waitMs = 0L)
+        val resolver = com.fauxx.network.dns.HostResolver { com.fauxx.network.dns.Resolution.NoSuchHost }
+
+        val result = DnsNoiseModule(crawlListManager, profileRepo, customDns(resolver)).onAction(CategoryPool.GAMING)
+
+        assertFalse(result.success)
     }
 }

@@ -221,7 +221,7 @@ Global controls:
 - **Active hours:** Time range when actions should run (e.g., 7am–11pm)
 - **Search engines:** Which engines receive synthetic queries. Turning one off spares it entirely. At least two stay active, because real people spread searches across engines and noise from a single one would be easy to filter out
 - **Load images on synthetic pages:** Off by default. On, pages load images like a real browser, so tracking pixels fire and each visit looks normal to the site; off saves a lot of data, since images are most of a page's size, but a browser that never loads images is unusual
-- **Custom DNS for Fauxx:** Off by default. On, the sites Fauxx visits are looked up over encrypted DNS (DNS-over-HTTPS: Quad9, Cloudflare, Mullvad, Google, or your own URL) instead of your device's DNS, so a Pi-hole, NextDNS profile or VPN app that blocks tracker domains does not stop Fauxx reaching them. Only Fauxx's own browsing uses it. If the resolver stops answering, Fauxx falls back to your device's DNS and says so on the dashboard
+- **Custom DNS for Fauxx:** Off by default. On, the sites Fauxx visits are looked up with a resolver you choose instead of your device's DNS: encrypted DNS (DNS-over-HTTPS: Quad9, Cloudflare, Mullvad, Google, or your own URL) or a plain DNS server by IP address. A Pi-hole, NextDNS profile or VPN app that blocks tracker domains then no longer stops Fauxx reaching them. Only Fauxx's own browsing uses it, unless you also turn on **Also use it for DNS noise** (off by default, since DNS noise is meant for your network's and ISP's DNS logs; on, noise goes to the custom resolver while it is working). A plain DNS server is not encrypted, so your network can still see the names. If custom DNS stops working, Fauxx falls back to your device's DNS and says so on the dashboard
 - **Clear all data:** Destructive button to reset everything
 
 ## Configuration
@@ -346,7 +346,7 @@ A future release will move Noise Ratio toward a quality-aware metric rather than
 
 ### My Pi-hole, NextDNS or VPN blocks tracker domains, so Fauxx can't reach them. What can I do?
 
-Turn on **Settings → Custom DNS for Fauxx**. Fauxx then looks up the sites it visits over encrypted DNS (DNS-over-HTTPS) with a resolver you pick, while every other app on your phone keeps using your normal DNS and its blocking.
+Turn on **Settings → Custom DNS for Fauxx**. Fauxx then looks up the sites it visits with a resolver you pick, over encrypted DNS (DNS-over-HTTPS) or a plain DNS server, while every other app on your phone keeps using your normal DNS and its blocking.
 
 How it works: Android's WebView has no DNS setting of its own, so Fauxx runs a small proxy on your phone's loopback address and points its own WebView at it. The proxy looks each name up through your chosen resolver and passes the connection through untouched; TLS stays end to end between the WebView and the site. The proxy requires a password that changes every run, so other apps on your phone cannot use it to get around a firewall.
 
@@ -354,6 +354,7 @@ Things to know:
 
 - If a VPN or firewall app filters DNS, exempt Fauxx from it. In Rethink, set Fauxx to bypass DNS and firewall: its "block when DNS is bypassed" rule would otherwise block the connections Fauxx makes with its own DNS answers.
 - If you use your own resolver URL (a NextDNS profile, for example), Fauxx looks up that resolver's own address through its default resolver first, since DoH-bypass blocklists often block those hostnames.
+- Plain DNS is not encrypted: your network and ISP can see the names it looks up. It is also often captured by VPN and firewall apps, which then answer in place of your server; Fauxx checks for this (again whenever your network changes) and says so on the dashboard. Encrypted DNS avoids both.
 - It gets around DNS-level blocking only. Blocking by IP address or by TLS server name still applies.
 - While it is on, sites that support HTTP/3 are reached over HTTP/2: browsers do not use HTTP/3 through a proxy.
 - If your WebView is too old to route through a proxy, the setting is unavailable until you update Android System WebView.

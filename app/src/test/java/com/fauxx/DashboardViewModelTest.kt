@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -147,12 +148,19 @@ class DashboardViewModelTest {
             override val health = health
             override suspend fun start() {}
             override suspend fun stop() {}
+            override fun noiseResolver(): com.fauxx.network.dns.HostResolver? = null
         }
         val vm = newViewModel(canHidePackageName = true, customDns = dns)
-        val job = launch(kotlinx.coroutines.Dispatchers.Unconfined) { vm.customDnsDegraded.collect {} }
-        assertFalse(vm.customDnsDegraded.value)
+        val job = launch(kotlinx.coroutines.Dispatchers.Unconfined) { vm.customDnsNotice.collect {} }
+        assertEquals(null, vm.customDnsNotice.value)
         health.value = com.fauxx.network.dns.DnsHealth.Degraded(0L, "down")
-        assertTrue(withTimeout(5_000) { vm.customDnsDegraded.first { it } })
+        assertEquals(com.fauxx.ui.viewmodels.CustomDnsNotice.FALLBACK, withTimeout(5_000) { vm.customDnsNotice.first { it != null } })
+        // Interception gets its own wording: then Fauxx is NOT on the device's DNS.
+        health.value = com.fauxx.network.dns.DnsHealth.Degraded(0L, "intercepted", intercepted = true)
+        assertEquals(
+            com.fauxx.ui.viewmodels.CustomDnsNotice.INTERCEPTED,
+            withTimeout(5_000) { vm.customDnsNotice.first { it == com.fauxx.ui.viewmodels.CustomDnsNotice.INTERCEPTED } },
+        )
         job.cancel()
     }
 }

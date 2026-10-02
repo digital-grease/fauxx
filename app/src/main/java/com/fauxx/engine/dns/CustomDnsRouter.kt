@@ -6,12 +6,15 @@ import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.webview.PhantomProxyAuth
 import com.fauxx.engine.webview.WebViewProxyOverride
 import com.fauxx.network.dns.CachingResolver
+import com.fauxx.network.dns.DnsInterceptionCheck
 import com.fauxx.network.dns.DnsHealth
 import com.fauxx.network.dns.DohHostResolver
 import com.fauxx.network.dns.DohPresets
 import com.fauxx.network.dns.FailOpenResolver
 import com.fauxx.network.dns.HostResolver
 import com.fauxx.network.dns.LoopbackProxy
+import com.fauxx.network.dns.PlainDnsResolver
+import com.fauxx.network.dns.PlainDnsServer
 import com.fauxx.network.dns.ProxyCredentials
 import com.fauxx.network.dns.Resolution
 import com.fauxx.network.dns.SystemHostResolver
@@ -23,7 +26,12 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -44,12 +52,46 @@ interface CustomDns {
     /** Stop routing: restore direct WebView connections first, then stop the proxy. */
     suspend fun stop()
 
+    /**
+     * The resolver the DNS-noise module should use, or null for the device's own. Non-null only
+     * while custom DNS is active AND the user turned on "also use it for DNS noise".
+     */
+    fun noiseResolver(): HostResolver?
+
     companion object {
         /** Custom DNS absent entirely; used by engine tests. */
         val NONE: CustomDns = object : CustomDns {
             override val health: StateFlow<DnsHealth> = MutableStateFlow(DnsHealth.Off)
             override suspend fun start() {}
             override suspend fun stop() {}
+            override fun noiseResolver(): HostResolver? = null
+        }
+    }
+}
+
+/**
+ * Whether plain DNS on this network reaches the server the user named (#227, PR 2). An interface
+ * so the router can be tested without real network probes.
+ */
+fun interface DnsInterceptionProbe {
+    fun isIntercepted(): Boolean
+
+    companion object {
+        val SYSTEM = DnsInterceptionProbe { DnsInterceptionCheck.isIntercepted() }
+    }
+}
+
+/**
+ * Emits whenever the device's default network changes (#227, PR 2). Interception is a property of
+ * the network, not of the setting: joining a hijacking Wi-Fi or switching a VPN on or off changes
+ * it, so the plain-DNS probe re-runs on every change instead of once per proxy start.
+ */
+interface NetworkChanges {
+    val changes: Flow<Unit>
+
+    companion object {
+        val NONE: NetworkChanges = object : NetworkChanges {
+            override val changes: Flow<Unit> = emptyFlow()
         }
     }
 }
@@ -77,11 +119,22 @@ class CustomDnsRouter @Inject constructor(
     private val profileRepo: PoisonProfileRepository,
     private val clock: Clock,
     private val override: WebViewProxyOverride,
+    private val interceptionProbe: DnsInterceptionProbe,
+    private val networkChanges: NetworkChanges,
 ) : CustomDns, PhantomProxyAuth {
 
-    private data class Settings(val mode: DnsMode, val provider: String, val customUrl: String)
+    private data class Settings(val mode: DnsMode, val provider: String, val customUrl: String, val plainServer: String)
 
-    private class Running(val settings: Settings, val proxy: LoopbackProxy, val credentials: ProxyCredentials)
+    private class Running(
+        val settings: Settings,
+        val proxy: LoopbackProxy,
+        val credentials: ProxyCredentials,
+        /** Uncached: DNS noise exists to generate queries, and a cache would swallow repeats. */
+        val uncached: HostResolver,
+    ) {
+        /** When plain DNS was found intercepted on the current network, or null. */
+        val interceptedSince = MutableStateFlow<Long?>(null)
+    }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutex = Mutex()
@@ -96,6 +149,7 @@ class CustomDnsRouter @Inject constructor(
     private var active = false
     private var settingsJob: Job? = null
     private var healthJob: Job? = null
+    private var probeJob: Job? = null
 
     private val _health = MutableStateFlow<DnsHealth>(DnsHealth.Off)
     override val health: StateFlow<DnsHealth> = _health.asStateFlow()
@@ -130,6 +184,11 @@ class CustomDnsRouter @Inject constructor(
         }
     }
 
+    override fun noiseResolver(): HostResolver? {
+        val current = running ?: return null
+        return if (profileRepo.getProfile().routeDnsNoise) current.uncached else null
+    }
+
     override fun credentialsFor(host: String, realm: String): Pair<String, String>? {
         if (host != LoopbackProxy.LOOPBACK) return null
         val creds = listOfNotNull(running?.credentials, stranded?.credentials, retired).firstOrNull { it.realm == realm }
@@ -145,14 +204,23 @@ class CustomDnsRouter @Inject constructor(
             return
         }
         if (!override.isSupported()) {
-            degrade("This WebView cannot route through a proxy")
+            // The Settings card already says the feature is unavailable on this WebView. A
+            // dashboard line the user cannot act on (the switch is disabled) would only nag.
+            Timber.w("Custom DNS unavailable: this WebView cannot route through a proxy")
+            _health.value = DnsHealth.Off
             return
         }
-        val doh = dohFor(settings) ?: run {
-            degrade("The custom DNS-over-HTTPS URL is not a valid https address")
-            return
+        val custom: HostResolver = when (settings.mode) {
+            DnsMode.PLAIN -> PlainDnsServer.parse(settings.plainServer)?.let { PlainDnsResolver(it) } ?: run {
+                degrade("The plain DNS server is not a valid IP address")
+                return
+            }
+            else -> dohFor(settings) ?: run {
+                degrade("The custom DNS-over-HTTPS URL is not a valid https address")
+                return
+            }
         }
-        val failOpen = FailOpenResolver(doh, SystemHostResolver, clock)
+        val failOpen = FailOpenResolver(custom, SystemHostResolver, clock)
         val resolver = CachingResolver(failOpen, clock)
         val credentials = ProxyCredentials.random()
         lateinit var proxy: LoopbackProxy
@@ -166,15 +234,40 @@ class CustomDnsRouter @Inject constructor(
             return
         }
         // Publish before pointing the WebView at it, so the auth challenge can always be answered.
-        running = Running(settings, proxy, credentials)
+        val current = Running(settings, proxy, credentials, uncached = failOpen)
+        running = current
         if (!override.set(port)) {
             teardownLocked()
             degrade("The WebView did not accept the proxy")
             return
         }
         _health.value = failOpen.health.value
-        healthJob = scope.launch { failOpen.health.collect { _health.value = it } }
-        Timber.i("Custom DNS active (%s) on 127.0.0.1:%d", settings.provider, port)
+        healthJob = scope.launch {
+            // One place computes health. An interception warning outranks the breaker's view:
+            // answers are arriving, just not from the server the user chose, so the breaker would
+            // happily report healthy.
+            combine(failOpen.health, current.interceptedSince) { h, since ->
+                since?.let { DnsHealth.Degraded(it, INTERCEPTED, intercepted = true) } ?: h
+            }.collect { _health.value = it }
+        }
+        if (settings.mode == DnsMode.PLAIN) {
+            probeJob = scope.launch(Dispatchers.IO) {
+                // Probe now, and again on every network change; a clean result clears the warning.
+                merge(flowOf(Unit), networkChanges.changes).collect {
+                    val intercepted = interceptionProbe.isIntercepted()
+                    if (running !== current) return@collect
+                    if (intercepted) {
+                        if (current.interceptedSince.value == null) {
+                            Timber.w("Custom DNS degraded: %s", INTERCEPTED)
+                            current.interceptedSince.value = clock.currentTimeMillis()
+                        }
+                    } else {
+                        current.interceptedSince.value = null
+                    }
+                }
+            }
+        }
+        Timber.i("Custom DNS active (%s) on 127.0.0.1:%d", settings.mode, port)
     }
 
     /**
@@ -185,6 +278,8 @@ class CustomDnsRouter @Inject constructor(
     private suspend fun teardownLocked() = withContext(NonCancellable) {
         healthJob?.cancel()
         healthJob = null
+        probeJob?.cancel()
+        probeJob = null
         val current = running ?: stranded ?: return@withContext
         running = null
         retired = current.credentials
@@ -242,5 +337,9 @@ class CustomDnsRouter @Inject constructor(
         }
     }
 
-    private fun settingsOf(p: PoisonProfile) = Settings(p.dnsMode, p.dohProvider, p.dohCustomUrl)
+    private fun settingsOf(p: PoisonProfile) = Settings(p.dnsMode, p.dohProvider, p.dohCustomUrl, p.plainDnsServer)
+
+    private companion object {
+        const val INTERCEPTED = "Plain DNS may be intercepted on this network (a VPN or firewall app?)"
+    }
 }

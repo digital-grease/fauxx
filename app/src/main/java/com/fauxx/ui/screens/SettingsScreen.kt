@@ -323,8 +323,11 @@ fun SettingsScreen(
             uiState = uiState,
             available = customDnsAvailable,
             onEnabledChange = viewModel::setCustomDnsEnabled,
+            onModeChange = viewModel::setDnsMode,
             onProviderChange = viewModel::setDohProvider,
             onSaveCustomUrl = viewModel::saveDohCustomUrl,
+            onSavePlainServer = viewModel::savePlainDnsServer,
+            onRouteNoiseChange = viewModel::setRouteDnsNoise,
         )
 
         // Battery threshold
@@ -597,96 +600,183 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 /**
- * Custom DNS (#227): route the sites Fauxx visits through a DNS-over-HTTPS resolver. The custom URL
- * is saved on an explicit tap, not per keystroke, because every saved change restarts the proxy.
+ * Custom DNS (#227): route the sites Fauxx visits through a resolver of the user's choosing, over
+ * DNS-over-HTTPS or plain DNS. URLs and server addresses are saved on an explicit tap, not per
+ * keystroke, because every saved change restarts the proxy.
  */
 @Composable
 private fun CustomDnsCard(
     uiState: SettingsUiState,
     available: Boolean,
     onEnabledChange: (Boolean) -> Unit,
+    onModeChange: (DnsMode) -> Boolean,
     onProviderChange: (String) -> Unit,
     onSaveCustomUrl: (String) -> Boolean,
+    onSavePlainServer: (String) -> Boolean,
+    onRouteNoiseChange: (Boolean) -> Unit,
 ) {
-    val enabled = uiState.dnsMode == DnsMode.DOH
+    val enabled = uiState.dnsMode != DnsMode.SYSTEM
     SettingsCard {
-        // One toggleable row, so TalkBack announces the title with the switch state.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .toggleable(
-                    value = enabled && available,
-                    enabled = available,
-                    role = Role.Switch,
-                    onValueChange = onEnabledChange,
-                ),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.settings_dns_title), style = MaterialTheme.typography.titleSmall)
-                Text(
-                    stringResource(if (available) R.string.settings_dns_description else R.string.settings_dns_unavailable),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(Modifier.width(8.dp))
-            Switch(checked = enabled && available, enabled = available, onCheckedChange = null)
-        }
+        LabelledSwitch(
+            title = stringResource(R.string.settings_dns_title),
+            description = stringResource(if (available) R.string.settings_dns_description else R.string.settings_dns_unavailable),
+            checked = enabled && available,
+            enabled = available,
+            onCheckedChange = onEnabledChange,
+        )
         if (!enabled || !available) return@SettingsCard
 
-        // rememberSaveable: an unsaved URL survives rotation and other configuration changes.
-        var draft by rememberSaveable { mutableStateOf(uiState.dohCustomUrl) }
-        var invalid by rememberSaveable { mutableStateOf(false) }
-        var needsUrl by rememberSaveable { mutableStateOf(false) }
-
+        var needsPlainServer by rememberSaveable { mutableStateOf(false) }
         Spacer(Modifier.height(8.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (preset in DohPresets.ALL) {
-                ElevatedFilterChip(
-                    selected = uiState.dohProvider == preset.id,
-                    onClick = { onProviderChange(preset.id) },
-                    label = { Text(preset.label) }
-                )
-            }
+            // Highlight follows the section actually shown, so a pending plain hint never leaves
+            // the DoH chip lit over the plain section.
             ElevatedFilterChip(
-                selected = uiState.dohProvider == DohPresets.CUSTOM_ID,
-                onClick = {
-                    // No saved URL yet: say so instead of silently ignoring the tap.
-                    if (DohPresets.isValidCustomUrl(uiState.dohCustomUrl)) onProviderChange(DohPresets.CUSTOM_ID) else needsUrl = true
-                },
-                label = { Text(stringResource(R.string.settings_dns_provider_custom)) }
+                selected = uiState.dnsMode == DnsMode.DOH && !needsPlainServer,
+                onClick = { needsPlainServer = false; onModeChange(DnsMode.DOH) },
+                label = { Text(stringResource(R.string.settings_dns_type_doh)) }
+            )
+            ElevatedFilterChip(
+                selected = uiState.dnsMode == DnsMode.PLAIN || needsPlainServer,
+                // No saved server yet: show the field's hint instead of silently ignoring the tap.
+                onClick = { needsPlainServer = !onModeChange(DnsMode.PLAIN) },
+                label = { Text(stringResource(R.string.settings_dns_type_plain)) }
             )
         }
 
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = draft,
-            onValueChange = { draft = it; invalid = false; needsUrl = false },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            label = { Text(stringResource(R.string.settings_dns_custom_label)) },
-            placeholder = { Text("https://dns.example/dns-query") },
-            isError = invalid,
-            supportingText = when {
-                invalid -> { { Text(stringResource(R.string.settings_dns_custom_invalid)) } }
-                needsUrl -> { { Text(stringResource(R.string.settings_dns_custom_needed)) } }
-                else -> null
-            },
-        )
-        TextButton(
-            // A blank save removes the stored URL (see SettingsViewModel.saveDohCustomUrl).
-            onClick = { invalid = !onSaveCustomUrl(draft); if (!invalid) needsUrl = false },
-            enabled = draft.trim() != uiState.dohCustomUrl,
-            modifier = Modifier.align(Alignment.End)
-        ) { Text(stringResource(R.string.settings_dns_custom_save)) }
+        if (uiState.dnsMode == DnsMode.PLAIN || needsPlainServer) {
+            PlainDnsSection(uiState, needsPlainServer, onSavePlainServer) { needsPlainServer = false }
+        } else {
+            DohSection(uiState, onProviderChange, onSaveCustomUrl)
+        }
 
+        Spacer(Modifier.height(8.dp))
+        LabelledSwitch(
+            title = stringResource(R.string.settings_dns_noise_title),
+            description = stringResource(R.string.settings_dns_noise_description),
+            checked = uiState.routeDnsNoise,
+            enabled = true,
+            onCheckedChange = onRouteNoiseChange,
+        )
+        Spacer(Modifier.height(8.dp))
         Text(
             stringResource(R.string.settings_dns_help),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+private fun ColumnScope.DohSection(
+    uiState: SettingsUiState,
+    onProviderChange: (String) -> Unit,
+    onSaveCustomUrl: (String) -> Boolean,
+) {
+    // rememberSaveable: an unsaved URL survives rotation and other configuration changes.
+    var draft by rememberSaveable { mutableStateOf(uiState.dohCustomUrl) }
+    var invalid by rememberSaveable { mutableStateOf(false) }
+    var needsUrl by rememberSaveable { mutableStateOf(false) }
+
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (preset in DohPresets.ALL) {
+            ElevatedFilterChip(
+                selected = uiState.dohProvider == preset.id,
+                onClick = { onProviderChange(preset.id) },
+                label = { Text(preset.label) }
+            )
+        }
+        ElevatedFilterChip(
+            selected = uiState.dohProvider == DohPresets.CUSTOM_ID,
+            onClick = {
+                // No saved URL yet: say so instead of silently ignoring the tap.
+                if (DohPresets.isValidCustomUrl(uiState.dohCustomUrl)) onProviderChange(DohPresets.CUSTOM_ID) else needsUrl = true
+            },
+            label = { Text(stringResource(R.string.settings_dns_provider_custom)) }
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    OutlinedTextField(
+        value = draft,
+        onValueChange = { draft = it; invalid = false; needsUrl = false },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        label = { Text(stringResource(R.string.settings_dns_custom_label)) },
+        placeholder = { Text("https://dns.example/dns-query") },
+        isError = invalid,
+        supportingText = when {
+            invalid -> { { Text(stringResource(R.string.settings_dns_custom_invalid)) } }
+            needsUrl -> { { Text(stringResource(R.string.settings_dns_custom_needed)) } }
+            else -> null
+        },
+    )
+    TextButton(
+        // A blank save removes the stored URL (see SettingsViewModel.saveDohCustomUrl).
+        onClick = { invalid = !onSaveCustomUrl(draft); if (!invalid) needsUrl = false },
+        enabled = draft.trim() != uiState.dohCustomUrl,
+        modifier = Modifier.align(Alignment.End)
+    ) { Text(stringResource(R.string.settings_dns_custom_save)) }
+}
+
+@Composable
+private fun ColumnScope.PlainDnsSection(
+    uiState: SettingsUiState,
+    needsServer: Boolean,
+    onSavePlainServer: (String) -> Boolean,
+    onSaved: () -> Unit,
+) {
+    var draft by rememberSaveable { mutableStateOf(uiState.plainDnsServer) }
+    var invalid by rememberSaveable { mutableStateOf(false) }
+    OutlinedTextField(
+        value = draft,
+        onValueChange = { draft = it; invalid = false },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        label = { Text(stringResource(R.string.settings_dns_plain_label)) },
+        placeholder = { Text("9.9.9.9") },
+        isError = invalid,
+        supportingText = when {
+            invalid -> { { Text(stringResource(R.string.settings_dns_plain_invalid)) } }
+            needsServer -> { { Text(stringResource(R.string.settings_dns_plain_needed)) } }
+            else -> null
+        },
+    )
+    TextButton(
+        // A blank save removes the stored server (see SettingsViewModel.savePlainDnsServer).
+        onClick = { invalid = !onSavePlainServer(draft); if (!invalid) onSaved() },
+        enabled = draft.trim() != uiState.plainDnsServer,
+        modifier = Modifier.align(Alignment.End)
+    ) { Text(stringResource(R.string.settings_dns_custom_save)) }
+    Text(
+        stringResource(R.string.settings_dns_plain_help),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+/** A title, a description and a switch as ONE toggleable row, so TalkBack announces them together. */
+@Composable
+private fun LabelledSwitch(
+    title: String,
+    description: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.width(8.dp))
+        Switch(checked = checked, enabled = enabled, onCheckedChange = null)
     }
 }
 

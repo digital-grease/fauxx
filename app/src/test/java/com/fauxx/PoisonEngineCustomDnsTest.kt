@@ -61,6 +61,7 @@ class PoisonEngineCustomDnsTest {
         override val health: StateFlow<DnsHealth> = MutableStateFlow(DnsHealth.Off)
         override suspend fun start() { calls += "start" }
         override suspend fun stop() { calls += "stop" }
+        override fun noiseResolver(): com.fauxx.network.dns.HostResolver? = null
     }
 
     @Test
