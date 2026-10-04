@@ -8,6 +8,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
+import android.os.PowerManager
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import androidx.work.NetworkType
@@ -79,6 +80,10 @@ enum class EngineState {
      *  metered" instead of the misleading "waiting for a usable network" (issue #288). */
     PAUSED_METERED_WIFI,
     PAUSED_BATTERY,
+    /** Running but paused because Android's Battery Saver is on and the user asked Fauxx to
+     *  stand down while it is (issue #313). Never resigns: the loop waits for Battery Saver to
+     *  turn off and resumes at once. */
+    PAUSED_BATTERY_SAVER,
     PAUSED_RATE_LIMIT,
     PAUSED_QUIET_HOURS,
     /** Not started or stopped. */
@@ -136,6 +141,15 @@ private const val LONG_PAUSE_THRESHOLD_MS = 30L * 60 * 1000
  * resume path auto-restarts the FGS at this time with no user interaction (#126).
  */
 private const val LOOP_FAILURE_RESUME_DELAY_MS = 60_000L
+
+/**
+ * Longest wait between re-checks while paused for Battery Saver (issue #313). The end of Battery
+ * Saver wakes the loop at once through [PoisonEngine]'s power-save receiver; this bound only
+ * governs how soon other changes are noticed (the setting switched off, quiet hours starting),
+ * and keeps the paused loop from waking every few seconds at HIGH intensity while the device is
+ * trying to save power.
+ */
+private const val BATTERY_SAVER_RECHECK_MS = 60_000L
 
 /**
  * Battery-level floor used when no stored preference exists at all. Mirrors the
@@ -266,6 +280,10 @@ class PoisonEngine @Inject constructor(
     private val cachedBatteryLevel = AtomicInteger(100)
     private val cachedIsCharging = AtomicBoolean(false)
 
+    /** Whether Android's Battery Saver is on (issue #313). A flow so a paused loop can wake the
+     *  moment it turns off, instead of on its next re-check. */
+    private val cachedPowerSave = MutableStateFlow(false)
+
     /**
      * Transport class of the active network, kept fresh by [networkCallback]. Replaces the
      * old boolean `cachedOnWifi`: per-network intensity (issue #62) needs to distinguish
@@ -283,10 +301,12 @@ class PoisonEngine @Inject constructor(
         transport: NetworkTransport? = null,
         batteryLevel: Int? = null,
         charging: Boolean? = null,
+        powerSave: Boolean? = null,
     ) {
         transport?.let { cachedTransport.set(it) }
         batteryLevel?.let { cachedBatteryLevel.set(it) }
         charging?.let { cachedIsCharging.set(it) }
+        powerSave?.let { cachedPowerSave.value = it }
     }
 
     /** Today's successful action count, incremented on each action. Reset on day rollover. */
@@ -320,6 +340,17 @@ class PoisonEngine @Inject constructor(
             cachedIsCharging.set(intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0)
         }
     }
+
+    /** ACTION_POWER_SAVE_MODE_CHANGED carries no extras; re-read the mode on each change. */
+    private val powerSaveReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context, intent: Intent) {
+            cachedPowerSave.value = isPowerSaveModeNow()
+        }
+    }
+
+    private fun isPowerSaveModeNow(): Boolean =
+        runCatching { context.getSystemService(PowerManager::class.java)?.isPowerSaveMode == true }
+            .getOrDefault(false)
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
@@ -567,13 +598,20 @@ class PoisonEngine @Inject constructor(
         }
         // Seed network transport state
         cachedTransport.set(checkTransportNow())
+        cachedPowerSave.value = isPowerSaveModeNow()
 
         // Register ongoing receivers. Battery still uses a broadcast; connectivity uses
         // NetworkCallback (CONNECTIVITY_ACTION was deprecated in API 28).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED), Context.RECEIVER_NOT_EXPORTED)
+            context.registerReceiver(
+                powerSaveReceiver,
+                IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED),
+                Context.RECEIVER_NOT_EXPORTED,
+            )
         } else {
             context.registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            context.registerReceiver(powerSaveReceiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
         }
         runCatching {
             context.getSystemService(ConnectivityManager::class.java)
@@ -590,6 +628,7 @@ class PoisonEngine @Inject constructor(
 
     private fun unregisterConstraintReceivers() {
         runCatching { context.unregisterReceiver(batteryReceiver) }
+        runCatching { context.unregisterReceiver(powerSaveReceiver) }
         runCatching {
             context.getSystemService(ConnectivityManager::class.java)
                 .unregisterNetworkCallback(networkCallback)
@@ -643,7 +682,12 @@ class PoisonEngine @Inject constructor(
                     }
                 }
 
-                delay(constraintRetryMs)
+                if (constraintState == EngineState.PAUSED_BATTERY_SAVER) {
+                    // Wake the moment Battery Saver turns off rather than on the next tick (#313).
+                    withTimeoutOrNull(BATTERY_SAVER_RECHECK_MS) { cachedPowerSave.first { !it } }
+                } else {
+                    delay(constraintRetryMs)
+                }
                 continue
             }
 
@@ -824,6 +868,11 @@ class PoisonEngine @Inject constructor(
         if (!isWithinAllowedHours(currentProfile)) {
             return EngineState.PAUSED_QUIET_HOURS
         }
+        // Checked last on purpose (#313): this pause never resigns, so any pause that does
+        // (quiet hours, a long network or battery-level pause) must win and release the FGS.
+        if (currentProfile.pauseOnBatterySaver && cachedPowerSave.value) {
+            return EngineState.PAUSED_BATTERY_SAVER
+        }
         return null
     }
 
@@ -848,6 +897,7 @@ class PoisonEngine @Inject constructor(
                     .onFailure { Timber.w(it, "Failed to post the metered-Wi-Fi notice") }
             }
             EngineState.PAUSED_BATTERY -> Timber.d("Paused: battery below threshold")
+            EngineState.PAUSED_BATTERY_SAVER -> Timber.d("Paused: Battery Saver is on")
             EngineState.PAUSED_QUIET_HOURS ->
                 Timber.d("Paused: outside allowed hours (${profile.allowedHoursStart}-${profile.allowedHoursEnd})")
             else -> { /* ACTIVE / PAUSED_RATE_LIMIT / STOPPED log via their own paths */ }
@@ -939,6 +989,11 @@ class PoisonEngine @Inject constructor(
      *   [EngineState.PAUSED_BATTERY]: resign once the pause has
      *   lasted [LONG_PAUSE_THRESHOLD_MS]. Short blips (commute, brief WiFi drop) keep the
      *   FGS up, but sustained pauses surrender it.
+     * - [EngineState.PAUSED_BATTERY_SAVER]: never resign (#313). No WorkManager constraint means
+     *   "Battery Saver is off" and the system does not deliver its change broadcast to a stopped
+     *   app, so a resigned engine could only come back through a tap-to-resume notification.
+     *   Staying up costs one wake per [BATTERY_SAVER_RECHECK_MS] and resumes the moment Battery
+     *   Saver ends.
      */
     @VisibleForTesting
     internal fun decidePauseAction(
@@ -971,6 +1026,7 @@ class PoisonEngine @Inject constructor(
                 if (pauseElapsedMs >= LONG_PAUSE_THRESHOLD_MS)
                     PauseDecision.Resign(ResumeSpec.WhenConstraintMet(batteryNotLow = true))
                 else PauseDecision.Continue
+            EngineState.PAUSED_BATTERY_SAVER -> PauseDecision.Continue
             else -> PauseDecision.Continue
         }
     }
@@ -1206,6 +1262,7 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.THEME_MODE] = p.themeMode.name
         prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] = p.resumeOnBoot
         prefs[com.fauxx.di.PreferenceKeys.LOAD_IMAGES] = p.loadImages
+        prefs[com.fauxx.di.PreferenceKeys.PAUSE_ON_BATTERY_SAVER] = p.pauseOnBatterySaver
         prefs[com.fauxx.di.PreferenceKeys.DNS_MODE] = p.dnsMode.name
         prefs[com.fauxx.di.PreferenceKeys.DOH_PROVIDER] = p.dohProvider
         prefs[com.fauxx.di.PreferenceKeys.DOH_CUSTOM_URL] = p.dohCustomUrl
@@ -1281,6 +1338,7 @@ class PoisonProfileRepository @Inject constructor(
             }.getOrDefault(com.fauxx.ui.theme.ThemeMode.SYSTEM),
             resumeOnBoot = prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] ?: true,
             loadImages = prefs[com.fauxx.di.PreferenceKeys.LOAD_IMAGES] ?: false,
+            pauseOnBatterySaver = prefs[com.fauxx.di.PreferenceKeys.PAUSE_ON_BATTERY_SAVER] ?: false,
             dnsMode = runCatching {
                 com.fauxx.data.model.DnsMode.valueOf(
                     prefs[com.fauxx.di.PreferenceKeys.DNS_MODE] ?: com.fauxx.data.model.DnsMode.SYSTEM.name

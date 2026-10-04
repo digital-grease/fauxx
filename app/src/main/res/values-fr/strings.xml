@@ -336,6 +336,8 @@
     <string name="settings_dns_help">Si une application VPN ou pare-feu filtre le DNS, exemptez-en Fauxx (dans Rethink, réglez Fauxx pour contourner DNS et pare-feu) ; sinon elle peut bloquer le DNS chiffré de Fauxx, ou les connexions établies avec ses réponses. Cela contourne uniquement le blocage au niveau DNS, pas le blocage par adresse IP. Tant que c\'est activé, les sites compatibles HTTP/3 sont joints en HTTP/2. Si le DNS personnalisé cesse de fonctionner, Fauxx revient au DNS de l\'appareil et l\'indique sur le tableau de bord.</string>
     <string name="settings_battery_threshold_battery_title">Mettre en pause sous (batterie)</string>
     <string name="settings_battery_threshold_charging_title">Mettre en pause sous (en charge)</string>
+    <string name="settings_battery_saver_title">Pause avec l\'économiseur de batterie</string>
+    <string name="settings_battery_saver_description">S\'arrête tant que l\'économiseur de batterie d\'Android est activé et reprend dès qu\'il est désactivé.</string>
     <string name="settings_active_hours_title">Heures actives</string>
     <string name="settings_active_hours_start_label">Début</string>
     <string name="settings_active_hours_end_label">Fin</string>
@@ -473,6 +475,7 @@
     <string name="dashboard_engine_state_paused_metered_wifi">En pause — ce réseau Wi-Fi est facturé à l\'usage</string>
     <string name="dashboard_metered_wifi_explainer">Android signale ce réseau comme facturé à l\'usage, donc Fauxx le traite comme des données mobiles. Choisissez un niveau de données mobiles pour fonctionner ici malgré tout.</string>
     <string name="dashboard_engine_state_paused_battery">Batterie sous le seuil</string>
+    <string name="dashboard_engine_state_paused_battery_saver">Économiseur de batterie activé</string>
     <string name="dashboard_engine_state_paused_rate_limit">Limite horaire atteinte</string>
     <string name="dashboard_engine_state_paused_quiet_hours">En dehors des heures actives</string>
     <string name="dashboard_engine_state_stopped">Moteur arrêté</string>

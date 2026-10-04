@@ -398,6 +398,8 @@
     <string name="settings_dns_help">Если VPN-приложение или файрвол фильтрует DNS, сделайте для Fauxx исключение (в Rethink разрешите Fauxx обходить DNS и файрвол); иначе он может блокировать зашифрованный DNS Fauxx или соединения по его ответам. Это обходит только блокировку на уровне DNS, но не по IP-адресу. Пока функция включена, сайты с поддержкой HTTP/3 открываются по HTTP/2. Если свой DNS перестанет работать, Fauxx вернётся к DNS устройства и сообщит об этом на главном экране.</string>
     <string name="settings_battery_threshold_battery_title">Пауза при заряде ниже (от батареи)</string>
     <string name="settings_battery_threshold_charging_title">Пауза при заряде ниже (при зарядке)</string>
+    <string name="settings_battery_saver_title">Пауза в режиме энергосбережения</string>
+    <string name="settings_battery_saver_description">Останавливается, пока включён режим энергосбережения Android, и продолжает работу сразу после его отключения.</string>
     <string name="settings_active_hours_start_label">Начало</string>
     <string name="settings_active_hours_end_label">Конец</string>
     <string name="settings_active_hours_description">Активность приостановлена вне этих часов</string>
@@ -497,6 +499,7 @@
     <string name="dashboard_engine_state_paused_metered_wifi">Пауза — это лимитное Wi-Fi-подключение</string>
     <string name="dashboard_metered_wifi_explainer">Android сообщает, что эта сеть лимитная, поэтому Fauxx считает её мобильным трафиком. Выберите уровень мобильных данных, чтобы работать и здесь.</string>
     <string name="dashboard_engine_state_paused_battery">Батарея ниже порога</string>
+    <string name="dashboard_engine_state_paused_battery_saver">Включён режим энергосбережения</string>
     <string name="dashboard_engine_state_paused_rate_limit">Достигнут часовой лимит</string>
     <string name="dashboard_engine_state_paused_quiet_hours">Вне активных часов</string>
     <string name="dashboard_engine_state_stopped">Движок остановлен</string>

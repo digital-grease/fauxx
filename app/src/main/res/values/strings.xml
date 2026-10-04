@@ -332,6 +332,8 @@
     <string name="settings_dns_help">If a VPN or firewall app filters DNS, exempt Fauxx from it (in Rethink, set Fauxx to bypass DNS and firewall); otherwise it may block Fauxx\'s encrypted DNS, or the connections made with its answers. This gets around DNS-level blocking only, not blocking by IP address. While it is on, sites that support HTTP/3 are reached over HTTP/2. If custom DNS stops working, Fauxx falls back to your device\'s DNS and says so on the dashboard.</string>
     <string name="settings_battery_threshold_battery_title">Pause below (Battery)</string>
     <string name="settings_battery_threshold_charging_title">Pause below (Charging)</string>
+    <string name="settings_battery_saver_title">Pause during Battery Saver</string>
+    <string name="settings_battery_saver_description">Stop while Android\'s Battery Saver is on, and pick up again as soon as it turns off.</string>
     <string name="settings_active_hours_title">Active Hours</string>
     <string name="settings_active_hours_start_label">Start</string>
     <string name="settings_active_hours_end_label">End</string>
@@ -468,6 +470,7 @@
     <string name="dashboard_engine_state_paused_metered_wifi">Paused — this Wi-Fi is metered</string>
     <string name="dashboard_metered_wifi_explainer">Android reports this network as metered, so Fauxx is treating it like mobile data. Set a mobile-data level to run here anyway.</string>
     <string name="dashboard_engine_state_paused_battery">Battery below threshold</string>
+    <string name="dashboard_engine_state_paused_battery_saver">Battery Saver is on</string>
     <string name="dashboard_engine_state_paused_rate_limit">Hourly rate limit reached</string>
     <string name="dashboard_engine_state_paused_quiet_hours">Outside active hours</string>
     <string name="dashboard_engine_state_stopped">Engine stopped</string>

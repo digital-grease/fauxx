@@ -139,6 +139,19 @@ class SettingsViewModelTest {
         assertTrue(vm.uiState.value.routeDnsNoise)
     }
 
+    // --- #313 Battery Saver ---
+
+    @Test
+    fun `the Battery Saver setting reaches the saved profile`() = runTest {
+        val vm = viewModel()
+        val transform = io.mockk.slot<(PoisonProfile) -> PoisonProfile>()
+        io.mockk.coEvery { profileRepo.updateProfile(capture(transform)) } returns Unit
+        vm.setPauseOnBatterySaver(true)
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.pauseOnBatterySaver)
+        assertTrue(transform.captured(PoisonProfile()).pauseOnBatterySaver)
+    }
+
     // --- #281 search-engine opt-out ---
 
     @Test

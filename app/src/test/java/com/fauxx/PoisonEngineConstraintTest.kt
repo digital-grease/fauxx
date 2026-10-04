@@ -295,6 +295,20 @@ class PoisonEngineConstraintTest {
     }
 
     @Test
+    fun `decidePauseAction never resigns a Battery Saver pause`() {
+        // #313: nothing can wake a resigned engine when Battery Saver ends, so this pause stays up.
+        engine = createEngine()
+        val decision = engine.decidePauseAction(
+            state = EngineState.PAUSED_BATTERY_SAVER,
+            currentProfile = profile,
+            pauseElapsedMs = 12 * 60 * 60 * 1000L,
+            totalRuntimeMs = 13 * 60 * 60 * 1000L,
+            nowMs = nowMs
+        )
+        assertEquals(PauseDecision.Continue, decision)
+    }
+
+    @Test
     fun `decidePauseAction continues looping during short battery pause`() {
         engine = createEngine()
         val decision = engine.decidePauseAction(

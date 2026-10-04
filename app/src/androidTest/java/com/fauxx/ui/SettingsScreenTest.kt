@@ -1,6 +1,9 @@
 package com.fauxx.ui
 
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -11,6 +14,7 @@ import com.fauxx.ui.screens.SettingsScreen
 import com.fauxx.ui.theme.FauxxTheme
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
+import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -187,5 +191,24 @@ class SettingsScreenTest {
         }
         composeRule.onNodeWithText("Load images on synthetic pages").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("tracking pixels fire", substring = true).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun batterySaverToggle_isDisplayedAndToggles() {
+        composeRule.setContent {
+            FauxxTheme {
+                SettingsScreen()
+            }
+        }
+        val toggle = composeRule.onNode(hasText("Pause during Battery Saver") and isToggleable())
+        toggle.performScrollTo().assertIsDisplayed()
+        // Real tap, not a direct state write: the whole row is the switch (#313).
+        val before = toggle.fetchSemanticsNode().config[SemanticsProperties.ToggleableState]
+        toggle.performClick()
+        composeRule.waitForIdle()
+        val after = toggle.fetchSemanticsNode().config[SemanticsProperties.ToggleableState]
+        assertNotEquals("tapping the row must flip the setting", before, after)
+        toggle.performClick() // restore the stored setting for later tests
+        composeRule.waitForIdle()
     }
 }

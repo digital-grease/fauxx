@@ -336,6 +336,8 @@
     <string name="settings_dns_help">Si una app de VPN o cortafuegos filtra el DNS, excluye a Fauxx de ella (en Rethink, configura Fauxx para omitir DNS y cortafuegos); si no, puede bloquear el DNS cifrado de Fauxx o las conexiones hechas con sus respuestas. Esto solo evita el bloqueo a nivel de DNS, no el bloqueo por dirección IP. Mientras está activado, los sitios compatibles con HTTP/3 se cargan por HTTP/2. Si el DNS personalizado deja de funcionar, Fauxx vuelve al DNS del dispositivo y lo indica en el panel.</string>
     <string name="settings_battery_threshold_battery_title">Pausar por debajo de (batería)</string>
     <string name="settings_battery_threshold_charging_title">Pausar por debajo de (cargando)</string>
+    <string name="settings_battery_saver_title">Pausar con Ahorro de batería</string>
+    <string name="settings_battery_saver_description">Se detiene mientras el Ahorro de batería de Android está activado y se reanuda en cuanto se desactiva.</string>
     <string name="settings_active_hours_title">Horas activas</string>
     <string name="settings_active_hours_start_label">Inicio</string>
     <string name="settings_active_hours_end_label">Fin</string>
@@ -473,6 +475,7 @@
     <string name="dashboard_engine_state_paused_metered_wifi">En pausa — esta red Wi-Fi es de uso medido</string>
     <string name="dashboard_metered_wifi_explainer">Android indica que esta red es de uso medido, así que Fauxx la trata como datos móviles. Elige un nivel de datos móviles para funcionar aquí de todos modos.</string>
     <string name="dashboard_engine_state_paused_battery">Batería por debajo del umbral</string>
+    <string name="dashboard_engine_state_paused_battery_saver">Ahorro de batería activado</string>
     <string name="dashboard_engine_state_paused_rate_limit">Límite horario alcanzado</string>
     <string name="dashboard_engine_state_paused_quiet_hours">Fuera de las horas activas</string>
     <string name="dashboard_engine_state_stopped">Motor detenido</string>

@@ -218,6 +218,7 @@ Global controls:
 - **Wi-Fi intensity:** Low (light activity) / Medium (balanced) / High (aggressive) / Max (highest volume)
 - **Mobile data intensity:** a separate Off / Low / Medium / High / Max ladder for mobile data — Off (the default) never touches mobile data; any tier runs the engine on mobile at its own rate. Wi-Fi networks the system reports as metered, a tethered phone hotspot or a network you marked metered in Android's Wi-Fi settings, are governed by this ladder too, so Fauxx does not quietly spend a data allowance it cannot see
 - **Battery threshold:** Minimum battery % to run actions (Can be adjusted individually while on battery and while charging)
+- **Pause during Battery Saver:** Off by default. On, Fauxx stops while Android's Battery Saver is on and picks up again as soon as it turns off
 - **Active hours:** Time range when actions should run (e.g., 7am–11pm)
 - **Search engines:** Which engines receive synthetic queries. Turning one off spares it entirely. At least two stay active, because real people spread searches across engines and noise from a single one would be easy to filter out
 - **Load images on synthetic pages:** Off by default. On, pages load images like a real browser, so tracking pixels fire and each visit looks normal to the site; off saves a lot of data, since images are most of a page's size, but a browser that never loads images is unusual
@@ -379,7 +380,7 @@ When Fauxx pauses for a long stretch, it releases its foreground service rather 
 You'll typically see this notification:
 
 - **In the morning,** if you have quiet hours configured (default 7am to 11pm). Rather than spin idle overnight, Fauxx steps down at the start of quiet hours and reappears as a tap-to-resume at the start of your next active window.
-- **After a long no-network pause,** if your mobile data intensity is Off and Wi-Fi is gone or is a metered network, or after a long low-battery pause. Sustained pauses past 30 minutes release the service rather than spinning idle.
+- **After a long no-network pause,** if your mobile data intensity is Off and Wi-Fi is gone or is a metered network, or after a long low-battery pause. Sustained pauses past 30 minutes release the service rather than spinning idle. A Battery Saver pause is the exception: Fauxx keeps the service so it can resume the moment Battery Saver turns off, since Android gives a stopped app no way to find out.
 - **After a reboot or an app update,** because Android won't let Fauxx restart its own foreground service from a boot or update event. Fauxx posts the resume notification instead.
 
 Tapping the notification opens Fauxx and restarts protection. Nothing is lost. Your settings, profile, persona, and action log are all persistent. This behavior is identical on the Play Store and F-Droid builds.

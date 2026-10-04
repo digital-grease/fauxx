@@ -349,6 +349,8 @@ private fun ProtectionCard(
                             EngineState.PAUSED_METERED_WIFI ->
                                 stringResource(R.string.dashboard_engine_state_paused_metered_wifi)
                             EngineState.PAUSED_BATTERY -> stringResource(R.string.dashboard_engine_state_paused_battery)
+                            EngineState.PAUSED_BATTERY_SAVER ->
+                                stringResource(R.string.dashboard_engine_state_paused_battery_saver)
                             EngineState.PAUSED_RATE_LIMIT -> stringResource(R.string.dashboard_engine_state_paused_rate_limit)
                             EngineState.PAUSED_QUIET_HOURS -> stringResource(R.string.dashboard_engine_state_paused_quiet_hours)
                             EngineState.STOPPED -> stringResource(R.string.dashboard_engine_state_stopped)

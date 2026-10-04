@@ -14,6 +14,8 @@ import com.fauxx.ui.theme.ThemeMode
  *   [intensity] (see PoisonProfileRepository.prefsToProfile).
  * @property batteryThresholdBattery Pause when battery level drops below this percentage while NOT charging (0-100).
  * @property batteryThresholdCharging Pause when battery level drops below this percentage while charging (0-100).
+ * @property pauseOnBatterySaver Pause while Android's Battery Saver is on (issue #313), resuming as
+ *   soon as it turns off. Off by default.
  * @property allowedHoursStart Hour of day (0-23) when activity is permitted to start.
  * @property allowedHoursEnd Hour of day (0-23) when activity must stop.
  * @property logRetentionDays Days of action-log history to keep; the retention worker prunes
@@ -64,6 +66,7 @@ data class PoisonProfile(
     val mobileIntensity: IntensityLevel? = null,
     val batteryThresholdBattery: Int = 20,
     val batteryThresholdCharging: Int = 20,
+    val pauseOnBatterySaver: Boolean = false,
     val allowedHoursStart: Int = 7,
     val allowedHoursEnd: Int = 23,
     val logRetentionDays: Int = 7,
