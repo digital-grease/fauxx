@@ -270,6 +270,8 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.work.testing)
     testImplementation(libs.mockwebserver)
+    // Self-signed certificates for the DoH "skip certificate check" tests (#227).
+    testImplementation(libs.okhttp.tls)
     testImplementation(libs.kotest.property)
     androidTestImplementation(libs.junit.ext)
     androidTestImplementation(libs.espresso)

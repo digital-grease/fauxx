@@ -78,11 +78,20 @@ class CustomDnsSettingsTest {
      * once when created, so a screen built straight after the write could see stale values.
      */
     private fun setDns(mode: DnsMode, provider: String, url: String) {
-        runBlocking { profileRepo.updateProfile { it.copy(dnsMode = mode, dohProvider = provider, dohCustomUrl = url) } }
+        runBlocking {
+            profileRepo.updateProfile {
+                it.copy(
+                    dnsMode = mode, dohProvider = provider, dohCustomUrl = url,
+                    dohCustomServerIp = "", dohSkipCertificateCheck = false,
+                )
+            }
+        }
         val deadline = System.currentTimeMillis() + 5_000
         while (System.currentTimeMillis() < deadline) {
             val p = profileRepo.getProfile()
-            if (p.dnsMode == mode && p.dohProvider == provider && p.dohCustomUrl == url) return
+            if (p.dnsMode == mode && p.dohProvider == provider && p.dohCustomUrl == url &&
+                p.dohCustomServerIp.isEmpty() && !p.dohSkipCertificateCheck
+            ) return
             Thread.sleep(20)
         }
         error("profile cache never reflected the DNS settings")
@@ -130,6 +139,35 @@ class CustomDnsSettingsTest {
         composeRule.onNodeWithText("Save and use").performScrollTo().performClick()
         awaitProfile { profileRepo.getProfile().dohProvider == DohPresets.CUSTOM_ID }
         assertEquals("https://dns.example/dns-query", profileRepo.getProfile().dohCustomUrl)
+    }
+
+    @Test
+    fun aServerIpIsValidatedAndSavedWithTheUrl() {
+        setContent()
+        composeRule.onNodeWithText("Custom DNS-over-HTTPS URL").performScrollTo().performTextInput("https://dns.lan/dns-query")
+        val ip = composeRule.onNodeWithText("Server IP (optional)")
+        ip.performScrollTo().performTextInput("dns.lan")
+        composeRule.onNodeWithText("Save and use").performScrollTo().performClick()
+        composeRule.onNodeWithText("Enter an IP address, like 192.168.1.2").performScrollTo().assertIsDisplayed()
+        assertEquals("", profileRepo.getProfile().dohCustomUrl)
+
+        ip.performTextReplacement("192.168.6.7")
+        composeRule.onNodeWithText("Save and use").performScrollTo().performClick()
+        awaitProfile { profileRepo.getProfile().dohCustomServerIp == "192.168.6.7" }
+        assertEquals("https://dns.lan/dns-query", profileRepo.getProfile().dohCustomUrl)
+    }
+
+    @Test
+    fun theCertificateSwitchAppearsOnlyForACustomUrl_andTogglesIt() {
+        setContent()
+        composeRule.onNodeWithText("Skip certificate check").assertDoesNotExist()
+
+        composeRule.onNodeWithText("Custom DNS-over-HTTPS URL").performScrollTo().performTextInput("https://dns.lan/dns-query")
+        composeRule.onNodeWithText("Save and use").performScrollTo().performClick()
+        awaitProfile { profileRepo.getProfile().dohProvider == DohPresets.CUSTOM_ID }
+
+        composeRule.onNodeWithText("Skip certificate check").performScrollTo().performClick()
+        awaitProfile { profileRepo.getProfile().dohSkipCertificateCheck }
     }
 
     @Test

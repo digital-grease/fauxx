@@ -395,6 +395,11 @@
     <string name="settings_dns_noise_title">Использовать и для DNS-шума</string>
     <string name="settings_dns_noise_description">Выкл.: запросы DNS-шума идут в DNS устройства и попадают в DNS-журналы вашей сети и провайдера, для чего DNS-шум и нужен. Вкл.: пока свой сервер работает, они идут на него, и видят их в основном его журналы (с незашифрованным DNS их по-прежнему видит ваша сеть).</string>
     <string name="settings_dns_custom_save">Сохранить и использовать</string>
+    <string name="settings_dns_custom_ip_label">IP-адрес сервера (необязательно)</string>
+    <string name="settings_dns_custom_ip_help">Fauxx подключается к этому адресу вместо того, чтобы искать имя из адреса. Для сервера в вашей сети или сервера, который блокирует ваш DNS.</string>
+    <string name="settings_dns_custom_ip_invalid">Введите IP-адрес, например 192.168.1.2</string>
+    <string name="settings_dns_insecure_title">Не проверять сертификат</string>
+    <string name="settings_dns_insecure_description">Для своего сервера с самоподписанным сертификатом. Любой, кто находится между вами и сервером, сможет выдать себя за него и видеть или подменять каждое имя, которое ищет Fauxx. Касается только этого адреса.</string>
     <string name="settings_dns_help">Если VPN-приложение или файрвол фильтрует DNS, сделайте для Fauxx исключение (в Rethink разрешите Fauxx обходить DNS и файрвол); иначе он может блокировать зашифрованный DNS Fauxx или соединения по его ответам. Это обходит только блокировку на уровне DNS, но не по IP-адресу. Пока функция включена, сайты с поддержкой HTTP/3 открываются по HTTP/2. Если свой DNS перестанет работать, Fauxx вернётся к DNS устройства и сообщит об этом на главном экране.</string>
     <string name="settings_battery_threshold_battery_title">Пауза при заряде ниже (от батареи)</string>
     <string name="settings_battery_threshold_charging_title">Пауза при заряде ниже (при зарядке)</string>

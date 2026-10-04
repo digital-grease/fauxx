@@ -123,7 +123,14 @@ class CustomDnsRouter @Inject constructor(
     private val networkChanges: NetworkChanges,
 ) : CustomDns, PhantomProxyAuth {
 
-    private data class Settings(val mode: DnsMode, val provider: String, val customUrl: String, val plainServer: String)
+    private data class Settings(
+        val mode: DnsMode,
+        val provider: String,
+        val customUrl: String,
+        val plainServer: String,
+        val customServerIp: String,
+        val customSkipCertificateCheck: Boolean,
+    )
 
     private class Running(
         val settings: Settings,
@@ -216,7 +223,7 @@ class CustomDnsRouter @Inject constructor(
                 return
             }
             else -> dohFor(settings) ?: run {
-                degrade("The custom DNS-over-HTTPS URL is not a valid https address")
+                degrade("The custom DNS-over-HTTPS URL or server IP is not valid")
                 return
             }
         }
@@ -318,10 +325,22 @@ class CustomDnsRouter @Inject constructor(
     private fun dohFor(settings: Settings): DohHostResolver? {
         if (settings.provider == DohPresets.CUSTOM_ID) {
             if (!DohPresets.isValidCustomUrl(settings.customUrl)) return null
-            // A custom endpoint has no built-in addresses. Resolve its hostname over the default
-            // preset's DoH first: DoH-bypass blocklists on the very Pi-hole or VPN being routed
-            // around often block hosts like dns.nextdns.io. The system resolver is the fallback.
-            return DohHostResolver(settings.customUrl.trim(), bootstrap = emptyList(), endpointResolver = defaultThenSystem)
+            // The user may give the server's address, so its hostname is never looked up (a LAN
+            // resolver, or one their DNS blocks). Otherwise, or if that address stops answering,
+            // the hostname is resolved over the default preset's DoH first: DoH-bypass blocklists
+            // on the very Pi-hole or VPN being routed around often block hosts like
+            // dns.nextdns.io. The system resolver is the last fallback.
+            val serverIp = if (settings.customServerIp.isBlank()) {
+                null
+            } else {
+                DohPresets.parseServerIp(settings.customServerIp) ?: return null
+            }
+            return DohHostResolver(
+                settings.customUrl.trim(),
+                bootstrap = listOfNotNull(serverIp),
+                endpointResolver = defaultThenSystem,
+                skipCertificateCheck = settings.customSkipCertificateCheck,
+            )
         }
         // An id this build does not know (a preset removed in a later version) means the default,
         // not a broken setting.
@@ -337,7 +356,9 @@ class CustomDnsRouter @Inject constructor(
         }
     }
 
-    private fun settingsOf(p: PoisonProfile) = Settings(p.dnsMode, p.dohProvider, p.dohCustomUrl, p.plainDnsServer)
+    private fun settingsOf(p: PoisonProfile) = Settings(
+        p.dnsMode, p.dohProvider, p.dohCustomUrl, p.plainDnsServer, p.dohCustomServerIp, p.dohSkipCertificateCheck,
+    )
 
     private companion object {
         const val INTERCEPTED = "Plain DNS may be intercepted on this network (a VPN or firewall app?)"
