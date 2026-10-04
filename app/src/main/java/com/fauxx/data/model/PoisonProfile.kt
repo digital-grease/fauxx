@@ -48,8 +48,12 @@ import com.fauxx.ui.theme.ThemeMode
  * @property dohCustomServerIp Optional IP address for [dohCustomUrl]'s server. When set, Fauxx
  *   connects there instead of looking up the URL's hostname (a resolver on the user's network, or
  *   one their DNS blocks); the hostname still names the server for TLS.
- * @property dohSkipCertificateCheck Accept any certificate from [dohCustomUrl]'s server, for a
- *   self-hosted resolver with a self-signed certificate. Off by default; never applies to presets.
+ * @property dohSkipCertificateCheck Skip the normal certificate check for [dohCustomUrl]'s server,
+ *   for a self-hosted resolver with a self-signed certificate. Its key is trusted on first use
+ *   instead ([dohPinnedKey]). Off by default; never applies to presets.
+ * @property dohPinnedKey The key trusted on first use while [dohSkipCertificateCheck] is on (SHA-256
+ *   of the public key, base64), or empty until the first connection. Written by the custom DNS
+ *   router, cleared whenever the URL, server IP or the switch changes.
  * @property plainDnsServer The plain DNS server for [DnsMode.PLAIN], as `ip` or `ip:port`
  *   (IPv6 bracketed when a port is given). By IP only, never by name.
  * @property preferredCustomDnsMode The custom mode (DOH or PLAIN) the user last chose, so switching
@@ -94,6 +98,7 @@ data class PoisonProfile(
     val dohCustomUrl: String = "",
     val dohCustomServerIp: String = "",
     val dohSkipCertificateCheck: Boolean = false,
+    val dohPinnedKey: String = "",
     val plainDnsServer: String = "",
     val routeDnsNoise: Boolean = false,
     val preferredCustomDnsMode: DnsMode = DnsMode.DOH,

@@ -8,10 +8,8 @@ import okhttp3.dnsoverhttps.DnsOverHttps
 import java.io.IOException
 import java.net.InetAddress
 import java.net.UnknownHostException
-import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
 
 /** The device's own resolver: whatever Android, the VPN, Private DNS or the router provides. */
 object SystemHostResolver : HostResolver {
@@ -35,10 +33,15 @@ object SystemHostResolver : HostResolver {
  * the resolver's answer. Getting this wrong fails CLOSED, silently: every lookup "answers" no such
  * host, the proxy refuses every page, and health still reads healthy.
  *
- * [skipCertificateCheck] is the user's explicit opt-in for a self-hosted resolver with a
- * self-signed certificate: the endpoint's certificate and hostname are then not checked at all.
- * Only a custom URL can ask for it (the router never sets it for a preset), and it applies to this
- * client alone, never to the WebView's own connections.
+ * [certificatePin] replaces normal certificate checking when the user opted out of it for a
+ * self-hosted resolver with a self-signed certificate: the server's key is trusted on first use
+ * and only that key afterwards (see [CertificatePin]). Only a custom URL can ask for it (the router
+ * never sets it for a preset), and it applies to this client alone, never to the WebView's own
+ * connections.
+ *
+ * Redirects are not followed. A DoH server has no reason to redirect, and following one to another
+ * host fails inside OkHttp's bootstrap resolver in a way that reads as "no such host": every
+ * lookup would then fail closed while health stayed healthy.
  *
  * The OkHttp client is a fresh, minimal one and deliberately NOT the app's orphaned client from
  * NetworkModule, whose interceptors randomize headers. DoH requests only ever reach the resolver
@@ -48,7 +51,7 @@ class DohHostResolver(
     url: String,
     bootstrap: List<InetAddress>,
     endpointResolver: HostResolver = SystemHostResolver,
-    private val skipCertificateCheck: Boolean = false,
+    private val certificatePin: CertificatePin? = null,
 ) : HostResolver {
 
     private val endpointDns = EndpointDns(endpointResolver)
@@ -68,7 +71,9 @@ class DohHostResolver(
                 .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .callTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .apply { if (skipCertificateCheck) trustAnyCertificate() }
+                .followRedirects(false)
+                .followSslRedirects(false)
+                .apply { certificatePin?.let { pinTo(it) } }
                 .build(),
         )
         .url(url.toHttpUrl())
@@ -100,20 +105,13 @@ class DohHostResolver(
         const val TIMEOUT_SECONDS = 5L
 
         /**
-         * Accept any certificate for any name. Deliberate and user-chosen (see the class KDoc):
-         * this is what "skip certificate check" means, and it is scoped to one DoH client.
+         * Trust only the pinned key (see [CertificatePin]). The hostname is not checked: the pinned
+         * key is the server's identity, and a self-signed certificate rarely names the URL's host.
          */
-        @SuppressLint("TrustAllX509TrustManager", "CustomX509TrustManager")
-        private object AcceptAnyCertificate : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
-        }
-
         @SuppressLint("BadHostnameVerifier")
-        fun OkHttpClient.Builder.trustAnyCertificate(): OkHttpClient.Builder {
-            val tls = SSLContext.getInstance("TLS").apply { init(null, arrayOf(AcceptAnyCertificate), null) }
-            return sslSocketFactory(tls.socketFactory, AcceptAnyCertificate).hostnameVerifier { _, _ -> true }
+        fun OkHttpClient.Builder.pinTo(pin: CertificatePin): OkHttpClient.Builder {
+            val tls = SSLContext.getInstance("TLS").apply { init(null, arrayOf(pin), null) }
+            return sslSocketFactory(tls.socketFactory, pin).hostnameVerifier { _, _ -> true }
         }
     }
 }
@@ -139,6 +137,9 @@ internal fun classify(lookup: () -> List<InetAddress>): Resolution =
         when {
             e.cause is IOException -> Resolution.Failure(e)
             e.message?.contains(SERVER_FAILURE, ignoreCase = true) == true -> Resolution.Failure(e)
+            // OkHttp's bootstrap resolver was asked for a host other than the endpoint's: the
+            // client was sent elsewhere, which is the resolver failing, not answering.
+            e.message?.startsWith(BOOTSTRAP_MISMATCH) == true -> Resolution.Failure(e)
             else -> Resolution.NoSuchHost
         }
     } catch (e: IOException) {
@@ -148,3 +149,4 @@ internal fun classify(lookup: () -> List<InetAddress>): Resolution =
     }
 
 private const val SERVER_FAILURE = "server failure"
+private const val BOOTSTRAP_MISMATCH = "BootstrapDns called for"

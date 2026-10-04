@@ -693,6 +693,7 @@ private fun ColumnScope.DohSection(
     var invalid by rememberSaveable { mutableStateOf(false) }
     var invalidIp by rememberSaveable { mutableStateOf(false) }
     var needsUrl by rememberSaveable { mutableStateOf(false) }
+    var ipNeedsUrl by rememberSaveable { mutableStateOf(false) }
 
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         for (preset in DohPresets.ALL) {
@@ -714,7 +715,7 @@ private fun ColumnScope.DohSection(
     Spacer(Modifier.height(8.dp))
     OutlinedTextField(
         value = draft,
-        onValueChange = { draft = it; invalid = false; needsUrl = false },
+        onValueChange = { draft = it; invalid = false; needsUrl = false; ipNeedsUrl = false },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         label = { Text(stringResource(R.string.settings_dns_custom_label)) },
@@ -722,6 +723,7 @@ private fun ColumnScope.DohSection(
         isError = invalid,
         supportingText = when {
             invalid -> { { Text(stringResource(R.string.settings_dns_custom_invalid)) } }
+            ipNeedsUrl -> { { Text(stringResource(R.string.settings_dns_custom_ip_needs_url)) } }
             needsUrl -> { { Text(stringResource(R.string.settings_dns_custom_needed)) } }
             else -> null
         },
@@ -744,6 +746,7 @@ private fun ColumnScope.DohSection(
             val result = onSaveCustomUrl(draft, ipDraft)
             invalid = result == DohSaveResult.INVALID_URL
             invalidIp = result == DohSaveResult.INVALID_SERVER_IP
+            ipNeedsUrl = result == DohSaveResult.MISSING_URL
             if (result == DohSaveResult.SAVED) {
                 needsUrl = false
                 if (draft.isBlank()) ipDraft = ""
@@ -752,13 +755,14 @@ private fun ColumnScope.DohSection(
         enabled = draft.trim() != uiState.dohCustomUrl || ipDraft.trim() != uiState.dohCustomServerIp,
         modifier = Modifier.align(Alignment.End)
     ) { Text(stringResource(R.string.settings_dns_custom_save)) }
-    // Only a saved custom URL can skip the check; the presets are always verified.
+    // Only a saved custom URL can skip the check; the presets are always verified. Disabled while
+    // an edit is unsaved: the switch acts on the SAVED server, not the one being typed.
     if (uiState.dohProvider == DohPresets.CUSTOM_ID) {
         LabelledSwitch(
             title = stringResource(R.string.settings_dns_insecure_title),
             description = stringResource(R.string.settings_dns_insecure_description),
             checked = uiState.dohSkipCertificateCheck,
-            enabled = true,
+            enabled = draft.trim() == uiState.dohCustomUrl && ipDraft.trim() == uiState.dohCustomServerIp,
             onCheckedChange = onSkipCertificateCheckChange,
         )
     }

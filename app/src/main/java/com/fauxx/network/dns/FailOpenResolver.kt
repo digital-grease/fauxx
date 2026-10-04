@@ -14,11 +14,18 @@ sealed interface DnsHealth {
     data object Healthy : DnsHealth
 
     /**
-     * Custom DNS is not doing its job since [sinceMs] (wall clock). [intercepted] says why in the one
-     * case the dashboard must word differently: answers ARE arriving, from another app that
-     * captures port 53, not from the user's server and not from the device's own DNS either.
+     * Custom DNS is not doing its job since [sinceMs] (wall clock). Two causes need their own
+     * dashboard wording: [intercepted], where answers ARE arriving, from another app that captures
+     * port 53 rather than the user's server; and [certificateChanged], where the user's self-signed
+     * server presented a key other than the one first trusted, which they fix themselves if they
+     * replaced it.
      */
-    data class Degraded(val sinceMs: Long, val reason: String, val intercepted: Boolean = false) : DnsHealth
+    data class Degraded(
+        val sinceMs: Long,
+        val reason: String,
+        val intercepted: Boolean = false,
+        val certificateChanged: Boolean = false,
+    ) : DnsHealth
 }
 
 /**

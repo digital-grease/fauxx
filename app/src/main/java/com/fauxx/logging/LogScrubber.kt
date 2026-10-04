@@ -29,6 +29,8 @@ object LogScrubber {
         // Custom DNS-over-HTTPS endpoints (#227). A personal resolver URL carries an account or
         // profile id (NextDNS, ControlD, AdGuard), which identifies the user as surely as an email.
         Regex("""(?i)dohCustomUrl\s*[=:]\s*[^\s,)}\]]+"""),
+        // The user's own DNS server addresses (a home LAN layout) and the key pinned for one.
+        Regex("""(?i)(dohCustomServerIp|plainDnsServer|dohPinnedKey)\s*[=:]\s*[^\s,)}\]]+"""),
         Regex("""(?i)https://(dns\.nextdns\.io|dns\.controld\.com)/[^\s,)}\]]+"""),
         Regex("""(?i)https://[^\s/]+/dns-query/[^\s,)}\]]+"""),
         // Email addresses

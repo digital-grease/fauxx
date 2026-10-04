@@ -1,6 +1,10 @@
 package com.fauxx.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -145,7 +149,7 @@ class CustomDnsSettingsTest {
     fun aServerIpIsValidatedAndSavedWithTheUrl() {
         setContent()
         composeRule.onNodeWithText("Custom DNS-over-HTTPS URL").performScrollTo().performTextInput("https://dns.lan/dns-query")
-        val ip = composeRule.onNodeWithText("Server IP (optional)")
+        val ip = composeRule.onNodeWithText("Server IP for your own URL (optional)")
         ip.performScrollTo().performTextInput("dns.lan")
         composeRule.onNodeWithText("Save and use").performScrollTo().performClick()
         composeRule.onNodeWithText("Enter an IP address, like 192.168.1.2").performScrollTo().assertIsDisplayed()
@@ -155,6 +159,24 @@ class CustomDnsSettingsTest {
         composeRule.onNodeWithText("Save and use").performScrollTo().performClick()
         awaitProfile { profileRepo.getProfile().dohCustomServerIp == "192.168.6.7" }
         assertEquals("https://dns.lan/dns-query", profileRepo.getProfile().dohCustomUrl)
+    }
+
+    @Test
+    fun aServerIpWithoutAUrl_explainsInsteadOfDiscardingIt() {
+        setContent()
+        composeRule.onNodeWithText("Server IP for your own URL (optional)").performScrollTo().performTextInput("192.168.6.7")
+        composeRule.onNodeWithText("Save and use").performScrollTo().performClick()
+        composeRule.onNodeWithText("Enter your own URL too. The server IP is only used with it.").performScrollTo().assertIsDisplayed()
+        assertEquals("", profileRepo.getProfile().dohCustomServerIp)
+    }
+
+    @Test
+    fun theCertificateSwitchIsDisabledWhileAnEditIsUnsaved() {
+        setContent(withSavedUrl = "https://dns.lan/dns-query")
+        val switch = composeRule.onNode(hasText("Skip certificate check") and isToggleable())
+        switch.performScrollTo().assertIsEnabled()
+        composeRule.onNodeWithText("Custom DNS-over-HTTPS URL").performScrollTo().performTextReplacement("https://other.lan/dns-query")
+        switch.performScrollTo().assertIsNotEnabled()
     }
 
     @Test

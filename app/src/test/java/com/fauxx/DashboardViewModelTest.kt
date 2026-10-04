@@ -161,6 +161,12 @@ class DashboardViewModelTest {
             com.fauxx.ui.viewmodels.CustomDnsNotice.INTERCEPTED,
             withTimeout(5_000) { vm.customDnsNotice.first { it == com.fauxx.ui.viewmodels.CustomDnsNotice.INTERCEPTED } },
         )
+        // A changed certificate gets its own wording too: the user may have caused it and can fix it.
+        health.value = com.fauxx.network.dns.DnsHealth.Degraded(0L, "cert", certificateChanged = true)
+        assertEquals(
+            com.fauxx.ui.viewmodels.CustomDnsNotice.CERTIFICATE_CHANGED,
+            withTimeout(5_000) { vm.customDnsNotice.first { it == com.fauxx.ui.viewmodels.CustomDnsNotice.CERTIFICATE_CHANGED } },
+        )
         job.cancel()
     }
 }

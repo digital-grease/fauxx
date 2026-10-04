@@ -156,36 +156,82 @@ class DohHostResolverTest {
     }
 
     @Test
-    fun `skipping the certificate check reaches a self-signed DoH server`() {
-        useSelfSignedHttps(certificateFor = "localhost")
+    fun `skipping the certificate check trusts the first key and remembers it`() {
+        val certificate = useSelfSignedHttps(certificateFor = "localhost")
+        val pinned = mutableListOf<String>()
+        val pin = CertificatePin(pinned = null, onPinned = { pinned += it }, onChecked = {})
 
-        val result = DohHostResolver(server.url("/dns-query").toString(), bootstrap = emptyList(), skipCertificateCheck = true)
+        val result = DohHostResolver(server.url("/dns-query").toString(), bootstrap = emptyList(), certificatePin = pin)
             .resolve("example.com")
 
         assertEquals(Resolution.Addresses(listOf(InetAddress.getByName("93.184.216.34"))), result)
+        assertEquals("the first key is pinned once", listOf(CertificatePin.fingerprint(certificate.certificate)), pinned.distinct())
     }
 
     @Test
-    fun `skipping the certificate check also accepts a certificate for another name`() {
+    fun `a pinned key is accepted, even with a certificate for another name`() {
         // The 192.168.6.7-with-a-self-signed-cert setup: the certificate rarely names what the URL
-        // says, and "skip" has to mean the name is not checked either.
-        useSelfSignedHttps(certificateFor = "some-other-name.test")
+        // says. The pinned key is the server's identity, so the name is not checked.
+        val certificate = useSelfSignedHttps(certificateFor = "some-other-name.test")
+        var matched: Boolean? = null
+        val pin = CertificatePin(CertificatePin.fingerprint(certificate.certificate), onPinned = {}, onChecked = { matched = it })
 
         val result = DohHostResolver(
             "https://dns.lan:${server.port}/dns-query",
             bootstrap = listOf(InetAddress.getByName("127.0.0.1")),
-            skipCertificateCheck = true,
+            certificatePin = pin,
         ).resolve("example.com")
 
         assertEquals(Resolution.Addresses(listOf(InetAddress.getByName("93.184.216.34"))), result)
+        assertEquals(true, matched)
     }
 
-    private fun useSelfSignedHttps(certificateFor: String) {
+    @Test
+    fun `a server presenting a different key than the pinned one is refused`() {
+        // The café case: something else answers at the user's server IP, with its own certificate.
+        useSelfSignedHttps(certificateFor = "localhost")
+        val someoneElse = HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
+        var matched: Boolean? = null
+        val pin = CertificatePin(CertificatePin.fingerprint(someoneElse.certificate), onPinned = {}, onChecked = { matched = it })
+
+        val result = DohHostResolver(server.url("/dns-query").toString(), bootstrap = emptyList(), certificatePin = pin)
+            .resolve("example.com")
+
+        assertTrue("expected Failure, got $result", result is Resolution.Failure)
+        assertEquals("the mismatch must be reported for the dashboard", false, matched)
+    }
+
+    @Test
+    fun `a redirect to another host is a failure, not a quiet no-such-host`() {
+        // Review finding: OkHttp followed the redirect, its bootstrap resolver refused the new host
+        // with an UnknownHostException, and that read as the resolver answering "no such host".
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest) =
+                MockResponse().setResponseCode(302).setHeader("Location", "http://elsewhere.test/dns-query")
+        }
+        server.start()
+
+        val result = DohHostResolver(
+            "http://dns.lan:${server.port}/dns-query",
+            bootstrap = listOf(InetAddress.getByName("127.0.0.1")),
+        ).resolve("example.com")
+
+        assertTrue("expected Failure, got $result", result is Resolution.Failure)
+    }
+
+    @Test
+    fun `OkHttp's bootstrap refusing another host classifies as a failure`() {
+        val result = classify { throw java.net.UnknownHostException("BootstrapDns called for elsewhere.test instead of dns.lan") }
+        assertTrue("expected Failure, got $result", result is Resolution.Failure)
+    }
+
+    private fun useSelfSignedHttps(certificateFor: String): HeldCertificate {
         val certificate = HeldCertificate.Builder().addSubjectAlternativeName(certificateFor).build()
         val serverCertificates = HandshakeCertificates.Builder().heldCertificate(certificate).build()
         server.useHttps(serverCertificates.sslSocketFactory(), false)
         server.dispatcher = dnsDispatcher { qtype -> if (qtype == TYPE_A) answerA(byteArrayOf(93, -72, -40, 34)) else noError() }
         server.start()
+        return certificate
     }
 
     // --- Minimal DNS wire format ------------------------------------------------------------

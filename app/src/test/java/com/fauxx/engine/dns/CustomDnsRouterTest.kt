@@ -50,6 +50,11 @@ class CustomDnsRouterTest {
     private val repo: PoisonProfileRepository = mockk(relaxed = true) {
         every { getProfile() } answers { profile.value }
         every { profiles } returns profile
+        // Writes land in the same flow the router watches, as DataStore's would.
+        io.mockk.coEvery { updateProfile(any()) } coAnswers {
+            val transform = firstArg<(PoisonProfile) -> PoisonProfile>()
+            synchronized(profile) { profile.value = transform(profile.value) }
+        }
     }
     private val override = FakeOverride()
     @Volatile private var intercepted = false
@@ -183,7 +188,9 @@ class CustomDnsRouterTest {
         profile.value = doh()
         router.start()
         profile.value = PoisonProfile()
-        withTimeout(5_000) { while (override.port != null) delay(20) }
+        // Wait for the end state, not the first sign of it: the override is cleared inside the
+        // teardown, and health turns Off only after it returns. Asserting in between flaked on CI.
+        withTimeout(5_000) { while (override.port != null || router.health.value != DnsHealth.Off) delay(20) }
         assertEquals(DnsHealth.Off, router.health.value)
     }
 
@@ -312,5 +319,74 @@ class CustomDnsRouterTest {
 
         router.stop()
         assertNull("nothing to route through once stopped", router.noiseResolver())
+    }
+
+    // --- Trust on first use for a self-signed custom DoH server (release review) ---
+
+    private val tlsServers = mutableListOf<okhttp3.mockwebserver.MockWebServer>()
+
+    @After
+    fun closeTlsServers() = tlsServers.forEach { runCatching { it.shutdown() } }
+
+    /** An HTTPS server with a self-signed certificate. The handshake is all these tests need. */
+    private fun selfSignedServer(): Pair<okhttp3.mockwebserver.MockWebServer, okhttp3.tls.HeldCertificate> {
+        val certificate = okhttp3.tls.HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
+        val server = okhttp3.mockwebserver.MockWebServer().also { tlsServers += it }
+        server.useHttps(okhttp3.tls.HandshakeCertificates.Builder().heldCertificate(certificate).build().sslSocketFactory(), false)
+        server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+            override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest) =
+                okhttp3.mockwebserver.MockResponse().setResponseCode(503)
+        }
+        server.start()
+        return server to certificate
+    }
+
+    private fun selfSigned(server: okhttp3.mockwebserver.MockWebServer, pinnedKey: String = "") = PoisonProfile(
+        dnsMode = DnsMode.DOH, dohProvider = DohPresets.CUSTOM_ID,
+        dohCustomUrl = "https://localhost:${server.port}/dns-query",
+        dohSkipCertificateCheck = true, dohPinnedKey = pinnedKey, routeDnsNoise = true,
+    )
+
+    @Test
+    fun `the first key a self-signed server presents is saved, and the resolver rebuilt around it`() = runBlocking {
+        val (server, certificate) = selfSignedServer()
+        profile.value = selfSigned(server)
+        router.start()
+        val firstPort = override.port!!
+
+        router.noiseResolver()!!.resolve("example.com") // first contact
+        withTimeout(5_000) { while (profile.value.dohPinnedKey.isEmpty()) delay(20) }
+
+        assertEquals(com.fauxx.network.dns.CertificatePin.fingerprint(certificate.certificate), profile.value.dohPinnedKey)
+        withTimeout(5_000) { while (override.port == firstPort) delay(20) }
+    }
+
+    @Test
+    fun `a server whose key is not the pinned one is reported as a changed certificate`() = runBlocking {
+        val (server, _) = selfSignedServer()
+        val someoneElse = okhttp3.tls.HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
+        profile.value = selfSigned(server, pinnedKey = com.fauxx.network.dns.CertificatePin.fingerprint(someoneElse.certificate))
+        router.start()
+
+        router.noiseResolver()!!.resolve("example.com")
+
+        val health = withTimeout(5_000) {
+            var h = router.health.value
+            while (!(h is DnsHealth.Degraded && h.certificateChanged)) { delay(20); h = router.health.value }
+            h
+        }
+        assertTrue(health is DnsHealth.Degraded && health.certificateChanged)
+        assertEquals("a refused key is never saved over the pin", com.fauxx.network.dns.CertificatePin.fingerprint(someoneElse.certificate), profile.value.dohPinnedKey)
+    }
+
+    @Test
+    fun `a pin is ignored while the certificate check is on`() = runBlocking {
+        // A stray stored pin must neither rebuild nor change verification when the switch is off.
+        profile.value = doh(provider = DohPresets.CUSTOM_ID, url = "https://dns.lan/dns-query")
+        router.start()
+        val port = override.port!!
+        profile.value = profile.value.copy(dohPinnedKey = "stray")
+        delay(300)
+        assertEquals(port, override.port)
     }
 }

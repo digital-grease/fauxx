@@ -333,11 +333,12 @@
     <string name="settings_dns_noise_title">Usarlo también para el ruido DNS</string>
     <string name="settings_dns_noise_description">Desactivado: las consultas del ruido DNS van al DNS de tu dispositivo, así que aparecen en los registros DNS de tu red y de tu proveedor, que es el objetivo del ruido DNS. Activado: van al resolutor personalizado mientras funcione, así que sobre todo las ven sus registros (con DNS sin cifrar, tu red aún puede verlas).</string>
     <string name="settings_dns_custom_save">Guardar y usar</string>
-    <string name="settings_dns_custom_ip_label">IP del servidor (opcional)</string>
-    <string name="settings_dns_custom_ip_help">Fauxx se conecta a esta dirección en lugar de buscar el nombre de la URL. Úsala para un resolvedor en tu propia red o uno que tu DNS bloquea.</string>
+    <string name="settings_dns_custom_ip_label">IP del servidor de tu URL (opcional)</string>
+    <string name="settings_dns_custom_ip_help">Fauxx se conecta a esta dirección en lugar de buscar el nombre de la URL. Úsala para un resolutor en tu propia red o uno que tu DNS bloquea.</string>
     <string name="settings_dns_custom_ip_invalid">Escribe una dirección IP, como 192.168.1.2</string>
+    <string name="settings_dns_custom_ip_needs_url">Escribe también tu propia URL. La IP del servidor solo se usa con ella.</string>
     <string name="settings_dns_insecure_title">Omitir la comprobación del certificado</string>
-    <string name="settings_dns_insecure_description">Para un resolvedor propio con un certificado autofirmado. Cualquiera entre tú y él podría hacerse pasar por tu resolvedor y ver o cambiar cada nombre que Fauxx busca. Solo afecta a esta URL.</string>
+    <string name="settings_dns_insecure_description">Para un resolutor propio con un certificado autofirmado. Fauxx confía en el primer certificado que ve de este servidor y rechaza cualquier otro después. Si cambias el certificado de tu servidor, desactiva y vuelve a activar esta opción para confiar en el nuevo.</string>
     <string name="settings_dns_help">Si una app de VPN o cortafuegos filtra el DNS, excluye a Fauxx de ella (en Rethink, configura Fauxx para omitir DNS y cortafuegos); si no, puede bloquear el DNS cifrado de Fauxx o las conexiones hechas con sus respuestas. Esto solo evita el bloqueo a nivel de DNS, no el bloqueo por dirección IP. Mientras está activado, los sitios compatibles con HTTP/3 se cargan por HTTP/2. Si el DNS personalizado deja de funcionar, Fauxx vuelve al DNS del dispositivo y lo indica en el panel.</string>
     <string name="settings_battery_threshold_battery_title">Pausar por debajo de (batería)</string>
     <string name="settings_battery_threshold_charging_title">Pausar por debajo de (cargando)</string>
@@ -536,4 +537,5 @@
     <string name="dashboard_webview_leak_action">Actualizar WebView</string>
     <string name="dashboard_custom_dns_degraded">El DNS personalizado no funciona ahora mismo, así que Fauxx usa el DNS de tu dispositivo.</string>
     <string name="dashboard_custom_dns_intercepted">Parece que otra app intercepta el DNS sin cifrar en esta red, así que puede que no responda el servidor que elegiste. El DNS cifrado lo evita.</string>
+    <string name="dashboard_custom_dns_certificate_changed">El certificado de tu servidor DNS personalizado cambió, así que Fauxx usa el DNS de tu dispositivo. Si lo cambiaste tú, desactiva y vuelve a activar Omitir la comprobación del certificado en Ajustes para confiar en el nuevo.</string>
 </resources>

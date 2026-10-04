@@ -86,13 +86,13 @@ data class LanguageUiState(
     val shippedLocales: Set<SupportedLocale> = emptySet()
 )
 
+/** Outcome of [SettingsViewModel.saveDohCustom], so the screen can mark the right field. */
+enum class DohSaveResult { SAVED, INVALID_URL, INVALID_SERVER_IP, MISSING_URL }
+
 /**
  * ViewModel for the Settings screen. Manages global engine configuration and
  * user-initiated data deletion (privacy control).
  */
-/** Outcome of [SettingsViewModel.saveDohCustom], so the screen can mark the right field. */
-enum class DohSaveResult { SAVED, INVALID_URL, INVALID_SERVER_IP }
-
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val profileRepo: PoisonProfileRepository,
@@ -212,6 +212,12 @@ class SettingsViewModel @Inject constructor(
      * custom one was selected.
      */
     fun saveDohCustom(url: String, serverIp: String): DohSaveResult {
+        // A server IP belongs to a URL. A NEW one typed without a URL would otherwise take the
+        // "blank URL removes it" path below and be silently thrown away. Clearing the URL while the
+        // saved IP still sits in its field is a removal, as before.
+        if (url.isBlank() && serverIp.isNotBlank() && serverIp.trim() != _uiState.value.dohCustomServerIp) {
+            return DohSaveResult.MISSING_URL
+        }
         if (url.isBlank()) {
             // Removing the URL removes what belongs to it, the certificate opt-out included, so a
             // later URL never inherits it silently.
@@ -228,7 +234,14 @@ class SettingsViewModel @Inject constructor(
         if (!DohPresets.isValidCustomUrl(url)) return DohSaveResult.INVALID_URL
         if (serverIp.isNotBlank() && DohPresets.parseServerIp(serverIp) == null) return DohSaveResult.INVALID_SERVER_IP
         update {
-            it.copy(dohProvider = DohPresets.CUSTOM_ID, dohCustomUrl = url.trim(), dohCustomServerIp = serverIp.trim())
+            val changed = it.dohCustomUrl != url.trim() || it.dohCustomServerIp != serverIp.trim()
+            it.copy(
+                dohProvider = DohPresets.CUSTOM_ID,
+                dohCustomUrl = url.trim(),
+                dohCustomServerIp = serverIp.trim(),
+                // Skipping the check was granted for one server; a different one starts checked.
+                dohSkipCertificateCheck = it.dohSkipCertificateCheck && !changed,
+            )
         }
         return DohSaveResult.SAVED
     }
@@ -319,6 +332,14 @@ class SettingsViewModel @Inject constructor(
                     dohCustomUrl = new.dohCustomUrl,
                     dohCustomServerIp = new.dohCustomServerIp,
                     dohSkipCertificateCheck = new.dohSkipCertificateCheck,
+                    // The pin is learned by the router, not held here. Any change to what it was
+                    // learned for clears it: switching the check off and on is how the user
+                    // trusts a replaced certificate.
+                    dohPinnedKey = if (
+                        current.dohCustomUrl != new.dohCustomUrl ||
+                        current.dohCustomServerIp != new.dohCustomServerIp ||
+                        current.dohSkipCertificateCheck != new.dohSkipCertificateCheck
+                    ) "" else current.dohPinnedKey,
                     plainDnsServer = new.plainDnsServer,
                     routeDnsNoise = new.routeDnsNoise,
                     preferredCustomDnsMode = new.preferredCustomDnsMode,

@@ -49,7 +49,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** The quiet custom-DNS dashboard line (#227). */
-enum class CustomDnsNotice { FALLBACK, INTERCEPTED }
+enum class CustomDnsNotice { FALLBACK, INTERCEPTED, CERTIFICATE_CHANGED }
 
 data class DashboardUiState(
     val engineEnabled: Boolean = false,
@@ -100,14 +100,17 @@ class DashboardViewModel @Inject constructor(
 
     /**
      * Which quiet custom-DNS line to show, or null for none (#227). [CustomDnsNotice.INTERCEPTED] is
-     * worded apart because then Fauxx is NOT on the device's DNS: another app is answering. Shown as one quiet line, per the owner's fail-open decision: browsing
-     * continues, the user just gets to know.
+     * worded apart because then Fauxx is NOT on the device's DNS: another app is answering.
+     * [CustomDnsNotice.CERTIFICATE_CHANGED] is worded apart because the user may have caused it
+     * (a replaced certificate) and has a fix to make. Shown as one quiet line, per the owner's
+     * fail-open decision: browsing continues, the user just gets to know.
      */
     val customDnsNotice: StateFlow<CustomDnsNotice?> = customDns.health
         .map { h ->
             when {
                 h !is DnsHealth.Degraded -> null
                 h.intercepted -> CustomDnsNotice.INTERCEPTED
+                h.certificateChanged -> CustomDnsNotice.CERTIFICATE_CHANGED
                 else -> CustomDnsNotice.FALLBACK
             }
         }

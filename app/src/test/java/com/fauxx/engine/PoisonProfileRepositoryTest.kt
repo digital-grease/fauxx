@@ -112,6 +112,7 @@ class PoisonProfileRepositoryTest {
             dohCustomUrl = "https://dns.example/dns-query",  // default empty
             dohCustomServerIp = "192.168.6.7",               // default empty
             dohSkipCertificateCheck = true,                  // default false
+            dohPinnedKey = "q83vEjRWeJA=",                   // default empty
             plainDnsServer = "9.9.9.9:5353",                 // default empty
             routeDnsNoise = true,                            // default false
             preferredCustomDnsMode = com.fauxx.data.model.DnsMode.PLAIN, // default DOH
