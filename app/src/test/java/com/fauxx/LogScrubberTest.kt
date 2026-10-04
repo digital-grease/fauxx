@@ -165,6 +165,12 @@ class LogScrubberTest {
     }
 
     @Test
+    fun `the user's own DNS server addresses are scrubbed`() {
+        val out = LogScrubber.scrub("PoisonProfile(dohCustomServerIp=192.168.6.7, plainDnsServer=10.0.0.53:5353, dohPinnedKey=q83vEjRWeJA=)")
+        for (leak in listOf("192.168.6.7", "10.0.0.53", "q83vEjRWeJA")) assertFalse("$leak leaked from: $out", out.contains(leak))
+    }
+
+    @Test
     fun `personal DNS-over-HTTPS URLs are scrubbed (#227)`() {
         for (leak in listOf(
             "PoisonProfile(dnsMode=DOH, dohProvider=custom, dohCustomUrl=https://dns.nextdns.io/abc123)",

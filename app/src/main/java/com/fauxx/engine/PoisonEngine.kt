@@ -554,7 +554,12 @@ class PoisonEngine @Inject constructor(
         onActive = null
         unregisterConstraintReceivers()
         val modules = allModules
+        // Chained: a new session joins only the latest teardown, so each one first waits for the
+        // one before it. Otherwise a quick off/on/off/on lets an older, slower teardown stop the
+        // new session's modules and custom DNS after that session has started them.
+        val previous = teardownJob
         teardownJob = scope.launch {
+            previous?.join()
             withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
                 modules.forEach { runCatching { it.stop() } }
             } ?: Timber.w("Module stop timed out after ${MODULE_STOP_TIMEOUT_MS}ms")
@@ -575,14 +580,20 @@ class PoisonEngine @Inject constructor(
         onActive = null
         unregisterConstraintReceivers()
         val modules = allModules
-        // Fire-and-forget teardown; scope is cancelled after a short grace period so the
-        // launched stop coroutine has a chance to run. Bounded by timeout to avoid leaks.
-        teardownJob = scope.launch {
+        val previous = teardownJob
+        // The teardown runs on the scope being destroyed, which it cancels when done. A start()
+        // arriving meanwhile gets a fresh scope at once; reusing the doomed one would let this
+        // teardown's cancel() silently kill the new session.
+        val doomed = scope
+        scope = CoroutineScope(SupervisorJob() + loopDispatcher + loopExceptionHandler)
+        // Fire-and-forget, bounded by timeout to avoid leaks; chained like stop()'s.
+        teardownJob = doomed.launch {
+            previous?.join()
             withTimeoutOrNull(MODULE_STOP_TIMEOUT_MS) {
                 modules.forEach { runCatching { it.stop() } }
             }
             runCatching { customDns.stop() }
-            scope.cancel()
+            doomed.cancel()
             Timber.i("PoisonEngine destroyed")
         }
     }
@@ -598,7 +609,6 @@ class PoisonEngine @Inject constructor(
         }
         // Seed network transport state
         cachedTransport.set(checkTransportNow())
-        cachedPowerSave.value = isPowerSaveModeNow()
 
         // Register ongoing receivers. Battery still uses a broadcast; connectivity uses
         // NetworkCallback (CONNECTIVITY_ACTION was deprecated in API 28).
@@ -613,6 +623,9 @@ class PoisonEngine @Inject constructor(
             context.registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
             context.registerReceiver(powerSaveReceiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
         }
+        // Seeded AFTER registering: the change broadcast is not sticky, so a change landing between
+        // a seed and the registration would otherwise be lost until the next one (#313).
+        cachedPowerSave.value = isPowerSaveModeNow()
         runCatching {
             context.getSystemService(ConnectivityManager::class.java)
                 .registerDefaultNetworkCallback(networkCallback)
@@ -663,7 +676,10 @@ class PoisonEngine @Inject constructor(
                     // means the resign threshold measures total time paused, not time in the
                     // current state — otherwise a flicker resets the clock every few seconds
                     // and the engine never resigns (#158).
-                    if (lastPauseState == EngineState.ACTIVE) {
+                    // A Battery Saver pause counts as running for this clock: it never resigns, and
+                    // if its hours counted, the first brief network or battery blip after it would
+                    // resign at once instead of after 30 minutes (#313).
+                    if (lastPauseState == EngineState.ACTIVE || lastPauseState == EngineState.PAUSED_BATTERY_SAVER) {
                         pauseEnteredAtElapsedMs = clock.elapsedRealtime()
                     }
                     lastPauseState = constraintState
@@ -685,6 +701,9 @@ class PoisonEngine @Inject constructor(
                 if (constraintState == EngineState.PAUSED_BATTERY_SAVER) {
                     // Wake the moment Battery Saver turns off rather than on the next tick (#313).
                     withTimeoutOrNull(BATTERY_SAVER_RECHECK_MS) { cachedPowerSave.first { !it } }
+                        // No change seen: re-read it anyway, in case a broadcast was missed (the
+                        // system does not resend it) or an OEM build never sends one.
+                        ?: run { cachedPowerSave.value = isPowerSaveModeNow() }
                 } else {
                     delay(constraintRetryMs)
                 }
@@ -1268,6 +1287,7 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.DOH_CUSTOM_URL] = p.dohCustomUrl
         prefs[com.fauxx.di.PreferenceKeys.DOH_CUSTOM_SERVER_IP] = p.dohCustomServerIp
         prefs[com.fauxx.di.PreferenceKeys.DOH_SKIP_CERTIFICATE_CHECK] = p.dohSkipCertificateCheck
+        prefs[com.fauxx.di.PreferenceKeys.DOH_PINNED_KEY] = p.dohPinnedKey
         prefs[com.fauxx.di.PreferenceKeys.PLAIN_DNS_SERVER] = p.plainDnsServer
         prefs[com.fauxx.di.PreferenceKeys.ROUTE_DNS_NOISE] = p.routeDnsNoise
         prefs[com.fauxx.di.PreferenceKeys.PREFERRED_CUSTOM_DNS_MODE] = p.preferredCustomDnsMode.name
@@ -1350,6 +1370,7 @@ class PoisonProfileRepository @Inject constructor(
             dohCustomUrl = prefs[com.fauxx.di.PreferenceKeys.DOH_CUSTOM_URL] ?: "",
             dohCustomServerIp = prefs[com.fauxx.di.PreferenceKeys.DOH_CUSTOM_SERVER_IP] ?: "",
             dohSkipCertificateCheck = prefs[com.fauxx.di.PreferenceKeys.DOH_SKIP_CERTIFICATE_CHECK] ?: false,
+            dohPinnedKey = prefs[com.fauxx.di.PreferenceKeys.DOH_PINNED_KEY] ?: "",
             plainDnsServer = prefs[com.fauxx.di.PreferenceKeys.PLAIN_DNS_SERVER] ?: "",
             routeDnsNoise = prefs[com.fauxx.di.PreferenceKeys.ROUTE_DNS_NOISE] ?: false,
             preferredCustomDnsMode = runCatching {

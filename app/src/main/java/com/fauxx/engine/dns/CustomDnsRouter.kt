@@ -6,6 +6,7 @@ import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.webview.PhantomProxyAuth
 import com.fauxx.engine.webview.WebViewProxyOverride
 import com.fauxx.network.dns.CachingResolver
+import com.fauxx.network.dns.CertificatePin
 import com.fauxx.network.dns.DnsInterceptionCheck
 import com.fauxx.network.dns.DnsHealth
 import com.fauxx.network.dns.DohHostResolver
@@ -130,6 +131,8 @@ class CustomDnsRouter @Inject constructor(
         val plainServer: String,
         val customServerIp: String,
         val customSkipCertificateCheck: Boolean,
+        /** Part of the settings so learning the pin rebuilds the resolver around it. */
+        val pinnedKey: String,
     )
 
     private class Running(
@@ -138,6 +141,8 @@ class CustomDnsRouter @Inject constructor(
         val credentials: ProxyCredentials,
         /** Uncached: DNS noise exists to generate queries, and a cache would swallow repeats. */
         val uncached: HostResolver,
+        /** When the custom DoH server last presented a key other than the pinned one, or null. */
+        val certificateChangedSince: MutableStateFlow<Long?>,
     ) {
         /** When plain DNS was found intercepted on the current network, or null. */
         val interceptedSince = MutableStateFlow<Long?>(null)
@@ -217,12 +222,13 @@ class CustomDnsRouter @Inject constructor(
             _health.value = DnsHealth.Off
             return
         }
+        val certificateChangedSince = MutableStateFlow<Long?>(null)
         val custom: HostResolver = when (settings.mode) {
             DnsMode.PLAIN -> PlainDnsServer.parse(settings.plainServer)?.let { PlainDnsResolver(it) } ?: run {
                 degrade("The plain DNS server is not a valid IP address")
                 return
             }
-            else -> dohFor(settings) ?: run {
+            else -> dohFor(settings, certificateChangedSince) ?: run {
                 degrade("The custom DNS-over-HTTPS URL or server IP is not valid")
                 return
             }
@@ -241,7 +247,7 @@ class CustomDnsRouter @Inject constructor(
             return
         }
         // Publish before pointing the WebView at it, so the auth challenge can always be answered.
-        val current = Running(settings, proxy, credentials, uncached = failOpen)
+        val current = Running(settings, proxy, credentials, uncached = failOpen, certificateChangedSince)
         running = current
         if (!override.set(port)) {
             teardownLocked()
@@ -253,9 +259,17 @@ class CustomDnsRouter @Inject constructor(
             // One place computes health. An interception warning outranks the breaker's view:
             // answers are arriving, just not from the server the user chose, so the breaker would
             // happily report healthy.
-            combine(failOpen.health, current.interceptedSince) { h, since ->
-                since?.let { DnsHealth.Degraded(it, INTERCEPTED, intercepted = true) } ?: h
-            }.collect { _health.value = it }
+            combine(failOpen.health, current.interceptedSince, current.certificateChangedSince) { h, since, changed ->
+                when {
+                    since != null -> DnsHealth.Degraded(since, INTERCEPTED, intercepted = true)
+                    changed != null -> DnsHealth.Degraded(changed, CERTIFICATE_CHANGED, certificateChanged = true)
+                    else -> h
+                }
+            }.collect {
+                // A collector still running when teardown cancels it must not overwrite the Off or
+                // degraded state teardown just set.
+                if (running === current) _health.value = it
+            }
         }
         if (settings.mode == DnsMode.PLAIN) {
             probeJob = scope.launch(Dispatchers.IO) {
@@ -322,7 +336,7 @@ class CustomDnsRouter @Inject constructor(
         _health.value = DnsHealth.Degraded(clock.currentTimeMillis(), reason)
     }
 
-    private fun dohFor(settings: Settings): DohHostResolver? {
+    private fun dohFor(settings: Settings, certificateChangedSince: MutableStateFlow<Long?>): DohHostResolver? {
         if (settings.provider == DohPresets.CUSTOM_ID) {
             if (!DohPresets.isValidCustomUrl(settings.customUrl)) return null
             // The user may give the server's address, so its hostname is never looked up (a LAN
@@ -335,17 +349,43 @@ class CustomDnsRouter @Inject constructor(
             } else {
                 DohPresets.parseServerIp(settings.customServerIp) ?: return null
             }
+            val pin = if (settings.customSkipCertificateCheck) {
+                CertificatePin(
+                    pinned = settings.pinnedKey,
+                    onPinned = { key -> rememberPin(settings, key) },
+                    onChecked = { matched ->
+                        certificateChangedSince.value = if (matched) null else certificateChangedSince.value ?: clock.currentTimeMillis()
+                    },
+                )
+            } else {
+                null
+            }
             return DohHostResolver(
                 settings.customUrl.trim(),
                 bootstrap = listOfNotNull(serverIp),
                 endpointResolver = defaultThenSystem,
-                skipCertificateCheck = settings.customSkipCertificateCheck,
+                certificatePin = pin,
             )
         }
         // An id this build does not know (a preset removed in a later version) means the default,
         // not a broken setting.
         val preset = DohPresets.byId(settings.provider) ?: DohPresets.byId(DohPresets.DEFAULT_ID)!!
         return DohHostResolver(preset.url, preset.bootstrapAddresses())
+    }
+
+    /**
+     * Persist a key learned on first use, but only if the settings it was learned under still
+     * stand: a URL or switch changed meanwhile means it belongs to nothing any more. Saving it
+     * changes [Settings], so the resolver is rebuilt around the stored pin.
+     */
+    private fun rememberPin(settings: Settings, key: String) {
+        scope.launch {
+            profileRepo.updateProfile { p ->
+                val stillApplies = p.dohSkipCertificateCheck && p.dohPinnedKey.isEmpty() &&
+                    p.dohCustomUrl == settings.customUrl && p.dohCustomServerIp == settings.customServerIp
+                if (stillApplies) p.copy(dohPinnedKey = key) else p
+            }
+        }
     }
 
     private val defaultThenSystem: HostResolver by lazy {
@@ -358,9 +398,12 @@ class CustomDnsRouter @Inject constructor(
 
     private fun settingsOf(p: PoisonProfile) = Settings(
         p.dnsMode, p.dohProvider, p.dohCustomUrl, p.plainDnsServer, p.dohCustomServerIp, p.dohSkipCertificateCheck,
+        // Only meaningful while the check is skipped; otherwise a stray value must not rebuild.
+        if (p.dohSkipCertificateCheck) p.dohPinnedKey else "",
     )
 
     private companion object {
         const val INTERCEPTED = "Plain DNS may be intercepted on this network (a VPN or firewall app?)"
+        const val CERTIFICATE_CHANGED = "The DNS server's certificate is not the one first trusted"
     }
 }

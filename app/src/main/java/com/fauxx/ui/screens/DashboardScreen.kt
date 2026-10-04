@@ -208,6 +208,7 @@ fun DashboardScreen(
                     when (notice) {
                         CustomDnsNotice.FALLBACK -> R.string.dashboard_custom_dns_degraded
                         CustomDnsNotice.INTERCEPTED -> R.string.dashboard_custom_dns_intercepted
+                        CustomDnsNotice.CERTIFICATE_CHANGED -> R.string.dashboard_custom_dns_certificate_changed
                     }
                 ),
                 style = MaterialTheme.typography.bodySmall,

@@ -91,6 +91,15 @@ class PoisonEngineLoopTest {
 
     private lateinit var engine: PoisonEngine
 
+    /** What the fake PowerManager reports (#313); the engine re-reads it on its 60 s re-check. */
+    @Volatile private var powerSaveOn = false
+
+    /** Turn Battery Saver on or off the way the system does: the mode, then the change broadcast. */
+    private fun setBatterySaver(on: Boolean) {
+        powerSaveOn = on
+        engine.setCachedConstraintStateForTest(powerSave = on)
+    }
+
     @After
     fun tearDown() {
         if (::engine.isInitialized) engine.destroy()
@@ -356,14 +365,14 @@ class PoisonEngineLoopTest {
         engine.setOnLongPause { spec -> resignedWith = spec }
         engine.start()
         // Seed AFTER start() so registerConstraintReceivers cannot overwrite it.
-        engine.setCachedConstraintStateForTest(powerSave = true)
+        setBatterySaver(true)
 
         // Long past the 30-minute resign threshold the other pauses use.
         advanceVirtualTime(clock, scheduler = testScheduler, by = 2 * 60 * 60 * 1000L)
         assertEquals(EngineState.PAUSED_BATTERY_SAVER, engine.engineState.value)
         assertNull("a Battery Saver pause must never resign", resignedWith)
 
-        engine.setCachedConstraintStateForTest(powerSave = false)
+        setBatterySaver(false)
         advanceVirtualTime(clock, scheduler = testScheduler, by = 1_000)
         assertEquals(
             "the loop must wake when Battery Saver ends, not on its next re-check",
@@ -376,6 +385,112 @@ class PoisonEngineLoopTest {
     }
 
     @Test
+    fun `hours of Battery Saver do not make the next brief network pause resign at once`() = runTest {
+        // #313 review: the cumulative pause clock kept running through a Battery Saver pause, so
+        // after two hours of it, a momentary loss of network resigned on the first tick instead of
+        // getting the usual 30 minutes.
+        val clock = FakeClock(noonEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        engine = buildEngine(clock, profile = baseProfile.copy(pauseOnBatterySaver = true), loopDispatcher = dispatcher)
+
+        var resignedWith: ResumeSpec? = null
+        engine.setOnLongPause { spec -> resignedWith = spec }
+        engine.start()
+        setBatterySaver(true)
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 2 * 60 * 60 * 1000L)
+        assertEquals(EngineState.PAUSED_BATTERY_SAVER, engine.engineState.value)
+
+        // The network drops while Battery Saver is still on.
+        engine.setCachedConstraintStateForTest(transport = NetworkTransport.NONE)
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 2 * 60 * 1000L)
+        assertEquals(EngineState.PAUSED_WIFI, engine.engineState.value)
+        assertNull("a two-minute network pause must not resign", resignedWith)
+
+        engine.stop()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
+    }
+
+    @Test
+    fun `a missed Battery Saver broadcast is corrected by the re-check`() = runTest {
+        // #313 review: the change broadcast is not sticky. If one is missed, the 60 s re-check
+        // must read the real mode instead of trusting the cached one forever.
+        val clock = FakeClock(noonEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        engine = buildEngine(clock, profile = baseProfile.copy(pauseOnBatterySaver = true), loopDispatcher = dispatcher)
+        engine.setOnLongPause { }
+        engine.start()
+        setBatterySaver(true)
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 5_000)
+        assertEquals(EngineState.PAUSED_BATTERY_SAVER, engine.engineState.value)
+
+        powerSaveOn = false // Battery Saver ends, but no broadcast arrives
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 65_000)
+        assertEquals(EngineState.ACTIVE, engine.engineState.value)
+
+        engine.stop()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
+    }
+
+    /** Records custom DNS starts and stops in order, as the engine's sessions issue them. */
+    private class RecordingCustomDns : com.fauxx.engine.dns.CustomDns {
+        val events = java.util.Collections.synchronizedList(mutableListOf<String>())
+        override val health = kotlinx.coroutines.flow.MutableStateFlow<com.fauxx.network.dns.DnsHealth>(com.fauxx.network.dns.DnsHealth.Off)
+        override suspend fun start() { events += "start" }
+        override suspend fun stop() { events += "stop" }
+        override fun noiseResolver(): com.fauxx.network.dns.HostResolver? = null
+    }
+
+    @Test
+    fun `a quick off-on-off-on never lets an older teardown stop the newest session`() = runTest {
+        // Review finding: each new session joined only the LATEST teardown. With a slow first
+        // teardown and a fast second one, the third session started custom DNS and then the
+        // first teardown, still running, stopped it.
+        val clock = FakeClock(noonEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        var stops = 0
+        val search: SearchPoisonModule = mockk(relaxed = true) {
+            every { isEnabled() } returns true
+            // Only the first teardown is slow.
+            coEvery { stop() } coAnswers { if (++stops == 1) kotlinx.coroutines.delay(1_500) }
+        }
+        val dns = RecordingCustomDns()
+        engine = buildEngine(clock, profile = baseProfile, loopDispatcher = dispatcher, searchModule = search, customDns = dns)
+        engine.setOnLongPause { }
+
+        engine.start()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 1_000)
+        engine.stop() // slow teardown
+        engine.start()
+        engine.stop() // fast teardown
+        engine.start()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 5_000)
+
+        assertEquals("the newest session's custom DNS must be the last word", "start", dns.events.last())
+        engine.stop()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 3_000)
+    }
+
+    @Test
+    fun `a start right after destroy is not killed by the destroy teardown`() = runTest {
+        // Review finding: destroy()'s teardown ends by cancelling the engine scope. A start()
+        // before that reused the same scope, so the new session was silently killed.
+        val clock = FakeClock(noonEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        engine = buildEngine(clock, profile = baseProfile, loopDispatcher = dispatcher)
+        engine.setOnLongPause { }
+        engine.start()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 1_000)
+
+        engine.destroy()
+        engine.start()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 10_000)
+
+        assertEquals(EngineState.ACTIVE, engine.engineState.value)
+        engine.stop()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 3_000)
+    }
+
+    @Test
     fun `Battery Saver is ignored while the setting is off`() = runTest {
         // #313: opt-in only. With the default profile, Battery Saver changes nothing.
         val clock = FakeClock(noonEpochMs())
@@ -383,7 +498,7 @@ class PoisonEngineLoopTest {
         engine = buildEngine(clock, profile = baseProfile, loopDispatcher = dispatcher)
         engine.setOnLongPause { }
         engine.start()
-        engine.setCachedConstraintStateForTest(powerSave = true)
+        setBatterySaver(true)
 
         advanceVirtualTime(clock, scheduler = testScheduler, by = 10_000)
         assertEquals(EngineState.ACTIVE, engine.engineState.value)
@@ -402,9 +517,9 @@ class PoisonEngineLoopTest {
 
         var resignedWith: ResumeSpec? = null
         engine.setOnLongPause { spec -> resignedWith = spec }
-        engine.setCachedConstraintStateForTest(powerSave = true)
+        setBatterySaver(true)
         engine.start()
-        engine.setCachedConstraintStateForTest(powerSave = true)
+        setBatterySaver(true)
 
         advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
         assertTrue("quiet hours must still resign under Battery Saver", resignedWith is ResumeSpec.AtTime)
@@ -469,7 +584,8 @@ class PoisonEngineLoopTest {
         searchModule: SearchPoisonModule? = null,
         // #197: when true, profile.getProfile() throws so the loop machinery raises an uncaught
         // exception, exercising the crash-guard teardown rather than a normal resign.
-        profileThrows: Boolean = false
+        profileThrows: Boolean = false,
+        customDns: com.fauxx.engine.dns.CustomDns = com.fauxx.engine.dns.CustomDns.NONE,
     ): PoisonEngine {
         val profileRepo: PoisonProfileRepository = mockk {
             if (profileThrows) {
@@ -517,6 +633,9 @@ class PoisonEngineLoopTest {
         val connectivityManager: android.net.ConnectivityManager = mockk(relaxed = true)
         val context: android.content.Context = mockk(relaxed = true) {
             every { getSystemService(android.content.Context.CONNECTIVITY_SERVICE) } returns connectivityManager
+            every { getSystemService(android.os.PowerManager::class.java) } returns mockk<android.os.PowerManager> {
+                every { isPowerSaveMode } answers { powerSaveOn }
+            }
         }
         return PoisonEngine(
             context, profileRepo, targetingEngine, dispatcher, scheduler, actionLogDao,
@@ -537,7 +656,8 @@ class PoisonEngineLoopTest {
                 every { isEnabled() } returns false
             },
             clock = clock,
-            loopDispatcher = loopDispatcher
+            loopDispatcher = loopDispatcher,
+            customDns = customDns,
         )
     }
 }

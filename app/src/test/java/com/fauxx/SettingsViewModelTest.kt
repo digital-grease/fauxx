@@ -111,13 +111,53 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `a server IP without a URL is not silently thrown away`() = runTest {
+        val vm = viewModel()
+        assertEquals(com.fauxx.ui.viewmodels.DohSaveResult.MISSING_URL, vm.saveDohCustom("  ", "192.168.6.7"))
+        assertEquals("", vm.uiState.value.dohCustomServerIp)
+    }
+
+    @Test
+    fun `changing the server turns the certificate opt-out back off`() = runTest {
+        // Skipping the check was granted for one server; a different URL or IP starts checked.
+        val vm = viewModel()
+        vm.saveDohCustom("https://dns.lan/dns-query", "192.168.6.7")
+        vm.setDohSkipCertificateCheck(true)
+        vm.saveDohCustom("https://dns.lan/dns-query", "192.168.6.7") // unchanged: kept
+        assertTrue(vm.uiState.value.dohSkipCertificateCheck)
+        vm.saveDohCustom("https://dns.nextdns.io/abc123", "")
+        assertFalse(vm.uiState.value.dohSkipCertificateCheck)
+    }
+
+    @Test
+    fun `the pinned key is kept for unrelated changes and cleared when the switch or server changes`() = runTest {
+        val stored = PoisonProfile(
+            dohProvider = com.fauxx.network.dns.DohPresets.CUSTOM_ID,
+            dohCustomUrl = "https://dns.lan/dns-query", dohCustomServerIp = "192.168.6.7",
+            dohSkipCertificateCheck = true, dohPinnedKey = "pinned",
+        )
+        every { profileRepo.getProfile() } returns stored
+        val transform = io.mockk.slot<(PoisonProfile) -> PoisonProfile>()
+        io.mockk.coEvery { profileRepo.updateProfile(capture(transform)) } returns Unit
+        val vm = viewModel()
+
+        vm.setRouteDnsNoise(true)
+        advanceUntilIdle()
+        assertEquals("an unrelated change keeps the pin", "pinned", transform.captured(stored).dohPinnedKey)
+
+        vm.setDohSkipCertificateCheck(false)
+        advanceUntilIdle()
+        assertEquals("switching off forgets the pin, so on again re-trusts", "", transform.captured(stored).dohPinnedKey)
+    }
+
+    @Test
     fun `removing the custom URL also removes its server IP and certificate opt-out`() = runTest {
         val vm = viewModel()
         vm.saveDohCustom("https://dns.lan/dns-query", "192.168.6.7")
         vm.setDohSkipCertificateCheck(true)
         assertTrue(vm.uiState.value.dohSkipCertificateCheck)
 
-        vm.saveDohCustom("", "192.168.6.7")
+        vm.saveDohCustom("", "192.168.6.7") // the URL field cleared, the saved IP still in its field
         assertEquals("", vm.uiState.value.dohCustomServerIp)
         assertFalse("a later URL must not inherit the opt-out", vm.uiState.value.dohSkipCertificateCheck)
     }
