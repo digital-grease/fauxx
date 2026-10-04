@@ -188,7 +188,9 @@ class CustomDnsRouterTest {
         profile.value = doh()
         router.start()
         profile.value = PoisonProfile()
-        withTimeout(5_000) { while (override.port != null) delay(20) }
+        // Wait for the end state, not the first sign of it: the override is cleared inside the
+        // teardown, and health turns Off only after it returns. Asserting in between flaked on CI.
+        withTimeout(5_000) { while (override.port != null || router.health.value != DnsHealth.Off) delay(20) }
         assertEquals(DnsHealth.Off, router.health.value)
     }
 
