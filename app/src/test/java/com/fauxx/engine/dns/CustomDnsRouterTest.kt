@@ -239,6 +239,10 @@ class CustomDnsRouterTest {
         router.start()
         withTimeout(5_000) { while (router.health.value !is DnsHealth.Degraded) delay(20) }
 
+        // The fake has no replay: an emit before the router subscribes is dropped, and on a slow
+        // runner the first probe can finish before that subscription exists. Wait for it.
+        withTimeout(5_000) { while (networkChanged.subscriptionCount.value == 0) delay(20) }
+
         intercepted = false // the user exempted Fauxx in their VPN app, say
         networkChanged.emit(Unit)
         withTimeout(5_000) { while (router.health.value != DnsHealth.Healthy) delay(20) }
