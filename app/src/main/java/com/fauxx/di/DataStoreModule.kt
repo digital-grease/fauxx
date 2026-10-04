@@ -100,6 +100,9 @@ object PreferenceKeys {
     // Whether synthetic page loads fetch images (tracking pixels fire) or skip them to save data.
     val LOAD_IMAGES = booleanPreferencesKey("load_images")
 
+    // Pause while Android's Battery Saver is on (#313).
+    val PAUSE_ON_BATTERY_SAVER = booleanPreferencesKey("pause_on_battery_saver")
+
     // Custom DNS for Fauxx's own traffic (#227): mode, DoH preset id, and the user's own DoH URL.
     val DNS_MODE = stringPreferencesKey("dns_mode")
     val DOH_PROVIDER = stringPreferencesKey("doh_provider")

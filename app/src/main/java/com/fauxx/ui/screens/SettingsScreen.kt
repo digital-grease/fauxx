@@ -371,6 +371,15 @@ fun SettingsScreen(
                 steps = 19
             )
             Spacer(Modifier.height(8.dp))
+
+            // Battery Saver (#313)
+            LabelledSwitch(
+                title = stringResource(R.string.settings_battery_saver_title),
+                description = stringResource(R.string.settings_battery_saver_description),
+                checked = uiState.pauseOnBatterySaver,
+                enabled = true,
+                onCheckedChange = viewModel::setPauseOnBatterySaver,
+            )
         }
 
         // Active hours

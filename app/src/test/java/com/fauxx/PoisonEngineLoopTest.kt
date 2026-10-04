@@ -343,6 +343,73 @@ class PoisonEngineLoopTest {
      * each `delay()` resumption. The fake clock advances together with the
      * scheduler so elapsedRealtime() and the coroutine virtual time agree.
      */
+    @Test
+    fun `Battery Saver pauses the engine without resigning and resumes the moment it ends`() = runTest {
+        // #313: with the setting on, Battery Saver pauses the loop. It must NOT resign (nothing
+        // could bring a stopped engine back when Battery Saver ends), and it must resume as soon
+        // as Battery Saver turns off, not on its next 60-second re-check.
+        val clock = FakeClock(noonEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        engine = buildEngine(clock, profile = baseProfile.copy(pauseOnBatterySaver = true), loopDispatcher = dispatcher)
+
+        var resignedWith: ResumeSpec? = null
+        engine.setOnLongPause { spec -> resignedWith = spec }
+        engine.start()
+        // Seed AFTER start() so registerConstraintReceivers cannot overwrite it.
+        engine.setCachedConstraintStateForTest(powerSave = true)
+
+        // Long past the 30-minute resign threshold the other pauses use.
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 2 * 60 * 60 * 1000L)
+        assertEquals(EngineState.PAUSED_BATTERY_SAVER, engine.engineState.value)
+        assertNull("a Battery Saver pause must never resign", resignedWith)
+
+        engine.setCachedConstraintStateForTest(powerSave = false)
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 1_000)
+        assertEquals(
+            "the loop must wake when Battery Saver ends, not on its next re-check",
+            EngineState.ACTIVE,
+            engine.engineState.value
+        )
+
+        engine.stop()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
+    }
+
+    @Test
+    fun `Battery Saver is ignored while the setting is off`() = runTest {
+        // #313: opt-in only. With the default profile, Battery Saver changes nothing.
+        val clock = FakeClock(noonEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        engine = buildEngine(clock, profile = baseProfile, loopDispatcher = dispatcher)
+        engine.setOnLongPause { }
+        engine.start()
+        engine.setCachedConstraintStateForTest(powerSave = true)
+
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 10_000)
+        assertEquals(EngineState.ACTIVE, engine.engineState.value)
+
+        engine.stop()
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
+    }
+
+    @Test
+    fun `a resigning pause wins over Battery Saver`() = runTest {
+        // #313: the Battery Saver pause never resigns, so it is checked last. Quiet hours with
+        // Battery Saver on must still resign and release the foreground service.
+        val clock = FakeClock(threeAmEpochMs())
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        engine = buildEngine(clock, profile = baseProfile.copy(pauseOnBatterySaver = true), loopDispatcher = dispatcher)
+
+        var resignedWith: ResumeSpec? = null
+        engine.setOnLongPause { spec -> resignedWith = spec }
+        engine.setCachedConstraintStateForTest(powerSave = true)
+        engine.start()
+        engine.setCachedConstraintStateForTest(powerSave = true)
+
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
+        assertTrue("quiet hours must still resign under Battery Saver", resignedWith is ResumeSpec.AtTime)
+    }
+
     private suspend fun advanceVirtualTime(
         clock: FakeClock,
         scheduler: kotlinx.coroutines.test.TestCoroutineScheduler,

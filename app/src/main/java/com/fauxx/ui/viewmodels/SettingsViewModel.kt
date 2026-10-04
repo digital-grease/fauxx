@@ -42,6 +42,8 @@ data class SettingsUiState(
     val mobileIntensity: IntensityLevel? = null,
     val batteryThresholdBattery: Int = 20,
     val batteryThresholdCharging: Int = 20,
+    /** Pause while Battery Saver is on (issue #313). */
+    val pauseOnBatterySaver: Boolean = false,
     val allowedHoursStart: Int = 7,
     val allowedHoursEnd: Int = 23,
     val logRetentionDays: Int = 7,
@@ -139,6 +141,8 @@ class SettingsViewModel @Inject constructor(
             BatteryThresholdType.CHARGING -> it.copy(batteryThresholdCharging = v)
         }
     }
+
+    fun setPauseOnBatterySaver(v: Boolean) { update { it.copy(pauseOnBatterySaver = v) } }
 
     fun setAllowedHoursStart(v: Int) { update { it.copy(allowedHoursStart = v) } }
     fun setAllowedHoursEnd(v: Int) { update { it.copy(allowedHoursEnd = v) } }
@@ -287,6 +291,7 @@ class SettingsViewModel @Inject constructor(
                     mobileIntensity = new.mobileIntensity,
                     batteryThresholdBattery = new.batteryThresholdBattery,
                     batteryThresholdCharging = new.batteryThresholdCharging,
+                    pauseOnBatterySaver = new.pauseOnBatterySaver,
                     allowedHoursStart = new.allowedHoursStart,
                     allowedHoursEnd = new.allowedHoursEnd,
                     logRetentionDays = new.logRetentionDays,
@@ -314,6 +319,7 @@ class SettingsViewModel @Inject constructor(
             mobileIntensity = p.mobileIntensity,
             batteryThresholdBattery = p.batteryThresholdBattery,
             batteryThresholdCharging = p.batteryThresholdCharging,
+            pauseOnBatterySaver = p.pauseOnBatterySaver,
             allowedHoursStart = p.allowedHoursStart,
             allowedHoursEnd = p.allowedHoursEnd,
             logRetentionDays = p.logRetentionDays,
