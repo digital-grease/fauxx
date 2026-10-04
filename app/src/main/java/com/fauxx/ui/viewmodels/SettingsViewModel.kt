@@ -55,6 +55,8 @@ data class SettingsUiState(
     val dnsMode: DnsMode = DnsMode.SYSTEM,
     val dohProvider: String = DohPresets.DEFAULT_ID,
     val dohCustomUrl: String = "",
+    val dohCustomServerIp: String = "",
+    val dohSkipCertificateCheck: Boolean = false,
     val plainDnsServer: String = "",
     val routeDnsNoise: Boolean = false,
     val preferredCustomDnsMode: DnsMode = DnsMode.DOH,
@@ -88,6 +90,9 @@ data class LanguageUiState(
  * ViewModel for the Settings screen. Manages global engine configuration and
  * user-initiated data deletion (privacy control).
  */
+/** Outcome of [SettingsViewModel.saveDohCustom], so the screen can mark the right field. */
+enum class DohSaveResult { SAVED, INVALID_URL, INVALID_SERVER_IP }
+
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val profileRepo: PoisonProfileRepository,
@@ -197,28 +202,39 @@ class SettingsViewModel @Inject constructor(
     fun setDohProvider(id: String) { update { it.copy(dohProvider = id) } }
 
     /**
-     * Save the user's own DoH URL and select it. Rejects anything but a valid https URL, and is
-     * called on an explicit save rather than per keystroke: every saved change restarts the
-     * loopback proxy, and each prefix of a URL being typed would otherwise be a restart.
+     * Save the user's own DoH URL, with an optional server IP, and select it. Rejects anything but a
+     * valid https URL and, when given, a numeric IP. Called on an explicit save rather than per
+     * keystroke: every saved change restarts the loopback proxy, and each prefix of a URL being
+     * typed would otherwise be a restart.
      *
      * Saving a blank URL REMOVES the stored one (a personal resolver URL identifies its owner, so
      * deleting it must not require clearing all data), falling back to the default preset if the
      * custom one was selected.
      */
-    fun saveDohCustomUrl(url: String): Boolean {
+    fun saveDohCustom(url: String, serverIp: String): DohSaveResult {
         if (url.isBlank()) {
+            // Removing the URL removes what belongs to it, the certificate opt-out included, so a
+            // later URL never inherits it silently.
             update {
                 it.copy(
                     dohCustomUrl = "",
+                    dohCustomServerIp = "",
+                    dohSkipCertificateCheck = false,
                     dohProvider = if (it.dohProvider == DohPresets.CUSTOM_ID) DohPresets.DEFAULT_ID else it.dohProvider,
                 )
             }
-            return true
+            return DohSaveResult.SAVED
         }
-        if (!DohPresets.isValidCustomUrl(url)) return false
-        update { it.copy(dohProvider = DohPresets.CUSTOM_ID, dohCustomUrl = url.trim()) }
-        return true
+        if (!DohPresets.isValidCustomUrl(url)) return DohSaveResult.INVALID_URL
+        if (serverIp.isNotBlank() && DohPresets.parseServerIp(serverIp) == null) return DohSaveResult.INVALID_SERVER_IP
+        update {
+            it.copy(dohProvider = DohPresets.CUSTOM_ID, dohCustomUrl = url.trim(), dohCustomServerIp = serverIp.trim())
+        }
+        return DohSaveResult.SAVED
     }
+
+    /** Skip the certificate check for the custom DoH server (self-signed, self-hosted). */
+    fun setDohSkipCertificateCheck(v: Boolean) { update { it.copy(dohSkipCertificateCheck = v) } }
 
 
     /**
@@ -301,6 +317,8 @@ class SettingsViewModel @Inject constructor(
                     dnsMode = new.dnsMode,
                     dohProvider = new.dohProvider,
                     dohCustomUrl = new.dohCustomUrl,
+                    dohCustomServerIp = new.dohCustomServerIp,
+                    dohSkipCertificateCheck = new.dohSkipCertificateCheck,
                     plainDnsServer = new.plainDnsServer,
                     routeDnsNoise = new.routeDnsNoise,
                     preferredCustomDnsMode = new.preferredCustomDnsMode,
@@ -329,6 +347,8 @@ class SettingsViewModel @Inject constructor(
             dnsMode = p.dnsMode,
             dohProvider = p.dohProvider,
             dohCustomUrl = p.dohCustomUrl,
+            dohCustomServerIp = p.dohCustomServerIp,
+            dohSkipCertificateCheck = p.dohSkipCertificateCheck,
             plainDnsServer = p.plainDnsServer,
             routeDnsNoise = p.routeDnsNoise,
             preferredCustomDnsMode = p.preferredCustomDnsMode,

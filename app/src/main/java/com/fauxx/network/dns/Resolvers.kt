@@ -2,12 +2,16 @@ package com.fauxx.network.dns
 
 import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import android.annotation.SuppressLint
 import okhttp3.OkHttpClient
 import okhttp3.dnsoverhttps.DnsOverHttps
 import java.io.IOException
 import java.net.InetAddress
 import java.net.UnknownHostException
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.X509TrustManager
 
 /** The device's own resolver: whatever Android, the VPN, Private DNS or the router provides. */
 object SystemHostResolver : HostResolver {
@@ -31,6 +35,11 @@ object SystemHostResolver : HostResolver {
  * the resolver's answer. Getting this wrong fails CLOSED, silently: every lookup "answers" no such
  * host, the proxy refuses every page, and health still reads healthy.
  *
+ * [skipCertificateCheck] is the user's explicit opt-in for a self-hosted resolver with a
+ * self-signed certificate: the endpoint's certificate and hostname are then not checked at all.
+ * Only a custom URL can ask for it (the router never sets it for a preset), and it applies to this
+ * client alone, never to the WebView's own connections.
+ *
  * The OkHttp client is a fresh, minimal one and deliberately NOT the app's orphaned client from
  * NetworkModule, whose interceptors randomize headers. DoH requests only ever reach the resolver
  * the user chose, never a tracker, so OkHttp's TLS fingerprint here is not the #168/#169 tell.
@@ -39,6 +48,7 @@ class DohHostResolver(
     url: String,
     bootstrap: List<InetAddress>,
     endpointResolver: HostResolver = SystemHostResolver,
+    private val skipCertificateCheck: Boolean = false,
 ) : HostResolver {
 
     private val endpointDns = EndpointDns(endpointResolver)
@@ -58,6 +68,7 @@ class DohHostResolver(
                 .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .callTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .apply { if (skipCertificateCheck) trustAnyCertificate() }
                 .build(),
         )
         .url(url.toHttpUrl())
@@ -87,6 +98,23 @@ class DohHostResolver(
 
     private companion object {
         const val TIMEOUT_SECONDS = 5L
+
+        /**
+         * Accept any certificate for any name. Deliberate and user-chosen (see the class KDoc):
+         * this is what "skip certificate check" means, and it is scoped to one DoH client.
+         */
+        @SuppressLint("TrustAllX509TrustManager", "CustomX509TrustManager")
+        private object AcceptAnyCertificate : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
+            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+        }
+
+        @SuppressLint("BadHostnameVerifier")
+        fun OkHttpClient.Builder.trustAnyCertificate(): OkHttpClient.Builder {
+            val tls = SSLContext.getInstance("TLS").apply { init(null, arrayOf(AcceptAnyCertificate), null) }
+            return sslSocketFactory(tls.socketFactory, AcceptAnyCertificate).hostnameVerifier { _, _ -> true }
+        }
     }
 }
 

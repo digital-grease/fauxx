@@ -61,6 +61,7 @@ import com.fauxx.engine.modules.searchEngineDisplayName
 import com.fauxx.locale.SupportedLocale
 import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.theme.ThemeMode
+import com.fauxx.ui.viewmodels.DohSaveResult
 import com.fauxx.ui.viewmodels.SettingsUiState
 import com.fauxx.ui.viewmodels.SettingsViewModel
 import kotlin.math.roundToInt
@@ -325,7 +326,8 @@ fun SettingsScreen(
             onEnabledChange = viewModel::setCustomDnsEnabled,
             onModeChange = viewModel::setDnsMode,
             onProviderChange = viewModel::setDohProvider,
-            onSaveCustomUrl = viewModel::saveDohCustomUrl,
+            onSaveCustomUrl = viewModel::saveDohCustom,
+            onSkipCertificateCheckChange = viewModel::setDohSkipCertificateCheck,
             onSavePlainServer = viewModel::savePlainDnsServer,
             onRouteNoiseChange = viewModel::setRouteDnsNoise,
         )
@@ -620,7 +622,8 @@ private fun CustomDnsCard(
     onEnabledChange: (Boolean) -> Unit,
     onModeChange: (DnsMode) -> Boolean,
     onProviderChange: (String) -> Unit,
-    onSaveCustomUrl: (String) -> Boolean,
+    onSaveCustomUrl: (String, String) -> DohSaveResult,
+    onSkipCertificateCheckChange: (Boolean) -> Unit,
     onSavePlainServer: (String) -> Boolean,
     onRouteNoiseChange: (Boolean) -> Unit,
 ) {
@@ -657,7 +660,7 @@ private fun CustomDnsCard(
         if (uiState.dnsMode == DnsMode.PLAIN || needsPlainServer) {
             PlainDnsSection(uiState, needsPlainServer, onSavePlainServer) { needsPlainServer = false }
         } else {
-            DohSection(uiState, onProviderChange, onSaveCustomUrl)
+            DohSection(uiState, onProviderChange, onSaveCustomUrl, onSkipCertificateCheckChange)
         }
 
         Spacer(Modifier.height(8.dp))
@@ -681,11 +684,14 @@ private fun CustomDnsCard(
 private fun ColumnScope.DohSection(
     uiState: SettingsUiState,
     onProviderChange: (String) -> Unit,
-    onSaveCustomUrl: (String) -> Boolean,
+    onSaveCustomUrl: (String, String) -> DohSaveResult,
+    onSkipCertificateCheckChange: (Boolean) -> Unit,
 ) {
     // rememberSaveable: an unsaved URL survives rotation and other configuration changes.
     var draft by rememberSaveable { mutableStateOf(uiState.dohCustomUrl) }
+    var ipDraft by rememberSaveable { mutableStateOf(uiState.dohCustomServerIp) }
     var invalid by rememberSaveable { mutableStateOf(false) }
+    var invalidIp by rememberSaveable { mutableStateOf(false) }
     var needsUrl by rememberSaveable { mutableStateOf(false) }
 
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -720,12 +726,42 @@ private fun ColumnScope.DohSection(
             else -> null
         },
     )
+    OutlinedTextField(
+        value = ipDraft,
+        onValueChange = { ipDraft = it; invalidIp = false },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        label = { Text(stringResource(R.string.settings_dns_custom_ip_label)) },
+        placeholder = { Text("192.168.1.2") },
+        isError = invalidIp,
+        supportingText = {
+            Text(stringResource(if (invalidIp) R.string.settings_dns_custom_ip_invalid else R.string.settings_dns_custom_ip_help))
+        },
+    )
     TextButton(
-        // A blank save removes the stored URL (see SettingsViewModel.saveDohCustomUrl).
-        onClick = { invalid = !onSaveCustomUrl(draft); if (!invalid) needsUrl = false },
-        enabled = draft.trim() != uiState.dohCustomUrl,
+        // A blank URL removes the stored one, and its server IP (see SettingsViewModel.saveDohCustom).
+        onClick = {
+            val result = onSaveCustomUrl(draft, ipDraft)
+            invalid = result == DohSaveResult.INVALID_URL
+            invalidIp = result == DohSaveResult.INVALID_SERVER_IP
+            if (result == DohSaveResult.SAVED) {
+                needsUrl = false
+                if (draft.isBlank()) ipDraft = ""
+            }
+        },
+        enabled = draft.trim() != uiState.dohCustomUrl || ipDraft.trim() != uiState.dohCustomServerIp,
         modifier = Modifier.align(Alignment.End)
     ) { Text(stringResource(R.string.settings_dns_custom_save)) }
+    // Only a saved custom URL can skip the check; the presets are always verified.
+    if (uiState.dohProvider == DohPresets.CUSTOM_ID) {
+        LabelledSwitch(
+            title = stringResource(R.string.settings_dns_insecure_title),
+            description = stringResource(R.string.settings_dns_insecure_description),
+            checked = uiState.dohSkipCertificateCheck,
+            enabled = true,
+            onCheckedChange = onSkipCertificateCheckChange,
+        )
+    }
 }
 
 @Composable

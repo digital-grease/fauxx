@@ -134,6 +134,35 @@ class CustomDnsRouterTest {
     }
 
     @Test
+    fun `an invalid server IP for a custom URL degrades instead of routing`() = runBlocking {
+        profile.value = doh(provider = DohPresets.CUSTOM_ID, url = "https://dns.lan/dns-query")
+            .copy(dohCustomServerIp = "dns.lan")
+        router.start()
+        assertTrue(override.calls.isEmpty())
+        assertTrue(router.health.value is DnsHealth.Degraded)
+    }
+
+    @Test
+    fun `a custom URL with a server IP routes through the proxy`() = runBlocking {
+        profile.value = doh(provider = DohPresets.CUSTOM_ID, url = "https://dns.lan/dns-query")
+            .copy(dohCustomServerIp = "192.168.6.7")
+        router.start()
+        assertTrue("the WebView must be pointed at the proxy", override.port != null)
+        assertEquals(DnsHealth.Healthy, router.health.value)
+    }
+
+    @Test
+    fun `turning the certificate check off while running swaps in a fresh proxy`() = runBlocking {
+        // The setting must reach the resolver, which only happens when the router rebuilds it.
+        profile.value = doh(provider = DohPresets.CUSTOM_ID, url = "https://dns.lan/dns-query")
+        router.start()
+        val firstPort = override.port!!
+
+        profile.value = profile.value.copy(dohSkipCertificateCheck = true)
+        withTimeout(5_000) { while (override.port == null || override.port == firstPort) delay(20) }
+    }
+
+    @Test
     fun `a settings change while running swaps in a fresh proxy with fresh credentials`() = runBlocking {
         profile.value = doh()
         router.start()

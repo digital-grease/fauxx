@@ -49,4 +49,19 @@ object DohPresets {
         val parsed = url.trim().toHttpUrlOrNull() ?: return false
         return parsed.isHttps && parsed.host.isNotBlank() && parsed.username.isEmpty() && parsed.password.isEmpty()
     }
+
+    /**
+     * The optional server address for a custom URL (#227): Fauxx connects there instead of looking
+     * up the URL's hostname, which still names the server for TLS. For a resolver on the user's own
+     * network, or one whose name their DNS blocks. Numeric only, validated without any lookup
+     * (IPv6 may be bracketed); the unspecified address, multicast and link-local are refused. Null
+     * for anything else, including blank.
+     */
+    fun parseServerIp(text: String): InetAddress? {
+        val host = text.trim().removePrefix("[").removeSuffix("]")
+        if (host.isEmpty()) return null
+        val address = LoopbackProxy.parseIpLiteral(host) ?: return null
+        if (address.isAnyLocalAddress || address.isMulticastAddress || address.isLinkLocalAddress) return null
+        return address
+    }
 }

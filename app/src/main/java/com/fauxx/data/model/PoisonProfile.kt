@@ -45,6 +45,11 @@ import com.fauxx.ui.theme.ThemeMode
  *   companion), or `DohPresets.CUSTOM_ID` to use [dohCustomUrl].
  * @property dohCustomUrl The user's own https DoH endpoint, e.g. a NextDNS profile URL. That URL
  *   identifies the user, so it is scrubbed from exported logs.
+ * @property dohCustomServerIp Optional IP address for [dohCustomUrl]'s server. When set, Fauxx
+ *   connects there instead of looking up the URL's hostname (a resolver on the user's network, or
+ *   one their DNS blocks); the hostname still names the server for TLS.
+ * @property dohSkipCertificateCheck Accept any certificate from [dohCustomUrl]'s server, for a
+ *   self-hosted resolver with a self-signed certificate. Off by default; never applies to presets.
  * @property plainDnsServer The plain DNS server for [DnsMode.PLAIN], as `ip` or `ip:port`
  *   (IPv6 bracketed when a port is given). By IP only, never by name.
  * @property preferredCustomDnsMode The custom mode (DOH or PLAIN) the user last chose, so switching
@@ -87,6 +92,8 @@ data class PoisonProfile(
     val dnsMode: DnsMode = DnsMode.SYSTEM,
     val dohProvider: String = "quad9",
     val dohCustomUrl: String = "",
+    val dohCustomServerIp: String = "",
+    val dohSkipCertificateCheck: Boolean = false,
     val plainDnsServer: String = "",
     val routeDnsNoise: Boolean = false,
     val preferredCustomDnsMode: DnsMode = DnsMode.DOH,

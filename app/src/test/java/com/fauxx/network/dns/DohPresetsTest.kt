@@ -38,4 +38,13 @@ class DohPresetsTest {
         assertFalse(DohPresets.isValidCustomUrl("https://"))
         assertFalse("no credentials in a resolver URL", DohPresets.isValidCustomUrl("https://user:pass@dns.example/dns-query"))
     }
+
+    @Test
+    fun `a custom server IP is numeric only`() {
+        assertEquals(java.net.InetAddress.getByName("192.168.6.7"), DohPresets.parseServerIp(" 192.168.6.7 "))
+        assertEquals(java.net.InetAddress.getByName("2606:4700::1111"), DohPresets.parseServerIp("[2606:4700::1111]"))
+        for (bad in listOf("", "dns.lan", "192.168.6.7:443", "999.1.1.1", "0.0.0.0", "::", "224.0.0.251", "fe80::1")) {
+            assertEquals("'$bad' must be rejected", null, DohPresets.parseServerIp(bad))
+        }
+    }
 }

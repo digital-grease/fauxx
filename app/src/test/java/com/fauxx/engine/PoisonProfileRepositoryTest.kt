@@ -110,6 +110,8 @@ class PoisonProfileRepositoryTest {
             dnsMode = com.fauxx.data.model.DnsMode.DOH,      // default SYSTEM
             dohProvider = "mullvad",                         // default quad9
             dohCustomUrl = "https://dns.example/dns-query",  // default empty
+            dohCustomServerIp = "192.168.6.7",               // default empty
+            dohSkipCertificateCheck = true,                  // default false
             plainDnsServer = "9.9.9.9:5353",                 // default empty
             routeDnsNoise = true,                            // default false
             preferredCustomDnsMode = com.fauxx.data.model.DnsMode.PLAIN, // default DOH

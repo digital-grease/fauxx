@@ -107,6 +107,8 @@ object PreferenceKeys {
     val DNS_MODE = stringPreferencesKey("dns_mode")
     val DOH_PROVIDER = stringPreferencesKey("doh_provider")
     val DOH_CUSTOM_URL = stringPreferencesKey("doh_custom_url")
+    val DOH_CUSTOM_SERVER_IP = stringPreferencesKey("doh_custom_server_ip")
+    val DOH_SKIP_CERTIFICATE_CHECK = booleanPreferencesKey("doh_skip_certificate_check")
     val PLAIN_DNS_SERVER = stringPreferencesKey("plain_dns_server")
     val ROUTE_DNS_NOISE = booleanPreferencesKey("route_dns_noise")
     val PREFERRED_CUSTOM_DNS_MODE = stringPreferencesKey("preferred_custom_dns_mode")

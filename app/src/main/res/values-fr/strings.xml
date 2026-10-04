@@ -333,6 +333,11 @@
     <string name="settings_dns_noise_title">L\'utiliser aussi pour le bruit DNS</string>
     <string name="settings_dns_noise_description">Désactivé : les requêtes du bruit DNS passent par le DNS de votre appareil et apparaissent donc dans les journaux DNS de votre réseau et de votre FAI, ce qui est le but du bruit DNS. Activé : elles passent par le résolveur personnalisé tant qu\'il fonctionne, donc surtout ses journaux les voient (en DNS non chiffré, votre réseau peut encore les voir).</string>
     <string name="settings_dns_custom_save">Enregistrer et utiliser</string>
+    <string name="settings_dns_custom_ip_label">IP du serveur (facultatif)</string>
+    <string name="settings_dns_custom_ip_help">Fauxx se connecte à cette adresse au lieu de résoudre le nom de l\'URL. Pour un résolveur sur votre propre réseau, ou un résolveur que votre DNS bloque.</string>
+    <string name="settings_dns_custom_ip_invalid">Saisissez une adresse IP, par exemple 192.168.1.2</string>
+    <string name="settings_dns_insecure_title">Ignorer la vérification du certificat</string>
+    <string name="settings_dns_insecure_description">Pour un résolveur auto-hébergé avec un certificat auto-signé. Toute personne entre vous et lui pourrait alors se faire passer pour votre résolveur, et voir ou modifier chaque nom que Fauxx résout. Ne concerne que cette URL.</string>
     <string name="settings_dns_help">Si une application VPN ou pare-feu filtre le DNS, exemptez-en Fauxx (dans Rethink, réglez Fauxx pour contourner DNS et pare-feu) ; sinon elle peut bloquer le DNS chiffré de Fauxx, ou les connexions établies avec ses réponses. Cela contourne uniquement le blocage au niveau DNS, pas le blocage par adresse IP. Tant que c\'est activé, les sites compatibles HTTP/3 sont joints en HTTP/2. Si le DNS personnalisé cesse de fonctionner, Fauxx revient au DNS de l\'appareil et l\'indique sur le tableau de bord.</string>
     <string name="settings_battery_threshold_battery_title">Mettre en pause sous (batterie)</string>
     <string name="settings_battery_threshold_charging_title">Mettre en pause sous (en charge)</string>

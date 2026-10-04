@@ -82,10 +82,10 @@ class SettingsViewModelTest {
     @Test
     fun `a custom DoH URL is saved and selected only when it is https`() = runTest {
         val vm = viewModel()
-        assertFalse(vm.saveDohCustomUrl("http://dns.example/dns-query"))
+        assertEquals(com.fauxx.ui.viewmodels.DohSaveResult.INVALID_URL, vm.saveDohCustom("http://dns.example/dns-query", ""))
         assertEquals(com.fauxx.network.dns.DohPresets.DEFAULT_ID, vm.uiState.value.dohProvider)
 
-        assertTrue(vm.saveDohCustomUrl("  https://dns.nextdns.io/abc123 "))
+        assertEquals(com.fauxx.ui.viewmodels.DohSaveResult.SAVED, vm.saveDohCustom("  https://dns.nextdns.io/abc123 ", ""))
         assertEquals(com.fauxx.network.dns.DohPresets.CUSTOM_ID, vm.uiState.value.dohProvider)
         assertEquals("https://dns.nextdns.io/abc123", vm.uiState.value.dohCustomUrl)
     }
@@ -93,10 +93,33 @@ class SettingsViewModelTest {
     @Test
     fun `saving a blank URL removes the stored one and leaves the custom provider`() = runTest {
         val vm = viewModel()
-        vm.saveDohCustomUrl("https://dns.nextdns.io/abc123")
-        assertTrue(vm.saveDohCustomUrl("   "))
+        vm.saveDohCustom("https://dns.nextdns.io/abc123", "")
+        assertEquals(com.fauxx.ui.viewmodels.DohSaveResult.SAVED, vm.saveDohCustom("   ", ""))
         assertEquals("", vm.uiState.value.dohCustomUrl)
         assertEquals(com.fauxx.network.dns.DohPresets.DEFAULT_ID, vm.uiState.value.dohProvider)
+    }
+
+    @Test
+    fun `a custom URL is saved with its server IP, and a bad IP saves nothing`() = runTest {
+        val vm = viewModel()
+        assertEquals(com.fauxx.ui.viewmodels.DohSaveResult.INVALID_SERVER_IP, vm.saveDohCustom("https://dns.lan/dns-query", "dns.lan"))
+        assertEquals("", vm.uiState.value.dohCustomUrl)
+
+        assertEquals(com.fauxx.ui.viewmodels.DohSaveResult.SAVED, vm.saveDohCustom("https://dns.lan/dns-query", " 192.168.6.7 "))
+        assertEquals("192.168.6.7", vm.uiState.value.dohCustomServerIp)
+        assertEquals(com.fauxx.network.dns.DohPresets.CUSTOM_ID, vm.uiState.value.dohProvider)
+    }
+
+    @Test
+    fun `removing the custom URL also removes its server IP and certificate opt-out`() = runTest {
+        val vm = viewModel()
+        vm.saveDohCustom("https://dns.lan/dns-query", "192.168.6.7")
+        vm.setDohSkipCertificateCheck(true)
+        assertTrue(vm.uiState.value.dohSkipCertificateCheck)
+
+        vm.saveDohCustom("", "192.168.6.7")
+        assertEquals("", vm.uiState.value.dohCustomServerIp)
+        assertFalse("a later URL must not inherit the opt-out", vm.uiState.value.dohSkipCertificateCheck)
     }
 
     @Test
