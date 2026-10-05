@@ -27,7 +27,7 @@
     <string name="onboarding_bullet_fingerprint">Présente une identité d\'appareil stable par persona (User-Agent et client hints)</string>
     <string name="onboarding_bullet_dns">Génère des requêtes DNS vers des domaines variés</string>
     <string name="onboarding_bullet_battery">Toute l\'activité s\'exécute en arrière-plan et consomme de la batterie et des données</string>
-    <string name="onboarding_optional_profile">Si tu le souhaites, parle-nous de toi sur les écrans suivants. Ces informations restent sur ton appareil et nous aident à générer un bruit différent de ton vrai profil. Passe cette étape si tu préfères un bruit uniforme.</string>
+    <string name="onboarding_optional_profile">Si tu le souhaites, parle-nous de toi sur les écrans suivants. Ces informations restent sur ton appareil et nous aident à générer un bruit différent de ton vrai profil. Passe cette étape si tu préfères : Fauxx façonnera alors ses leurres uniquement autour d\'un persona synthétique.</string>
     <string name="onboarding_done_title">Tout est prêt !</string>
     <string name="onboarding_done_body">Fauxx générera une activité de navigation aussi différente que possible de ton signal comportemental réel. Active la protection depuis le tableau de bord pour démarrer.</string>
     <string name="onboarding_skip">Passer</string>
@@ -405,7 +405,7 @@
     <string name="sync_status_imported">Persona leurre %1$s importée (%2$s)</string>
     <string name="settings_version_info">Fauxx v%1$s (build %2$d)</string>
     <string name="settings_clear_dialog_title">Effacer toutes les données ?</string>
-    <string name="settings_clear_dialog_body">Cela supprimera définitivement :\n• Tous les journaux d\'actions\n• Ton profil démographique\n• Le cache des profils publicitaires\n• L\'historique des personas générés\n\nTous les paramètres seront réinitialisés à leurs valeurs par défaut. Le moteur s\'arrêtera et reviendra à la Couche 0 (bruit uniforme).\n\nCette action est irréversible.</string>
+    <string name="settings_clear_dialog_body">Cela supprimera définitivement :\n• Tous les journaux d\'actions\n• Ton profil démographique\n• Le cache des profils publicitaires\n• L\'historique des personas générés\n\nTous les paramètres seront réinitialisés à leurs valeurs par défaut. Le moteur s\'arrêtera. Une fois relancé, ses leurres seront façonnés uniquement par un persona synthétique, sans aucune donnée sur toi.\n\nCette action est irréversible.</string>
     <string name="settings_clear_dialog_confirm">Tout effacer</string>
 
     <!-- Targeting screen — LLM-DRAFTED 2026-05-16, PENDING NATIVE-SPEAKER REVIEW -->
@@ -451,7 +451,7 @@
     <string name="targeting_import_as_control_description">Enregistre le prochain import comme un compte de contrôle propre que vous n\'empoisonnez jamais, pour que le tableau de bord montre à quel point votre profil empoisonné s\'en est éloigné.</string>
     <string name="targeting_clear_profile_button">Effacer mon profil</string>
     <string name="targeting_clear_dialog_title">Effacer le profil ?</string>
-    <string name="targeting_clear_dialog_body">Cela supprimera ton profil démographique, toutes les données des plateformes et l\'historique des personas. Le moteur reviendra à un ciblage aléatoire uniforme.</string>
+    <string name="targeting_clear_dialog_body">Cela supprimera ton profil démographique, toutes les données des plateformes et l\'historique des personas. Ensuite, les leurres seront façonnés uniquement par un persona synthétique, sans aucune donnée sur toi.</string>
     <string name="targeting_clear_dialog_confirm">Effacer</string>
     <string name="targeting_profile_summary_title">MON PROFIL</string>
     <string name="targeting_profile_summary_empty">Aucun profil enregistré. En créer un permet à la Couche 1 d\'orienter le bruit loin de tes données démographiques réelles.</string>

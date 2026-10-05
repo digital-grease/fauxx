@@ -29,15 +29,15 @@ Fauxx addresses this by injecting continuous, category-weighted synthetic activi
 
 Fauxx uses a **Demographic Distancing Engine**, a layered system that decides what synthetic activity to generate:
 
-### Layer 0: Uniform Entropy (Always Active)
+### Layer 0: Baseline (Always Active)
 
-The baseline: equal probability across all content categories. This is your foundation.
+Every category starts from the same weight, and none is ever dropped entirely, so decoy activity always spans the whole range of topics. On its own this layer changes nothing: the persona (Layer 3) and your optional inputs (Layers 1 and 2) shape the actual mix.
 
 ### Layer 1: Self-Report (Optional)
 
 You optionally tell Fauxx coarse demographics (age range, interests, profession, region). Fauxx then weights AWAY from these categories, generating believable decoy activity in the things you don't care about, so the interests it steers clear of are your real ones.
 
-- Skip it? You keep Layer 0's uniform, unbiased decoys.
+- Skip it? You keep the default persona-shaped decoys from Layer 3.
 - Enable it? Your real profile becomes harder to infer.
 
 ### Layer 2: Ad-Profile Import (Opt-in, Advanced)
@@ -47,7 +47,7 @@ Fauxx imports the ad-interest profile the platforms have already built about you
 - You provide an exported file. Fauxx never logs in, reads cookies, or touches the platforms.
 - Reads the file only. Nothing is sent anywhere.
 - Re-import occasionally as your profile drifts (Fauxx reminds you after about 90 days).
-- On a missing or unrecognized file, degrades gracefully to Layer 0.
+- On a missing or unrecognized file, nothing is imported and the other layers carry on unchanged.
 
 ### Layer 3: Synthetic Persona Rotation (On by Default)
 
@@ -180,7 +180,7 @@ On first launch, Fauxx offers an optional demographic self-report flow:
 - Profession
 - Region
 
-Every screen has a visible "Skip" button. You can skip all of it and run on pure Layer 0 uniform, unbiased decoys.
+Every screen has a visible "Skip" button. You can skip all of it and run on the default persona-shaped decoys.
 
 ### Dashboard
 
@@ -255,7 +255,7 @@ app/src/main/
 │   │   └── location/                    # Fake route generator & city database
 │   ├── targeting/                       # Demographic Distancing Engine
 │   │   ├── TargetingEngine.kt           # Orchestrator
-│   │   ├── layer0/ … layer3/            # Uniform, self-report, ad-profile import, persona rotation
+│   │   ├── layer0/ … layer3/            # Baseline, self-report, ad-profile import, persona rotation
 │   │   ├── allocation/                  # Optional adversarial allocation stage
 │   │   └── WeightNormalizer.kt
 │   ├── engine/

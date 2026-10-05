@@ -38,7 +38,7 @@
     <string name="onboarding_bullet_fingerprint">Представляет стабильную идентичность устройства для каждой личности (User-Agent и client hints)</string>
     <string name="onboarding_bullet_dns">Создает DNS-запросы к разным доменам</string>
     <string name="onboarding_bullet_battery">Вся активность выполняется в фоне и расходует заряд батареи и трафик</string>
-    <string name="onboarding_optional_profile">При желании расскажи о себе на следующих экранах. Эти данные останутся на твоём устройстве и помогут генерировать шум, отличающийся от твоего реального профиля. Пропусти, если хочешь равномерный шум.</string>
+    <string name="onboarding_optional_profile">При желании расскажи о себе на следующих экранах. Эти данные останутся на твоём устройстве и помогут генерировать шум, отличающийся от твоего реального профиля. Можешь пропустить: тогда Fauxx будет строить приманки только вокруг синтетической персоны.</string>
     <string name="onboarding_done_title">Все готово!</string>
     <string name="onboarding_done_body">Fauxx будет генерировать разнообразную активность, максимально отличающуюся от твоего реального поведенческого сигнала. Чтобы начать, включи защиту на панели управления.</string>
     <string name="onboarding_skip">Пропустить</string>
@@ -158,7 +158,7 @@
     <string name="settings_mobile_intensity_off_description">Приостановлено на мобильных данных</string>
     <string name="settings_active_hours_title">Активные часы</string>
     <string name="settings_clear_dialog_title">Удалить все данные?</string>
-    <string name="settings_clear_dialog_body">Это навсегда удалит:\n• Все журналы действий\n• Твой демографический профиль\n• Кэш профилей рекламных платформ\n• Историю генерации персон\n\nВсе настройки будут сброшены. Движок остановится и вернётся к Layer 0 (равномерный шум).\n\nЭто действие нельзя отменить.</string>
+    <string name="settings_clear_dialog_body">Это навсегда удалит:\n• Все журналы действий\n• Твой демографический профиль\n• Кэш профилей рекламных платформ\n• Историю генерации персон\n\nВсе настройки будут сброшены. Движок остановится. После перезапуска приманки будут строиться только вокруг синтетической персоны, без данных о тебе.\n\nЭто действие нельзя отменить.</string>
     <string name="settings_clear_dialog_confirm">Удалить все</string>
 
     <!-- Dashboard screen -->
@@ -197,7 +197,7 @@
     <string name="targeting_layer3_name">Layer 3 — Смена персон</string>
     <string name="targeting_custom_interests_title">Свои интересы</string>
     <string name="targeting_clear_dialog_title">Удалить профиль?</string>
-    <string name="targeting_clear_dialog_body">Это удалит твой демографический профиль, все данные платформ и историю персон. Движок вернётся к равномерному случайному таргетингу.</string>
+    <string name="targeting_clear_dialog_body">Это удалит твой демографический профиль, все данные платформ и историю персон. После этого приманки будут строиться только вокруг синтетической персоны, без данных о тебе.</string>
 
     <!-- Modules screen -->
     <string name="modules_title">МОДУЛИ</string>
