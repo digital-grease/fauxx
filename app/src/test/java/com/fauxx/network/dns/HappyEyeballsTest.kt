@@ -65,16 +65,19 @@ class HappyEyeballsTest {
     @Test
     fun `an interrupt surfaces as an IOException, never as InterruptedException`() {
         var thrown: Throwable? = null
+        // Interrupt only once the race is under way, not after a guessed delay: on a slow runner a
+        // fixed sleep could interrupt before connect() starts and test a different path.
+        val racing = java.util.concurrent.CountDownLatch(1)
         val worker = Thread {
             try {
                 HappyEyeballs.connect(listOf(v6a, v4a), 443, timeoutMs = 10_000, staggerMs = 5_000,
-                    connector = { _, _, _ -> Thread.sleep(10_000); throw IOException("never") })
+                    connector = { _, _, _ -> racing.countDown(); Thread.sleep(10_000); throw IOException("never") })
             } catch (t: Throwable) {
                 thrown = t
             }
         }
         worker.start()
-        Thread.sleep(200)
+        assertTrue("the race never started", racing.await(5, java.util.concurrent.TimeUnit.SECONDS))
         worker.interrupt()
         worker.join(5_000)
         assertTrue("expected InterruptedIOException, got $thrown", thrown is java.io.InterruptedIOException)

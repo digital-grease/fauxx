@@ -92,6 +92,7 @@ class LoopbackProxy(
      */
     @VisibleForTesting
     internal fun pendingCount(): Int = pending.get()
+
     private val tunnels = AtomicInteger(0)
     @Volatile private var stopped = false
 
@@ -117,6 +118,11 @@ class LoopbackProxy(
         open.toTypedArray().forEach(::close)
         executor.shutdownNow()
     }
+
+    /** After [stop], wait until every worker has finished: tests check what escaped only then. */
+    @VisibleForTesting
+    internal fun awaitWorkersStopped(timeoutMs: Long): Boolean =
+        executor.awaitTermination(timeoutMs, TimeUnit.MILLISECONDS)
 
     private fun acceptLoop() {
         var consecutiveErrors = 0

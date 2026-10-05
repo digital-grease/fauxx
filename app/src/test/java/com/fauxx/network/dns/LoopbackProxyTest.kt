@@ -252,18 +252,24 @@ class LoopbackProxyTest {
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { _, e -> escaped += e }
         val v6 = InetAddress.getByName("2001:db8::7")
+        // A latch, not a sleep: stop the proxy only once a worker is inside the address race, and
+        // check for escapes only once every proxy worker has finished. With fixed sleeps a slow
+        // runner stopped the proxy before the race began and the test passed without testing it.
+        // (The racing attempts themselves are not interrupted: HappyEyeballs leaves them to time
+        // out and reaps them. It is the proxy worker that must not let anything escape.)
+        val racing = java.util.concurrent.CountDownLatch(1)
         val hanging = LoopbackProxy(
             resolver = { Resolution.Addresses(listOf(v6, remote)) },
             credentials = credentials,
-            connector = { _, _, _ -> Thread.sleep(10_000); throw IOException("never") },
+            connector = { _, _, _ -> racing.countDown(); Thread.sleep(10_000); throw IOException("never") },
         )
         hanging.start()
         try {
             val s = Socket("127.0.0.1", hanging.port)
             s.getOutputStream().write(("CONNECT example.com:443 HTTP/1.1\r\n" + auth() + "\r\n\r\n").toByteArray())
-            Thread.sleep(300) // the worker is now inside the address race
+            assertTrue("the address race never started", racing.await(5, java.util.concurrent.TimeUnit.SECONDS))
             hanging.stop()
-            Thread.sleep(300)
+            assertTrue("a proxy worker never finished", hanging.awaitWorkersStopped(5_000))
             s.close()
             assertTrue("nothing may escape a proxy worker: $escaped", escaped.isEmpty())
         } finally {
