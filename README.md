@@ -9,7 +9,7 @@
 
 **Data poisoning for your everyday tracking.**
 
-Fauxx is an open-source Android privacy tool that poisons data broker and ad-tech profiles by generating continuous, plausible, off-demographic synthetic activity from your device. The goal is simple: bury your real behavioral signal under a steady stream of coherent, believable decoy activity, so profilers can't tell the real you from the plausible fakes. Not easily-filterable noise — deception that reads as real people.
+Fauxx is an open-source Android privacy tool that poisons data broker and ad-tech profiles by generating continuous, plausible, off-demographic synthetic activity from your device. The goal is simple: bury your real behavioral signal under a steady stream of coherent, believable decoy activity, so profilers can't tell the real you from the plausible fakes. Not easily filterable noise, but deception that reads as real people.
 
 > 💬 **Questions about how Fauxx works, or wishlist ideas?** Use [Discussions](https://github.com/digital-grease/fauxx/discussions). Bug reports and feature requests stay in [Issues](https://github.com/digital-grease/fauxx/issues).
 
@@ -23,11 +23,11 @@ Fauxx is an open-source Android privacy tool that poisons data broker and ad-tec
 
 Every search you make, every link you click, every location you visit is collected by data brokers, ad networks, and analytics platforms. Over time, they build a detailed profile of who you are, what you want, and what you're likely to do next. That profile is sold, traded, and collated with other data and profiles to continue the process.
 
-Fauxx addresses this by injecting continuous, category-weighted synthetic activity that obscures your real interests under a cloud of plausible, believable decoys. Your genuine signal gets lost among convincing fakes — not random noise a broker can filter out, but coherent activity that looks like real people.
+Fauxx addresses this by injecting continuous, category-weighted synthetic activity that obscures your real interests under a cloud of plausible, believable decoys. Your genuine signal gets lost among convincing fakes: not random noise a broker can filter out, but coherent activity that looks like real people.
 
 ## How It Works
 
-Fauxx uses a **Demographic Distancing Engine**—a layered system that decides what synthetic activity to generate:
+Fauxx uses a **Demographic Distancing Engine**, a layered system that decides what synthetic activity to generate:
 
 ### Layer 0: Uniform Entropy (Always Active)
 
@@ -35,7 +35,7 @@ The baseline: equal probability across all content categories. This is your foun
 
 ### Layer 1: Self-Report (Optional)
 
-You optionally tell Fauxx coarse demographics (age range, interests, profession, region). Fauxx then weights AWAY from these categories—generating believable decoy activity in the things you don't care about, so the interests it steers clear of are your real ones.
+You optionally tell Fauxx coarse demographics (age range, interests, profession, region). Fauxx then weights AWAY from these categories, generating believable decoy activity in the things you don't care about, so the interests it steers clear of are your real ones.
 
 - Skip it? You keep Layer 0's uniform, unbiased decoys.
 - Enable it? Your real profile becomes harder to infer.
@@ -49,33 +49,35 @@ Fauxx imports the ad-interest profile the platforms have already built about you
 - Re-import occasionally as your profile drifts (Fauxx reminds you after about 90 days).
 - On a missing or unrecognized file, degrades gracefully to Layer 0.
 
-### Layer 3: Synthetic Persona Rotation (Active When L1 or L2 Enabled)
+### Layer 3: Synthetic Persona Rotation (On by Default)
 
-To avoid a predictable change-point, Fauxx rotates to a fresh coherent persona on a jittered schedule: a lifetime drawn uniformly over 30 to 90 days, re-rolled every cycle, so rotations never land on a fixed tick. This persona (a fake age, profession, interests, and region) becomes the decoy identity that shapes the next stretch of activity: a believable person who isn't you. And it doesn't all flip at once. The persona's channels (device, location, queries, rhythm, category weights) phase in over days through staggered adoption, so a broker sees no single synchronized change-point to lock onto.
+Layer 3 runs on its own, whether or not Layers 1 and 2 are enabled. To avoid a predictable change-point, Fauxx rotates to a fresh coherent persona on a jittered schedule: a lifetime drawn uniformly over 30 to 90 days, re-rolled every cycle, so rotations never land on a fixed tick. This persona (a fake age, profession, interests, and region) becomes the decoy identity that shapes the next stretch of activity: a believable person who isn't you. And it doesn't all flip at once. The persona's channels (device, location, queries, rhythm, category weights) phase in over days through staggered adoption, so a broker sees no single synchronized change-point to lock onto.
 
 ### How Weights Combine
 
-All layers produce a weight map across content categories. These weights multiply together and normalize, so the final distribution sums to 1.0. Categories are clamped with a minimum weight of 0.001—absence is still a signal.
+All layers produce a weight map across content categories. These weights multiply together and normalize, so the final distribution sums to 1.0. Categories are clamped with a minimum weight of 0.001, because absence is still a signal.
 
 Example: If you report yourself as a 25-year-old software engineer, Layer 1 drops RETIREMENT and PARENTING to 0.15× (away-from) and boosts GAMING and TECHNOLOGY to 2.5× (toward other interests). When Layer 2 imports your ad profile and sees Google has tagged you with TECH, it further suppresses TECH (0.05×) and boosts categories Google has never associated with you (3.0×). These multiply together, then Layer 3 blends in the current persona's preferences. The result: a decoy profile that reads like a real person, just not you.
 
 ## Modules
 
-Fauxx poisons through seven complementary channels:
+Fauxx poisons through seven complementary channels. Location Spoofing and App Signals are off by default; the rest are on.
 
 ### 1. Search Poisoning
 
-Executes synthetic search queries across Google, Bing, DuckDuckGo, Yahoo, and Yandex, and you can switch off any engine you would rather spare. Most queries are composed on-device by a per-install grammar model (with a Markov fallback) over a bundled corpus, so they read as natural, topically coherent searches rather than random gibberish. The grammar is styled per install, so no two devices emit the same query distribution for a broker to fingerprint. Each query is followed by 1–3 result clicks with random dwell time (2–30 seconds).
+Runs synthetic search sessions across Google, Bing, DuckDuckGo, Yahoo, and Yandex, and you can switch off any engine you would rather spare. Most queries are composed on-device by a per-install grammar model (with a Markov fallback) over a bundled corpus, so they read as natural, topically coherent searches rather than random gibberish. The grammar is styled per install, so no two devices emit the same query distribution for a broker to fingerprint.
+
+Each session is one browser visit: a first query, then a few refined follow-up queries, then a click on one or two results, with a few seconds of dwell on each page. The number of refinements and clicks depends on the intensity (at Max, a session is a single query), and a whole session is capped at about a minute. Bing and Yahoo wrap their result links in their own redirectors, so sessions on those engines end on the results page.
 
 **Category-aware:** Query bank selection is weighted by your targeting engine output.
 
 ### 2. Ad Pollution
 
-Loads ad-heavy pages in background WebViews, clicks ads at sub-1% CTR (keeping it plausible), and visits ad preference dashboards. Designed to generate signals ad networks interpret as low intent, not botting.
+Loads ad-supported pages from the category-weighted crawl list in a background WebView, and now and then visits the platforms' ad-preference dashboards. It never clicks ads or triggers conversions: every load is a plain page visit, so it cannot be mistaken for click fraud.
 
 ### 3. Location Spoofing (experimental, off by default, see limits below)
 
-Uses Android's MockLocationProvider to feed fake GPS coordinates along plausible paths, drawn from a database of 800+ world city centers. Routes are bound to the active persona's region.
+Uses Android's MockLocationProvider to feed fake GPS coordinates along plausible paths, drawn from a database of about 800 world city centers. Routes are bound to the active persona's region.
 
 **This module does not currently do what its name suggests, and you should not rely on it.** Measured on Android 14: Fauxx registers an additional location provider of its own rather than replacing the system ones, so apps that ask for location the normal way (Play Services fused location, or the standard GPS provider) receive your real location, unaffected. Apps also do not select Fauxx's provider when asking the system to choose one. The fake coordinates are generated correctly and then largely go nowhere.
 
@@ -91,7 +93,7 @@ Presents a **stable, coherent device identity** per synthetic persona rather tha
 
 ### 5. Cookie Saturation
 
-Visits 2,400+ categorized URLs in isolated background WebViews, accumulating tracker cookies across diverse categories. Each URL load respects a per-domain rate limit (minimum 5 seconds between hits). WebViews are pooled and confined to Fauxx's own WebView data directory, so synthetic traffic never touches your real browser's cookies.
+Visits categorized URLs (about 2,400 in English, with smaller Spanish, French and Russian lists) in isolated background WebViews, accumulating tracker cookies across diverse categories. Each URL load respects a per-domain rate limit (minimum 5 seconds between hits). WebViews are pooled and confined to Fauxx's own WebView data directory, so synthetic traffic never touches your real browser's cookies.
 
 **Per-persona cookie jars:** each synthetic persona browses with a cookie jar, site storage and cache of its own. When Fauxx rotates to a new persona, the browser identity and everything stored under the old one change together, so nothing a tracker stored under one persona can be read back under the next. This needs a recent Android System WebView; where that support is missing, all personas share one jar as before. Every persona still browses from the same phone and the same network address, and Fauxx does not fake the hardware signals a fingerprinting script reads, so a tracker that fingerprints rather than reads cookies can still tell they are one device.
 
@@ -99,7 +101,7 @@ Visits 2,400+ categorized URLs in isolated background WebViews, accumulating tra
 
 ### 6. App Signals
 
-Opens deep links and app store pages for off-profile applications, triggering attribution pixel fires that lead ad networks to believe you're interested in categories you've never touched.
+Off by default. Browses Google Play store searches for apps in off-profile categories, in the same background WebView, so the persona's Play browsing reflects decoy interests. It stays on play.google.com in the WebView: it never opens the Play Store app, and never installs or launches anything.
 
 ### 7. DNS Noise
 
@@ -110,23 +112,23 @@ Resolves a diverse spread of domain names, so the DNS lookups visible to ISP and
 Fauxx is built with privacy-first architecture:
 
 - **On-device only:** All demographic data, profile settings, and activity logs stay on your device. Nothing is uploaded.
-- **Encrypted database:** Sensitive tables (UserDemographicProfile, PlatformProfileCache) use SQLCipher encryption with AndroidKeyStore-backed keys. The encryption key is derived from the device's secure key material.
+- **Encrypted database:** The whole Room database, including your self-reported demographics, imported ad profiles and the action log, is encrypted with SQLCipher. Its passphrase is stored encrypted by a Tink key that is protected by the Android Keystore.
 - **Import reads only your file:** Layer 2 reads the ad-profile export you hand it. It never logs into, modifies, or contacts the ad platforms.
 - **No sensitive attributes:** Demographic distance rules never include or infer race, ethnicity, religion, sexual orientation, gender identity, disability, or political affiliation.
 - **Domain blocklist:** Every URL is checked against a hardcoded blocklist of illegal/harmful domains before loading.
-- **Rate limiting:** Maximum 1 request per 5 seconds per domain. Maximum 200 requests per hour at HIGH intensity. Enforced per-domain to avoid abuse.
+- **Rate limiting:** At most one visit per domain every 5 seconds, and a hard per-hour cap on actions set by the intensity: 12 at Low, 60 at Medium, 200 at High, 500 at Max.
 - **No fingerprinting of users:** The app does not track or identify individual users. It only tracks its own action log locally.
 
 ## Tech Stack
 
 - **Language:** Kotlin (Android API 26+ minimum, API 36 target)
 - **UI:** Jetpack Compose + Material 3 (dark-first theme)
-- **Database:** Room + SQLCipher (encrypted)
-- **Networking:** OkHttp 4.x with custom interceptors
-- **Security:** AndroidX Security (EncryptedSharedPreferences, AndroidKeyStore)
-- **Background:** WorkManager for scheduling
+- **Browsing:** Android System WebView through AndroidX WebKit (per-persona profiles, proxy override, client-hint metadata)
+- **Database:** Room + SQLCipher (encrypted); settings in Jetpack DataStore
+- **Networking:** OkHttp 5 with okhttp-dnsoverhttps, and MiniDNS for plain DNS (custom DNS)
+- **Security:** Tink and the Android Keystore for key storage
+- **Background:** a foreground service runs the engine; WorkManager and exact alarms handle resume, reconciliation and log retention
 - **DI:** Hilt
-- **Services:** Android ForegroundService for persistent background execution
 
 ## Installation
 
@@ -134,7 +136,7 @@ Fauxx is built with privacy-first architecture:
 
 - Android SDK API 36 (build tools)
 - Kotlin compiler (bundled with Gradle)
-- JDK 21 (LTS — matches F-Droid buildserver)
+- JDK 21 (LTS, matching the F-Droid buildserver)
 
 ### Build from Source
 
@@ -143,26 +145,26 @@ Fauxx is built with privacy-first architecture:
 git clone https://github.com/digital-grease/fauxx.git
 cd fauxx
 
-# Build debug APK
-./gradlew assembleDebug
+# Build the debug APK (the "full" flavor is the one that ships)
+./gradlew assembleFullDebug
 
-# Build release APK (requires keystore)
-./gradlew assembleRelease
+# Build the release APK (unsigned; sign it with your own key)
+./gradlew assembleFullRelease
 
-# Run tests
-./gradlew test
+# Run unit tests
+./gradlew testFullDebugUnitTest
 
-# Run instrumented tests
-./gradlew connectedAndroidTest
+# Run instrumented tests on a connected device or emulator
+./gradlew connectedFullDebugAndroidTest
 ```
 
-The debug APK will be at `app/build/outputs/apk/debug/app-debug.apk`.
+The debug APK will be at `app/build/outputs/apk/full/debug/app-full-debug.apk`.
 
 ### Installation
 
 ```bash
 # Install via adb
-adb install app/build/outputs/apk/debug/app-debug.apk
+adb install app/build/outputs/apk/full/debug/app-full-debug.apk
 
 # Or sideload via Settings > Unknown Sources
 ```
@@ -183,11 +185,13 @@ Every screen has a visible "Skip" button. You can skip all of it and run on pure
 ### Dashboard
 
 View at a glance:
-- Protection status (on/off toggle)
-- Actions executed today/this week (animated counter)
-- Per-module activity sparklines
-- Current synthetic persona (name, age, interests)
+- Protection status (on/off toggle), with the reason whenever the engine is paused
+- Actions executed today and this week
 - Category distribution donut chart showing how the decoy activity is spread
+- Current synthetic persona (name, age, profession, interests)
+- Synthetic activity: the average number of decoy actions per hour over the last 24 hours
+- Profile drift: how far your ad profile has moved between Layer 2 imports, plus a comparison against a control profile if you import one
+- Quiet notices when something needs attention, such as custom DNS falling back or a WebView that cannot hide Fauxx's package name
 
 ### Targeting
 
@@ -210,13 +214,13 @@ Toggle each poison module independently:
 
 ### Log
 
-Scrollable audit log of all actions with timestamps, types, and details. Export to CSV or JSON.
+Scrollable audit log of all actions with timestamps, types, and details. Export to CSV, JSON or HTML, or share a single entry.
 
 ### Settings
 
 Global controls:
 - **Wi-Fi intensity:** Low (light activity) / Medium (balanced) / High (aggressive) / Max (highest volume)
-- **Mobile data intensity:** a separate Off / Low / Medium / High / Max ladder for mobile data — Off (the default) never touches mobile data; any tier runs the engine on mobile at its own rate. Wi-Fi networks the system reports as metered, a tethered phone hotspot or a network you marked metered in Android's Wi-Fi settings, are governed by this ladder too, so Fauxx does not quietly spend a data allowance it cannot see
+- **Mobile data intensity:** a separate Off / Low / Medium / High / Max ladder for mobile data. Off (the default) never touches mobile data; any tier runs the engine on mobile at its own rate. Wi-Fi networks the system reports as metered, a tethered phone hotspot or a network you marked metered in Android's Wi-Fi settings, are governed by this ladder too, so Fauxx does not quietly spend a data allowance it cannot see
 - **Battery threshold:** Minimum battery % to run actions (Can be adjusted individually while on battery and while charging)
 - **Pause during Battery Saver:** Off by default. On, Fauxx stops while Android's Battery Saver is on and picks up again as soon as it turns off. While paused, its notification stays up and it checks once a minute, so it can resume the moment Battery Saver ends
 - **Active hours:** Time range when actions should run (e.g., 7am–11pm)
@@ -230,9 +234,9 @@ Global controls:
 All configurable values are exposed in the app UI and backed by Room preferences or compile-time constants. Key thresholds:
 
 - **Per-domain rate limit:** 5 seconds (CrawlListManager)
-- **Action timing:** Poisson-distributed with human-like bursts (3–7 actions, then 5–20 min gaps)
-- **Cross-niche dwell:** Lognormal dwell-time multiplier on category transitions (e.g., Finance → Legal) with a 30s floor — defeats heuristic bot detection that flags sub-second niche switches
-- **Circadian pattern:** Near-zero activity 11pm–7am local time
+- **Action timing:** exponentially distributed gaps around the intensity's average rate (one minute apart on average at Medium), with a short 2 to 30 second follow-up on some same-topic transitions
+- **Cross-niche dwell:** a lognormal dwell-time multiplier on category transitions (e.g., Finance → Legal) with a floor of up to 30 seconds, so the engine never jumps between unrelated niches in under a second
+- **Daily rhythm:** no activity outside your active hours (7am to 11pm by default). Inside them, the rate rises and falls within ±50% of the average, following the hours you usually use your phone (learned on-device from screen-on times) and the persona's own peak hours
 - **Layer 3 rotation:** lifetime drawn uniformly over 30–90 days, re-rolled each cycle; channels phase in via staggered adoption over up to 20% of that lifetime
 - **Layer 2 re-import reminder:** about 90 days (the import is manual, not scheduled)
 
@@ -242,45 +246,39 @@ All configurable values are exposed in the app UI and backed by Room preferences
 app/src/main/
 ├── java/com/fauxx/
 │   ├── FauxxApp.kt                      # Application entry point
-│   ├── di/                              # Hilt dependency injection
+│   ├── di/                              # Hilt modules, encrypted DB and key management
 │   ├── data/
 │   │   ├── db/                          # Room database, DAOs, entities
-│   │   ├── model/                       # Data models (ActionType, CategoryPool, etc.)
-│   │   ├── querybank/                   # Query bank manager & Markov generator
+│   │   ├── model/                       # Data models (PoisonProfile, CategoryPool, etc.)
+│   │   ├── querybank/                   # Query banks, grammar and Markov query generators
 │   │   ├── crawllist/                   # URL corpus manager & blocklist
 │   │   └── location/                    # Fake route generator & city database
 │   ├── targeting/                       # Demographic Distancing Engine
 │   │   ├── TargetingEngine.kt           # Orchestrator
-│   │   ├── layer0/                      # Uniform entropy
-│   │   ├── layer1/                      # Self-report weighting
-│   │   ├── layer2/                      # Ad-profile import
-│   │   ├── layer3/                      # Persona rotation
+│   │   ├── layer0/ … layer3/            # Uniform, self-report, ad-profile import, persona rotation
+│   │   ├── allocation/                  # Optional adversarial allocation stage
 │   │   └── WeightNormalizer.kt
 │   ├── engine/
-│   │   ├── PoisonEngine.kt              # Core orchestrator
-│   │   ├── modules/                     # Seven poison modules
-│   │   ├── webview/                     # WebView pool & customization
-│   │   └── scheduling/                  # Poisson scheduler & dispatcher
-│   ├── service/
-│   │   ├── PhantomForegroundService.kt
-│   │   └── BootReceiver.kt
+│   │   ├── PoisonEngine.kt              # Core orchestrator and constraint loop
+│   │   ├── modules/                     # The seven poison modules
+│   │   ├── webview/                     # WebView pool, browser identity, per-persona jars
+│   │   ├── dns/                         # Custom DNS router
+│   │   └── scheduling/                  # Scheduler, dispatcher, daily-rhythm modulation
 │   ├── network/
-│   │   ├── HeaderRandomizerInterceptor.kt
-│   │   └── UserAgentPool.kt
-│   └── ui/
-│       ├── MainActivity.kt
-│       ├── navigation/
-│       ├── screens/                     # Dashboard, Targeting, Modules, Log, Settings, Onboarding
-│       └── theme/
+│   │   └── dns/                         # Loopback proxy, DoH and plain DNS resolvers
+│   ├── locale/                          # Supported locales, Accept-Language variants
+│   ├── service/                         # Foreground service, resume scheduling, workers
+│   └── ui/                              # Compose screens, navigation, theme
 └── assets/
-    ├── query_banks/                     # Query bank JSON per category
-    ├── crawl_urls.json                  # 2,400+ categorized URLs
-    ├── user_agents.json                 # 270+ real User-Agent strings
-    ├── city_coords.json                 # 800+ city coordinates
+    ├── query_banks/                     # Query banks per category (es/, fr/, ru/ per locale)
+    ├── crawl_urls.json, crawl_urls/     # Categorized URLs (English, plus es/fr/ru lists)
+    ├── harmful_queries.json, harmful_queries/  # Safety blocklists per locale
+    ├── persona_templates.json, persona_templates/  # Persona archetypes per locale
+    ├── device_templates.json            # Handsets personas can present as
+    ├── city_coords.json                 # About 800 city coordinates
     ├── blocklist.json                   # Blocked domains
     ├── demographic_distance_rules.json  # Category weight rules by demographic
-    ├── platform_category_map.json       # Platform string to CategoryPool mapping
-    └── persona_templates.json           # Persona archetypes
+    └── platform_category_map.json       # Platform string to CategoryPool mapping
 ```
 
 ## Development
@@ -317,9 +315,9 @@ Contributions are welcome. Please ensure:
 
 ## Localization
 
-Fauxx ships with English (`en`) UI and synthetic-activity content. Spanish (`es`) and French (`fr`) infrastructure is in place; their content (UI strings, query banks, harmful_queries blocklist, persona templates, crawl URLs, search-engine URL params, Accept-Language headers) is locale-aware end-to-end. Selecting a non-English locale flips all of those layers together — the synthetic activity tracks the UI language so a Spanish-mode profile emits `Accept-Language: es-ES` with `&hl=es&gl=ES` URL params, not a mismatched `en-US` that would itself be a fingerprintable signal.
+Fauxx ships in English (`en`), Spanish (`es`), French (`fr`) and Russian (`ru`). Each locale's content (UI strings, query banks, harmful-queries blocklist, persona templates, crawl URLs, search-engine URL params, Accept-Language headers) is locale-aware end to end. Selecting a language flips all of those layers together: the synthetic activity tracks the UI language, so a Spanish-mode profile emits `Accept-Language: es-ES` with `&hl=es&gl=ES` URL params, not a mismatched `en-US` that would itself be a fingerprintable signal.
 
-**Locale gate.** Production builds restrict the Settings language picker via `BuildConfig.SHIPPED_LOCALES`. A locale only joins the allowlist after its `assets/harmful_queries/<localeTag>.json` has signed-off native-speaker review. The blocklist contains the region's crisis-line, domestic-violence, and poison-control numbers; an English fallback would not catch the Spanish/French equivalents and would risk dispatching a synthetic query that data brokers interpret as a real first-person distress signal. Debug builds preview all three locales (`en`, `es`, `fr`) for development testing.
+**Locale gate.** Production builds restrict the Settings language picker via `BuildConfig.SHIPPED_LOCALES`. A locale only joins the allowlist after its `assets/harmful_queries/<localeTag>.json` has signed-off native-speaker review. The blocklist contains the region's crisis-line, domestic-violence, and poison-control numbers; an English fallback would not catch the Spanish/French equivalents and would risk dispatching a synthetic query that data brokers interpret as a real first-person distress signal. All four locales have passed that review and ship in production builds.
 
 **Adding a new locale.** Outline of the work, in order:
 1. Append the locale to the `SupportedLocale` enum (with `tag`, `displayName`, `defaultRegion`, `yahooSubdomainPrefix`).
@@ -327,7 +325,7 @@ Fauxx ships with English (`en`) UI and synthetic-activity content. Spanish (`es`
 3. Draft `assets/harmful_queries/<localeTag>.json`. Class A illegal terms can start as a translation of the English file; the self-signal section must include the region's crisis hotlines (e.g. ES 024, FR 3114, DE 0800-181-0721, etc.) and DV / poison-control numbers. **Native-speaker review is mandatory before this locale ships.** Add a sentinel-presence assertion in `HarmfulQueriesLocaleAuditTest` to lock the regression in.
 4. Curate `assets/persona_templates/<localeTag>.json` (region- and culture-plausible archetypes) and `assets/crawl_urls/<localeTag>.json` (region-appropriate domains across all CategoryPool values).
 5. Add ES/FR/etc. entries to `CATEGORY_APP_KEYWORDS` in `AppSignalModule` (Play Store keywords idiomatic to that storefront).
-6. Add a row to the `LANGUAGE_VARIANTS` map in `HeaderRandomizerInterceptor` (4–5 plausible primary/secondary Accept-Language strings).
+6. Add an entry to `AcceptLanguageVariants` (4–5 plausible primary/secondary Accept-Language strings).
 7. Run `ANTHROPIC_API_KEY=... python3 scripts/translate_query_banks.py <localeTag>` to populate the per-locale query banks (32 categories). Spot-check a few categories for idiomatic phrasing.
 8. After native-speaker review, bump `BuildConfig.SHIPPED_LOCALES` in `defaultConfig` to include the new tag.
 
@@ -335,15 +333,13 @@ See `.devloop/spikes/multilingual-support.md` for the design and threat model.
 
 ## FAQ
 
-### What does "Noise Ratio" on the Dashboard mean?
+### What does "Synthetic Activity" on the Dashboard mean?
 
-It's a throughput indicator: `min(actions today / 500, 100%)`. 500 actions in a day reads as a "saturated" Noise Ratio of 100%.
+It's the average number of decoy actions Fauxx generated per hour over the last 24 hours: how much cover traffic it is adding.
 
-What it *doesn't* measure: the *quality* of the decoy activity — whether it's hitting categories that are actually different from your real interests, whether it's fooling profiling systems, or how diverse the topics are. It's just a rate gauge.
+What it *doesn't* measure: a ratio against your real activity, which Android does not let an app see, or the *quality* of the decoys, such as whether they are hitting categories far from your real interests or fooling profiling systems.
 
-If you want to see where the decoy activity is actually going, the **Targeting screen's category-weight chart** is more useful: red bars are categories Fauxx is suppressing (because they match your demographic profile), green bars are categories it's boosting (off-profile decoys), gray is neutral.
-
-A future release will move Noise Ratio toward a quality-aware metric rather than pure throughput. Tracked as a planned improvement.
+To see where the decoy activity is going, the **Targeting screen's category-weight chart** is more useful: red bars are categories Fauxx is suppressing (because they match your profile), green bars are categories it's boosting (off-profile decoys), gray is neutral. If you have imported an ad profile in Layer 2, the dashboard's **profile drift** card shows how far the imported profile has moved from your baseline.
 
 ### My Pi-hole, NextDNS or VPN blocks tracker domains, so Fauxx can't reach them. What can I do?
 
@@ -379,11 +375,11 @@ When Fauxx pauses for a long stretch, it releases its foreground service rather 
 
 You'll typically see this notification:
 
-- **In the morning,** if you have quiet hours configured (default 7am to 11pm). Rather than spin idle overnight, Fauxx steps down at the start of quiet hours and reappears as a tap-to-resume at the start of your next active window.
+- **Outside your active hours (default 7am to 11pm), normally nothing.** Fauxx steps down at the end of the window and sets an exact alarm that restarts it automatically when the next window opens. If the system denies that alarm, it falls back to a tap-to-resume notification at that time.
 - **After a long no-network pause,** if your mobile data intensity is Off and Wi-Fi is gone or is a metered network, or after a long low-battery pause. Sustained pauses past 30 minutes release the service rather than spinning idle. A Battery Saver pause is the exception: Fauxx keeps the service so it can resume the moment Battery Saver turns off, since Android gives a stopped app no way to find out.
 - **After a reboot or an app update,** because Android won't let Fauxx restart its own foreground service from a boot or update event. Fauxx posts the resume notification instead.
 
-Tapping the notification opens Fauxx and restarts protection. Nothing is lost. Your settings, profile, persona, and action log are all persistent. This behavior is identical on the Play Store and F-Droid builds.
+Tapping the notification opens Fauxx and restarts protection. Nothing is lost. Your settings, profile, persona, and action log are all persistent.
 
 ## License
 
@@ -401,7 +397,7 @@ Fauxx is a privacy research tool. It generates synthetic activity to poison ad p
 - Review app permissions regularly
 - Use a privacy-focused browser
 
-Fauxx operates within the terms of service of search engines and ad platforms, but continued use of these platforms may still subject you to profiling through other channels (cookies, account-level data, cross-site tracking). No tool is perfect.
+Automated searches and page visits may conflict with some platforms' terms of service, and continued use of those platforms may still subject you to profiling through other channels (cookies, account-level data, cross-site tracking). No tool is perfect.
 
 ## Threat Model
 
@@ -414,7 +410,6 @@ Fauxx operates within the terms of service of search engines and ad platforms, b
 Fauxx targets weak signals with believable decoys. It deliberately does not attempt to defeat the strong, deterministic mechanisms modern profiling anchors on, and it makes no claim to affect the following:
 
 - **Deterministic identity joins** from your real email address or phone number.
-- **Google Privacy Sandbox Topics.** Fauxx runs in isolated WebViews that do not influence the Topics your real browser computes.
 - **Server-side and Conversions API (CAPI) events** sent directly between businesses and ad platforms.
 - **Device and Play Integrity attestation** and attested in-app telemetry.
 - **Public records and offline data** that brokers buy and sell.
