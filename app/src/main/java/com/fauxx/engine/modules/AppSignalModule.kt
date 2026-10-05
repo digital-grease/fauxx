@@ -178,7 +178,10 @@ internal val CATEGORY_APP_KEYWORDS: Map<SupportedLocale, Map<CategoryPool, Strin
 private const val DEFAULT_KEYWORDS = "productivity+tools"
 
 /**
- * Opens deep links and app store pages for off-profile apps to trigger attribution pixel fires.
+ * Browses Google Play store searches for apps in off-profile categories, inside the phantom
+ * WebView, so the persona's Play browsing reflects decoy interests. It stays on
+ * play.google.com in the WebView: it never opens the Play Store app, follows deep links,
+ * or installs or launches anything.
  *
  * Localized via [LocaleManager]: the Play Store URL gains `&hl=<lang>` and the search
  * keywords are picked from the active locale's bank (with EN fallback for any
