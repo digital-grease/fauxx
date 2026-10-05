@@ -1,0 +1,6 @@
+• New: custom DNS for Fauxx. If Pi-hole, NextDNS or a VPN app blocks the tracker domains Fauxx needs to reach, Fauxx can look up the sites it visits with a resolver you choose: encrypted DNS (Quad9, Cloudflare, Mullvad, Google or your own URL) or a plain DNS server by IP address. Only Fauxx's own traffic uses it. For your own URL you can give the server's IP and, for a self-hosted resolver with a self-signed certificate, skip the certificate check: Fauxx then trusts the first certificate it sees and refuses any other. If custom DNS stops working, Fauxx falls back to your device's DNS and says so on the dashboard (#227).
+• New: optionally pause while Battery Saver is on, and resume as soon as it turns off (#313).
+• New: a setting to load images on synthetic pages, so tracking pixels fire and visits look normal. Off by default, because images use a lot of data.
+• Fixed: the synthetic browser gave itself away. It now presents one consistent Chrome identity in its User-Agent, client hints and JavaScript, and stops sending the app's package name where the WebView allows it. The dashboard warns when your WebView cannot hide it.
+• Fixed: two rare races when the engine is stopped and started in quick succession, one of which could quietly leave the engine dead or turn custom DNS off.
+• Maintenance: dependency updates.
