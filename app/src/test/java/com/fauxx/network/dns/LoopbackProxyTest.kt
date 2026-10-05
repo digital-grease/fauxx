@@ -173,21 +173,13 @@ class LoopbackProxyTest {
         }
     }
 
-    /**
-     * Open connections to [port] until one answers with [expect] (each attempt waits briefly, so an
-     * attempt that lands in a still-free pending slot is closed and retried), or give up after 10 s.
-     */
-    private fun eventuallyOn(port: Int, expect: String, send: (Socket) -> Socket): Boolean {
+    /** Wait up to 10 s for [condition]. */
+    private fun awaitTrue(what: String, condition: () -> Boolean) {
         val deadline = System.currentTimeMillis() + 10_000
-        while (System.currentTimeMillis() < deadline) {
-            Socket("127.0.0.1", port).use { s ->
-                s.soTimeout = 1_000
-                val head = runCatching { LoopbackProxy.readHead(send(s), 500) }.getOrNull() ?: ""
-                if (head.startsWith(expect)) return true
-            }
-            Thread.sleep(50)
+        while (!condition()) {
+            check(System.currentTimeMillis() < deadline) { "timed out waiting for $what" }
+            Thread.sleep(10)
         }
-        return false
     }
 
     @Test
@@ -199,16 +191,25 @@ class LoopbackProxyTest {
         small.start()
         val idle = List(2) { Socket("127.0.0.1", small.port) }
         try {
-            // Polled rather than slept: the accept loop registers connections asynchronously, and
-            // a fixed sleep flaked on slow runners (the same class of race as #319).
+            // Admission runs on pool threads in no particular order, so a probe sent too early can
+            // take a pending slot ahead of an idle socket (that flaked on CI). Wait until both idle
+            // sockets hold the slots, then probe.
+            awaitTrue("both idle sockets to be pending") { small.pendingCount() == 2 }
             // Pending slots are full; a third unauthenticated connection is turned away...
-            assertTrue("a third idle connection must be refused", eventuallyOn(small.port, "HTTP/1.1 503") { s -> s })
-            // ...but once the idle ones time out or close, real tunnels get through.
+            Socket("127.0.0.1", small.port).use { s ->
+                s.soTimeout = 5_000
+                val head = LoopbackProxy.readHead(s, 5_000) ?: ""
+                assertTrue(head, head.startsWith("HTTP/1.1 503"))
+            }
+            // ...but once the idle ones close and are released, real tunnels get through.
             idle.forEach { it.close() }
-            assertTrue("a real tunnel must get through", eventuallyOn(small.port, "HTTP/1.1 200") { s ->
+            awaitTrue("the idle sockets to be released") { small.pendingCount() == 0 }
+            Socket("127.0.0.1", small.port).use { s ->
+                s.soTimeout = 5_000
                 s.getOutputStream().write(("CONNECT example.com:443 HTTP/1.1\r\n" + auth() + "\r\n\r\n").toByteArray())
-                s
-            })
+                val head = LoopbackProxy.readHead(s, 5_000) ?: ""
+                assertTrue(head, head.startsWith("HTTP/1.1 200"))
+            }
         } finally {
             idle.forEach { runCatching { it.close() } }
             small.stop()

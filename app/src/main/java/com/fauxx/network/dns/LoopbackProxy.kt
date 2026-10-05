@@ -1,5 +1,6 @@
 package com.fauxx.network.dns
 
+import androidx.annotation.VisibleForTesting
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -84,6 +85,13 @@ class LoopbackProxy(
     private val server = ServerSocket()
     private val open: MutableSet<Socket> = ConcurrentHashMap.newKeySet()
     private val pending = AtomicInteger(0)
+
+    /**
+     * Connections admitted but not yet authenticated. Admission happens on pool threads, not in
+     * accept order, so tests wait on this rather than on timing.
+     */
+    @VisibleForTesting
+    internal fun pendingCount(): Int = pending.get()
     private val tunnels = AtomicInteger(0)
     @Volatile private var stopped = false
 
