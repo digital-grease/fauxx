@@ -11,21 +11,25 @@ import kotlin.math.sqrt
 import kotlin.random.Random
 
 /**
- * Generates next-action timestamps following a Poisson process with human-like circadian patterns.
+ * Generates next-action delays: a Poisson process at the intensity's rate, shaped by the hour.
  *
  * Behavioral properties:
  * - Active 7am–11pm local time by default (configurable via the allowedStart/allowedEnd
- *   parameters of [nextDelayMs]; window semantics live in [AllowedHours])
- * - Produces bursts of 3-7 actions close together, then gaps of 5-20 minutes
- * - Near-zero activity outside the allowed window
- * - Inter-arrival times follow exponential distribution (Poisson process property)
+ *   parameters of [nextDelayMs]; window semantics live in [AllowedHours]). Outside the window
+ *   the delay runs to the window's start, and the engine resigns rather than waiting.
+ * - Inter-arrival times are exponentially distributed around the effective rate, which the
+ *   [RateModulator] scales by hour within [RateModulator.MIN_MULTIPLIER] to
+ *   [RateModulator.MAX_MULTIPLIER].
+ * - On a same-topic transition, 30% of delays are a short 2-30 s follow-up instead.
+ * - There is no session structure beyond that: each action is scheduled independently. Bursty,
+ *   session-shaped timing is tracked in #322.
  *
  * Cross-niche dwell time:
  * Heuristic bot-detection engines (e.g., Google GWS) flag sub-second transitions between
  * disparate content niches (Finance → Legal in 4s) as a high-signal bot indicator. To
  * avoid this, [nextDelayMs] accepts the previous and next category and applies a
  * lognormal dwell-time multiplier whenever the categories differ. Within-topic activity
- * (same category) still allows the original burst behavior, since real users fire
+ * (same category) still allows the short follow-ups above, since real users fire
  * multiple queries on the same subject in quick succession.
  *
  * The minimum cross-niche gap (the dwell floor) scales with intensity rather than being a

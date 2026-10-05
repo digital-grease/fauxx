@@ -19,7 +19,7 @@ private const val AMPLITUDE = 0.2
  * Identical Poisson timing across persona rotations is itself a fingerprint — every
  * "different person" this device pretends to be would keep exactly the same hourly
  * activity profile. This modulator derives a peak-activity hour deterministically from
- * the persona id, so a given persona keeps the same rhythm for its whole 8-10 day life
+ * the persona id, so a given persona keeps the same rhythm for its whole 30-90 day life
  * and the rhythm shifts when the persona rotates.
  *
  * Shape: cosine over the 24h day, peak at 14:00 ± 3h (persona-keyed), amplitude ±20%.

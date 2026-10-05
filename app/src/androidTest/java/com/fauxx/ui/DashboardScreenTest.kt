@@ -21,7 +21,7 @@ import org.junit.runner.RunWith
  * - App title is shown
  * - Protection toggle is displayed and starts in inactive state
  * - Action counter labels are visible
- * - Noise ratio card is displayed
+ * - Synthetic activity card is displayed
  *
  * DashboardScreen wraps its content in a verticalScroll [Column], so every node
  * below the title must be scrolled into view with performScrollTo() before
