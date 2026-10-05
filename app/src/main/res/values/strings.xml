@@ -23,7 +23,7 @@
     <string name="onboarding_bullet_fingerprint">Presents a stable per-persona device identity (User-Agent and client hints)</string>
     <string name="onboarding_bullet_dns">Generates DNS lookups for varied domains</string>
     <string name="onboarding_bullet_battery">All activity runs in the background and uses battery and data</string>
-    <string name="onboarding_optional_profile">Optionally, tell us about yourself on the next screens. This stays on your device and helps generate noise that\'s different from your real profile. Skip if you prefer uniform noise.</string>
+    <string name="onboarding_optional_profile">Optionally, tell us about yourself on the next screens. This stays on your device and helps generate noise that\'s different from your real profile. Skip if you prefer: Fauxx then shapes its decoys around a synthetic persona alone.</string>
     <string name="onboarding_done_title">You\'re set!</string>
     <string name="onboarding_done_body">Fauxx will generate diverse browsing activity that\'s maximally different from your real behavioral signal. Toggle protection on from the Dashboard to start.</string>
     <string name="onboarding_skip">Skip</string>
@@ -401,7 +401,7 @@
     <string name="sync_status_push_result_failures">Pushed to %1$d of %2$d peer(s); no route to %3$s</string>
     <string name="sync_status_imported">Imported decoy persona %1$s (%2$s)</string>
     <string name="settings_clear_dialog_title">Clear All Data?</string>
-    <string name="settings_clear_dialog_body">This will permanently delete:\n• All action logs\n• Your demographic profile\n• Ad platform profile cache\n• Persona generation history\n\nAll settings will be reset to defaults. The engine will stop and return to Layer 0 (uniform noise).\n\nThis cannot be undone.</string>
+    <string name="settings_clear_dialog_body">This will permanently delete:\n• All action logs\n• Your demographic profile\n• Ad platform profile cache\n• Persona generation history\n\nAll settings will be reset to defaults. The engine will stop. Once restarted, its decoys are shaped by a synthetic persona alone, with no data about you.\n\nThis cannot be undone.</string>
     <string name="settings_clear_dialog_confirm">Clear Everything</string>
 
     <!-- Targeting screen -->
@@ -447,7 +447,7 @@
     <string name="targeting_import_as_control_description">Store the next import as a clean control account you never poison, so the dashboard can show how far your poisoned profile has diverged from it.</string>
     <string name="targeting_clear_profile_button">Clear My Profile</string>
     <string name="targeting_clear_dialog_title">Clear Profile?</string>
-    <string name="targeting_clear_dialog_body">This will delete your demographic profile, all platform data, and persona history. The engine will revert to uniform random targeting.</string>
+    <string name="targeting_clear_dialog_body">This will delete your demographic profile, all platform data, and persona history. From then on, decoys are shaped by a synthetic persona alone, with no data about you.</string>
     <string name="targeting_clear_dialog_confirm">Clear</string>
     <string name="targeting_profile_summary_title">MY PROFILE</string>
     <string name="targeting_profile_summary_empty">No profile saved. Setting one up lets Layer 1 steer the noise away from your real demographics.</string>

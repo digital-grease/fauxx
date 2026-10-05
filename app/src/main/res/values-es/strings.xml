@@ -27,7 +27,7 @@
     <string name="onboarding_bullet_fingerprint">Presenta una identidad de dispositivo estable por persona (User-Agent y client hints)</string>
     <string name="onboarding_bullet_dns">Genera consultas DNS hacia distintos dominios</string>
     <string name="onboarding_bullet_battery">Toda la actividad se ejecuta en segundo plano y consume batería y datos</string>
-    <string name="onboarding_optional_profile">Si quieres, cuéntanos algo sobre ti en las pantallas siguientes. Esta información se queda en tu dispositivo y nos ayuda a generar ruido distinto al de tu perfil real. Sáltatelo si prefieres ruido uniforme.</string>
+    <string name="onboarding_optional_profile">Si quieres, cuéntanos algo sobre ti en las pantallas siguientes. Esta información se queda en tu dispositivo y nos ayuda a generar ruido distinto al de tu perfil real. Sáltatelo si lo prefieres: Fauxx dará forma a sus señuelos solo con una persona sintética.</string>
     <string name="onboarding_done_title">¡Listo!</string>
     <string name="onboarding_done_body">Fauxx generará actividad de navegación lo más diferente posible de tu señal real. Activa la protección desde el panel para empezar.</string>
     <string name="onboarding_skip">Saltar</string>
@@ -405,7 +405,7 @@
     <string name="sync_status_imported">Persona señuelo importada %1$s (%2$s)</string>
     <string name="settings_version_info">Fauxx v%1$s (compilación %2$d)</string>
     <string name="settings_clear_dialog_title">¿Borrar todos los datos?</string>
-    <string name="settings_clear_dialog_body">Esto eliminará permanentemente:\n• Todos los registros de acciones\n• Tu perfil demográfico\n• La caché de perfiles publicitarios\n• El historial de personas sintéticas\n\nTodos los ajustes se restablecerán a sus valores por defecto. El motor se detendrá y volverá a la Capa 0 (ruido uniforme).\n\nEsto no se puede deshacer.</string>
+    <string name="settings_clear_dialog_body">Esto eliminará permanentemente:\n• Todos los registros de acciones\n• Tu perfil demográfico\n• La caché de perfiles publicitarios\n• El historial de personas sintéticas\n\nTodos los ajustes se restablecerán a sus valores por defecto. El motor se detendrá. Cuando lo reinicies, sus señuelos se basarán solo en una persona sintética, sin datos sobre ti.\n\nEsto no se puede deshacer.</string>
     <string name="settings_clear_dialog_confirm">Borrar todo</string>
 
     <!-- Targeting screen — LLM-DRAFTED 2026-05-16, PENDING NATIVE-SPEAKER REVIEW -->
@@ -451,7 +451,7 @@
     <string name="targeting_import_as_control_description">Guarda la próxima importación como una cuenta de control limpia que nunca envenenas, para que el panel pueda mostrar cuánto se ha alejado tu perfil envenenado de ella.</string>
     <string name="targeting_clear_profile_button">Borrar mi perfil</string>
     <string name="targeting_clear_dialog_title">¿Borrar perfil?</string>
-    <string name="targeting_clear_dialog_body">Esto eliminará tu perfil demográfico, todos los datos de plataformas y el historial de personas sintéticas. El motor volverá a una segmentación aleatoria uniforme.</string>
+    <string name="targeting_clear_dialog_body">Esto eliminará tu perfil demográfico, todos los datos de plataformas y el historial de personas sintéticas. A partir de entonces, los señuelos se basarán solo en una persona sintética, sin datos sobre ti.</string>
     <string name="targeting_clear_dialog_confirm">Borrar</string>
     <string name="targeting_profile_summary_title">MI PERFIL</string>
     <string name="targeting_profile_summary_empty">No hay perfil guardado. Configurarlo permite que la Capa 1 dirija el ruido lejos de tus datos demográficos reales.</string>
