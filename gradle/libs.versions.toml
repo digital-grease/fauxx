@@ -1,7 +1,7 @@
 [versions]
 agp = "9.4.1"
 kotlin = "2.4.10"
-kover = "0.9.9"
+kover = "0.9.11"
 ksp = "2.3.12"
 coreKtx = "1.19.1"
 lifecycle = "2.11.0"
