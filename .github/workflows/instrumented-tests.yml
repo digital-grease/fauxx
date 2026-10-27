@@ -23,7 +23,7 @@ jobs:
     # Pinned to 22.04: on the ubuntu-24.04 runner image the AVD never finishes booting (the
     # device stays "offline" and getprop sys.boot_completed loops), an android-emulator-runner
     # regression that was failing every nightly/release-gate run. 22.04 boots the AVD reliably.
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
