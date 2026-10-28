@@ -6,9 +6,11 @@ import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
+import com.fauxx.di.IoDispatcher
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.dns.CustomDns
 import com.fauxx.network.dns.Resolution
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -29,6 +31,8 @@ class DnsNoiseModule @Inject constructor(
     private val crawlListManager: CrawlListManager,
     private val profileRepo: PoisonProfileRepository,
     private val customDns: CustomDns = CustomDns.NONE,
+    /** Where the blocking lookup runs. Tests pass their own, so a lookup keeps to virtual time (#322). */
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : Module {
 
     override suspend fun start() {}
@@ -57,7 +61,7 @@ class DnsNoiseModule @Inject constructor(
         val entry = pending.entry
 
         var ipCount: Int? = null
-        val success = withContext(Dispatchers.IO) {
+        val success = withContext(ioDispatcher) {
             val custom = customDns.noiseResolver()
             if (custom != null) {
                 when (val r = custom.resolve(entry.domain)) {

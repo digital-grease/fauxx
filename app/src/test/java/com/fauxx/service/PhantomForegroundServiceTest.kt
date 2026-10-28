@@ -76,7 +76,12 @@ class PhantomForegroundServiceTest {
     @Test
     fun `ACTION_START wires resign and active callbacks and only the active signal cancels the stale resume`() {
         val service = Robolectric.buildService(PhantomForegroundService::class.java).get()
-        val engine: PoisonEngine = mockk(relaxed = true)
+        // ACTION_START launches the notification updaters, which read engineState on IO threads that
+        // outlive the test. A relaxed mock's StateFlow fails there, and kotlinx-coroutines-test then
+        // reports the stray exception against whichever runTest runs next in the fork.
+        val engine: PoisonEngine = mockk(relaxed = true) {
+            every { engineState } returns MutableStateFlow(EngineState.ACTIVE)
+        }
         val resumeScheduler: ResumeScheduler = mockk(relaxed = true) {
             every { cancel() } just Runs
             every { schedule(any(), any()) } just Runs
@@ -122,7 +127,10 @@ class PhantomForegroundServiceTest {
     fun `ACTION_STOP cancels the pending resume and never schedules a new one`() {
         val service = Robolectric.buildService(PhantomForegroundService::class.java).get()
         val resumeScheduler: ResumeScheduler = mockk(relaxed = true)
-        service.poisonEngine = mockk(relaxed = true)
+        // A real state flow for the notification updaters ACTION_START launches (see above).
+        service.poisonEngine = mockk(relaxed = true) {
+            every { engineState } returns MutableStateFlow(EngineState.ACTIVE)
+        }
         service.webViewPool = mockk(relaxed = true)
         service.resumeScheduler = resumeScheduler
         service.encryptedFileTree = mockk(relaxed = true)
