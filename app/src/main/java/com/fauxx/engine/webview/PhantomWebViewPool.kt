@@ -10,6 +10,7 @@ import androidx.webkit.UserAgentMetadata
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import androidx.webkit.WebViewMediaIntegrityApiStatusConfig
 import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.device.DeviceProfile
@@ -659,6 +660,7 @@ class PhantomWebViewPool @Inject constructor(
 
         captureWebViewDefaults(webView)
         blankRequestedWith(webView)
+        disableMediaIntegrity(webView)
         val documentStartInjected = registerDocumentStartScript(webView)
 
         layoutAsViewport(webView)
@@ -773,6 +775,26 @@ class PhantomWebViewPool @Inject constructor(
                 }
             }.onFailure { Timber.w(it, "Could not blank X-Requested-With") }
         }
+    }
+
+    /**
+     * Turn off the WebView Media Integrity API (#322 item 10). Media embedded in a page can ask it
+     * for an integrity verdict, and by default the verdict names the app the WebView runs in: the
+     * same leak [blankRequestedWith] closes for request headers. Fauxx presents itself as Chrome,
+     * which has no such API, so the pool refuses it rather than answering without the app's
+     * identity. Gated by [isSupported] (see [captureWebViewDefaults] on the suppression).
+     */
+    @SuppressLint("RequiresFeature")
+    private fun disableMediaIntegrity(webView: WebView) {
+        if (!isSupported(WebViewFeature.WEBVIEW_MEDIA_INTEGRITY_API_STATUS)) return
+        runCatching {
+            WebSettingsCompat.setWebViewMediaIntegrityApiStatus(
+                webView.settings,
+                WebViewMediaIntegrityApiStatusConfig.Builder(
+                    WebViewMediaIntegrityApiStatusConfig.WEBVIEW_MEDIA_INTEGRITY_API_DISABLED,
+                ).build(),
+            )
+        }.onFailure { Timber.w(it, "Could not turn off the WebView Media Integrity API") }
     }
 
     /**

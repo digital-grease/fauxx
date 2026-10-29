@@ -27,6 +27,7 @@ import com.fauxx.engine.modules.CookieSaturationModule
 import com.fauxx.engine.modules.DnsNoiseModule
 import com.fauxx.engine.modules.FingerprintModule
 import com.fauxx.engine.modules.Module
+import com.fauxx.engine.modules.PersonaSearchHabits
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.modules.SerpLinkSelector
 import com.fauxx.engine.scheduling.ActionDispatcher
@@ -55,6 +56,7 @@ import io.mockk.mockk
 import io.mockk.spyk
 import java.net.InetAddress
 import java.net.URI
+import java.net.URLEncoder
 import kotlin.random.Random
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -85,7 +87,8 @@ import timber.log.Timber
  *   `loadUrl` returns.
  * - A search results page lists [SERP_RESULTS] corpus pages from the dispatched category, so
  *   result clicks can always find a curated host. Real results pages offer fewer, so the harness
- *   overstates how often a search ends in a click.
+ *   overstates how often a search ends in a click. Bing and Yahoo wrap each result in their own
+ *   redirector, as the real pages do, so searches there end on the results page.
  * - DNS lookups go to a recording resolver.
  * - The fingerprint module only re-binds the persona's device and makes no request, so it is a
  *   stub that logs an action.
@@ -190,6 +193,7 @@ internal class EngineShapeHarness(
     private val corpusByCategory: Map<CategoryPool, List<String>> = loadCorpus(appContext)
     private val serpRandom = nextRandom()
     private var currentUrl: String? = null
+    private var currentSerpEngine: String? = null
     private val clickTargets = mutableMapOf<String, String>()
 
     /** A Robolectric WebView that records instead of loading. */
@@ -244,6 +248,7 @@ internal class EngineShapeHarness(
         crawlListManager = crawlListManager,
         clock = clock,
         random = nextRandom(),
+        searchHabits = PersonaSearchHabits(personaLayer, QueryGrammarSeed { seed }),
     )
 
     private val cookieModule = CookieSaturationModule(crawlListManager, webViewPool, profileRepo, nextRandom())
@@ -371,6 +376,7 @@ internal class EngineShapeHarness(
         val host = uri.host?.lowercase() ?: return
         val engineId = if (fromSearch) null else serpEngine(host, uri)
         val kind = if (engineId != null) LoadKind.SERP else LoadKind.PAGE
+        currentSerpEngine = engineId
         events += StreamEvent(clock.currentTimeMillis(), kind, host, url, engineId, fromSearch)
     }
 
@@ -381,9 +387,17 @@ internal class EngineShapeHarness(
                 .shuffled(serpRandom)
                 .distinctBy { runCatching { URI(it).host }.getOrNull() }
                 .take(SERP_RESULTS)
+            val links = results.map { href ->
+                val target = URLEncoder.encode(href, "UTF-8")
+                when (currentSerpEngine) {
+                    "bing" -> "https://www.bing.com/ck/a?u=$target"
+                    "yahoo" -> "https://r.search.yahoo.com/RU=$target/RK=2"
+                    else -> href
+                }
+            }
             clickTargets.clear()
-            for (href in results) clickTargets[SerpLinkSelector.buildClickJs(href)] = href
-            return gson.toJson(gson.toJson(SERP_CHROME_LINKS + results))
+            for ((link, href) in links.zip(results)) clickTargets[SerpLinkSelector.buildClickJs(link)] = href
+            return gson.toJson(gson.toJson(SERP_CHROME_LINKS + links))
         }
         val href = clickTargets[js] ?: return gson.toJson("missing")
         recordLoad(href, fromSearch = true)
