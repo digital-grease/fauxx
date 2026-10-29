@@ -445,5 +445,7 @@ class PersonaRotationLayer @Inject constructor(
  * persona's browser/device identity (issue #242): the WebView presents the
  * persona's stable mobile [com.fauxx.data.device.DeviceProfile], staggered so the
  * User-Agent does not flip in the same instant as the other channels at rotation.
+ * SEARCH is the persona's search habits (#322): its usual engine and how often it
+ * refines or clicks, so the usual engine changes on its own schedule too.
  */
-enum class PersonaChannel { LOCATION, APP_SIGNAL, RHYTHM, WEIGHTS, QUERY, DEVICE }
+enum class PersonaChannel { LOCATION, APP_SIGNAL, RHYTHM, WEIGHTS, QUERY, DEVICE, SEARCH }

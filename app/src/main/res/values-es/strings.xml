@@ -599,7 +599,7 @@
     <!-- PENDING NATIVE-SPEAKER REVIEW -->
     <string name="settings_search_engines_title">Motores de búsqueda</string>
     <string name="settings_search_engines_description">Elige qué motores de búsqueda reciben consultas sintéticas. Al desactivar uno queda excluido por completo.</string>
-    <string name="settings_search_engines_minimum_notice">Se mantienen activos al menos %1$d motores: las personas reales reparten sus búsquedas entre varios, así que el ruido de uno solo sería fácil de filtrar.</string>
+    <string name="settings_search_engines_minimum_notice">Se mantienen activos al menos %1$d motores: cada persona tiene un motor habitual pero a veces busca en otro, y necesita una alternativa cuando el habitual no está disponible.</string>
     <string name="dashboard_webview_leak_title">Los sitios pueden saber que este tráfico viene de Fauxx</string>
     <string name="dashboard_webview_leak_body">Tu WebView no puede ocultar el nombre de la app, así que cada petición de Fauxx lo lleva en la cabecera X-Requested-With. La protección sigue funcionando, pero los sitios pueden reconocer y descartar este tráfico.</string>
     <string name="dashboard_webview_leak_action">Actualizar WebView</string>
