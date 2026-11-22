@@ -4,6 +4,7 @@ import android.content.Context
 import android.webkit.ValueCallback
 import android.webkit.WebView
 import com.fauxx.data.crawllist.CrawlListManager
+import com.fauxx.data.crawllist.PersonaSiteHabits
 import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.db.ActionLogEntity
@@ -77,7 +78,8 @@ import timber.log.Timber
  *
  * Real: the engine loop (hourly ceiling, close guard, quiet-hours resign), the
  * [SessionScheduler] with the persona's session habits and daily rhythm, the [ActionDispatcher] over the default
- * Layer 3 weight blend, the [CrawlListManager] over the shipped English corpus and blocklist, and
+ * Layer 3 weight blend, the [CrawlListManager] over the shipped English corpus, site popularity,
+ * the persona's favourite sites and blocklist, and
  * the search, cookie, ad and DNS modules with their own dwell times, session plans and link
  * selection.
  *
@@ -189,7 +191,10 @@ internal class EngineShapeHarness(
     // The shipped blocklist, so corpus pages production would refuse are refused here too.
     private val blocklist = DomainBlocklist(appContext)
 
-    private val crawlListManager = CrawlListManager(appContext, blocklist, localeManager, clock, nextRandom())
+    private val crawlListManager = CrawlListManager(
+        appContext, blocklist, localeManager, clock, nextRandom(),
+        siteHabits = PersonaSiteHabits(personaLayer, QueryGrammarSeed { seed }),
+    )
 
     private val corpusByCategory: Map<CategoryPool, List<String>> = loadCorpus(appContext)
     private val serpRandom = nextRandom()

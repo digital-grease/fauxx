@@ -99,6 +99,8 @@ Visits categorized URLs (about 2,400 in English, with smaller Spanish, French an
 
 **Category-aware:** URL selection weighted by your targeting engine.
 
+**Popular sites more often, and favourites:** within a category, a site is picked by how popular it is on the real web, so big sites come up often and small ones rarely, the way people browse. Popularity comes from the [Tranco](https://tranco-list.eu) top-sites ranking, bundled with the app, so looking it up sends nothing anywhere. Each persona also has 5 to 15 favourite sites from its interests that it keeps going back to, for 30 to 60% of its visits in those categories, as people return to the sites they like.
+
 ### 6. App Signals
 
 Off by default. Browses Google Play store searches for apps in off-profile categories, in the same background WebView, so the persona's Play browsing reflects decoy interests. It stays on play.google.com in the WebView: it never opens the Play Store app, and never installs or launches anything.
@@ -437,6 +439,8 @@ Play's policies disallow Fauxx's location-spoofing and ad-profile-pollution modu
 ## License
 
 Fauxx is licensed under the GNU Affero General Public License v3 (AGPLv3). See [LICENSE](LICENSE) for details.
+
+Site popularity uses the Tranco list (V. Le Pochat, T. Van Goethem, S. Tajalizadehkhoob, M. Korczyński, W. Joosen, "Tranco: A Research-Oriented Top Sites Ranking Hardened Against Manipulation", NDSS 2019), list 46YLX, available at https://tranco-list.eu/list/46YLX.
 
 By using, modifying, or distributing this software, you agree to the terms of the AGPLv3. In particular, if you run a modified version as a service, you must make the source code available to your users.
 
