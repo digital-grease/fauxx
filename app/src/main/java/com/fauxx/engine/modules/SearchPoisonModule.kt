@@ -169,10 +169,10 @@ internal object SearchChallenge {
  * across engines with every session refined and clicked looked like no one. Without habits
  * ([SearchHabitsSource.NONE]) a session keeps that old shape.
  *
- * Topic switches are session BOUNDARIES: the next onAction (usually a different
- * category from the dispatcher) starts a new chain, and the engine schedules that
- * transition through PoissonScheduler's cross-niche dwell handling, so a switch reads
- * as a deliberate pause rather than an instant pivot. Session size scales DOWN with the
+ * Topic switches are session BOUNDARIES: the next onAction in a different category starts a
+ * new chain. The engine's SessionScheduler only changes topic between bursts, after a pause no
+ * shorter than its cross-niche floor, so a switch reads as a deliberate pause rather than an
+ * instant pivot. Session size scales DOWN with the
  * configured intensity so long sessions can't starve the displayed actions/hour at
  * aggressive tiers (issue #76); the whole session is also wall-clock budgeted.
  *

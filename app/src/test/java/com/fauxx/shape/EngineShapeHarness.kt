@@ -31,7 +31,8 @@ import com.fauxx.engine.modules.PersonaSearchHabits
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.modules.SerpLinkSelector
 import com.fauxx.engine.scheduling.ActionDispatcher
-import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.engine.scheduling.PersonaSessionHabits
+import com.fauxx.engine.scheduling.SessionScheduler
 import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
@@ -74,8 +75,8 @@ import timber.log.Timber
  * Runs the real [PoisonEngine] for simulated days and records what an observer would see (#322
  * step 0), so every change to the stream's shape can be measured before and after.
  *
- * Real: the engine loop (rate cap, quiet-hours resign, execution-time subtraction), the
- * [PoissonScheduler] with the persona's daily rhythm, the [ActionDispatcher] over the default
+ * Real: the engine loop (hourly ceiling, close guard, quiet-hours resign), the
+ * [SessionScheduler] with the persona's session habits and daily rhythm, the [ActionDispatcher] over the default
  * Layer 3 weight blend, the [CrawlListManager] over the shipped English corpus and blocklist, and
  * the search, cookie, ad and DNS modules with their own dwell times, session plans and link
  * selection.
@@ -283,6 +284,8 @@ internal class EngineShapeHarness(
         }
         override fun observeAll(): Flow<List<ActionLogEntity>> = flowOf(emptyList())
         override fun countSince(sinceMillis: Long): Flow<Int> = flowOf(0)
+        override suspend fun successTimestampsSince(sinceMillis: Long): List<Long> =
+            actions.filter { it.success && it.atMs > sinceMillis }.map { it.atMs }
         override suspend fun deleteOlderThan(beforeMillis: Long) {}
         override suspend fun getAllForExport(): List<ActionLogEntity> = emptyList()
         override suspend fun countPerCategorySince(sinceMillis: Long): List<CategoryCount> = emptyList()
@@ -298,7 +301,9 @@ internal class EngineShapeHarness(
         profile = profileRepo,
         targetingEngine = targetingEngine,
         dispatcher = dispatcher,
-        scheduler = PoissonScheduler(clock, nextRandom(), PersonaRateModulator(personaLayer)),
+        pacer = SessionScheduler(
+            clock, nextRandom(), PersonaRateModulator(personaLayer), PersonaSessionHabits(personaLayer, QueryGrammarSeed { seed }),
+        ),
         actionLogDao = actionLogDao,
         blocklist = blocklist,
         queryBankManager = queryBankManager,

@@ -22,8 +22,12 @@ import com.fauxx.engine.modules.FingerprintModule
 import com.fauxx.engine.modules.Module
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
-import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.engine.scheduling.ActionPacer
+import com.fauxx.engine.scheduling.RateModulator
+import com.fauxx.engine.scheduling.SessionHabitsSource
+import com.fauxx.engine.scheduling.SessionScheduler
 import com.fauxx.service.ResumeSpec
+import com.fauxx.support.FixedPacer
 import com.fauxx.support.FakeClock
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.util.Clock
@@ -31,6 +35,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -259,11 +264,11 @@ class PoisonEngineLoopTest {
     fun `runLoop keeps executing actions in an always-on window with the real scheduler`() = runTest {
         // Issue #124 end-to-end regression. Active hours 0-0 is the degenerate
         // "midnight to midnight" window the engine documents as always allowed. The bug
-        // lived in the REAL PoissonScheduler's divergent copy of that predicate (the
-        // other tests in this file mock the scheduler, which is why it was never caught):
-        // the engine's constraint gate allowed the action, then nextDelayMs treated the
-        // same instant as quiet hours and returned ms-until-local-midnight. Net effect in
-        // the field: exactly ONE action per engine start, at any hour of the day.
+        // lived in the REAL scheduler's divergent copy of that predicate (the other tests
+        // in this file use a fixed pace, which is why it was never caught): the engine's
+        // constraint gate allowed the action, then the delay computation treated the same
+        // instant as quiet hours and returned ms-until-local-midnight. Net effect in the
+        // field: exactly ONE action per engine start, at any hour of the day.
         val clock = FakeClock(threeAmEpochMs())
         val dispatcher = StandardTestDispatcher(testScheduler)
         val searchModule: SearchPoisonModule = mockk(relaxed = true) {
@@ -279,7 +284,7 @@ class PoisonEngineLoopTest {
             clock,
             profile = baseProfile.copy(allowedHoursStart = 0, allowedHoursEnd = 0),
             loopDispatcher = dispatcher,
-            scheduler = PoissonScheduler(clock, Random(42)),
+            scheduler = SessionScheduler(clock, Random(42), RateModulator.NEUTRAL, SessionHabitsSource.DEFAULT),
             searchModule = searchModule
         )
 
@@ -287,9 +292,9 @@ class PoisonEngineLoopTest {
         engine.setOnLongPause { spec -> resignedWith = spec }
         engine.start()
 
-        // Two simulated hours starting at 3 AM. LOW (12/hr) bounds same-topic delays to
-        // max(60s, 3x300s) = 15 min, so a healthy loop must fire several actions; the
-        // pre-fix loop fired one and then slept until midnight.
+        // Two simulated hours starting at 3 AM. At LOW (12/hr) a session spends the hour's
+        // budget saved before it and a break lasts about an hour, so a healthy loop fires
+        // several actions; the pre-fix loop fired one and then slept until midnight.
         advanceVirtualTime(clock, scheduler = testScheduler, by = 2 * 60 * 60 * 1000)
 
         assertNull("an always-on window must never resign for quiet hours", resignedWith)
@@ -306,15 +311,32 @@ class PoisonEngineLoopTest {
     }
 
     @Test
+    fun `no action starts in the last two minutes of the allowed hours`() = runTest {
+        // #322: an action started just before the close could still be loading pages after it.
+        // At 22:58:30 in a 7-23 window the engine must wait out the window, then resign for quiet
+        // hours, without acting.
+        val clock = FakeClock(noonEpochMs() + (10 * 60 + 58) * 60_000L + 30_000L)
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val search = countingSearch()
+        engine = buildEngine(clock, profile = baseProfile, loopDispatcher = dispatcher, searchModule = search)
+        var resignedWith: ResumeSpec? = null
+        engine.setOnLongPause { spec -> resignedWith = spec }
+        engine.start()
+
+        advanceVirtualTime(clock, scheduler = testScheduler, by = 3 * 60 * 1000)
+
+        coVerify(exactly = 0) { search.onAction(any()) }
+        assertTrue("resigns for quiet hours once the window closes", resignedWith is ResumeSpec.AtTime)
+    }
+
+    @Test
     fun `runLoop schedules at the mobile rate when on cellular`() = runTest {
         // Issue #62 end-to-end: Wi-Fi tier HIGH (200/hr), mobile tier LOW (12/hr). The
         // relaxed ConnectivityManager mock classifies the transport as CELLULAR, so every
         // scheduling call must use the MOBILE rate — the core promise of the feature.
         val clock = FakeClock(noonEpochMs())
         val dispatcher = StandardTestDispatcher(testScheduler)
-        val schedulerMock: PoissonScheduler = mockk {
-            every { nextDelayMs(any(), any(), any(), any(), any()) } returns 1000L
-        }
+        val schedulerMock: ActionPacer = spyk(FixedPacer(1000L))
         engine = buildEngine(
             clock,
             profile = baseProfile.copy(
@@ -329,15 +351,15 @@ class PoisonEngineLoopTest {
         advanceVirtualTime(clock, scheduler = testScheduler, by = 30_000)
 
         verify(atLeast = 1) {
-            schedulerMock.nextDelayMs(
+            schedulerMock.afterAction(
                 actionsPerHour = IntensityLevel.LOW.actionsPerHour,
-                prev = any(), next = any(), allowedStart = any(), allowedEnd = any()
+                executed = any(), success = any(), execMs = any(), allowedStart = any(), allowedEnd = any(),
             )
         }
         verify(exactly = 0) {
-            schedulerMock.nextDelayMs(
+            schedulerMock.afterAction(
                 actionsPerHour = IntensityLevel.HIGH.actionsPerHour,
-                prev = any(), next = any(), allowedStart = any(), allowedEnd = any()
+                executed = any(), success = any(), execMs = any(), allowedStart = any(), allowedEnd = any(),
             )
         }
 
@@ -539,10 +561,7 @@ class PoisonEngineLoopTest {
     }
 
     /** Every wait after an action is ten minutes, unless the boost redraws it to two seconds. */
-    private fun slowScheduler(): PoissonScheduler = mockk {
-        every { nextDelayMs(any(), any(), any(), any(), any()) } returns 10 * 60 * 1000L
-        every { poissonDelay(any()) } returns 2_000L
-    }
+    private fun slowScheduler(): ActionPacer = spyk(FixedPacer(10 * 60 * 1000L, redrawMs = 2_000L))
 
     @Test
     fun `plugging in mid-wait redraws the wait at the charging tier`() = runTest {
@@ -569,7 +588,7 @@ class PoisonEngineLoopTest {
         advanceVirtualTime(clock, scheduler = testScheduler, by = 5_000)
 
         coVerify(exactly = 2) { search.onAction(any()) }
-        verify { scheduler.poissonDelay(IntensityLevel.HIGH.actionsPerHour.toFloat()) }
+        verify { scheduler.redrawDelayMs(IntensityLevel.HIGH.actionsPerHour) }
         assertTrue(engine.rateConditions.value.charging)
         assertTrue(engine.rateConditions.value.unmetered)
 
@@ -599,7 +618,7 @@ class PoisonEngineLoopTest {
         advanceVirtualTime(clock, scheduler = testScheduler, by = 60_000)
 
         coVerify(exactly = 1) { search.onAction(any()) }
-        verify(exactly = 0) { scheduler.poissonDelay(any()) }
+        verify(exactly = 0) { scheduler.redrawDelayMs(any()) }
 
         engine.stop()
         advanceVirtualTime(clock, scheduler = testScheduler, by = 100)
@@ -707,9 +726,7 @@ class PoisonEngineLoopTest {
         profile: PoisonProfile,
         moduleFails: Boolean = false,
         loopDispatcher: CoroutineDispatcher,
-        scheduler: PoissonScheduler = mockk {
-            every { nextDelayMs(any(), any(), any(), any(), any()) } returns 1000L
-        },
+        scheduler: ActionPacer = FixedPacer(1000L),
         searchModule: SearchPoisonModule? = null,
         // #197: when true, profile.getProfile() throws so the loop machinery raises an uncaught
         // exception, exercising the crash-guard teardown rather than a normal resign.

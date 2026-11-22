@@ -24,14 +24,12 @@ import org.robolectric.annotation.Config
  *
  * The report is for reading, before and after a change to the stream's shape. The assertions only
  * hold the invariants every shape must keep:
- * - Nothing starts outside the allowed hours. The engine checks the window before each action, so
- *   an action already running when the window closes still finishes; its requests may run up to
- *   [MAX_IN_FLIGHT_OVERRUN_MS] past the close, and the report counts them.
+ * - No request after the allowed hours close. The engine starts no action in the last two minutes
+ *   of the window, the longest an action runs, so none is still running at the close (#322).
  * - No pause the harness did not expect.
  * - An actual rate at or under the tier's displayed rate, and no lower than [MIN_RATE_FRACTION] of
- *   it (the honesty contract, #76). The floors sit just under the rates measured when the report
- *   was added, so a change that loses throughput trips them; EXTREME's is lowest because its rate
- *   is documented as "up to" and action run time caps it.
+ *   it (the honesty contract, #76). The floors sit just under the rates last measured, so a change
+ *   that loses throughput trips them.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -80,16 +78,12 @@ class StreamShapeReportTest {
         File(REPORT_DIR).apply { mkdirs() }.resolve("${tier.name.lowercase()}.md").writeText(report)
         println(report)
 
-        val startedOutside = recording.events.filter { event ->
-            val sinceClose = StreamShape.msSinceClose(event.atMs, profile.allowedHoursStart, profile.allowedHoursEnd)
-            sinceClose != null && sinceClose > MAX_IN_FLIGHT_OVERRUN_MS
+        val afterClose = recording.events.filter { event ->
+            StreamShape.msSinceClose(event.atMs, profile.allowedHoursStart, profile.allowedHoursEnd) != null
         }
         fun check(message: String, ok: Boolean) =
             assertTrue("$message\nLast engine log lines:\n${harness.logTail()}", ok)
-        check(
-            "${startedOutside.size} requests came more than ${MAX_IN_FLIGHT_OVERRUN_MS / 1000} s after the window closed",
-            startedOutside.isEmpty(),
-        )
+        check("${afterClose.size} requests came after the window closed", afterClose.isEmpty())
         check("unexpected pauses: ${harness.unexpectedResigns}", harness.unexpectedResigns.isEmpty())
         check(
             "actual rate ${shape.actionsPerActiveHour}/h is above the displayed ${tier.actionsPerHour}/h",
@@ -108,20 +102,16 @@ class StreamShapeReportTest {
 
         /**
          * Lowest acceptable fraction of each tier's displayed rate; see the class KDoc. Measured when
-         * added: LOW 0.87, MEDIUM 0.89, HIGH 0.82, EXTREME 0.62.
+         * added: LOW 0.87, MEDIUM 0.89, HIGH 0.82, EXTREME 0.62. Measured with sessions (#322 step 2),
+         * which no longer take each action's run time off the wait: LOW 0.93, MEDIUM 0.94, HIGH
+         * 0.95, EXTREME 0.96.
          */
         val MIN_RATE_FRACTION = mapOf(
-            IntensityLevel.LOW to 0.80,
-            IntensityLevel.MEDIUM to 0.80,
-            IntensityLevel.HIGH to 0.75,
-            IntensityLevel.EXTREME to 0.55,
+            IntensityLevel.LOW to 0.85,
+            IntensityLevel.MEDIUM to 0.88,
+            IntensityLevel.HIGH to 0.88,
+            IntensityLevel.EXTREME to 0.90,
         )
-
-        /**
-         * How far past the window's close an action already running may go: the search session's
-         * 60 s budget plus the step it was in. Anything later started outside the window.
-         */
-        const val MAX_IN_FLIGHT_OVERRUN_MS = 2L * 60 * 1000
 
         /** Local midnight on Monday 2026-01-05: two weeks with no daylight-saving change in either hemisphere. */
         fun startEpochMs(): Long = Calendar.getInstance().apply {

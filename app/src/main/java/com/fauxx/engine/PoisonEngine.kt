@@ -41,7 +41,7 @@ import com.fauxx.engine.power.EngineWakeLock
 import com.fauxx.engine.power.EngineWakeup
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.AllowedHours
-import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.engine.scheduling.ActionPacer
 import com.fauxx.engine.scheduling.UsageObserver
 import com.fauxx.targeting.TargetingEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -123,6 +123,25 @@ private const val FAILURE_RETRY_DELAY_MS = 5_000L
 
 /** Sliding window duration for per-hour rate limiting. */
 private const val RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000L
+
+/**
+ * No sliding hour may hold more than this many times the rate (owner ruling on #322, 2026-11-22).
+ * The session budget ([com.fauxx.engine.scheduling.ActionBudget]) already keeps to it at a steady
+ * rate; this holds it when the rate changes, such as on leaving Wi-Fi for a lower mobile tier.
+ */
+private const val HOURLY_CEILING_FACTOR = 2
+
+/** How much of the action log the budget and the hourly ceiling are rebuilt from at start. */
+private const val BUDGET_REPLAY_MS = 24 * 60 * 60 * 1000L
+
+/**
+ * No action starts this close to the end of the allowed hours, so none is still running when the
+ * window closes: a search session's 60 s budget plus the longest step it can be in (#322).
+ */
+private const val CLOSE_GUARD_MS = 2 * 60 * 1000L
+
+/** How far past the close a wait in the close guard runs, so the next pass sees the window shut. */
+private const val CLOSE_GUARD_SLACK_MS = 1_000L
 
 /** Delay when rate limit is hit before rechecking. */
 private const val RATE_LIMIT_PAUSE_MS = 15_000L
@@ -216,7 +235,7 @@ class PoisonEngine @Inject constructor(
     private val profile: PoisonProfileRepository,
     private val targetingEngine: TargetingEngine,
     private val dispatcher: ActionDispatcher,
-    private val scheduler: PoissonScheduler,
+    private val pacer: ActionPacer,
     private val actionLogDao: ActionLogDao,
     private val blocklist: DomainBlocklist,
     private val queryBankManager: QueryBankManager,
@@ -427,8 +446,9 @@ class PoisonEngine @Inject constructor(
     private var actionCountDayStart = localDayStartMs(clock.currentTimeMillis())
 
     /**
-     * Sliding window of action timestamps (epoch ms) for per-hour rate limiting.
-     * Entries older than [RATE_LIMIT_WINDOW_MS] are pruned on each check.
+     * Sliding window of successful action timestamps (epoch ms) for the hourly ceiling
+     * ([HOURLY_CEILING_FACTOR] times the rate). Rebuilt from the action log when a run starts, and
+     * pruned of entries older than [RATE_LIMIT_WINDOW_MS] on each check.
      */
     private val recentActionTimestamps = java.util.concurrent.ConcurrentLinkedQueue<Long>()
 
@@ -610,7 +630,7 @@ class PoisonEngine @Inject constructor(
                 throw ce // normal stop()/destroy() cancellation — must propagate
             } catch (t: Throwable) {
                 // #197: an uncaught exception from the loop machinery (profile.getProfile,
-                // checkConstraints, dispatcher.selectCategory, scheduler.nextDelayMs, the
+                // checkConstraints, dispatcher.selectCategory, the pacer, the
                 // rate-limit block, sleepRespectingConstraints) would otherwise escape this
                 // SupervisorJob child, reach the app's default uncaught handler (FauxxApp), and
                 // crash the whole process — leaving isRunning=true so EngineReconcileWorker could
@@ -640,6 +660,7 @@ class PoisonEngine @Inject constructor(
         todayActionCount.set(
             try { actionLogDao.countSince(dayStart).first() } catch (_: Exception) { 0 }
         )
+        startPacing(savedProfile)
         _engineState.value = EngineState.ACTIVE
         Timber.i("PoisonEngine started (layers: L1=${savedProfile.layer1Enabled}, L2=${savedProfile.layer2Enabled}, L3=${savedProfile.layer3Enabled}, adversarialAlloc=${savedProfile.adversarialAllocationEnabled})")
         // Fail-closed: if blocklist couldn't load, permanently circuit-break all
@@ -678,6 +699,28 @@ class PoisonEngine @Inject constructor(
             }
         }
         runLoop(runSession)
+    }
+
+    /**
+     * Rebuild the pacing from the action log as a run starts (#322): the hourly ceiling's window gets
+     * the past hour's successful actions and the pacer replays the day's into its budget, so stopping
+     * and starting the engine cannot hand out a fresh allowance. If the log cannot be read, both
+     * start empty.
+     */
+    private suspend fun startPacing(savedProfile: PoisonProfile) {
+        val now = clock.currentTimeMillis()
+        val logged = try {
+            actionLogDao.successTimestampsSince(now - BUDGET_REPLAY_MS)
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (e: Exception) {
+            Timber.w(e, "Could not read the action log to rebuild the action budget")
+            emptyList()
+        }
+        recentActionTimestamps.clear()
+        logged.filter { it > now - RATE_LIMIT_WINDOW_MS }.sorted().forEach { recentActionTimestamps.add(it) }
+        val rate = (effectiveIntensity(savedProfile) ?: savedProfile.intensity).actionsPerHour
+        pacer.startRun(now, rate, savedProfile.allowedHoursStart, savedProfile.allowedHoursEnd, logged)
     }
 
     /**
@@ -815,10 +858,6 @@ class PoisonEngine @Inject constructor(
     }
 
     private suspend fun runLoop(s: Long) {
-        // Tracks the last successfully-executed category so the scheduler can apply
-        // human-like dwell time on cross-niche transitions. In-memory only — a fresh
-        // engine run starts a fresh "browsing session," which is realistic.
-        var lastCategory: CategoryPool? = null
         // The charging boost last logged (#316), so the log says once when it starts and stops.
         var loggedBoost: IntensityLevel? = null
         while (scope.isActive) {
@@ -958,18 +997,20 @@ class PoisonEngine @Inject constructor(
                     .onFailure { Timber.e(it, "onActive handler failed") }
             }
 
-            // Per-hour rate limit: prune stale timestamps and check cap. The window is
-            // deliberately network-agnostic: after a HIGH-on-WiFi hour, dropping to mobile
-            // LOW keeps the engine paused until the window drains below the mobile cap —
-            // the whole point of a lower mobile tier is not to burn mobile data.
+            // Hourly ceiling: prune stale timestamps and check that the past hour holds fewer than
+            // HOURLY_CEILING_FACTOR times the rate. The average is the pacer's budget; this bounds
+            // a single hour. The window is deliberately network-agnostic: after a HIGH-on-WiFi
+            // hour, dropping to mobile LOW keeps the engine paused until the window drains below
+            // the mobile ceiling: the whole point of a lower mobile tier is not to burn mobile data.
             val rateLimitNow = clock.currentTimeMillis()
             val cutoff = rateLimitNow - RATE_LIMIT_WINDOW_MS
             while (recentActionTimestamps.peek()?.let { it < cutoff } == true) {
                 recentActionTimestamps.poll()
             }
-            if (recentActionTimestamps.size >= activeIntensity.actionsPerHour) {
+            val hourlyCeiling = activeIntensity.actionsPerHour * HOURLY_CEILING_FACTOR
+            if (recentActionTimestamps.size >= hourlyCeiling) {
                 _engineState.value = EngineState.PAUSED_RATE_LIMIT
-                Timber.d("Rate limit reached: ${recentActionTimestamps.size}/${activeIntensity.actionsPerHour} actions/hour")
+                Timber.d("Hourly ceiling reached: ${recentActionTimestamps.size}/$hourlyCeiling actions in the past hour")
                 // Sleep until the oldest action leaves the window, through the alarm-backed sleep:
                 // one wakeup instead of a re-check every 15 s, which with the screen off would
                 // wake the phone up to 240 times an hour while the window drains (#335). A change
@@ -987,10 +1028,37 @@ class PoisonEngine @Inject constructor(
                 continue
             }
 
+            // No action starts so close to the end of the allowed hours that it could still be
+            // running when they end (#322). Wait out the rest of the window; the next pass then
+            // finds it closed and pauses as usual.
+            val untilClose = AllowedHours.msUntilClose(
+                rateLimitNow, currentProfile.allowedHoursStart, currentProfile.allowedHoursEnd,
+            )
+            if (untilClose != null && untilClose < CLOSE_GUARD_MS) {
+                _engineState.value = EngineState.ACTIVE
+                sleepRespectingConstraints(untilClose + CLOSE_GUARD_SLACK_MS, s)
+                continue
+            }
+
+            // The session budget (#322): between sessions, or when a run starts with nothing saved,
+            // wait until an action is paid for. A change of rate ends the wait early so it is
+            // measured again at the new rate.
+            val untilAllowed = pacer.msUntilAllowed(rateLimitNow, activeIntensity.actionsPerHour)
+            if (untilAllowed > 0) {
+                _engineState.value = EngineState.ACTIVE
+                val rate = activeIntensity.actionsPerHour
+                sleepRespectingConstraints(
+                    untilAllowed, s, endOnNetworkChangeFrom = networkSeen, watchCharging = true,
+                ) {
+                    effectiveIntensity(profile.getProfile())?.actionsPerHour != rate
+                }
+                continue
+            }
+
             _engineState.value = EngineState.ACTIVE
 
-            // Pick next category
-            val category = dispatcher.selectCategory()
+            // Pick next category: the current burst's topic, or a fresh draw from the weights.
+            val category = pacer.nextCategory { dispatcher.selectCategory() }
 
             // Pick an enabled module that isn't circuit-broken
             val now = clock.currentTimeMillis()
@@ -1034,7 +1102,7 @@ class PoisonEngine @Inject constructor(
                 continue
             }
 
-            val module = availableModules.random(random)
+            val module = pickModule(availableModules)
             val moduleName = module::class.simpleName ?: "Unknown"
 
             // Re-check enable state to avoid acting on a stale snapshot
@@ -1044,7 +1112,7 @@ class PoisonEngine @Inject constructor(
             // loop next waits; the timeout only bounds a module that hangs.
             acquireLock(s)
 
-            // Write-ahead log — track execution time to subtract from scheduled delay
+            // Time the action: the pacer sizes its reading pauses around how long actions take.
             val execStart = clock.currentTimeMillis()
             val logEntry = try {
                 module.onAction(category).also {
@@ -1085,30 +1153,38 @@ class PoisonEngine @Inject constructor(
                 recentActionTimestamps.add(clock.currentTimeMillis())
             }
 
-            // Schedule next action, subtracting module execution time so the
-            // inter-action interval (not post-action gap) matches the target rate.
-            // The dwell/burst state machine keys off what the module actually emitted
-            // (logEntry.category), not what was planned — a module may redirect the
-            // action (E8: AppSignal's persona-interest swap), and cross-niche pacing
-            // only protects against bot signals if it tracks the visible stream.
-            val executedCategory = logEntry.category
+            // The wait before the next action (#322): a think pause inside a burst, a reading pause
+            // between bursts, or a break after the session. It runs from the end of this action,
+            // as a person's pause does, instead of having the action's run time taken off it,
+            // which made the cadence regular (#382). The pacer keys topic changes off what the
+            // module actually emitted (logEntry.category): a module may redirect the action (E8:
+            // AppSignal's persona-interest swap), and cross-niche pacing only protects against
+            // bot signals if it tracks the visible stream.
             val execElapsed = clock.currentTimeMillis() - execStart
-            val scheduledMs = scheduler.nextDelayMs(
+            val delayMs = pacer.afterAction(
                 actionsPerHour = activeIntensity.actionsPerHour,
-                prev = lastCategory,
-                next = executedCategory,
+                executed = logEntry.category,
+                success = logEntry.success,
+                execMs = execElapsed,
                 allowedStart = currentProfile.allowedHoursStart,
-                allowedEnd = currentProfile.allowedHoursEnd
+                allowedEnd = currentProfile.allowedHoursEnd,
             )
-            // Update lastCategory only on success — failed actions shouldn't poison the
-            // dwell signal (a circuit-broken module isn't really "browsing" anything).
-            if (logEntry.success) lastCategory = executedCategory
-            val effectiveDelay = maxOf(0L, scheduledMs - execElapsed)
-            Timber.d("Action: $moduleName/$category exec=${execElapsed}ms scheduled=${scheduledMs}ms effective=${effectiveDelay}ms")
+            Timber.d("Action: $moduleName/$category exec=${execElapsed}ms next in ${delayMs}ms")
             // Plugging in mid-wait with a charging boost set redraws the rest of the wait at the
             // boosted rate (#316), so a LOW wait of many minutes does not hold the boost back.
-            sleepRespectingConstraints(effectiveDelay, s, redrawOnBoostFrom = activeIntensity.actionsPerHour)
+            sleepRespectingConstraints(delayMs, s, redrawOnBoostFrom = activeIntensity.actionsPerHour)
         }
+    }
+
+    /**
+     * The module for the next action. Evenly among [available], except that the pacer decides how
+     * likely a search is: it puts at most one search in a burst, at its start (#322), since a person
+     * searches and then reads rather than searching again every few seconds.
+     */
+    private fun pickModule(available: List<Module>): Module {
+        if (searchModule !in available || available.size == 1) return available.random(random)
+        val others = available.filter { it !== searchModule }
+        return if (random.nextDouble() < pacer.searchChance(available.size)) searchModule else others.random(random)
     }
 
     /**
@@ -1138,8 +1214,8 @@ class PoisonEngine @Inject constructor(
         /**
          * The rate (actions/hour) this wait was drawn at. When set, plugging in mid-wait so that
          * the charging boost raises the rate redraws the rest of the wait at the new rate (#316).
-         * A Poisson wait is memoryless, so a fresh draw at the new rate is exactly what the rest
-         * of it would have been had the rate been that all along. A wait is never lengthened: the
+         * The pacer draws the same kind of wait afresh at the new rate: a break, for one, ends
+         * sooner because the budget then saves up faster. A wait is never lengthened: the
          * redraw only ever moves the deadline earlier, and unplugging leaves it alone (the next
          * wait is drawn at the lower rate).
          */
@@ -1187,7 +1263,7 @@ class PoisonEngine @Inject constructor(
                     val from = drawnAt
                     val rate = effectiveIntensity(current)?.actionsPerHour
                     if (from != null && rate != null && rate > from) {
-                        val redrawn = scheduler.poissonDelay(rate.toFloat())
+                        val redrawn = pacer.redrawDelayMs(rate)
                         val now = clock.elapsedRealtime()
                         if (now + redrawn < deadline) {
                             deadline = now + redrawn
@@ -1446,7 +1522,7 @@ class PoisonEngine @Inject constructor(
     }
 
     /** Returns true if the current local hour falls within the profile's allowed window.
-     *  Delegates to [AllowedHours], the same predicate [PoissonScheduler] uses, so the
+     *  Delegates to [AllowedHours], the same predicate [com.fauxx.engine.scheduling.SessionScheduler] uses, so the
      *  constraint gate and the delay computation can never disagree (issue #124). */
     internal fun isWithinAllowedHours(profile: PoisonProfile, nowHour: Int = currentHourOfDay()): Boolean =
         AllowedHours.isWithin(nowHour, profile.allowedHoursStart, profile.allowedHoursEnd)

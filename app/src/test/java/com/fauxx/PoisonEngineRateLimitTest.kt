@@ -21,7 +21,8 @@ import com.fauxx.engine.modules.FingerprintModule
 import com.fauxx.engine.modules.Module
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
-import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.engine.scheduling.ActionPacer
+import com.fauxx.support.FixedPacer
 import com.fauxx.support.FakeClock
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.util.Clock
@@ -47,14 +48,16 @@ import org.robolectric.annotation.Config
  *
  * The engine tracks successful actions in a sliding [java.util.concurrent.ConcurrentLinkedQueue]
  * window of [RATE_LIMIT_WINDOW_MS] (1h). Once the number of in-window timestamps reaches the
- * profile's `intensity.actionsPerHour` cap, the loop must flip to
- * [EngineState.PAUSED_RATE_LIMIT] and stop dispatching until enough of the window slides out.
+ * hourly ceiling, twice the profile's `intensity.actionsPerHour` (#322: the rate itself is an
+ * average the pacer's budget keeps), the loop must flip to [EngineState.PAUSED_RATE_LIMIT] and stop
+ * dispatching until enough of the window slides out.
  *
  * Only the Dns module is enabled, so it is the sole selectable module and the action count is
- * unambiguous. LOW intensity gives a cap of 12 actions/hour, and the constraint window covers
+ * unambiguous. LOW intensity gives a ceiling of 24 actions an hour, and the constraint window covers
  * noon (allowed 7-23, mobileIntensity=LOW, batteryThreshold=0) so no constraint pause masks the
- * rate-limit pause. The scheduler returns a fixed 1s inter-action delay, so virtual time
- * advanced ~1s at a time dispatches roughly one action per iteration until the cap is hit.
+ * rate-limit pause. The pacer ([FixedPacer]) has no budget and returns a fixed 1s inter-action
+ * delay, so virtual time advanced ~1s at a time dispatches roughly one action per iteration until
+ * the ceiling is hit.
  *
  * The Dns module's onAction MUST return a success=true entry — only successful actions append
  * a timestamp to the window (PoisonEngine.runLoop), so a failing module would never trip the
@@ -67,7 +70,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], application = android.app.Application::class)
 class PoisonEngineRateLimitTest {
 
-    // LOW intensity (cap = 12 actions/hour), no wifi/battery/quiet-hours gating; only Dns enabled.
+    // LOW intensity (ceiling = 24 actions an hour), no wifi/battery/quiet-hours gating; only Dns enabled.
     private val baseProfile = PoisonProfile(
         enabled = true,
         intensity = IntensityLevel.LOW,
@@ -112,29 +115,48 @@ class PoisonEngineRateLimitTest {
     }
 
     @Test
-    fun `engine pauses with rate-limit state once per-hour cap is reached`() = runTest {
+    fun `engine pauses with rate-limit state once the hourly ceiling is reached`() = runTest {
         engine = buildEngine(FakeClock(noonEpochMs()), baseProfile, StandardTestDispatcher(testScheduler))
         // MANDATORY success — only successful actions append a window timestamp.
         coEvery { dnsModule.onAction(any()) } returns okEntry
 
         engine.start()
-        // Scheduler returns 1s per action, so ~1 success accrues per virtual second. With a
-        // LOW cap of 12, ~20s of virtual+fake time pushes the window past the cap and the loop
-        // flips to PAUSED_RATE_LIMIT (then sleeps until the oldest action leaves the window, #335).
-        advanceVirtualTime(testScheduler, by = 20_000)
+        // The pacer returns 1s per action, so ~1 success accrues per virtual second. With a LOW
+        // ceiling of 24, ~30s of virtual+fake time pushes the window past it and the loop flips
+        // to PAUSED_RATE_LIMIT (then sleeps until the oldest action leaves the window, #335).
+        advanceVirtualTime(testScheduler, by = 30_000)
 
         assertEquals(EngineState.PAUSED_RATE_LIMIT, engine.engineState.value)
-        // Dispatch is bounded near the cap (not the ~20 iterations of virtual time): the loop
+        // Dispatch is bounded near the ceiling (not the ~30 iterations of virtual time): the loop
         // stops calling onAction once the window is full.
-        coVerify(atMost = 13) { dnsModule.onAction(any()) }
+        coVerify(atMost = 25) { dnsModule.onAction(any()) }
+
+        engine.stop()
+    }
+
+    @Test
+    fun `a restart rebuilds the hourly ceiling from the action log`() = runTest {
+        // #322: the past hour's actions come from the log when a run starts, so stopping and
+        // starting the engine cannot reset the ceiling.
+        val fakeClock = FakeClock(noonEpochMs())
+        engine = buildEngine(fakeClock, baseProfile, StandardTestDispatcher(testScheduler))
+        coEvery { dnsModule.onAction(any()) } returns okEntry
+        val pastHour = (1..24).map { fakeClock.nowMs - it * 60_000L }
+        coEvery { actionLogDao.successTimestampsSince(any()) } returns pastHour
+
+        engine.start()
+        advanceVirtualTime(testScheduler, by = 5_000)
+
+        assertEquals(EngineState.PAUSED_RATE_LIMIT, engine.engineState.value)
+        coVerify(exactly = 0) { dnsModule.onAction(any()) }
 
         engine.stop()
     }
 
     @Test
     fun `plugging in with a higher charging tier ends a rate-limit pause at once`() = runTest {
-        // #316: the drain sleep can be close to an hour. Plugging in raises the cap (LOW 12 to
-        // MEDIUM 60 here), so the pause must end on the charging change, not when the window drains.
+        // #316: the drain sleep can be close to an hour. Plugging in raises the ceiling (LOW 24 to
+        // MEDIUM 120 here), so the pause must end on the charging change, not when the window drains.
         engine = buildEngine(
             FakeClock(noonEpochMs()),
             baseProfile.copy(chargingIntensity = IntensityLevel.MEDIUM),
@@ -148,14 +170,14 @@ class PoisonEngineRateLimitTest {
 
         engine.start()
         engine.setCachedConstraintStateForTest(transport = com.fauxx.engine.NetworkTransport.WIFI, charging = false)
-        advanceVirtualTime(testScheduler, by = 20_000)
+        advanceVirtualTime(testScheduler, by = 30_000)
         assertEquals(EngineState.PAUSED_RATE_LIMIT, engine.engineState.value)
         val callsAtCap = calls
 
         engine.setCachedConstraintStateForTest(charging = true)
         advanceVirtualTime(testScheduler, by = 3_000)
 
-        assertTrue("dispatch must resume once charging raises the cap", calls > callsAtCap)
+        assertTrue("dispatch must resume once charging raises the ceiling", calls > callsAtCap)
 
         engine.stop()
     }
@@ -173,8 +195,8 @@ class PoisonEngineRateLimitTest {
         }
 
         engine.start()
-        // Fill the window to the cap and confirm the limiter engaged.
-        advanceVirtualTime(testScheduler, by = 20_000)
+        // Fill the window to the ceiling and confirm the limiter engaged.
+        advanceVirtualTime(testScheduler, by = 30_000)
         assertEquals(EngineState.PAUSED_RATE_LIMIT, engine.engineState.value)
         val callsAtCap = calls
 
@@ -196,8 +218,8 @@ class PoisonEngineRateLimitTest {
             "expected dispatch to resume after the window slid (callsAtCap=$callsAtCap, calls=$calls)",
             calls > callsAtCap
         )
-        // The module was dispatched at least once more than the cap (post-slide successes).
-        coVerify(atLeast = 13) { dnsModule.onAction(any()) }
+        // The module was dispatched at least once more than the ceiling (post-slide successes).
+        coVerify(atLeast = 25) { dnsModule.onAction(any()) }
 
         engine.stop()
     }
@@ -243,9 +265,7 @@ class PoisonEngineRateLimitTest {
         val actionDispatcher: ActionDispatcher = mockk {
             coEvery { selectCategory() } returns CategoryPool.GAMING
         }
-        val scheduler: PoissonScheduler = mockk {
-            every { nextDelayMs(any(), any(), any(), any(), any()) } returns 1000L
-        }
+        val scheduler: ActionPacer = FixedPacer(1000L)
         actionLogDao = mockk(relaxed = true)
         val blocklist: DomainBlocklist = mockk {
             every { loadFailed } returns false
