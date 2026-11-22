@@ -74,9 +74,8 @@ import com.fauxx.ui.theme.ThemeMode
  *   (issue #281), e.g. a privacy-respecting engine they would rather not send synthetic traffic
  *   to. Stored as exclusions rather than inclusions so the default is empty and any engine added
  *   to the pool later is on by default without a preference migration. The UI keeps at least
- *   [MIN_ACTIVE_SEARCH_ENGINES] engines active: a single-engine noise stream is itself a
- *   fingerprint, and engine diversity is the reason the pool was widened in the first place
- *   (issue #24).
+ *   [MIN_ACTIVE_SEARCH_ENGINES] engines active: each persona keeps to a usual engine but sends
+ *   some searches elsewhere (#322), and needs another engine while its usual one is held back.
  */
 data class PoisonProfile(
     val enabled: Boolean = false,
@@ -117,8 +116,8 @@ data class PoisonProfile(
 )
 
 /**
- * Floor on how many search engines can stay active (issue #281). Real users spread their
- * searches across engines; collapsing synthetic traffic onto one SERP would make it
- * trivially separable, which is exactly what the poisoning is trying to avoid.
+ * Floor on how many search engines can stay active (issue #281). A persona searches mostly on
+ * its usual engine but not only there (#322), and a single engine left active would also leave
+ * it nowhere to go while that engine backs off after a bot check (#353).
  */
 const val MIN_ACTIVE_SEARCH_ENGINES = 2

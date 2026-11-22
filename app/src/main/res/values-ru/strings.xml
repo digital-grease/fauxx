@@ -619,7 +619,7 @@
     <!-- PENDING NATIVE-SPEAKER REVIEW -->
     <string name="settings_search_engines_title">Поисковые системы</string>
     <string name="settings_search_engines_description">Выберите, какие поисковые системы получают синтетические запросы. Отключённая исключается полностью.</string>
-    <string name="settings_search_engines_minimum_notice">Активными остаются минимум %1$d системы: реальные люди распределяют запросы между несколькими, поэтому шум от одной легко отфильтровать.</string>
+    <string name="settings_search_engines_minimum_notice">Активными остаются минимум %1$d системы: у каждой персоны есть привычная система, но иногда она ищет и в других, и ей нужна замена, когда привычная недоступна.</string>
     <string name="dashboard_webview_leak_title">Сайты могут понять, что этот трафик идёт от Fauxx</string>
     <string name="dashboard_webview_leak_body">Ваш WebView не может скрыть название приложения, поэтому каждый запрос Fauxx передаёт его в заголовке X-Requested-With. Защита продолжает работать, но сайты могут распознать и отбросить этот трафик.</string>
     <string name="dashboard_webview_leak_action">Обновить WebView</string>

@@ -596,7 +596,7 @@
     <string name="dashboard_synthetic_activity_value" translatable="false">%.1f/h</string>
     <string name="settings_search_engines_title">Search engines</string>
     <string name="settings_search_engines_description">Choose which search engines receive synthetic queries. Turning one off spares it entirely.</string>
-    <string name="settings_search_engines_minimum_notice">At least %1$d engines stay active: real people spread searches across engines, so noise from a single one would be easy to filter out.</string>
+    <string name="settings_search_engines_minimum_notice">At least %1$d engines stay active: each persona has a usual engine but sometimes searches elsewhere, and needs another one when its usual engine is unavailable.</string>
     <string name="dashboard_webview_leak_title">Sites can tell this traffic comes from Fauxx</string>
     <string name="dashboard_webview_leak_body">Your WebView can\'t hide the app\'s name, so every request Fauxx makes carries it in the X-Requested-With header. Protection keeps running, but sites can recognise and discard this traffic.</string>
     <string name="dashboard_webview_leak_action">Update WebView</string>

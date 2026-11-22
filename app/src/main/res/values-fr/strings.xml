@@ -599,7 +599,7 @@
     <!-- PENDING NATIVE-SPEAKER REVIEW -->
     <string name="settings_search_engines_title">Moteurs de recherche</string>
     <string name="settings_search_engines_description">Choisissez les moteurs de recherche qui reçoivent des requêtes synthétiques. En désactiver un l\'exclut totalement.</string>
-    <string name="settings_search_engines_minimum_notice">Au moins %1$d moteurs restent actifs : les vraies personnes répartissent leurs recherches, donc le bruit d\'un seul moteur serait facile à filtrer.</string>
+    <string name="settings_search_engines_minimum_notice">Au moins %1$d moteurs restent actifs : chaque persona a un moteur habituel mais cherche parfois ailleurs, et doit pouvoir en utiliser un autre quand le sien est indisponible.</string>
     <string name="dashboard_webview_leak_title">Les sites peuvent savoir que ce trafic vient de Fauxx</string>
     <string name="dashboard_webview_leak_body">Votre WebView ne peut pas masquer le nom de l\'application : chaque requête de Fauxx le transmet dans l\'en-tête X-Requested-With. La protection continue, mais les sites peuvent reconnaître et écarter ce trafic.</string>
     <string name="dashboard_webview_leak_action">Mettre à jour WebView</string>

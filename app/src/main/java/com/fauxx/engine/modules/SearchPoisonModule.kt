@@ -64,11 +64,10 @@ private val SEARCH_ENGINES = listOf(
     SearchEngine("yahoo") { q, l ->
         "https://${l.yahooSubdomainPrefix}search.yahoo.com/search?p=$q"
     },
-    // Issue #24. Yandex broadens the engine pool — more engine diversity makes the
-    // synthetic-traffic profile harder to fingerprint as bot activity, since real
-    // users don't typically stick to a single SERP. yandex.com (the international
-    // entry point) accepts `lang` for query language; results are then served from
-    // the geographically nearest mirror.
+    // Issue #24. Yandex broadens the engine pool, so engine choice varies across installs
+    // and personas. Each persona still keeps to one usual engine (#322, SearchHabits), as
+    // real people do. yandex.com (the international entry point) accepts `lang` for query
+    // language; results are then served from the geographically nearest mirror.
     SearchEngine("yandex") { q, l ->
         "https://yandex.com/search/?text=$q&lang=${l.tag}"
     }
@@ -94,9 +93,9 @@ fun searchEngineDisplayName(id: String): String = when (id) {
  * The engines synthetic searches may use, given the user's opt-outs (issue #281).
  *
  * Some users would rather not aim synthetic traffic at an engine they trust, which is a
- * reasonable ask, but the pool exists to be diverse: real people do not run every search
- * through one SERP, and collapsing onto a single engine would make the traffic easy to
- * separate (the reason Yandex was added in #24). The Settings UI enforces
+ * reasonable ask, but the pool exists to be diverse: personas differ in their usual engine, and
+ * each sends the occasional search elsewhere (#322, [SearchHabits]), so a persona must always have
+ * a second engine to use (the reason Yandex was added in #24). The Settings UI enforces
  * [MIN_ACTIVE_SEARCH_ENGINES].
  *
  * The empty-pool branch is a genuine conflict of duties, not a free choice: honoring the
@@ -164,6 +163,12 @@ internal object SearchChallenge {
  * SERP via [SerpLinkSelector]. Independent single queries were themselves a
  * bot-detectable shape: real search behavior moves through coherent narrowing sessions.
  *
+ * **Search habits (#322)**: the active persona's [SearchHabits] shape each session. It goes to
+ * the persona's usual engine most of the time, refines only some of the time, and does not always
+ * click a result. A person keeps to one engine and often searches without clicking; an even spread
+ * across engines with every session refined and clicked looked like no one. Without habits
+ * ([SearchHabitsSource.NONE]) a session keeps that old shape.
+ *
  * Topic switches are session BOUNDARIES: the next onAction (usually a different
  * category from the dispatcher) starts a new chain, and the engine schedules that
  * transition through PoissonScheduler's cross-niche dwell handling, so a switch reads
@@ -216,6 +221,8 @@ class SearchPoisonModule @Inject constructor(
     private val random: Random = Random.Default,
     // #353: engines that answered with a bot check are skipped for a while.
     private val engineHealth: SearchEngineHealth = SearchEngineHealth.NONE,
+    // #322: the active persona's usual engine and how often it refines and clicks.
+    private val searchHabits: SearchHabitsSource = SearchHabitsSource.NONE,
 ) : Module {
 
     override suspend fun start() {
@@ -303,7 +310,8 @@ class SearchPoisonModule @Inject constructor(
         // Honor the user's engine opt-outs (issue #281), then leave out engines backing off after
         // a bot check (#353). The engine loop does not dispatch here while every engine is held
         // back; this covers a hold that started in between.
-        val selectable = selectableSearchEngines(allowedEngines(), engineHealth::isEngineHeldBack).toSet()
+        val allowed = allowedEngines()
+        val selectable = selectableSearchEngines(allowed, engineHealth::isEngineHeldBack).toSet()
         if (selectable.isEmpty()) {
             return ActionLogEntity(
                 actionType = ActionType.SEARCH_QUERY,
@@ -312,7 +320,16 @@ class SearchPoisonModule @Inject constructor(
                 success = false,
             )
         }
-        val engine = SEARCH_ENGINES.filter { it.name in selectable }.random(random)
+        // #322: the persona's usual engine most of the time, drawn from the user's allowed engines so a
+        // bot-check hold never changes which one that is.
+        val habits = searchHabits.habits(locale, allowed)
+        val selectableEngines = SEARCH_ENGINES.filter { it.name in selectable }
+        val engine = if (habits == null) {
+            selectableEngines.random(random)
+        } else {
+            val name = habits.pickEngine(selectableEngines.map { it.name }, locale, random)
+            selectableEngines.first { it.name == name }
+        }
         val goalUrl = engine.build(java.net.URLEncoder.encode(goal, "UTF-8"), locale)
         // Engine name suffix surfaces which SERP each search actually hit, so the user
         // can verify newly-added engines (e.g. Yandex per #24) are actually firing.
@@ -348,7 +365,10 @@ class SearchPoisonModule @Inject constructor(
             profile.chargingIntensity?.actionsPerHour ?: 0
         )
         val (maxRefinements, maxLinks) = sessionBounds(configuredCeiling)
-        val refinements = if (maxRefinements > 0 && !isCustom) {
+        // #322: whether to refine at all is the persona's habit; many real searches stand alone.
+        val refines = maxRefinements > 0 && !isCustom &&
+            (habits == null || random.nextFloat() < habits.refineChance)
+        val refinements = if (refines) {
             SearchRefinements.refine(goal, locale, random.nextInt(1, maxRefinements + 1), random)
         } else {
             emptyList()
@@ -423,6 +443,9 @@ class SearchPoisonModule @Inject constructor(
                         }
                     }
 
+                    // #322: a click is the persona's habit too; plenty of searches end on the results page.
+                    val clicks = habits == null || random.nextFloat() < habits.clickChance
+
                     // Click 1-2 results on the final (most narrowed) SERP. Candidates
                     // are ALLOW-listed to curated crawl-corpus hosts — live SERPs
                     // surface arbitrary destinations and the denylist cannot vouch for
@@ -430,7 +453,7 @@ class SearchPoisonModule @Inject constructor(
                     // the SERP's own anchor, so its instrumentation and referrer
                     // semantics are genuine, and PhantomWebViewClient re-gates the
                     // resulting navigation.
-                    if (!botChecked && maxLinks > 0 && clock.currentTimeMillis() < deadline) {
+                    if (!botChecked && maxLinks > 0 && clock.currentTimeMillis() < deadline && clicks) {
                         val hrefs = collectSerpLinks(webView)
                         val links = SerpLinkSelector.select(
                             hrefs, random,

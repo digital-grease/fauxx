@@ -81,6 +81,7 @@ class SearchPoisonModuleTest {
         clock: com.fauxx.util.Clock = com.fauxx.support.FakeClock(0L),
         engineHealth: com.fauxx.data.crawllist.SearchEngineHealth = com.fauxx.data.crawllist.SearchEngineHealth.NONE,
         customPool: com.fauxx.data.custompool.CustomPoolSource = com.fauxx.data.custompool.CustomPoolSource.EMPTY,
+        searchHabits: SearchHabitsSource = SearchHabitsSource.NONE,
     ) = SearchPoisonModule(
         queryBankManager = queryBankManager,
         grammarGenerator = grammarGenerator,
@@ -99,6 +100,7 @@ class SearchPoisonModuleTest {
         // and the Accept-Language / dwell draws deterministic.
         random = random,
         engineHealth = engineHealth,
+        searchHabits = searchHabits,
     )
 
     private val bankBranchRandom = object : kotlin.random.Random() {
@@ -527,6 +529,63 @@ class SearchPoisonModuleTest {
         assertFalse(newModule(engineHealth = health).isHeldBack())
         coVerify(exactly = 0) { profileRepo.updateProfile(any()) }
         coVerify(exactly = 0) { profileRepo.saveProfile(any()) }
+    }
+
+    // ---- #322: per-persona search habits ----
+
+    private fun habits(primary: String, refine: Float = 1f, click: Float = 1f) =
+        SearchHabitsSource { _, _ -> SearchHabits(primary, primaryShare = 1f, refineChance = refine, clickChance = click) }
+
+    @Test
+    fun `a persona's searches go to its usual engine`() = runTest(testDispatcher) {
+        safeSession("best mechanical keyboards 2026")
+        val (urls, _) = captureLoads()
+
+        val result = newModule(searchHabits = habits("duckduckgo")).onAction(CategoryPool.GAMING)
+
+        assertTrue("every query of the session goes to the usual engine; was: $urls",
+            urls.isNotEmpty() && urls.all { it.contains("duckduckgo.com") })
+        assertTrue(result.detail.endsWith("via duckduckgo"))
+    }
+
+    @Test
+    fun `a held-back usual engine sends the search elsewhere`() = runTest(testDispatcher) {
+        safeSession("best mechanical keyboards 2026")
+        val (urls, _) = captureLoads()
+        val health = FakeEngineHealth(mutableSetOf("duckduckgo"))
+
+        newModule(engineHealth = health, searchHabits = habits("duckduckgo")).onAction(CategoryPool.GAMING)
+
+        assertTrue("the usual engine is backing off; was: $urls", urls.isNotEmpty() && urls.none { it.contains("duckduckgo") })
+    }
+
+    @Test
+    fun `a persona that does not refine or click runs a single search`() = runTest(testDispatcher) {
+        safeSession("best mechanical keyboards 2026")
+        every { crawlListManager.isCuratedHost(any()) } returns true
+        val scripts = stubSerp(listOf("https://reviews.example.com/kb"))
+        val (urls, _) = captureLoads()
+
+        // maxRandom would otherwise run the full session: three refinements and a click.
+        newModule(random = maxRandom, searchHabits = habits("google", refine = 0f, click = 0f))
+            .onAction(CategoryPool.GAMING)
+
+        assertEquals("the goal query only", 1, urls.size)
+        assertTrue("no results harvested or clicked; ran: $scripts", scripts.isEmpty())
+    }
+
+    @Test
+    fun `a persona that always refines and clicks keeps the full session`() = runTest(testDispatcher) {
+        safeSession("best mechanical keyboards 2026")
+        every { crawlListManager.isCuratedHost(any()) } returns true
+        val scripts = stubSerp(listOf("https://reviews.example.com/kb"))
+        val (urls, _) = captureLoads()
+
+        newModule(random = maxRandom, searchHabits = habits("google")).onAction(CategoryPool.GAMING)
+
+        assertEquals("goal + 3 refinements", 4, urls.size)
+        assertTrue(urls.all { it.contains("www.google.com/search") })
+        assertTrue(scripts.any { it.contains(".click()") })
     }
 
     @Test
