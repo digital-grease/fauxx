@@ -31,6 +31,16 @@ import javax.inject.Singleton
  * @property browseChance Chance that a page visit browses on to more pages of the same site
  *   (#322 item 2).
  * @property browseMean Mean number of pages browsed on to when it does, before the tier's cap.
+ * @property key Whose habits these are (a persona id or install key), for the per-day draws of
+ *   [DailyRhythm].
+ * @property wakeDelayMs Time after the allowed hours open before the persona's day starts (#322
+ *   item 5).
+ * @property rampMs How long its day takes to ramp up to full activity.
+ * @property windDownMs How long it winds down before the allowed hours end.
+ * @property lateNightChance Chance a night skips the wind-down.
+ * @property weekendRatio A weekend day's volume over a weekday's; below 1 for a persona busier on
+ *   weekdays.
+ * @property dailySpread Spread (lognormal sigma) of the day-to-day variation in volume.
  */
 data class SessionHabits(
     val sessionPace: Double,
@@ -41,6 +51,13 @@ data class SessionHabits(
     val endEarly: Double,
     val browseChance: Double,
     val browseMean: Double,
+    val key: String = "default",
+    val wakeDelayMs: Long = 0L,
+    val rampMs: Long = 0L,
+    val windDownMs: Long = 0L,
+    val lateNightChance: Double = 0.0,
+    val weekendRatio: Double = 1.0,
+    val dailySpread: Double = 0.0,
 ) {
     companion object {
         /**
@@ -57,10 +74,20 @@ data class SessionHabits(
         private val END_EARLY_PER_MILLE = 100..300
         private val BROWSE_CHANCE_PER_MILLE = 450..800
         private val BROWSE_MEAN_PER_MILLE = 1_500..3_000
+        private val WAKE_DELAY_MIN = 0..120
+        private val RAMP_MIN = 60..180
+        private val WIND_DOWN_MIN = 60..180
+        private val LATE_NIGHT_PER_MILLE = 50..200
+        private val WEEKEND_RATIO_PER_MILLE = 600..1_800
+        private val DAILY_SPREAD_PER_MILLE = 150..350
 
         private const val DOMAIN = "session"
 
-        /** Mid-range habits: what [SessionHabitsSource.DEFAULT] gives tests that need no persona. */
+        /**
+         * Mid-range habits: what [SessionHabitsSource.DEFAULT] gives tests that need no persona. Its
+         * days are flat (no wake time, ramp or wind-down, every day the same), so tests of the
+         * pacing are not tests of [DailyRhythm] too.
+         */
         val DEFAULT = SessionHabits(
             sessionPace = 2.2,
             burstMean = 3.0,
@@ -86,6 +113,13 @@ data class SessionHabits(
             endEarly = perMille(key, "end-early", END_EARLY_PER_MILLE),
             browseChance = perMille(key, "browse", BROWSE_CHANCE_PER_MILLE),
             browseMean = perMille(key, "browse-mean", BROWSE_MEAN_PER_MILLE),
+            key = key,
+            wakeDelayMs = draw(key, "wake", WAKE_DELAY_MIN) * 60_000L,
+            rampMs = draw(key, "ramp", RAMP_MIN) * 60_000L,
+            windDownMs = draw(key, "wind-down", WIND_DOWN_MIN) * 60_000L,
+            lateNightChance = perMille(key, "late", LATE_NIGHT_PER_MILLE),
+            weekendRatio = perMille(key, "weekend", WEEKEND_RATIO_PER_MILLE),
+            dailySpread = perMille(key, "daily-spread", DAILY_SPREAD_PER_MILLE),
         )
 
         private fun draw(key: String, field: String, range: IntRange): Int =
