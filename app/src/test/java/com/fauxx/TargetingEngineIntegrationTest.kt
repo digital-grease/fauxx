@@ -3,7 +3,7 @@ package com.fauxx
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.WeightNormalizer
-import com.fauxx.targeting.layer0.UniformEntropyLayer
+import com.fauxx.targeting.layer0.CategoryPopularityLayer
 import com.fauxx.targeting.layer1.SelfReportLayer
 import com.fauxx.targeting.layer2.AdversarialScraperLayer
 import com.fauxx.targeting.layer3.PersonaRotationLayer
@@ -169,7 +169,7 @@ class TargetingEngineIntegrationTest {
         l2Enabled: Boolean = false,
         l3Enabled: Boolean = false
     ): TargetingEngine {
-        val layer0 = UniformEntropyLayer()
+        val layer0 = CategoryPopularityLayer.even()
         val layer1: SelfReportLayer = mockk { every { getWeights() } returns flowOf(l1Weights) }
         val layer2: AdversarialScraperLayer = mockk(relaxed = true) { every { getWeights() } returns flowOf(l2Weights) }
         val layer3: PersonaRotationLayer = mockk(relaxed = true) { every { getWeights() } returns flowOf(l3Weights) }

@@ -36,10 +36,10 @@ private const val NEUTRAL_WEIGHT = 1.0f
 
 /**
  * Uniform-baseline component of the persona blend, lowered from 1.0 by E9 (#176).
- * This term is where the "Layer 0 uniform pull" mechanically lives: UniformEntropyLayer's
- * own constant is normalization-invariant for any value that keeps combined products
- * above the normalizer floor (see its KDoc), so reducing the uniform flattening means
- * shrinking the (1 - PERSONA_FOLLOW_FRACTION) blend-in here.
+ * This term is where the uniform flattening of the persona's mix lives, so reducing it means
+ * shrinking the (1 - PERSONA_FOLLOW_FRACTION) blend-in here. Layer 0 is not uniform since
+ * #322: it is the real-world popularity base
+ * ([com.fauxx.targeting.layer0.CategoryPopularityLayer]) that this blend multiplies against.
  */
 private const val UNIFORM_BASELINE_WEIGHT = 0.6f
 

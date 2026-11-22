@@ -62,6 +62,8 @@ data class TargetingUiState(
     val lastImportedDate: String = "Never",
     val currentPersonaName: String? = null,
     val weights: Map<CategoryPool, Float> = emptyMap(),
+    /** Whether the layers boosted or suppressed each category, for the chart's colours (see [weightShaping]). */
+    val shaping: Map<CategoryPool, WeightShaping> = emptyMap(),
     val customInterestMappings: List<InterestMapping> = emptyList(),
     // Layer 2 import (issue #52). [importInProgress] is the source currently mid-import
     // (drives button "Importing…" state); null when idle. [lastImportResult] is the
@@ -89,6 +91,46 @@ private const val THIRTY_DAYS_MS = 30L * 24 * 60 * 60 * 1000
 // breaking the translated UI. `DateFormat.getDateInstance(MEDIUM, Locale.getDefault())`
 // emits the locale-conventional medium-length date (22 may 2026 in ES, 22 мая 2026 in RU).
 
+/** How the targeting layers moved a category, as the Targeting screen's chart colours it. */
+enum class WeightShaping { SUPPRESSED, NEUTRAL, BOOSTED }
+
+/** The lowest reference [weightShaping] compares lifts with: about where a persona alone leaves untouched categories. */
+internal const val MIN_REFERENCE_LIFT = 0.5f
+
+/**
+ * Whether the layers boosted or suppressed each category.
+ *
+ * A category's lift is its final weight over its [baseline], the share Layer 0's real-world
+ * popularity alone gives it (#322), so being popular or rare is neither a boost nor a
+ * suppression. Lifts are compared with a reference: more than twice it is boosted, less than half
+ * is suppressed. The reference is the median lift, the typical category no layer singled out,
+ * held between [MIN_REFERENCE_LIFT] and 1:
+ * - **Down to [MIN_REFERENCE_LIFT].** A persona whose interests are the most popular categories
+ *   takes so much of the mix that every other category falls to about half its baseline. Those
+ *   categories are untouched, not suppressed, and the persona alone can push them no lower.
+ * - **No lower.** When an imported ad profile suppresses most categories, the median is one of
+ *   them, and they must still read as suppressed.
+ *
+ * Without a baseline, every category's baseline is an even share.
+ */
+internal fun weightShaping(
+    weights: Map<CategoryPool, Float>,
+    baseline: Map<CategoryPool, Float>,
+): Map<CategoryPool, WeightShaping> {
+    if (weights.isEmpty()) return emptyMap()
+    val even = 1f / weights.size
+    val lifts = weights.mapValues { (category, weight) -> weight / (baseline[category]?.takeIf { it > 0f } ?: even) }
+    val median = lifts.values.sorted().let { (it[(it.size - 1) / 2] + it[it.size / 2]) / 2f }
+    val reference = median.coerceIn(MIN_REFERENCE_LIFT, 1f)
+    return lifts.mapValues { (_, lift) ->
+        when {
+            lift < reference * 0.5f -> WeightShaping.SUPPRESSED
+            lift > reference * 2f -> WeightShaping.BOOSTED
+            else -> WeightShaping.NEUTRAL
+        }
+    }
+}
+
 @HiltViewModel
 class TargetingViewModel @Inject constructor(
     private val targetingEngine: TargetingEngine,
@@ -115,8 +157,8 @@ class TargetingViewModel @Inject constructor(
         demographicDao.observe(),
         platformDao.observeAll(),
         personaLayer.currentPersona,
-        targetingEngine.getWeights()
-    ) { state, profile, platforms, persona, weights ->
+        combine(targetingEngine.getWeights(), targetingEngine.baseline, ::Pair)
+    ) { state, profile, platforms, persona, (weights, baselineWeights) ->
         val lastImportedAt = platforms.maxOfOrNull { it.lastScraped }
         val customInterests = profile?.getCustomInterests().orEmpty()
         // 90-day reminder visibility derived here so the UI doesn't recompute the date math.
@@ -137,6 +179,7 @@ class TargetingViewModel @Inject constructor(
             } ?: context.getString(R.string.targeting_import_never_label),
             currentPersonaName = persona?.name,
             weights = weights,
+            shaping = weightShaping(weights, baselineWeights),
             customInterestMappings = if (customInterests.isNotEmpty())
                 customInterestMapper.mapAll(customInterests)
             else emptyList(),

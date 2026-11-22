@@ -75,5 +75,7 @@ scripts/*
 !scripts/check_crawl_urls.py
 # #322 site-popularity builder: regenerates assets/site_popularity.json from a Tranco list.
 !scripts/build_site_popularity.py
+# #322 category-popularity builder: regenerates assets/category_popularity.json from SimilarWeb data.
+!scripts/build_category_popularity.py
 # JVM attach artifacts from jstack/debugger sessions
 .attach_pid*

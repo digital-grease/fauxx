@@ -1,0 +1,244 @@
+{
+ "version": 1,
+ "source": "SimilarWeb monthly visits per domain, August to October 2023, as published with H. S. Xavier, \"The Web unpacked: a quantitative analysis of global Web usage\" (arXiv:2404.17095), https://github.com/cewebbr/web-unpacked",
+ "measure": "Each category's share of the monthly visits to the SimilarWeb industries listed for it, among all listed industries. Industries with no Fauxx category (search engines, social networks, news, adult, e-mail, gambling, marketplaces, generic technology services) are left out.",
+ "shares": {
+  "MEDICAL": 0.0384158,
+  "LEGAL": 0.00572258,
+  "AUTOMOTIVE": 0.0267185,
+  "PARENTING": 0.0023067,
+  "RETIREMENT": 0.000357553,
+  "GAMING": 0.0673004,
+  "AGRICULTURE": 0.00123949,
+  "FASHION": 0.0313495,
+  "ACADEMIC": 0.0582506,
+  "REAL_ESTATE": 0.0127231,
+  "COOKING": 0.0145398,
+  "SPORTS": 0.0585287,
+  "FINANCE": 0.0812466,
+  "TRAVEL": 0.0406539,
+  "TECHNOLOGY": 0.0970809,
+  "PETS": 0.00864686,
+  "HOME_IMPROVEMENT": 0.020798,
+  "BEAUTY": 0.00871591,
+  "MUSIC": 0.0200766,
+  "FITNESS": 0.00585117,
+  "ENTERTAINMENT": 0.260777,
+  "FOOD": 0.0255556,
+  "POLITICS": 0.0347138,
+  "SCIENCE": 0.0097982,
+  "BUSINESS": 0.0415104,
+  "OUTDOOR_RECREATION": 0.00417588,
+  "CRAFTS": 0.00614569,
+  "HISTORY": 0.00445403,
+  "ENVIRONMENT": 0.00372642,
+  "MILITARY_DEFENSE": 0.00155471,
+  "WELLNESS_ALTERNATIVE": 0.000929809,
+  "RELATIONSHIPS_DATING": 0.00613584
+ },
+ "industries": {
+  "MEDICAL": [
+   "Health - Other",
+   "Medicine",
+   "Pharmacy",
+   "Health Conditions and Concerns",
+   "Women's Health",
+   "Dentist and Dental Services",
+   "Mental Health",
+   "Public Health and Safety",
+   "Developmental and Physical Disabilities",
+   "Men's Health",
+   "Biotechnology and Pharmaceuticals",
+   "Addictions"
+  ],
+  "LEGAL": [
+   "Legal",
+   "Immigration and Visas"
+  ],
+  "AUTOMOTIVE": [
+   "Vehicles - Other",
+   "Automotive Industry",
+   "Makes and Models",
+   "Motorcycles",
+   "Motorsports"
+  ],
+  "PARENTING": [
+   "Childcare",
+   "Children's Health"
+  ],
+  "RETIREMENT": [
+   "Geriatric and Aging Care"
+  ],
+  "GAMING": [
+   "Video Games Consoles and Accessories",
+   "Games - Other",
+   "Roleplaying Games",
+   "Board and Card Games",
+   "Puzzles and Brainteasers"
+  ],
+  "AGRICULTURE": [
+   "Agriculture"
+  ],
+  "FASHION": [
+   "Fashion and Apparel",
+   "Jewelry and Luxury Products"
+  ],
+  "ACADEMIC": [
+   "Education",
+   "Universities and Colleges",
+   "Math",
+   "Social Sciences",
+   "Grants Scholarships and Financial Aid",
+   "Business Training",
+   "Literature",
+   "Philosophy"
+  ],
+  "REAL_ESTATE": [
+   "Real Estate",
+   "Relocation and Household Moving"
+  ],
+  "COOKING": [
+   "Cooking and Recipes",
+   "Vegetarian and Vegan"
+  ],
+  "SPORTS": [
+   "Sports - Other",
+   "Soccer",
+   "Baseball",
+   "American Football",
+   "Basketball",
+   "Golf",
+   "Martial Arts",
+   "Tennis",
+   "Fantasy Sports",
+   "Rugby",
+   "Volleyball",
+   "Boxing",
+   "Extreme Sports"
+  ],
+  "FINANCE": [
+   "Banking Credit and Lending",
+   "Finance - Other",
+   "Investing",
+   "Financial Planning and Management",
+   "Insurance",
+   "Accounting and Auditing"
+  ],
+  "TRAVEL": [
+   "Travel and Tourism - Other",
+   "Accommodation and Hotels",
+   "Air Travel",
+   "Ground Transportation",
+   "Tourist Attractions",
+   "Car Rentals",
+   "Transportation and Excursions"
+  ],
+  "TECHNOLOGY": [
+   "Consumer Electronics",
+   "Computer Security",
+   "Computer Hardware",
+   "Programming and Developer Software",
+   "Graphics Multimedia and Web Design",
+   "Web Hosting and Domain Names"
+  ],
+  "PETS": [
+   "Pet Food and Supplies",
+   "Pets and Animals - Other",
+   "Pets",
+   "Fish and Aquaria",
+   "Birds",
+   "Animals",
+   "Horses"
+  ],
+  "HOME_IMPROVEMENT": [
+   "Home Improvement and Maintenance",
+   "Home and Garden - Other",
+   "Furniture",
+   "Gardening",
+   "Interior Design",
+   "Construction and Maintenance"
+  ],
+  "BEAUTY": [
+   "Beauty and Cosmetics"
+  ],
+  "MUSIC": [
+   "Music"
+  ],
+  "FITNESS": [
+   "Nutrition Diets and Fitness",
+   "Running",
+   "Cycling and Biking"
+  ],
+  "ENTERTAINMENT": [
+   "TV Movies and Streaming",
+   "Animation and Comics",
+   "Arts and Entertainment - Other",
+   "Humor",
+   "Books and Literature",
+   "Performing Arts",
+   "Visual Arts and Design"
+  ],
+  "FOOD": [
+   "Food and Drink - Other",
+   "Restaurants and Delivery",
+   "Groceries",
+   "Beverages"
+  ],
+  "POLITICS": [
+   "Government",
+   "Law and Government - Other"
+  ],
+  "SCIENCE": [
+   "Biology",
+   "Chemistry",
+   "Physics",
+   "Astronomy",
+   "Earth Sciences",
+   "Science and Education - Other"
+  ],
+  "BUSINESS": [
+   "Business Services",
+   "Business and Consumer Services - Other",
+   "Marketing and Advertising",
+   "Online Marketing",
+   "Human Resources",
+   "Publishing and Printing",
+   "Jobs and Employment"
+  ],
+  "OUTDOOR_RECREATION": [
+   "Camping Scouting and Outdoors",
+   "Hunting and Shooting",
+   "Fishing",
+   "Climbing",
+   "Water Sports",
+   "Winter Sports"
+  ],
+  "CRAFTS": [
+   "Crafts",
+   "Models",
+   "Photography"
+  ],
+  "HISTORY": [
+   "History",
+   "Libraries and Museums",
+   "Ancestry and Genealogy",
+   "Antiques and Collectibles"
+  ],
+  "ENVIRONMENT": [
+   "Environmental Science",
+   "Waste Water and Environmental",
+   "Energy Industry"
+  ],
+  "MILITARY_DEFENSE": [
+   "National Security",
+   "Aerospace and Defense"
+  ],
+  "WELLNESS_ALTERNATIVE": [
+   "Alternative and Natural Medicine"
+  ],
+  "RELATIONSHIPS_DATING": [
+   "Romance and Relationships",
+   "Weddings"
+  ]
+ }
+}

@@ -1,7 +1,10 @@
 package com.fauxx.shape
 
 import com.fauxx.data.model.ActionType
+import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.scheduling.AllowedHours
+import com.fauxx.targeting.layer0.CategoryPopularityLayer
+import java.io.File
 import java.net.URI
 import java.util.Calendar
 import kotlin.math.ceil
@@ -43,8 +46,8 @@ internal data class StreamEvent(
     val isPageLoad: Boolean get() = kind != LoadKind.DNS
 }
 
-/** One action the engine logged, at the time it was logged. */
-internal data class ActionRecord(val atMs: Long, val type: ActionType, val success: Boolean)
+/** One action the engine logged, at the time it was logged, with the category it was dispatched in. */
+internal data class ActionRecord(val atMs: Long, val type: ActionType, val success: Boolean, val category: CategoryPool? = null)
 
 /**
  * A finished simulation: every observable request and logged action over [days] local days
@@ -117,6 +120,8 @@ internal data class StreamShape(
     val firstTwoHoursShare: Double,
     val lastHourShare: Double,
     val weekendToWeekdayRatio: Double,
+    /** Share of successful actions dispatched in the [WEB_TOP_CATEGORIES] (#322 item 8). */
+    val webTopCategoryShare: Double,
     /** Share of the DNS module's lookups with no page load within [DNS_BURST_WINDOW_MS]. */
     val standaloneDnsShare: Double,
     /** Share of the DNS module's lookups with another of its lookups within [DNS_PAIR_WINDOW_MS] (#322 item 6). */
@@ -130,6 +135,19 @@ internal data class StreamShape(
         const val SESSION_GAP_MS = 30L * 60 * 1000
         const val DNS_BURST_WINDOW_MS = 2_000L
         const val DNS_PAIR_WINDOW_MS = 1_000L
+
+        /** The web's measured topical visit shares, from the shipped Layer 0 asset (#322 item 8). */
+        private val WEB_SHARES: Map<CategoryPool, Double> by lazy {
+            CategoryPopularityLayer.parseShares(File("src/main/assets/${CategoryPopularityLayer.ASSET_PATH}").readText())
+        }
+
+        /** The five categories with the most topical visits on the real web. */
+        val WEB_TOP_CATEGORIES: Set<CategoryPool> by lazy {
+            WEB_SHARES.entries.sortedByDescending { it.value }.take(5).map { it.key }.toSet()
+        }
+
+        /** Their share of the web's topical visits. */
+        val WEB_TOP_CATEGORIES_SHARE: Double by lazy { WEB_TOP_CATEGORIES.sumOf { WEB_SHARES.getValue(it) } }
         private const val RE_SEARCH_WINDOW_MS = 2L * 60 * 1000
         private const val REVISIT_LOOKBACK_DAYS = 14
         private const val ON_THE_HOUR_MS = 60_000L
@@ -207,6 +225,9 @@ internal data class StreamShape(
                     it < ON_THE_HOUR_MS
                 },
                 weekendToWeekdayRatio = weekendRatio(loadsByDay, dayStarts),
+                webTopCategoryShare = share(recording.actions.filter { it.success && it.category != null }) {
+                    it.category in WEB_TOP_CATEGORIES
+                },
                 firstTwoHoursShare = share(loads) { inWindowPart(it.atMs, recording.allowedStart, recording.allowedEnd) == WindowPart.FIRST_TWO_HOURS },
                 lastHourShare = share(loads) { inWindowPart(it.atMs, recording.allowedStart, recording.allowedEnd) == WindowPart.LAST_HOUR },
                 standaloneDnsShare = standaloneDnsShare(recording.events, loads),

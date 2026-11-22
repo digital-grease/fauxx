@@ -34,6 +34,11 @@ internal object ShapeReport {
             Row("Home pages", pct(shape.homePageShare), "6%"),
             Row("Loads with a query string", pct(shape.queryStringShare), "64%"),
             Row("Path depth (median)", num(shape.pathDepthMedian, 0), "2"),
+            Row(
+                "Actions in the web's 5 most visited categories",
+                pct(shape.webTopCategoryShare),
+                "${pct(StreamShape.WEB_TOP_CATEGORIES_SHARE)} of the web's topical visits",
+            ),
             Row("Searches on the most-used engine", pct(shape.topEngineShare), "100%"),
             Row("Searches with no result clicked", pct(shape.searchNoClickShare), "55%"),
             Row("Searches followed by another within 2 min", pct(shape.reSearchShare), "43%"),
