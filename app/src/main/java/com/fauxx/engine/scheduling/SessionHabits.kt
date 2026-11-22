@@ -11,7 +11,8 @@ import javax.inject.Singleton
  * How one persona's browsing is shaped in time (#322 item 1): how fast it browses inside a session,
  * how many actions it takes on one topic before pausing, how long it reads between pages, how
  * readily it stays on a topic, how long its breaks between sessions run, and how often it stops a
- * session before its budget is spent.
+ * session before its budget is spent; and how often and how far a page visit browses on within its
+ * site.
  *
  * Drawn per persona from ranges, so installs and personas do not share one rhythm, and fixed for
  * the persona's life. [SessionScheduler] turns them into delays.
@@ -27,6 +28,9 @@ import javax.inject.Singleton
  * @property breakMedianMs Median break between sessions, before the budget shortens it.
  * @property endEarly Chance that a session stops partway, at the end of a burst, with part of its
  *   budget left for the next one.
+ * @property browseChance Chance that a page visit browses on to more pages of the same site
+ *   (#322 item 2).
+ * @property browseMean Mean number of pages browsed on to when it does, before the tier's cap.
  */
 data class SessionHabits(
     val sessionPace: Double,
@@ -35,6 +39,8 @@ data class SessionHabits(
     val stayOnTopic: Double,
     val breakMedianMs: Long,
     val endEarly: Double,
+    val browseChance: Double,
+    val browseMean: Double,
 ) {
     companion object {
         /**
@@ -49,6 +55,8 @@ data class SessionHabits(
         private val STAY_ON_TOPIC_PER_MILLE = 350..650
         private val BREAK_MEDIAN_MIN = 30..60
         private val END_EARLY_PER_MILLE = 100..300
+        private val BROWSE_CHANCE_PER_MILLE = 450..800
+        private val BROWSE_MEAN_PER_MILLE = 1_500..3_000
 
         private const val DOMAIN = "session"
 
@@ -60,6 +68,8 @@ data class SessionHabits(
             stayOnTopic = 0.5,
             breakMedianMs = 45L * 60 * 1000,
             endEarly = 0.2,
+            browseChance = 0.6,
+            browseMean = 2.0,
         )
 
         /**
@@ -74,6 +84,8 @@ data class SessionHabits(
             stayOnTopic = perMille(key, "topic", STAY_ON_TOPIC_PER_MILLE),
             breakMedianMs = draw(key, "break", BREAK_MEDIAN_MIN) * 60_000L,
             endEarly = perMille(key, "end-early", END_EARLY_PER_MILLE),
+            browseChance = perMille(key, "browse", BROWSE_CHANCE_PER_MILLE),
+            browseMean = perMille(key, "browse-mean", BROWSE_MEAN_PER_MILLE),
         )
 
         private fun draw(key: String, field: String, range: IntRange): Int =

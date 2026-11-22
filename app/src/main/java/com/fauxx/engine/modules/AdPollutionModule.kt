@@ -41,6 +41,8 @@ class AdPollutionModule @Inject constructor(
     private val random: Random = Random.Default,
     // #353: remembers crawl URLs that keep failing so CrawlListManager stops picking them.
     private val crawlOutcomes: CrawlOutcomeSink = CrawlOutcomeSink.NONE,
+    // #322: browses on to a few more pages of the same site after a crawl-list page.
+    private val siteBrowsing: SiteBrowsing = SiteBrowsing.NONE,
 ) : Module {
 
     override suspend fun start() {
@@ -95,7 +97,8 @@ class AdPollutionModule @Inject constructor(
         } else {
             try {
                 withContext(Dispatchers.Main) { webView.loadUrl(url, SYNTHETIC_WEBVIEW_HEADERS) }
-                delay(random.nextLong(3_000L, 15_000L))
+                val dwellMs = random.nextLong(3_000L, 15_000L)
+                delay(dwellMs)
                 // #268: an error page still "finishes" loading. A main-frame failure (DNS blocked,
                 // refused, HTTP 4xx/5xx) is not a successful visit, so don't log it as one. #353:
                 // judged on the latest navigation, so a passed bot check counts as the visit it is.
@@ -107,6 +110,11 @@ class AdPollutionModule @Inject constructor(
                     webViewPool.captureMetadata(webView, url, LogMetadata.LOAD_FAILURE to loadFailure?.describe())
                 }
                 if (loadFailure != null) Timber.d("Ad page load failed [${loadFailure.describe()}]")
+                // #322: browse on within a crawl-list site, never from an ad-preference dashboard.
+                if (loadFailure == null && crawlEntry != null) {
+                    val followed = siteBrowsing.browseOn(webView, sinceLoadMs = dwellMs)
+                    metadata = LogMetadata.append(metadata, LogMetadata.SESSION_LINKS to followed.takeIf { it > 0 }?.toString())
+                }
                 loadFailure == null
             } catch (e: Exception) {
                 Timber.w("Ad page load failed: ${e.message}")
