@@ -32,6 +32,8 @@ class CookieSaturationModule @Inject constructor(
     private val random: Random = Random.Default,
     // #353: remembers crawl URLs that keep failing so CrawlListManager stops picking them.
     private val crawlOutcomes: CrawlOutcomeSink = CrawlOutcomeSink.NONE,
+    // #322: browses on to a few more pages of the same site after the landing page.
+    private val siteBrowsing: SiteBrowsing = SiteBrowsing.NONE,
 ) : Module {
 
     override suspend fun start() {
@@ -94,6 +96,11 @@ class CookieSaturationModule @Inject constructor(
                     webViewPool.captureMetadata(webView, entry.url, LogMetadata.LOAD_FAILURE to loadFailure?.describe())
                 }
                 if (loadFailure != null) Timber.d("Cookie harvest load failed [${loadFailure.describe()}]")
+                if (loadFailure == null) {
+                    // #322: a person reads on within a site; the landing page alone decides success.
+                    val followed = siteBrowsing.browseOn(webView, sinceLoadMs = dwellMs)
+                    metadata = LogMetadata.append(metadata, LogMetadata.SESSION_LINKS to followed.takeIf { it > 0 }?.toString())
+                }
                 loadFailure == null
             } catch (e: Exception) {
                 // A user-added site (#328) stays out of the debug log; built-in URLs are corpus data.

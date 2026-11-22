@@ -24,6 +24,8 @@ class SessionHabitsTest {
             assertTrue(h.stayOnTopic in 0.35..0.65)
             assertTrue(h.breakMedianMs in 30L * 60_000..60L * 60_000)
             assertTrue(h.endEarly in 0.1..0.3)
+            assertTrue(h.browseChance in 0.45..0.8)
+            assertTrue(h.browseMean in 1.5..3.0)
         }
     }
 

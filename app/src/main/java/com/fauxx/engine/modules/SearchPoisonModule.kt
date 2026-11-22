@@ -223,6 +223,8 @@ class SearchPoisonModule @Inject constructor(
     private val engineHealth: SearchEngineHealth = SearchEngineHealth.NONE,
     // #322: the active persona's usual engine and how often it refines and clicks.
     private val searchHabits: SearchHabitsSource = SearchHabitsSource.NONE,
+    // #322: browses on within a clicked result's site.
+    private val siteBrowsing: SiteBrowsing = SiteBrowsing.NONE,
 ) : Module {
 
     override suspend fun start() {
@@ -467,7 +469,10 @@ class SearchPoisonModule @Inject constructor(
                             if (clock.currentTimeMillis() > deadline) break
                             if (clickResultLink(webView, link)) {
                                 linksFollowed++
-                                delay(random.nextLong(LINK_DWELL_MS.first, LINK_DWELL_MS.last + 1))
+                                val dwell = random.nextLong(LINK_DWELL_MS.first, LINK_DWELL_MS.last + 1)
+                                delay(dwell)
+                                // #322: read on within the result's site, inside the session budget.
+                                linksFollowed += siteBrowsing.browseOn(webView, sinceLoadMs = dwell, deadlineMs = deadline)
                             }
                         }
                     }

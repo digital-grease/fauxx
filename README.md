@@ -99,6 +99,8 @@ Visits categorized URLs (about 2,400 in English, with smaller Spanish, French an
 
 **Category-aware:** URL selection weighted by your targeting engine.
 
+**Reading on within a site:** after a page has loaded, Fauxx often follows one to three of the page's own links to more pages of the same site, as people read on, with a pause on each. It clicks the page's real links, so each page is reached the way a person reaches it, and it skips account, login, cart, sharing and file links. How often and how far is the persona's habit; it reads on less at High and not at all at Max, where the rate needs every visit short. A visit that reads on counts as one action, so the rate stays the same, but it loads more pages.
+
 **Popular sites more often, and favourites:** within a category, a site is picked by how popular it is on the real web, so big sites come up often and small ones rarely, the way people browse. Popularity comes from the [Tranco](https://tranco-list.eu) top-sites ranking, bundled with the app, so looking it up sends nothing anywhere. Each persona also has 5 to 15 favourite sites from its interests that it keeps going back to, for 30 to 60% of its visits in those categories, as people return to the sites they like.
 
 ### 6. App Signals

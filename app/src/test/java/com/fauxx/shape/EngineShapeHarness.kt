@@ -30,6 +30,7 @@ import com.fauxx.engine.modules.FingerprintModule
 import com.fauxx.engine.modules.Module
 import com.fauxx.engine.modules.PersonaSearchHabits
 import com.fauxx.engine.modules.SearchPoisonModule
+import com.fauxx.engine.modules.SiteBrowser
 import com.fauxx.engine.modules.SerpLinkSelector
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.PersonaSessionHabits
@@ -88,6 +89,9 @@ import timber.log.Timber
  *   at the virtual time it happens instead of loading anything. Every load succeeds. Page loads
  *   take no time of their own, which matches production, where the dwell starts as soon as
  *   `loadUrl` returns.
+ * - A content page links to its own home, sections and deeper articles (some with query strings),
+ *   to account and cart pages, and off the site ([pageLinks]), so browsing on within a site has
+ *   real choices to make.
  * - A search results page lists [SERP_RESULTS] corpus pages from the dispatched category, so
  *   result clicks can always find a curated host. Real results pages offer fewer, so the harness
  *   overstates how often a search ends in a click. Bing and Yahoo wrap each result in their own
@@ -201,6 +205,7 @@ internal class EngineShapeHarness(
     private var currentUrl: String? = null
     private var currentSerpEngine: String? = null
     private val clickTargets = mutableMapOf<String, String>()
+    private val pageClickTargets = mutableMapOf<String, String>()
 
     /** A Robolectric WebView that records instead of loading. */
     private val webView: WebView = object : WebView(appContext) {
@@ -220,6 +225,17 @@ internal class EngineShapeHarness(
         every { lastLoadFailure(any()) } returns null
         every { captureMetadata(any(), any(), *anyVararg()) } returns null
     })
+
+    private val pageQueryBlocklist: QueryBlocklist = tracked(mockk(relaxed = true) {
+        every { isBlocked(any()) } returns false
+        every { isBlockedInAnyLocale(any()) } returns false
+    })
+
+    /** The real browser on within a site (#322 item 2), over the harness's page links. */
+    private val siteBrowser = SiteBrowser(
+        webViewPool, crawlListManager, blocklist, pageQueryBlocklist, profileRepo,
+        PersonaSessionHabits(personaLayer, QueryGrammarSeed { seed }), clock, nextRandom(),
+    )
 
     private val queryBankManager: QueryBankManager = tracked(mockk(relaxed = true) {
         every { corpusGeneration } returns 0
@@ -255,10 +271,15 @@ internal class EngineShapeHarness(
         clock = clock,
         random = nextRandom(),
         searchHabits = PersonaSearchHabits(personaLayer, QueryGrammarSeed { seed }),
+        siteBrowsing = siteBrowser,
     )
 
-    private val cookieModule = CookieSaturationModule(crawlListManager, webViewPool, profileRepo, nextRandom())
-    private val adModule = AdPollutionModule(crawlListManager, webViewPool, profileRepo, nextRandom())
+    private val cookieModule = CookieSaturationModule(
+        crawlListManager, webViewPool, profileRepo, nextRandom(), siteBrowsing = siteBrowser,
+    )
+    private val adModule = AdPollutionModule(
+        crawlListManager, webViewPool, profileRepo, nextRandom(), siteBrowsing = siteBrowser,
+    )
 
     private val recordingDns = object : CustomDns {
         override val health: StateFlow<DnsHealth> = MutableStateFlow(DnsHealth.Off)
@@ -390,8 +411,21 @@ internal class EngineShapeHarness(
         events += StreamEvent(clock.currentTimeMillis(), kind, host, url, engineId, fromSearch)
     }
 
-    /** The link collector gets a results page on the dispatched topic; a click navigates. */
+    /**
+     * The link collector gets a results page on the dispatched topic on a results page, and the
+     * page's own links elsewhere; a click navigates.
+     */
     private fun evaluate(js: String): String {
+        if (js == SerpLinkSelector.COLLECT_LINKS_JS && currentSerpEngine == null) {
+            val links = pageLinks(currentUrl ?: return gson.toJson(gson.toJson(emptyList<String>())))
+            pageClickTargets.clear()
+            for (link in links) pageClickTargets[SerpLinkSelector.buildClickJs(link)] = link
+            return gson.toJson(gson.toJson(links))
+        }
+        pageClickTargets[js]?.let { href ->
+            recordLoad(href, fromSearch = false)
+            return gson.toJson("clicked")
+        }
         if (js == SerpLinkSelector.COLLECT_LINKS_JS) {
             val results = corpusByCategory[dispatchedCategory].orEmpty()
                 .shuffled(serpRandom)
@@ -414,6 +448,29 @@ internal class EngineShapeHarness(
         return gson.toJson("clicked")
     }
 
+    /**
+     * The links on a content page at [url], the shape a news or shop site has: its home, a few
+     * sections, more articles deeper down (some with a query string), account and cart links, and
+     * links off the site. The browser on within a site must keep to the first three.
+     */
+    private fun pageLinks(url: String): List<String> {
+        val host = runCatching { URI(url).host }.getOrNull() ?: return emptyList()
+        val base = "https://$host"
+        val sections = PAGE_SECTIONS.shuffled(serpRandom).take(3)
+        val articles = (1..6).map {
+            val section = sections.random(serpRandom)
+            val slug = "story-${serpRandom.nextInt(1, 100_000)}"
+            when (serpRandom.nextInt(4)) {
+                0 -> "$base/$section/$slug?ref=home"
+                1 -> "$base/$section/2026/11/$slug"
+                else -> "$base/$section/$slug"
+            }
+        }
+        val offSite = corpusByCategory[dispatchedCategory].orEmpty().shuffled(serpRandom).take(2)
+        return listOf("$base/", "$base/account/login", "$base/cart") +
+            sections.map { "$base/$it/" } + articles + offSite + "https://twitter.com/share?url=$base"
+    }
+
     private class SchedulerClock(private val scheduler: TestCoroutineScheduler, private val startEpochMs: Long) : Clock {
         override fun currentTimeMillis(): Long = startEpochMs + scheduler.currentTime
         override fun elapsedRealtime(): Long = BOOT_ELAPSED_MS + scheduler.currentTime
@@ -430,6 +487,9 @@ internal class EngineShapeHarness(
         private const val LOG_LINES = 500
         private const val SERP_RESULTS = 8
         private const val PLACEHOLDER_QUERY = "shape harness query"
+
+        /** Section paths a synthetic content page links to. */
+        private val PAGE_SECTIONS = listOf("news", "guides", "reviews", "topics", "blog", "health", "shop", "learn")
 
         /** Engine chrome every results page has; the selector's engine-family filter drops these. */
         private val SERP_CHROME_LINKS = listOf("https://www.google.com/preferences", "https://accounts.google.com/")
