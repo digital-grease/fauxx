@@ -113,6 +113,9 @@ internal data class StreamShape(
     val firstLoadMinutesAfterStartMedian: Double,
     /** Share of active days whose first page load comes within a minute of the window opening. */
     val daysStartingOnTheHour: Double,
+    /** Shares of the day's loads in the window's first two hours and in its last hour (#322 item 5). */
+    val firstTwoHoursShare: Double,
+    val lastHourShare: Double,
     val weekendToWeekdayRatio: Double,
     /** Share of the DNS module's lookups with no page load within [DNS_BURST_WINDOW_MS]. */
     val standaloneDnsShare: Double,
@@ -201,6 +204,8 @@ internal data class StreamShape(
                     it < ON_THE_HOUR_MS
                 },
                 weekendToWeekdayRatio = weekendRatio(loadsByDay, dayStarts),
+                firstTwoHoursShare = share(loads) { inWindowPart(it.atMs, recording.allowedStart, recording.allowedEnd) == WindowPart.FIRST_TWO_HOURS },
+                lastHourShare = share(loads) { inWindowPart(it.atMs, recording.allowedStart, recording.allowedEnd) == WindowPart.LAST_HOUR },
                 standaloneDnsShare = standaloneDnsShare(recording.events, loads),
                 afterCloseCount = afterClose.size,
                 afterCloseMaxS = (afterClose.maxOrNull() ?: 0L) / 1000.0,
@@ -312,6 +317,22 @@ internal data class StreamShape(
                     val first = dayLoads.filter { it.atMs >= opens }.minOfOrNull { it.atMs } ?: return@mapNotNull null
                     (first - opens).toDouble()
                 }
+
+        private enum class WindowPart { FIRST_TWO_HOURS, MIDDLE, LAST_HOUR, OUTSIDE }
+
+        /** Which part of the allowed-hours window [atMs] falls in, by its local hour. */
+        private fun inWindowPart(atMs: Long, allowedStart: Int, allowedEnd: Int): WindowPart {
+            if (allowedStart == allowedEnd) return WindowPart.OUTSIDE
+            val hour = Calendar.getInstance().apply { timeInMillis = atMs }.get(Calendar.HOUR_OF_DAY)
+            if (!AllowedHours.isWithin(hour, allowedStart, allowedEnd)) return WindowPart.OUTSIDE
+            val sinceOpen = (hour - allowedStart).mod(24)
+            val untilClose = (allowedEnd - hour).mod(24)
+            return when {
+                sinceOpen < 2 -> WindowPart.FIRST_TWO_HOURS
+                untilClose <= 1 -> WindowPart.LAST_HOUR
+                else -> WindowPart.MIDDLE
+            }
+        }
 
         private fun weekendRatio(loadsByDay: IntArray, dayStarts: LongArray): Double {
             val (weekend, weekday) = loadsByDay.indices.partition { day ->

@@ -39,6 +39,11 @@ internal object ShapeReport {
             Row("Searches followed by another within 2 min", pct(shape.reSearchShare), "43%"),
             Row("First load after the window opens (median)", "${num(shape.firstLoadMinutesAfterStartMedian, 1)} min", "ramp over about 4 h"),
             Row("Days starting within a minute of the window opening", pct(shape.daysStartingOnTheHour), "-"),
+            Row(
+                "Loads in the window's first 2 hours / last hour",
+                "${pct(shape.firstTwoHoursShare)} / ${pct(shape.lastHourShare)}",
+                "light: ramp from about 07:00 to 11:00, taper after 22:00",
+            ),
             Row("Weekend day / weekday volume", num(shape.weekendToWeekdayRatio, 2), "about 2"),
             Row("DNS-module lookups with no page load within 2 s", pct(shape.standaloneDnsShare), "- (real lookups come with page loads)"),
             Row("Requests after the window closed (count / latest)", "${shape.afterCloseCount} / ${secs(shape.afterCloseMaxS)}", "-"),

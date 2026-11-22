@@ -38,13 +38,17 @@ import kotlin.random.Random
  *   rate does not drop because savings were thrown away.
  *
  * The [ActionBudget] keeps the average honest: an action needs one saved, so the count can never
- * run ahead of the rate, and a session can only spend what the break before it saved. Topics are
+ * run ahead of what has accrued, and a session can only spend what the break before it saved. Topics are
  * drawn from the targeting weights only when a burst or session starts, which leaves the long-run
  * mix exactly as the weights set it.
  *
  * The calmer tiers (Low, Medium) get clear sessions and breaks. At High and Max the actions' own
  * run time is the limit, so the pauses shrink to their minimum and breaks are rare: those tiers
  * stay close to continuous, the trade-off their detectability warning describes.
+ *
+ * The budget accrues along the persona's day ([DailyRhythm], #322 item 5): nothing before its wake
+ * time, a ramp up, a plateau and a wind-down, at a volume that varies from day to day and between
+ * weekdays and weekends, holding the displayed rate as a weekly average. Max stays flat.
  *
  * Outside the allowed hours ([AllowedHours]) the wait runs to the window's start, and the engine
  * resigns rather than waiting.
@@ -77,6 +81,11 @@ class SessionScheduler @Inject constructor(
     /** Running estimate of how long an action takes, which the pause sizing subtracts. */
     private var execEstimateMs = INITIAL_EXEC_ESTIMATE_MS
 
+    /** The run's allowed hours and rate, for the budget's daily rhythm. */
+    private var allowedStart = DEFAULT_QUIET_END
+    private var allowedEnd = DEFAULT_QUIET_START
+    private var runRate = 0
+
     override fun startRun(
         nowMs: Long,
         actionsPerHour: Int,
@@ -84,10 +93,16 @@ class SessionScheduler @Inject constructor(
         allowedEnd: Int,
         successTimestamps: List<Long>,
     ) {
+        this.allowedStart = allowedStart
+        this.allowedEnd = allowedEnd
+        habits = currentHabits()
+        // #322 item 5: the budget accrues along the persona's day (wake, ramp, wind-down) and day
+        // volume, so the day's actions follow them.
+        runRate = actionsPerHour
         budget = ActionBudget.replay(
             nowMs, actionsPerHour, AllowedHours.windowStartMs(nowMs, allowedStart, allowedEnd), successTimestamps,
+            pace = rhythmPace(),
         )
-        habits = currentHabits()
         inSession = false
         burstLeft = 0
         topic = null
@@ -105,7 +120,10 @@ class SessionScheduler @Inject constructor(
 
     override fun nextCategory(draw: () -> CategoryPool): CategoryPool {
         if (!inSession) {
+            val previous = habits.key
             habits = currentHabits()
+            // A rotated persona brings its own day with it.
+            if (habits.key != previous) budget.pace = rhythmPace()
             inSession = true
             startBreakUntilMs = 0L
             startBurst()
@@ -181,6 +199,14 @@ class SessionScheduler @Inject constructor(
         Wait.PAUSE -> pauseMs(actionsPerHour)
         Wait.BREAK -> breakMs(actionsPerHour, clock.currentTimeMillis())
     }
+
+    /**
+     * The persona's daily rhythm, except at Max: the actions' own run time already limits Max
+     * below its rate, so it has no room to make up what a slow morning or a wind-down leaves out,
+     * and a rhythm would only lower its volume. Max stays flat.
+     */
+    private fun rhythmPace(): AccrualPace =
+        if (runRate > MAX_RHYTHM_RATE) AccrualPace.FLAT else DailyRhythm.pace(habits, allowedStart, allowedEnd)
 
     private fun currentHabits(): SessionHabits =
         runCatching { habitsSource.habits() }.getOrDefault(SessionHabits.DEFAULT)
@@ -288,6 +314,9 @@ class SessionScheduler @Inject constructor(
         const val DEFAULT_QUIET_END = 7
 
         private const val HOUR_MS = 3_600_000.0
+
+        /** Above this rate (High's) there is no daily rhythm; see [rhythmPace]. */
+        private const val MAX_RHYTHM_RATE = 200
 
         private const val THINK_SIGMA = 0.8
         private const val PAUSE_SIGMA = 0.9
