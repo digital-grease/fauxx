@@ -90,6 +90,58 @@ class DnsNoiseModuleTest {
         assertTrue("the address count is logged", result.metadata!!.contains("2"))
     }
 
+    private val pageDependencies = object : com.fauxx.engine.webview.PageDependencySource {
+        override fun dependenciesOf(host: String, random: kotlin.random.Random) =
+            listOf("cdn.example.com", "ads.blocked.example", "fonts.gstatic.com")
+    }
+
+    private val blocklist: com.fauxx.data.crawllist.DomainBlocklist = mockk {
+        every { isBlocked(any()) } answers { firstArg<String>().contains("blocked") }
+    }
+
+    @Test
+    fun `a lookup is a burst shaped like a page load (#322)`() = runTest {
+        every { crawlListManager.nextUrlOrWait(any()) } returns
+            PendingCrawlEntry(CrawlEntry("https://example.com/page", "example.com", CategoryPool.GAMING), waitMs = 0L)
+        val asked = mutableListOf<Pair<String, Long>>()
+        val resolver = com.fauxx.network.dns.HostResolver { host ->
+            asked += host to testScheduler.currentTime
+            com.fauxx.network.dns.Resolution.Addresses(listOf(java.net.InetAddress.getByName("192.0.2.1")))
+        }
+        val module = DnsNoiseModule(
+            crawlListManager, profileRepo, customDns(resolver),
+            ioDispatcher = kotlinx.coroutines.test.StandardTestDispatcher(testScheduler),
+            dependencies = pageDependencies, blocklist = blocklist, random = kotlin.random.Random(1),
+        )
+
+        val result = module.onAction(CategoryPool.GAMING)
+
+        assertEquals("the site first, then what its pages load, never a blocked host",
+            listOf("example.com", "cdn.example.com", "fonts.gstatic.com"), asked.map { it.first })
+        assertTrue("all within about a second: ${asked.map { it.second }}", asked.last().second - asked.first().second < 1_000)
+        assertEquals("example.com", result.detail)
+        assertTrue("the burst's size is logged", result.metadata!!.contains("\"3\""))
+    }
+
+    @Test
+    fun `a site that does not resolve gets no burst`() = runTest {
+        every { crawlListManager.nextUrlOrWait(any()) } returns
+            PendingCrawlEntry(CrawlEntry("https://gone.example/page", "gone.example", CategoryPool.GAMING), waitMs = 0L)
+        val asked = mutableListOf<String>()
+        val resolver = com.fauxx.network.dns.HostResolver { host ->
+            asked += host
+            com.fauxx.network.dns.Resolution.NoSuchHost
+        }
+        val module = DnsNoiseModule(
+            crawlListManager, profileRepo, customDns(resolver),
+            ioDispatcher = kotlinx.coroutines.test.StandardTestDispatcher(testScheduler),
+            dependencies = pageDependencies, blocklist = blocklist,
+        )
+
+        assertFalse(module.onAction(CategoryPool.GAMING).success)
+        assertEquals(listOf("gone.example"), asked)
+    }
+
     @Test
     fun `a no-such-host answer from the custom resolver is a failed lookup`() = runTest {
         every { crawlListManager.nextUrlOrWait(any()) } returns

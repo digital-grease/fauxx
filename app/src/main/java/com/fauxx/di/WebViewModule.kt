@@ -7,6 +7,9 @@ import com.fauxx.engine.dns.CustomDnsRouter
 import com.fauxx.engine.dns.DnsInterceptionProbe
 import com.fauxx.engine.dns.NetworkChanges
 import com.fauxx.engine.webview.OnscreenHostFactory
+import com.fauxx.engine.webview.PageDependencies
+import com.fauxx.engine.webview.PageDependencySink
+import com.fauxx.engine.webview.PageDependencySource
 import com.fauxx.engine.webview.PhantomBrowsingGate
 import com.fauxx.engine.webview.PhantomBrowsingPrefs
 import com.fauxx.engine.webview.PhantomProxyAuth
@@ -49,6 +52,15 @@ object WebViewModule {
     @Provides
     @Singleton
     fun provideWebViewCapabilities(): WebViewCapabilities = WebViewCapabilities.SYSTEM
+
+    /** What sites' pages load, learned from page visits and replayed as DNS noise (#322 item 6). */
+    @Provides
+    @Singleton
+    fun providePageDependencySink(store: PageDependencies): PageDependencySink = store
+
+    @Provides
+    @Singleton
+    fun providePageDependencySource(store: PageDependencies): PageDependencySource = store
 
     /** Private virtual displays to draw pages as if on screen (#322). */
     @Provides
