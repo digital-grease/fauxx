@@ -113,6 +113,9 @@ object PreferenceKeys {
     // Whether synthetic page loads fetch images (tracking pixels fire) or skip them to save data.
     val LOAD_IMAGES = booleanPreferencesKey("load_images")
 
+    // Which synthetic pages are drawn as if on screen (#322): a PageRendering name.
+    val PAGE_RENDERING = stringPreferencesKey("page_rendering")
+
     // Pause while Android's Battery Saver is on (#313).
     val PAUSE_ON_BATTERY_SAVER = booleanPreferencesKey("pause_on_battery_saver")
 

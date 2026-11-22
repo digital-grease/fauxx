@@ -1,10 +1,12 @@
 package com.fauxx.di
 
+import com.fauxx.data.model.PageRendering
 import com.fauxx.engine.PoisonProfileRepository
 import com.fauxx.engine.dns.CustomDns
 import com.fauxx.engine.dns.CustomDnsRouter
 import com.fauxx.engine.dns.DnsInterceptionProbe
 import com.fauxx.engine.dns.NetworkChanges
+import com.fauxx.engine.webview.OnscreenHostFactory
 import com.fauxx.engine.webview.PhantomBrowsingGate
 import com.fauxx.engine.webview.PhantomBrowsingPrefs
 import com.fauxx.engine.webview.PhantomProxyAuth
@@ -41,11 +43,18 @@ object WebViewModule {
     fun providePhantomBrowsingPrefs(profileRepo: PoisonProfileRepository): PhantomBrowsingPrefs =
         object : PhantomBrowsingPrefs {
             override fun loadImages(): Boolean = profileRepo.getProfile().loadImages
+            override fun pageRendering(): PageRendering = profileRepo.getProfile().pageRendering
         }
 
     @Provides
     @Singleton
     fun provideWebViewCapabilities(): WebViewCapabilities = WebViewCapabilities.SYSTEM
+
+    /** Private virtual displays to draw pages as if on screen (#322). */
+    @Provides
+    @Singleton
+    fun provideOnscreenHostFactory(@ApplicationContext context: Context): OnscreenHostFactory =
+        OnscreenHostFactory.virtualDisplays(context)
 
     /** Custom DNS (#227): one router serves the engine's lifecycle and the WebView's proxy auth. */
     @Provides

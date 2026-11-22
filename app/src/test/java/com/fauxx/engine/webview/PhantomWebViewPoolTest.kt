@@ -1,5 +1,6 @@
 package com.fauxx.engine.webview
 
+import com.fauxx.data.model.PageRendering
 import android.net.Uri
 import android.os.Looper
 import android.webkit.WebResourceError
@@ -176,6 +177,121 @@ class PhantomWebViewPoolTest {
         assertFalse("images load once the user turns them on", wv.settings.blockNetworkImage)
         assertTrue(wv.settings.loadsImagesAutomatically)
         drive { pool.release(wv) }
+    }
+
+    /** Records which WebViews each fake on-screen host is asked to show and hide. */
+    private class RecordingHosts(private val failing: Boolean = false) : OnscreenHostFactory {
+        val created = mutableListOf<Pair<Int, Int>>()
+        val shown = mutableListOf<WebView>()
+        val hidden = mutableListOf<WebView>()
+        var destroyed = 0
+
+        override fun create(width: Int, height: Int): OnscreenHost {
+            created += width to height
+            return object : OnscreenHost {
+                override fun show(webView: WebView) {
+                    if (failing) throw IllegalStateException("no virtual display here")
+                    shown += webView
+                }
+                override fun hide(webView: WebView) { hidden += webView }
+                override fun destroy() { destroyed++ }
+            }
+        }
+    }
+
+    private fun renderingPool(hosts: OnscreenHostFactory, mode: () -> PageRendering) = PhantomWebViewPool(
+        RuntimeEnvironment.getApplication(),
+        mockk<DomainBlocklist>(relaxed = true),
+        PersonaJarStore(),
+        identity,
+        object : PhantomBrowsingPrefs {
+            override fun loadImages(): Boolean = false
+            override fun pageRendering(): PageRendering = mode()
+        },
+        onscreenHosts = hosts,
+    )
+
+    @Test
+    fun `with every page drawn, an acquired WebView goes on screen and stays there`() {
+        val hosts = RecordingHosts()
+        pool = renderingPool(hosts) { PageRendering.ALL_PAGES }
+        drive { pool.initialize() }
+
+        val first = drive { pool.acquire() }
+        drive { pool.release(first) }
+        val again = drive { pool.acquire() }
+
+        assertTrue("the acquired WebView is drawn", first in hosts.shown)
+        assertTrue("its display has a real size", hosts.created.all { (w, h) -> w > 0 && h > 0 })
+        assertTrue("release does not take it off", first !in hosts.hidden)
+        drive { pool.release(again) }
+        drive { pool.destroy() }
+        assertTrue("destroy releases the displays", hosts.destroyed == hosts.created.size)
+    }
+
+    @Test
+    fun `with drawing off, nothing goes on screen`() {
+        val hosts = RecordingHosts()
+        pool = renderingPool(hosts) { PageRendering.OFF }
+        drive { pool.initialize() }
+        val wv = drive { pool.acquire() }
+        drive { pool.startingSearch(wv) }
+        drive { pool.release(wv) }
+        assertTrue(hosts.created.isEmpty())
+    }
+
+    @Test
+    fun `with searches only, a search is drawn and its WebView is replaced afterwards`() {
+        val hosts = RecordingHosts()
+        pool = renderingPool(hosts) { PageRendering.SEARCH_ONLY }
+        drive { pool.initialize() }
+
+        val search = drive { pool.acquire() }
+        assertTrue("not drawn before the search starts", hosts.shown.isEmpty())
+        drive { pool.startingSearch(search) }
+        assertEquals(listOf(search), hosts.shown)
+        drive { pool.release(search) }
+
+        // A WebView taken off its display reports its page hidden, so it is never handed out again.
+        val next = drive { pool.acquire() }
+        val other = drive { pool.acquire() }
+        assertTrue("the drawn WebView is gone from the pool", next !== search && other !== search)
+        assertTrue("and was taken off its display before being destroyed", search in hosts.hidden)
+        drive { pool.release(next) }
+        drive { pool.release(other) }
+    }
+
+    @Test
+    fun `switching drawing off replaces a WebView that was drawn`() {
+        val hosts = RecordingHosts()
+        var mode = PageRendering.ALL_PAGES
+        pool = renderingPool(hosts) { mode }
+        drive { pool.initialize() }
+        val a = drive { pool.acquire() }
+        val b = drive { pool.acquire() }
+        drive { pool.release(a) }
+        drive { pool.release(b) }
+
+        mode = PageRendering.OFF
+        val c = drive { pool.acquire() }
+        val d = drive { pool.acquire() }
+        assertTrue("both slots got fresh WebViews", setOf(c, d).none { it === a || it === b })
+        assertEquals("nothing new was drawn", 2, hosts.shown.size)
+        drive { pool.release(c) }
+        drive { pool.release(d) }
+    }
+
+    @Test
+    fun `a device that cannot draw pages leaves them detached and stops trying`() {
+        val hosts = RecordingHosts(failing = true)
+        pool = renderingPool(hosts) { PageRendering.ALL_PAGES }
+        drive { pool.initialize() }
+        repeat(3) {
+            val wv = drive { pool.acquire() }
+            assertNotNull(wv)
+            drive { pool.release(wv) }
+        }
+        assertEquals("one failed attempt, then no more", 1, hosts.created.size)
     }
 
     @Test

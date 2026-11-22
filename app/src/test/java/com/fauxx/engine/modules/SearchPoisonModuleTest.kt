@@ -15,6 +15,7 @@ import com.fauxx.support.MainDispatcherRule
 import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import io.mockk.coEvery
+import io.mockk.coVerifyOrder
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -189,6 +190,25 @@ class SearchPoisonModuleTest {
         assertTrue(result.detail.contains(safeQuery))
         assertTrue(result.detail.contains(" via "))
         assertTrue("a normal load reports success", result.success)
+    }
+
+    @Test
+    fun `a session tells the pool it is starting before the first results page loads`() = runTest(testDispatcher) {
+        // #322: with only searches drawn as if on screen, the pool draws from here on.
+        bankReturns("best mechanical keyboards 2026")
+        every { queryBlocklist.isBlocked(any()) } returns false
+        every { blocklist.isUrlBlocked(any()) } returns false
+        every { localeManager.currentLocale } returns SupportedLocale.EN
+        coEvery { webViewPool.acquire() } returns webView
+
+        newModule().onAction(CategoryPool.GAMING)
+
+        coVerifyOrder {
+            webViewPool.acquire()
+            webViewPool.startingSearch(webView)
+            webView.loadUrl(any(), any<Map<String, String>>())
+            webViewPool.release(webView)
+        }
     }
 
     // (d) WebView acquire failure -> success=false, but NOT a [BLOCKED] safety drop.

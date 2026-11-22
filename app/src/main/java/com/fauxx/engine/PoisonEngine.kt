@@ -1878,6 +1878,7 @@ class PoisonProfileRepository @Inject constructor(
         prefs[com.fauxx.di.PreferenceKeys.THEME_MODE] = p.themeMode.name
         prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] = p.resumeOnBoot
         prefs[com.fauxx.di.PreferenceKeys.LOAD_IMAGES] = p.loadImages
+        prefs[com.fauxx.di.PreferenceKeys.PAGE_RENDERING] = p.pageRendering.name
         prefs[com.fauxx.di.PreferenceKeys.PAUSE_ON_BATTERY_SAVER] = p.pauseOnBatterySaver
         prefs[com.fauxx.di.PreferenceKeys.DNS_MODE] = p.dnsMode.name
         prefs[com.fauxx.di.PreferenceKeys.DOH_PROVIDER] = p.dohProvider
@@ -1959,6 +1960,12 @@ class PoisonProfileRepository @Inject constructor(
             }.getOrDefault(com.fauxx.ui.theme.ThemeMode.SYSTEM),
             resumeOnBoot = prefs[com.fauxx.di.PreferenceKeys.RESUME_ON_BOOT] ?: true,
             loadImages = prefs[com.fauxx.di.PreferenceKeys.LOAD_IMAGES] ?: false,
+            pageRendering = runCatching {
+                com.fauxx.data.model.PageRendering.valueOf(
+                    prefs[com.fauxx.di.PreferenceKeys.PAGE_RENDERING]
+                        ?: com.fauxx.data.model.PageRendering.ALL_PAGES.name
+                )
+            }.getOrDefault(com.fauxx.data.model.PageRendering.ALL_PAGES),
             pauseOnBatterySaver = prefs[com.fauxx.di.PreferenceKeys.PAUSE_ON_BATTERY_SAVER] ?: false,
             dnsMode = runCatching {
                 com.fauxx.data.model.DnsMode.valueOf(
