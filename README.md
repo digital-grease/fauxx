@@ -111,6 +111,8 @@ Off by default. Browses Google Play store searches for apps in off-profile categ
 
 Resolves a diverse spread of domain names, so the DNS lookups visible to ISP and network-level trackers reflect the decoy activity instead of only your real destinations.
 
+Each lookup comes as a burst shaped like a page load: the site, then the other hosts its pages load (its CDN, fonts, analytics and ad hosts), one after another within about a second, the way a browser asks for them. A lookup of one name on its own is easy to tell apart from browsing. Fauxx learns each site's set from its own visits to it, keeps it in memory only, and uses a few hosts that pages across the web commonly load for a site it has not visited yet.
+
 ## Privacy Guarantees
 
 Fauxx is built with privacy-first architecture:

@@ -35,6 +35,7 @@ import com.fauxx.engine.modules.SerpLinkSelector
 import com.fauxx.engine.scheduling.ActionDispatcher
 import com.fauxx.engine.scheduling.PersonaSessionHabits
 import com.fauxx.engine.scheduling.SessionScheduler
+import com.fauxx.engine.webview.PageDependencies
 import com.fauxx.engine.webview.PhantomWebViewPool
 import com.fauxx.locale.LocaleManager
 import com.fauxx.locale.SupportedLocale
@@ -96,7 +97,8 @@ import timber.log.Timber
  *   result clicks can always find a curated host. Real results pages offer fewer, so the harness
  *   overstates how often a search ends in a click. Bing and Yahoo wrap each result in their own
  *   redirector, as the real pages do, so searches there end on the results page.
- * - DNS lookups go to a recording resolver.
+ * - DNS lookups go to a recording resolver. The harness's pages request no subresources, so the DNS
+ *   module's bursts use the typical dependency set for every site.
  * - The fingerprint module only re-binds the persona's device and makes no request, so it is a
  *   stub that logs an action.
  * - The device: always online, never low on battery, never asleep. Its network mock reads as
@@ -293,6 +295,8 @@ internal class EngineShapeHarness(
     // On the test dispatcher: a lookup on a real IO thread would let virtual time run past it.
     private val dnsModule = DnsNoiseModule(
         crawlListManager, profileRepo, recordingDns, ioDispatcher = StandardTestDispatcher(scope.testScheduler),
+        // The harness's pages load nothing, so every site gets the typical dependency set.
+        dependencies = PageDependencies(), blocklist = blocklist, random = nextRandom(),
     )
 
     private val fingerprintModule: FingerprintModule = tracked(mockk(relaxed = true) {

@@ -129,7 +129,12 @@ class PhantomWebViewPool @Inject constructor(
     private val trackerReachability: TrackerReachability = TrackerReachability(),
     /** Where pages are drawn as if on screen (#322), per [PhantomBrowsingPrefs.pageRendering]. */
     onscreenHosts: OnscreenHostFactory = OnscreenHostFactory.NONE,
+    /** Learns what each site's pages load, for DNS noise shaped like page loads (#322 item 6). */
+    private val pageDependencies: PageDependencySink = PageDependencySink.NONE,
 ) {
+    /** The hosts each slot's current visit has asked for, by tag. */
+    private val visitHosts = java.util.concurrent.ConcurrentHashMap<String, VisitHosts>()
+
     /** Which slot is drawn on which host. Main thread only, like [pool]. */
     private val onscreen = OnscreenPlacement(onscreenHosts)
 
@@ -555,6 +560,8 @@ class PhantomWebViewPool @Inject constructor(
                 counter.reset()
             }
         }
+        // #322 item 6: hand over what this visit's pages loaded.
+        visitHosts[tag]?.flush()
         try {
             withTimeoutOrNull(MAIN_OP_TIMEOUT_MS) {
                 withContext(Dispatchers.Main) {
@@ -757,6 +764,8 @@ class PhantomWebViewPool @Inject constructor(
         trackerCounters[tag] = trackerCounter
         val imagesBlocked = AtomicBoolean(true)
         imagesOff[tag] = imagesBlocked
+        val visit = VisitHosts(pageDependencies)
+        visitHosts[tag] = visit
         webView.webViewClient = PhantomWebViewClient(
             blocklist,
             resourceCounter = resourceCounter,
@@ -767,6 +776,7 @@ class PhantomWebViewPool @Inject constructor(
             mainFrame = loadOutcome,
             trackerCounter = trackerCounter,
             imagesBlocked = imagesBlocked::get,
+            onRequestHost = visit::onRequest,
         )
         webView.isClickable = false
         webView.isFocusable = false

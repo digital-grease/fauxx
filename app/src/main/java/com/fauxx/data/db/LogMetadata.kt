@@ -22,6 +22,7 @@ object LogMetadata {
     const val TRACKER_REQUESTS = "Tracker requests"
     const val TRACKER_REQUESTS_BLOCKED = "Tracker requests blocked"
     const val DNS_IPS = "Resolved IPs"
+    const val DNS_LOOKUPS = "DNS lookups"
     const val SEARCH_ENGINE = "Engine"
     const val HTTP_STATUS = "HTTP status"
     const val ROUTE_POINTS = "Route points"

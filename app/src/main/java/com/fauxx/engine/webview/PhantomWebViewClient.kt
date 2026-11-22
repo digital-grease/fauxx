@@ -63,6 +63,9 @@ class PhantomWebViewClient(
     // Issue #341: whether the pool has images off for this visit. Image requests are then never
     // fetched, so they must not count as tracker attempts (or, worse, as blocked ones).
     private val imagesBlocked: () -> Boolean = { true },
+    // #322 item 6: told the host of every allowed request (and whether it is the main frame), so
+    // the pool can learn what a site's pages load for DNS noise that mirrors a page load.
+    private val onRequestHost: ((host: String, mainFrame: Boolean) -> Unit)? = null,
 ) : WebViewClient() {
 
     /**
@@ -115,6 +118,7 @@ class PhantomWebViewClient(
 
         // Allowed resource — count it for the "resources loaded" action-log metadata (issue #73).
         resourceCounter?.incrementAndGet()
+        if (request.url.isWebScheme()) onRequestHost?.invoke(host, request.isForMainFrame)
         trackerCounter?.let { counter ->
             if (isTrackerCandidate(request, acceptHeader)) counter.recordAttempt(url, host)
         }

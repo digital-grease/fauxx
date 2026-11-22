@@ -119,6 +119,8 @@ internal data class StreamShape(
     val weekendToWeekdayRatio: Double,
     /** Share of the DNS module's lookups with no page load within [DNS_BURST_WINDOW_MS]. */
     val standaloneDnsShare: Double,
+    /** Share of the DNS module's lookups with another of its lookups within [DNS_PAIR_WINDOW_MS] (#322 item 6). */
+    val dnsInBurstShare: Double,
     /** Requests (page loads and lookups) made while the allowed-hours window was closed. */
     val afterCloseCount: Int,
     /** How long after the window closed the latest of those came; 0 when there were none. */
@@ -127,6 +129,7 @@ internal data class StreamShape(
     companion object {
         const val SESSION_GAP_MS = 30L * 60 * 1000
         const val DNS_BURST_WINDOW_MS = 2_000L
+        const val DNS_PAIR_WINDOW_MS = 1_000L
         private const val RE_SEARCH_WINDOW_MS = 2L * 60 * 1000
         private const val REVISIT_LOOKBACK_DAYS = 14
         private const val ON_THE_HOUR_MS = 60_000L
@@ -207,6 +210,7 @@ internal data class StreamShape(
                 firstTwoHoursShare = share(loads) { inWindowPart(it.atMs, recording.allowedStart, recording.allowedEnd) == WindowPart.FIRST_TWO_HOURS },
                 lastHourShare = share(loads) { inWindowPart(it.atMs, recording.allowedStart, recording.allowedEnd) == WindowPart.LAST_HOUR },
                 standaloneDnsShare = standaloneDnsShare(recording.events, loads),
+                dnsInBurstShare = dnsInBurstShare(recording.events),
                 afterCloseCount = afterClose.size,
                 afterCloseMaxS = (afterClose.maxOrNull() ?: 0L) / 1000.0,
             )
@@ -343,6 +347,16 @@ internal data class StreamShape(
             val weekendMean = weekend.map { loadsByDay[it] }.average()
             val weekdayMean = weekday.map { loadsByDay[it] }.average()
             return if (weekdayMean == 0.0) Double.NaN else weekendMean / weekdayMean
+        }
+
+        private fun dnsInBurstShare(events: List<StreamEvent>): Double {
+            val times = events.filter { it.kind == LoadKind.DNS }.map { it.atMs }.sorted()
+            if (times.isEmpty()) return Double.NaN
+            val inBurst = times.indices.count { i ->
+                (i > 0 && times[i] - times[i - 1] <= DNS_PAIR_WINDOW_MS) ||
+                    (i < times.size - 1 && times[i + 1] - times[i] <= DNS_PAIR_WINDOW_MS)
+            }
+            return inBurst.toDouble() / times.size
         }
 
         private fun standaloneDnsShare(events: List<StreamEvent>, sortedLoads: List<StreamEvent>): Double {

@@ -46,6 +46,7 @@ internal object ShapeReport {
             ),
             Row("Weekend day / weekday volume", num(shape.weekendToWeekdayRatio, 2), "about 2"),
             Row("DNS-module lookups with no page load within 2 s", pct(shape.standaloneDnsShare), "- (real lookups come with page loads)"),
+            Row("DNS-module lookups in a burst (another within 1 s)", pct(shape.dnsInBurstShare), "- (a page load is a burst)"),
             Row("Requests after the window closed (count / latest)", "${shape.afterCloseCount} / ${secs(shape.afterCloseMaxS)}", "-"),
         )
         return buildString {
