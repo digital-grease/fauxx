@@ -504,7 +504,7 @@
     "category": "MEDICAL"
   },
   {
-    "url": "https://www.betterhealth.vic.gov.au/health",
+    "url": "https://www.betterhealth.vic.gov.au/",
     "category": "MEDICAL"
   },
   {
@@ -592,7 +592,7 @@
     "category": "MEDICAL"
   },
   {
-    "url": "https://www.pennmedicine.org/conditions-and-treatments",
+    "url": "https://www.pennmedicine.org/conditions",
     "category": "MEDICAL"
   },
   {
@@ -813,14 +813,6 @@
   },
   {
     "url": "https://www.lawhelp.org/",
-    "category": "LEGAL"
-  },
-  {
-    "url": "https://www.hg.org/legal-articles.asp",
-    "category": "LEGAL"
-  },
-  {
-    "url": "https://www.hg.org/practice-areas.html",
     "category": "LEGAL"
   },
   {
@@ -1296,10 +1288,6 @@
     "category": "AUTOMOTIVE"
   },
   {
-    "url": "https://www.tire-reviews-guide.com/",
-    "category": "AUTOMOTIVE"
-  },
-  {
     "url": "https://www.tirerack.com/tires/TireGuide.jsp",
     "category": "AUTOMOTIVE"
   },
@@ -1572,15 +1560,7 @@
     "category": "PARENTING"
   },
   {
-    "url": "https://www.extension.org/topic/families/",
-    "category": "PARENTING"
-  },
-  {
     "url": "https://www.cdc.gov/ncbddd/childdevelopment/",
-    "category": "PARENTING"
-  },
-  {
-    "url": "https://www.nichd.nih.gov/health/topics/child-development",
     "category": "PARENTING"
   },
   {
@@ -2404,10 +2384,6 @@
     "category": "AGRICULTURE"
   },
   {
-    "url": "https://www.successfulfarming.com/",
-    "category": "AGRICULTURE"
-  },
-  {
     "url": "https://www.producer.com/",
     "category": "AGRICULTURE"
   },
@@ -2448,10 +2424,6 @@
     "category": "AGRICULTURE"
   },
   {
-    "url": "https://www.backyardgoats.iamcountryside.com/",
-    "category": "AGRICULTURE"
-  },
-  {
     "url": "https://www.kubotausa.com/innovation",
     "category": "AGRICULTURE"
   },
@@ -2480,7 +2452,7 @@
     "category": "AGRICULTURE"
   },
   {
-    "url": "https://www.organicfarmingresearch.org/",
+    "url": "https://ofrf.org/",
     "category": "AGRICULTURE"
   },
   {
@@ -2577,10 +2549,6 @@
   },
   {
     "url": "https://www.agfundernews.com/",
-    "category": "AGRICULTURE"
-  },
-  {
-    "url": "https://newfoodeconomy.org/",
     "category": "AGRICULTURE"
   },
   {
@@ -2780,10 +2748,6 @@
     "category": "FASHION"
   },
   {
-    "url": "https://www.therealreal.com/blog",
-    "category": "FASHION"
-  },
-  {
     "url": "https://www.goodonyou.eco/",
     "category": "FASHION"
   },
@@ -2809,10 +2773,6 @@
   },
   {
     "url": "https://wwd.com/fashion-news/",
-    "category": "FASHION"
-  },
-  {
-    "url": "https://www.drapersjunction.com/",
     "category": "FASHION"
   },
   {
@@ -3256,10 +3216,6 @@
     "category": "REAL_ESTATE"
   },
   {
-    "url": "https://www.zillow.com/buyers-guide/",
-    "category": "REAL_ESTATE"
-  },
-  {
     "url": "https://www.zillow.com/rental-manager/resources/",
     "category": "REAL_ESTATE"
   },
@@ -3676,7 +3632,7 @@
     "category": "COOKING"
   },
   {
-    "url": "https://www.cleaneatingmag.com/recipes",
+    "url": "https://www.cleaneatingmag.com/",
     "category": "COOKING"
   },
   {
@@ -5172,10 +5128,6 @@
     "category": "PETS"
   },
   {
-    "url": "https://www.moneypattie.com/pet-insurance/",
-    "category": "PETS"
-  },
-  {
     "url": "https://www.trupanion.com/blog",
     "category": "PETS"
   },
@@ -5197,10 +5149,6 @@
   },
   {
     "url": "https://www.tortoiseforum.org/",
-    "category": "PETS"
-  },
-  {
-    "url": "https://www.aqualifebio.com/",
     "category": "PETS"
   },
   {
@@ -5237,10 +5185,6 @@
   },
   {
     "url": "https://www.guinealynx.info/",
-    "category": "PETS"
-  },
-  {
-    "url": "https://www.therabbithouselynx.org.uk/",
     "category": "PETS"
   },
   {
@@ -5345,10 +5289,6 @@
   },
   {
     "url": "https://www.jlconline.com/",
-    "category": "HOME_IMPROVEMENT"
-  },
-  {
-    "url": "https://www.oldhouseonline.com/",
     "category": "HOME_IMPROVEMENT"
   },
   {
@@ -6060,7 +6000,7 @@
     "category": "MUSIC"
   },
   {
-    "url": "https://vinylmeplease.com/blogs/magazine",
+    "url": "https://vinylmeplease.com/",
     "category": "MUSIC"
   },
   {
@@ -6445,10 +6385,6 @@
   },
   {
     "url": "https://www.disneyplus.com/",
-    "category": "ENTERTAINMENT"
-  },
-  {
-    "url": "https://press.hbo.com/",
     "category": "ENTERTAINMENT"
   },
   {
@@ -8016,10 +7952,6 @@
     "category": "OUTDOOR_RECREATION"
   },
   {
-    "url": "https://www.reserve.usace.army.mil/",
-    "category": "OUTDOOR_RECREATION"
-  },
-  {
     "url": "https://stateparks.org/",
     "category": "OUTDOOR_RECREATION"
   },
@@ -8220,10 +8152,6 @@
     "category": "CRAFTS"
   },
   {
-    "url": "https://www.rfresco.org/",
-    "category": "CRAFTS"
-  },
-  {
     "url": "https://ceramicartsnetwork.org/",
     "category": "CRAFTS"
   },
@@ -8236,7 +8164,7 @@
     "category": "CRAFTS"
   },
   {
-    "url": "https://www.tandy-leather.com/",
+    "url": "https://tandyleather.com/",
     "category": "CRAFTS"
   },
   {
@@ -8940,7 +8868,7 @@
     "category": "MILITARY_DEFENSE"
   },
   {
-    "url": "https://www.history.army.mil/",
+    "url": "https://history.army.mil/",
     "category": "MILITARY_DEFENSE"
   },
   {
@@ -9236,10 +9164,6 @@
     "category": "WELLNESS_ALTERNATIVE"
   },
   {
-    "url": "https://www.sonima.com/",
-    "category": "WELLNESS_ALTERNATIVE"
-  },
-  {
     "url": "https://www.numerology.com/",
     "category": "WELLNESS_ALTERNATIVE"
   },
@@ -9384,7 +9308,7 @@
     "category": "RELATIONSHIPS_DATING"
   },
   {
-    "url": "https://www.baggage-reclaim.co.uk/",
+    "url": "https://baggagereclaim.co.uk/",
     "category": "RELATIONSHIPS_DATING"
   },
   {

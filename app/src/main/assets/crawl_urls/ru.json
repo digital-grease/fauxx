@@ -14,14 +14,12 @@
   { "url": "https://eda.ru/recepty", "category": "COOKING" },
   { "url": "https://www.gastronom.ru/recipe", "category": "COOKING" },
   { "url": "https://www.russianfood.com/recipes/", "category": "COOKING" },
-  { "url": "https://lifehacker.ru/topics/eda/recepty/", "category": "COOKING" },
   { "url": "https://www.povarenok.ru/recipes/", "category": "COOKING" },
 
   { "url": "https://eda.ru/", "category": "FOOD" },
   { "url": "https://www.afisha.ru/restaurant/", "category": "FOOD" },
   { "url": "https://www.gastronom.ru/", "category": "FOOD" },
   { "url": "https://www.restoclub.ru/", "category": "FOOD" },
-  { "url": "https://www.timeout.ru/msk/feature/restaurants", "category": "FOOD" },
 
   { "url": "https://www.rbc.ru/economics/", "category": "BUSINESS" },
   { "url": "https://www.kommersant.ru/rubric/4", "category": "BUSINESS" },
@@ -44,12 +42,10 @@
   { "url": "https://www.tutu.ru/", "category": "TRAVEL" },
   { "url": "https://travel.yandex.ru/", "category": "TRAVEL" },
   { "url": "https://tonkosti.ru/", "category": "TRAVEL" },
-  { "url": "https://www.tourister.ru/", "category": "TRAVEL" },
   { "url": "https://www.russpass.ru/", "category": "TRAVEL" },
 
   { "url": "https://www.wildberries.ru/catalog/zhenshchinam/odezhda", "category": "FASHION" },
   { "url": "https://www.lamoda.ru/women-home/", "category": "FASHION" },
-  { "url": "https://www.vogue.ru/fashion", "category": "FASHION" },
   { "url": "https://www.buro247.ru/fashion", "category": "FASHION" },
   { "url": "https://www.thevoicemag.ru/fashion/", "category": "FASHION" },
 
@@ -74,7 +70,7 @@
   { "url": "https://www.afisha.ru/msk/concerts/", "category": "MUSIC" },
   { "url": "https://music.yandex.ru/", "category": "MUSIC" },
   { "url": "https://www.last.fm/ru/music", "category": "MUSIC" },
-  { "url": "https://www.colta.ru/music", "category": "MUSIC" },
+  { "url": "https://www.colta.ru/music_modern", "category": "MUSIC" },
   { "url": "https://www.muztorg.ru/", "category": "MUSIC" },
 
   { "url": "https://www.igromania.ru/", "category": "GAMING" },
@@ -89,14 +85,12 @@
   { "url": "https://www.hobbyportal.ru/", "category": "CRAFTS" },
   { "url": "https://www.vsehobby.ru/", "category": "CRAFTS" },
 
-  { "url": "https://www.leroymerlin.ru/", "category": "HOME_IMPROVEMENT" },
   { "url": "https://www.obi.ru/", "category": "HOME_IMPROVEMENT" },
   { "url": "https://www.inmyroom.ru/", "category": "HOME_IMPROVEMENT" },
   { "url": "https://www.ivd.ru/", "category": "HOME_IMPROVEMENT" },
   { "url": "https://www.forumhouse.ru/", "category": "HOME_IMPROVEMENT" },
 
   { "url": "https://www.risk.ru/", "category": "OUTDOOR_RECREATION" },
-  { "url": "https://www.tourister.ru/world/europe/russia", "category": "OUTDOOR_RECREATION" },
   { "url": "https://strana.ru/", "category": "OUTDOOR_RECREATION" },
   { "url": "https://www.russiadiscovery.ru/", "category": "OUTDOOR_RECREATION" },
   { "url": "https://www.nationalgeographic.com/travel/", "category": "OUTDOOR_RECREATION" },
@@ -120,7 +114,6 @@
   { "url": "https://www.prlib.ru/history", "category": "HISTORY" },
 
   { "url": "https://greenpeace.ru/", "category": "ENVIRONMENT" },
-  { "url": "https://wwf.ru/", "category": "ENVIRONMENT" },
   { "url": "https://recyclemag.ru/", "category": "ENVIRONMENT" },
   { "url": "https://plus-one.ru/ecology", "category": "ENVIRONMENT" },
   { "url": "https://www.rbc.ru/ecology/", "category": "ENVIRONMENT" },
@@ -180,8 +173,6 @@
   { "url": "https://trv-science.ru/", "category": "SCIENCE" },
 
   { "url": "https://www.psychologies.ru/couple/", "category": "RELATIONSHIPS_DATING" },
-  { "url": "https://www.thevoicemag.ru/psychology/relations/", "category": "RELATIONSHIPS_DATING" },
   { "url": "https://www.woman.ru/relations/", "category": "RELATIONSHIPS_DATING" },
-  { "url": "https://www.marieclaire.ru/psychology/relationship/", "category": "RELATIONSHIPS_DATING" },
   { "url": "https://www.b17.ru/articles/", "category": "RELATIONSHIPS_DATING" }
 ]
