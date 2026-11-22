@@ -73,5 +73,7 @@ scripts/*
 !scripts/build_cooccurrence.py
 # #353 crawl-list link-rot checker: run monthly by .github/workflows/crawl-link-check.yml.
 !scripts/check_crawl_urls.py
+# #322 site-popularity builder: regenerates assets/site_popularity.json from a Tranco list.
+!scripts/build_site_popularity.py
 # JVM attach artifacts from jstack/debugger sessions
 .attach_pid*

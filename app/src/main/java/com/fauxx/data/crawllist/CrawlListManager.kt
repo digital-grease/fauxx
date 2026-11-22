@@ -20,6 +20,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
 
+/** Bundled real-world site ranks (#322 item 8), built by scripts/build_site_popularity.py. */
+private const val POPULARITY_ASSET = "site_popularity.json"
+
 /** Minimum milliseconds between requests to the same domain (safety requirement). */
 private const val MIN_DOMAIN_INTERVAL_MS = 5_000L
 
@@ -36,7 +39,9 @@ private const val CLEANUP_THRESHOLD = 500
  *   `assets/crawl_urls.json` for English) at first access per locale.
  * - Tracks last-visit timestamp per domain to enforce the 5-second per-domain rate limit.
  * - Filters out blocked domains before returning URLs.
- * - Supports category-weighted URL selection.
+ * - Supports category-weighted URL selection. Within the candidates, a site is drawn by its
+ *   real-world popularity ([SitePopularity], #322 item 8), then one of its pages evenly; a share
+ *   of visits goes to the persona's favourite sites instead ([HabitualSites], #322 item 3).
  * - Skips URLs and domains that keep failing ([UrlHealthGate], #353), falling back to other
  *   categories and then to ignoring that memory rather than stalling.
  *
@@ -62,6 +67,7 @@ class CrawlListManager @Inject constructor(
     private val random: Random = Random.Default,
     private val urlHealth: UrlHealthGate = UrlHealthGate.NONE,
     private val customPool: CustomPoolSource = CustomPoolSource.EMPTY,
+    private val siteHabits: SiteHabitsSource = SiteHabitsSource.NONE,
 ) {
     private val urlsByLocale = ConcurrentHashMap<SupportedLocale, List<CrawlEntry>>()
     private val lastVisitByDomain = mutableMapOf<String, Long>()
@@ -83,12 +89,86 @@ class CrawlListManager @Inject constructor(
         if (CustomPoolMixer.drawCustom(customSites.size, random)) {
             nextCustomUrl(customSites, category, now)?.let { return it }
         }
-        return candidatePool(category)
-            .filter { entry -> isEligible(entry.domain, now) }
-            .randomOrNull(random)
+        return pick(candidatePool(category).filter { entry -> isEligible(entry.domain, now) })
             ?.also { entry ->
                 lastVisitByDomain[entry.domain] = now
             }
+    }
+
+    /**
+     * One of [entries]: a favourite site's page [HabitualSites.share] of the time when a favourite
+     * is among them, otherwise a site drawn by popularity; then one of that site's pages evenly.
+     * Weighing sites rather than pages keeps a site with many pages in the list from being drawn
+     * more for it.
+     */
+    private fun pick(entries: List<CrawlEntry>): CrawlEntry? {
+        if (entries.isEmpty()) return null
+        val bySite = entries.groupBy { popularity.siteOf(it.domain) }
+        habitualSites()?.let { habits ->
+            val present = habits.sites.withIndex().filter { it.value in bySite }
+            if (present.isNotEmpty() && random.nextDouble() < habits.share) {
+                val favourite = weightedPick(present) { habits.weightAt(it.index) }.value
+                return bySite.getValue(favourite).random(random)
+            }
+        }
+        val site = weightedPick(bySite.keys.toList()) { popularity.weightOf(it) }
+        return bySite.getValue(site).random(random)
+    }
+
+    private fun <T> weightedPick(items: List<T>, weight: (T) -> Double): T {
+        val weights = items.map { weight(it).coerceAtLeast(0.0) }
+        var point = random.nextDouble() * weights.sum()
+        for ((item, w) in items.zip(weights)) {
+            point -= w
+            if (point < 0) return item
+        }
+        return items.last()
+    }
+
+    /**
+     * Real-world popularity of the crawl sites. Read from the bundled asset together with the first
+     * bundled crawl list, so a list a test installs directly keeps the even draw unless the test
+     * installs a popularity too; an even draw as well if the asset cannot be read.
+     */
+    @Volatile
+    private var popularity: SitePopularity = SitePopularity.EVEN
+
+    @Volatile
+    private var popularityLoaded = false
+
+    private fun loadPopularityOnce() {
+        if (popularityLoaded) return
+        popularityLoaded = true
+        popularity = runCatching {
+            SitePopularity.parse(context.assets.open(POPULARITY_ASSET).bufferedReader().use { it.readText() })
+        }.onFailure { Timber.w(it, "Site popularity unavailable; sites are drawn evenly") }
+            .getOrDefault(SitePopularity.EVEN)
+    }
+
+    /** Test-only seam: use [popularity] instead of the bundled asset. */
+    @VisibleForTesting
+    internal fun replacePopularityForTest(popularity: SitePopularity) {
+        popularityLoaded = true
+        this.popularity = popularity
+        habitsFor = null
+    }
+
+    /** Favourites for the current persona and language, derived once per persona. */
+    @Volatile
+    private var habitsFor: Pair<SiteHabitsKey, SupportedLocale>? = null
+
+    @Volatile
+    private var habits: HabitualSites? = null
+
+    private fun habitualSites(): HabitualSites? {
+        val key = runCatching { siteHabits.current() }.getOrNull() ?: return null
+        val locale = localeManager.currentLocale
+        val wanted = key to locale
+        if (habitsFor != wanted) {
+            habits = HabitualSites.derive(key.key, key.interests, currentUrls(), popularity, locale.tag)
+            habitsFor = wanted
+        }
+        return habits
     }
 
     /**
@@ -214,6 +294,7 @@ class CrawlListManager @Inject constructor(
     }
 
     private fun loadUrls(locale: SupportedLocale): List<CrawlEntry> {
+        loadPopularityOnce()
         val localePath = "crawl_urls/${locale.tag}.json"
         val legacyPath = "crawl_urls.json"
         return try {

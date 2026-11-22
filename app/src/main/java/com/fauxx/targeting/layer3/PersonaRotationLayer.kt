@@ -446,6 +446,7 @@ class PersonaRotationLayer @Inject constructor(
  * persona's stable mobile [com.fauxx.data.device.DeviceProfile], staggered so the
  * User-Agent does not flip in the same instant as the other channels at rotation.
  * SEARCH is the persona's search habits (#322): its usual engine and how often it
- * refines or clicks, so the usual engine changes on its own schedule too.
+ * refines or clicks, so the usual engine changes on its own schedule too. SITES is the
+ * persona's favourite sites (#322), which change on their own schedule as well.
  */
-enum class PersonaChannel { LOCATION, APP_SIGNAL, RHYTHM, WEIGHTS, QUERY, DEVICE, SEARCH }
+enum class PersonaChannel { LOCATION, APP_SIGNAL, RHYTHM, WEIGHTS, QUERY, DEVICE, SEARCH, SITES }
