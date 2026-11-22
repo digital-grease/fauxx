@@ -24,6 +24,13 @@ interface ActionLogDao {
     @Query("SELECT COUNT(*) FROM action_log WHERE timestamp > :sinceMillis AND success = 1")
     fun countSince(sinceMillis: Long): Flow<Int>
 
+    /**
+     * Times of successful actions after [sinceMillis], oldest first: the engine rebuilds its action
+     * budget and hourly ceiling from them when it starts (#322), so a restart cannot reset either.
+     */
+    @Query("SELECT timestamp FROM action_log WHERE timestamp > :sinceMillis AND success = 1 ORDER BY timestamp ASC")
+    suspend fun successTimestampsSince(sinceMillis: Long): List<Long>
+
     /** Delete all entries older than [beforeMillis]. */
     @Query("DELETE FROM action_log WHERE timestamp < :beforeMillis")
     suspend fun deleteOlderThan(beforeMillis: Long)

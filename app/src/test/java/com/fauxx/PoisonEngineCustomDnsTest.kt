@@ -16,8 +16,9 @@ import com.fauxx.engine.dns.CustomDns
 import com.fauxx.engine.webview.TrackerWatch
 import com.fauxx.engine.modules.Module
 import com.fauxx.engine.scheduling.ActionDispatcher
-import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.engine.scheduling.ActionPacer
 import com.fauxx.network.dns.DnsHealth
+import com.fauxx.support.FixedPacer
 import com.fauxx.support.FakeClock
 import com.fauxx.targeting.TargetingEngine
 import io.mockk.coEvery
@@ -210,7 +211,7 @@ class PoisonEngineCustomDnsTest {
             profile = mockk<PoisonProfileRepository> { every { getProfile() } returns PoisonProfile(enabled = true, batteryThresholdBattery = 0, batteryThresholdCharging = 0, allowedHoursStart = 0, allowedHoursEnd = 24) },
             targetingEngine = mockk<TargetingEngine>(relaxed = true),
             dispatcher = mockk<ActionDispatcher> { coEvery { selectCategory() } returns CategoryPool.GAMING },
-            scheduler = mockk<PoissonScheduler> { every { nextDelayMs(any(), any(), any(), any(), any()) } returns 1_000L },
+            pacer = FixedPacer(1_000L),
             actionLogDao = mockk<ActionLogDao>(relaxed = true),
             blocklist = mockk<DomainBlocklist> { every { loadFailed } returns false },
             queryBankManager = mockk<QueryBankManager> {

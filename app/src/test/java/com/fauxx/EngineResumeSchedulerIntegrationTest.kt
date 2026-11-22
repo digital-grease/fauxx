@@ -23,8 +23,9 @@ import com.fauxx.engine.modules.FingerprintModule
 import com.fauxx.engine.modules.Module
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
-import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.engine.scheduling.ActionPacer
 import com.fauxx.service.ResumeScheduler
+import com.fauxx.support.FixedPacer
 import com.fauxx.support.FakeClock
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.util.Clock
@@ -268,9 +269,7 @@ class EngineResumeSchedulerIntegrationTest {
         )
         val profileRepo: PoisonProfileRepository = mockk { every { getProfile() } returns baseProfile }
         val dispatcher: ActionDispatcher = mockk { coEvery { selectCategory() } returns CategoryPool.GAMING }
-        val scheduler: PoissonScheduler = mockk {
-            every { nextDelayMs(any(), any(), any(), any(), any()) } returns 1000L
-        }
+        val scheduler: ActionPacer = FixedPacer(1000L)
         val actionLogDao: ActionLogDao = mockk(relaxed = true)
         val blocklist: DomainBlocklist = mockk { every { loadFailed } returns false }
         val queryBankManager: QueryBankManager = mockk {

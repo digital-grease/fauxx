@@ -25,8 +25,9 @@ import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.power.EngineWakeLock
 import com.fauxx.engine.power.EngineWakeup
 import com.fauxx.engine.scheduling.ActionDispatcher
-import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.engine.scheduling.ActionPacer
 import com.fauxx.service.ResumeSpec
+import com.fauxx.support.FixedPacer
 import com.fauxx.support.FakeClock
 import com.fauxx.targeting.TargetingEngine
 import io.mockk.coEvery
@@ -372,7 +373,7 @@ class PoisonEngineWakeTest {
         engine = buildEngine(clock, wakeup = wakeup, nextDelayMs = 1_000L)
 
         engine.start()
-        advance(clock, by = 20_000) // LOW: 12 actions an hour, one a second here
+        advance(clock, by = 30_000) // LOW: a ceiling of 24 actions an hour, one a second here
 
         assertEquals(EngineState.PAUSED_RATE_LIMIT, engine.engineState.value)
         val untilWakeup = wakeup.scheduled.last() - clock.nowMs
@@ -393,7 +394,7 @@ class PoisonEngineWakeTest {
         )
 
         engine.start() // the relaxed ConnectivityManager reads as mobile data
-        advance(clock, by = 20_000)
+        advance(clock, by = 30_000) // mobile LOW: a ceiling of 24 actions an hour
         assertEquals(EngineState.PAUSED_RATE_LIMIT, engine.engineState.value)
         val atCap = actions
 
@@ -679,9 +680,7 @@ class PoisonEngineWakeTest {
         loopDispatcher: CoroutineDispatcher = StandardTestDispatcher(sched),
     ): PoisonEngine {
         val profileRepo: PoisonProfileRepository = mockk { every { getProfile() } returns profile }
-        val scheduler: PoissonScheduler = mockk {
-            every { nextDelayMs(any(), any(), any(), any(), any()) } returns nextDelayMs
-        }
+        val scheduler: ActionPacer = FixedPacer(nextDelayMs)
         val dispatcher: ActionDispatcher = mockk { coEvery { selectCategory() } returns CategoryPool.GAMING }
         val noopModule: Module = mockk(relaxed = true) { every { isEnabled() } returns false }
         val connectivityManager: android.net.ConnectivityManager = mockk(relaxed = true)

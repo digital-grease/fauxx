@@ -5,7 +5,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * The single rate-modulation seam bound into [PoissonScheduler] (E10 #177).
+ * The single rate-modulation seam bound into [SessionScheduler] (E10 #177).
  *
  * Both timing signals feed through here rather than the scheduler gaining a second modulation
  * point: the persona's deterministic daily rhythm ([PersonaRateModulator], E8 #174) and the

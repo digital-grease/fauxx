@@ -1,20 +1,21 @@
 package com.fauxx.engine.scheduling
 
 /**
- * Hook for soft, multiplicative modulation of the Poisson target rate by hour of day
- * (E8 #174). [PoissonScheduler] multiplies its target rate by [multiplier], clamped to
- * [MIN_MULTIPLIER]..[MAX_MULTIPLIER] regardless of the implementation.
+ * Hook for soft, multiplicative modulation of the engine's activity by hour of day (E8 #174).
+ * [SessionScheduler] divides its breaks between sessions by [multiplier], clamped to
+ * [MIN_MULTIPLIER]..[MAX_MULTIPLIER] regardless of the implementation, so busy hours get shorter
+ * breaks and quiet hours longer ones (#322).
  *
  * This is the SINGLE rate-modulation seam: E8 contributes the persona rhythm
  * ([com.fauxx.targeting.layer3.PersonaRateModulator]); E10 (#177) will compose the
  * screen-on circadian histogram into the same hook rather than adding a second
  * modulation point inside the scheduler.
  *
- * Contract: implementations must keep the 24-hour mean multiplier close to 1.0 so the
- * displayed actions/hour stays honest (issue #76) — modulation reshapes WHEN actions
- * happen, not how many. Note that multipliers above 1.0 can be partially clipped by
- * the engine's hard per-hour cap (PoisonEngine.recentActionTimestamps), so realized
- * throughput errs slightly BELOW the displayed rate — the honest direction.
+ * Contract: implementations must keep the 24-hour mean multiplier close to 1.0:
+ * modulation reshapes WHEN actions happen, not how many. The displayed actions/hour stays
+ * honest (issue #76) whatever the multiplier, because the scheduler's action budget
+ * ([ActionBudget]) pays for every action at the rate itself: a short break cannot spend
+ * more than has accrued.
  */
 fun interface RateModulator {
 

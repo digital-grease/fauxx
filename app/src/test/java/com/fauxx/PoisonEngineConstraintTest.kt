@@ -1,5 +1,6 @@
 package com.fauxx
 
+import com.fauxx.support.FixedPacer
 import com.fauxx.data.crawllist.CrawlListManager
 import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.db.ActionLogDao
@@ -23,7 +24,7 @@ import com.fauxx.engine.modules.FingerprintModule
 import com.fauxx.engine.modules.Module
 import com.fauxx.engine.modules.SearchPoisonModule
 import com.fauxx.engine.scheduling.ActionDispatcher
-import com.fauxx.engine.scheduling.PoissonScheduler
+import com.fauxx.engine.scheduling.ActionPacer
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.util.Clock
 import io.mockk.coEvery
@@ -72,9 +73,7 @@ class PoisonEngineConstraintTest {
     private val dispatcher: ActionDispatcher = mockk {
         coEvery { selectCategory() } returns CategoryPool.GAMING
     }
-    private val scheduler: PoissonScheduler = mockk {
-        every { nextDelayMs(any(), any(), any(), any(), any()) } returns 100L
-    }
+    private val scheduler: ActionPacer = FixedPacer(100L)
     private val actionLogDao: ActionLogDao = mockk(relaxed = true)
 
     private val searchModule: SearchPoisonModule = mockk(relaxed = true)

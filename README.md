@@ -116,7 +116,7 @@ Fauxx is built with privacy-first architecture:
 - **Import reads only your file:** Layer 2 reads the ad-profile export you hand it. It never logs into, modifies, or contacts the ad platforms.
 - **No sensitive attributes:** Demographic distance rules never include or infer race, ethnicity, religion, sexual orientation, gender identity, disability, or political affiliation.
 - **Domain blocklist:** Every URL is checked against a hardcoded blocklist of illegal/harmful domains before loading.
-- **Rate limiting:** At most one visit per domain every 5 seconds, and a hard per-hour cap on actions set by the intensity: 12 at Low, 60 at Medium, 200 at High, 500 at Max.
+- **Rate limiting:** At most one visit per domain every 5 seconds. The intensity sets the average number of actions per hour (12 at Low, 60 at Medium, 200 at High, 500 at Max), and the count can never run ahead of it: each action is paid for by time that has already passed at that rate, with at most one hour's worth saved up, and the allowance starts again from zero each day when your active hours begin. So a single hour can be busier than the average, but never more than twice it.
 - **No fingerprinting of users:** The app does not track or identify individual users. It only tracks its own action log locally.
 
 ## Tech Stack
@@ -236,9 +236,10 @@ Global controls:
 User settings are exposed in the app UI and stored in Jetpack DataStore; the thresholds below are compile-time constants. Key thresholds:
 
 - **Per-domain rate limit:** 5 seconds (CrawlListManager)
-- **Action timing:** exponentially distributed gaps around the intensity's average rate (one minute apart on average at Medium), with a short 2 to 30 second follow-up on some same-topic transitions
-- **Cross-niche dwell:** a lognormal dwell-time multiplier on category transitions (e.g., Finance → Legal) with a floor of up to 30 seconds, so the engine never jumps between unrelated niches in under a second
-- **Daily rhythm:** no activity outside your active hours (7am to 11pm by default). Inside them, the rate rises and falls within ±50% of the average, following the hours you usually use your phone (learned on-device from screen-on times) and the persona's own peak hours
+- **Sessions:** activity comes in sessions separated by breaks, as people browse, at the same average rate. A session is a series of short bursts of a few actions on one topic, seconds apart, with reading pauses between them; a break runs from minutes to over an hour while the allowance saves up. Each persona has its own pace, burst length and break length. At Low and Medium this gives clear sessions; at High and Max the actions' own run time fills most of each hour, so activity stays close to continuous
+- **Cross-niche dwell:** the topic only changes between bursts, after a pause of at least 30 seconds at Low and Medium (9 seconds at High, 5 at Max), so the engine never jumps between unrelated niches (e.g., Finance → Legal) in a few seconds
+- **End of active hours:** no action starts in the last two minutes before your active hours end, so none is still running when they do
+- **Daily rhythm:** no activity outside your active hours (7am to 11pm by default). Inside them, breaks are shorter in busy hours and longer in quiet ones, by up to half, following the hours you usually use your phone (learned on-device from screen-on times) and the persona's own peak hours
 - **Layer 3 rotation:** lifetime drawn uniformly over 30–90 days, re-rolled each cycle; channels phase in via staggered adoption over up to 20% of that lifetime
 - **Layer 2 re-import reminder:** about 90 days (the import is manual, not scheduled)
 
@@ -265,7 +266,7 @@ app/src/main/
 │   │   ├── modules/                     # The seven poison modules
 │   │   ├── webview/                     # WebView pool, browser identity, per-persona jars
 │   │   ├── dns/                         # Custom DNS router
-│   │   └── scheduling/                  # Scheduler, dispatcher, daily-rhythm modulation
+│   │   └── scheduling/                  # Session scheduler, action budget, dispatcher, daily-rhythm modulation
 │   ├── network/
 │   │   └── dns/                         # Loopback proxy, DoH and plain DNS resolvers
 │   ├── locale/                          # Supported locales, Accept-Language variants
@@ -417,7 +418,7 @@ Tapping the notification opens Fauxx and restarts protection. Nothing is lost. Y
 - Mobile data and metered Wi-Fi keep their own intensity whether or not the phone is charging.
 - Active hours, the battery thresholds and Battery Saver still apply.
 - It takes effect within seconds of plugging in, and the dashboard shows "Charging boost" while it is in effect.
-- After you unplug, the lower rate's hourly cap counts the past hour's actions, so Fauxx may pause briefly until that hour has passed.
+- After you unplug, the lower rate's hourly limit (twice that rate) counts the past hour's actions, so Fauxx may pause until enough of that hour has passed.
 
 ### How do my own searches and sites work?
 
