@@ -273,6 +273,20 @@ class SettingsViewModelTest {
         assertTrue(transform.captured(PoisonProfile()).pauseOnBatterySaver)
     }
 
+    // --- #322 page rendering ---
+
+    @Test
+    fun `the page rendering choice reaches the saved profile`() = runTest {
+        val vm = viewModel()
+        assertEquals("every page is drawn by default", com.fauxx.data.model.PageRendering.ALL_PAGES, vm.uiState.value.pageRendering)
+        val transform = io.mockk.slot<(PoisonProfile) -> PoisonProfile>()
+        io.mockk.coEvery { profileRepo.updateProfile(capture(transform)) } returns Unit
+        vm.setPageRendering(com.fauxx.data.model.PageRendering.SEARCH_ONLY)
+        advanceUntilIdle()
+        assertEquals(com.fauxx.data.model.PageRendering.SEARCH_ONLY, vm.uiState.value.pageRendering)
+        assertEquals(com.fauxx.data.model.PageRendering.SEARCH_ONLY, transform.captured(PoisonProfile()).pageRendering)
+    }
+
     // --- #316 charging boost ---
 
     @Test

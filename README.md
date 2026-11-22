@@ -227,6 +227,7 @@ Global controls:
 - **Active hours:** Time range when actions should run (e.g., 7am–11pm)
 - **Search engines:** Which engines receive synthetic queries. Turning one off spares it entirely. At least two stay active: each persona has a usual engine but sometimes searches elsewhere, and needs another one when its usual engine is unavailable
 - **Load images on synthetic pages:** Off by default. On, pages load images like a real browser, so tracking pixels fire and each visit looks normal to the site; off saves a lot of data, since images are most of a page's size, but a browser that never loads images is unusual
+- **Draw pages as if on screen:** All pages (the default) / Search only / Off. See [Can a site tell nobody is looking at the pages Fauxx loads?](#can-a-site-tell-nobody-is-looking-at-the-pages-fauxx-loads)
 - **Custom DNS for Fauxx:** Off by default. On, the sites Fauxx visits are looked up with a resolver you choose (encrypted DNS-over-HTTPS from Quad9, Cloudflare, Mullvad, Google or your own URL, or a plain DNS server by IP address) instead of your device's DNS, so a Pi-hole, NextDNS profile or VPN app that blocks tracker domains no longer stops Fauxx. Other apps are not affected. See [My Pi-hole, NextDNS or VPN blocks tracker domains](#my-pi-hole-nextdns-or-vpn-blocks-tracker-domains-so-fauxx-cant-reach-them-what-can-i-do) for the options and how fallback works
 - **Your searches and sites:** add your own search terms and websites, such as local news and searches in your language, one at a time or many at once (one per line). They get a capped share of the activity, from 5% with one entry up to 30%, so the built-in lists always carry most of it. See [How do my own searches and sites work?](#how-do-my-own-searches-and-sites-work)
 - **Clear all data:** Destructive button to reset everything
@@ -410,6 +411,18 @@ You'll typically see this notification:
 - **After a reboot or an app update,** because Android won't let Fauxx restart its own foreground service from a boot or update event. Fauxx posts the resume notification instead.
 
 Tapping the notification opens Fauxx and restarts protection. Nothing is lost. Your settings, profile, persona, and action log are all persistent.
+
+### Can a site tell nobody is looking at the pages Fauxx loads?
+
+Not from the usual signals, with the default setting. Fauxx's browser is never on your screen, and measured on the Android System WebView, a page in it still reads itself as visible, its timers run at full speed, and it sees the real screen size. What could give it away is drawing: a page that is never drawn gets about 17 to 30 animation frames a second instead of about 60, and its CSS animations never move, which ad-viewability and anti-fraud scripts can check.
+
+**Settings → Draw pages as if on screen** draws each page Fauxx loads off-screen, on a private virtual display that only Fauxx can see, the way a phone would draw it on screen. It needs no permission. Nothing is shown and nothing drawn is kept.
+
+- **All pages** (the default): every synthetic page is drawn.
+- **Search only:** only search sessions are drawn, the results pages and the results a search opens; the other modules' pages are not.
+- **Off:** nothing is drawn.
+
+Drawing pages costs battery, about as much as a browser showing the same page, and most on pages with animations or video. Search only is the middle ground.
 
 ### How does the charging intensity work?
 

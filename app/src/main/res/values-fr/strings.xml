@@ -323,6 +323,11 @@
     <string name="settings_resume_on_boot_description">Après un redémarrage, afficher une notification pour reprendre la protection. Android empêche les applications de démarrer silencieusement en arrière-plan, donc un appui est requis.</string>
     <string name="settings_load_images_title">Charger les images des pages synthétiques</string>
     <string name="settings_load_images_description">Activé : les pages chargent les images comme un vrai navigateur, donc les pixels de suivi se déclenchent et chaque visite paraît normale au site. Désactivé : les images sont ignorées, ce qui économise beaucoup de données car elles représentent l\'essentiel du poids d\'une page, mais un navigateur qui ne charge jamais d\'images est inhabituel, et les traqueurs à pixel n\'enregistrent jamais la visite.</string>
+    <string name="settings_page_rendering_title">Afficher les pages comme à l\'écran</string>
+    <string name="settings_page_rendering_description">Les pages chargées par Fauxx sont dessinées hors écran comme un téléphone les dessinerait à l\'écran, pour qu\'un site ne puisse pas savoir que personne ne regarde. Cela consomme plus de batterie, surtout sur les pages avec animations ou vidéo. « Recherches seulement » ne dessine que les recherches et « Désactivé » ne dessine rien.</string>
+    <string name="settings_page_rendering_all">Toutes les pages</string>
+    <string name="settings_page_rendering_search">Recherches seulement</string>
+    <string name="settings_page_rendering_off">Désactivé</string>
     <string name="settings_dns_title">DNS personnalisé pour Fauxx</string>
     <string name="settings_dns_description">Résout les sites que Fauxx visite avec un résolveur de votre choix, via un DNS chiffré (DNS-over-HTTPS) ou un serveur DNS non chiffré, plutôt que le DNS de votre appareil. Utile quand Pi-hole, NextDNS ou une application VPN bloque les domaines de suivi que Fauxx doit atteindre. Seul le trafic de Fauxx l\'utilise : sa navigation et, si vous l\'activez ci-dessous, son bruit DNS.</string>
     <string name="settings_dns_unavailable">Votre WebView ne peut pas faire passer la navigation de Fauxx par un DNS personnalisé : il lui manque la fonction de proxy (PROXY_OVERRIDE).</string>

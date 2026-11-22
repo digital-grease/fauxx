@@ -398,6 +398,8 @@ class SearchPoisonModule @Inject constructor(
         } else {
             try {
                 val deadline = clock.currentTimeMillis() + SESSION_BUDGET_MS
+                // #322: with only searches drawn as if on screen, this is where drawing starts.
+                webViewPool.startingSearch(webView)
                 val goalLoad = loadWithDwell(webView, goalUrl, headers, QUERY_DWELL_MS)
                 goalFailure = goalLoad.failure
                 noteEngineOutcome(engine.name, goalLoad)

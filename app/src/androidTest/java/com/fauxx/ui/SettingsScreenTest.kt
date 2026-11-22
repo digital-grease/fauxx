@@ -208,6 +208,20 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun pageRenderingChoice_isDisplayedWithItsOptionsAndBatteryNote() {
+        composeRule.setContent {
+            FauxxTheme {
+                SettingsScreen()
+            }
+        }
+        composeRule.onNodeWithText("Draw pages as if on screen").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("more battery", substring = true).performScrollTo().assertIsDisplayed()
+        for (option in listOf("All pages", "Search only")) {
+            composeRule.onNodeWithText(option).performScrollTo().assertIsDisplayed()
+        }
+    }
+
+    @Test
     fun batterySaverToggle_isDisplayedAndToggles() {
         composeRule.setContent {
             FauxxTheme {

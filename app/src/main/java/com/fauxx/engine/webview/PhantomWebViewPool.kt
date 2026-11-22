@@ -1,5 +1,6 @@
 package com.fauxx.engine.webview
 
+import com.fauxx.data.model.PageRendering
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.View.MeasureSpec
@@ -126,7 +127,12 @@ class PhantomWebViewPool @Inject constructor(
     private val browsingGate: PhantomBrowsingGate = PhantomBrowsingGate.NONE,
     private val trackerHosts: TrackerHosts = TrackerHosts { emptySet() },
     private val trackerReachability: TrackerReachability = TrackerReachability(),
+    /** Where pages are drawn as if on screen (#322), per [PhantomBrowsingPrefs.pageRendering]. */
+    onscreenHosts: OnscreenHostFactory = OnscreenHostFactory.NONE,
 ) {
+    /** Which slot is drawn on which host. Main thread only, like [pool]. */
+    private val onscreen = OnscreenPlacement(onscreenHosts)
+
     private val pool = mutableListOf<WebView>()
     private var initialized = false
 
@@ -336,7 +342,10 @@ class PhantomWebViewPool @Inject constructor(
             }
             return withContext(Dispatchers.Main) {
                 runCatching { jarStore.cookieManagerFor(currentJarKey.get()).flush() }
-                pool.forEach { runCatching { it.destroy() } }
+                pool.forEach {
+                    onscreen.forget(it)
+                    runCatching { it.destroy() }
+                }
                 pool.clear()
                 // Build into a local list and swap in only once ALL instances exist. A partial
                 // build used to leave the pool short with initialized still true, which made
@@ -449,7 +458,8 @@ class PhantomWebViewPool @Inject constructor(
                     browsingGate.browsingBlockedReason()?.let { throw BrowsingBlockedException(it) }
                     // Heal a pool left short by a failed jar rebuild before picking from it.
                     if (pool.size < POOL_SIZE) ensurePool()
-                    val wv = pool.first { acquired.putIfAbsent(it.tag as String, true) == null }
+                    val picked = pool.first { acquired.putIfAbsent(it.tag as String, true) == null }
+                    val wv = applyPageRendering(picked)
                     resourceCounters[wv.tag as String]?.set(0)
                     loadOutcomes[wv.tag as String]?.reset()
                     trackerCounters[wv.tag as String]?.reset()
@@ -561,6 +571,12 @@ class PhantomWebViewPool @Inject constructor(
                     // #341: and again once the page is gone, so late requests from it do not sit
                     // in an idle WebView's counter until the next acquire.
                     trackerCounters[tag]?.reset()
+                    // #322: a WebView drawn for a search, with only searches drawn, cannot go back
+                    // to detached use; give the slot a fresh one now, off the acquire path.
+                    if (onscreen.isShown(webView) && currentPageRendering() != PageRendering.ALL_PAGES) {
+                        runCatching { replaceDrawn(webView) }
+                            .onFailure { Timber.w(it, "Could not replace a drawn WebView after its search") }
+                    }
                     // Note: WebStorage.getInstance().deleteAllData() is intentionally NOT called
                     // here because it's a global singleton that wipes storage for ALL WebView
                     // instances. Per-WebView cleanup (stopLoading + clearHistory + clearCache +
@@ -587,9 +603,67 @@ class PhantomWebViewPool @Inject constructor(
         // Persist the accumulated cookie jar to Fauxx's WebView data directory before tearing the
         // instances down, so tracker state survives the next process start.
         runCatching { jarStore.cookieManagerFor(currentJarKey.get()).flush() }
-        pool.forEach { it.destroy() }
+        pool.forEach {
+            onscreen.forget(it)
+            it.destroy()
+        }
         pool.clear()
+        onscreen.destroyAll()
         initialized = false
+    }
+
+    /**
+     * A search session is starting in [webView] (#322). When only searches are drawn
+     * ([PageRendering.SEARCH_ONLY]), draw it as if on screen for the rest of the session, results
+     * pages and the results it opens alike; [release] then replaces it. Off the main thread, like
+     * [acquire].
+     */
+    suspend fun startingSearch(webView: WebView) {
+        if (currentPageRendering() != PageRendering.SEARCH_ONLY) return
+        withTimeoutOrNull(MAIN_OP_TIMEOUT_MS) {
+            withContext(Dispatchers.Main) {
+                val (width, height) = viewportSize() ?: return@withContext
+                onscreen.show(webView, width, height)
+            }
+        }
+    }
+
+    private fun currentPageRendering(): PageRendering =
+        runCatching { browsingPrefs.pageRendering() }.getOrDefault(PageRendering.OFF)
+
+    /**
+     * The WebView to hand out for this acquire, in the slot of [picked] (#322). With every page
+     * drawn ([PageRendering.ALL_PAGES]) it goes on screen and stays there across acquires. With
+     * any other setting it must be detached; one that was drawn earlier (the setting changed) is
+     * replaced, since a WebView taken off its display reports its page hidden. Main thread.
+     */
+    private fun applyPageRendering(picked: WebView): WebView {
+        if (currentPageRendering() == PageRendering.ALL_PAGES) {
+            viewportSize()?.let { (width, height) -> onscreen.show(picked, width, height) }
+            return picked
+        }
+        if (!onscreen.isShown(picked)) return picked
+        // A failed replacement (a fresh WebView cannot be allocated) must not throw out of acquire
+        // with the slot marked taken; the drawn WebView, still on its display, serves instead.
+        return runCatching { replaceDrawn(picked) }.getOrElse {
+            Timber.w(it, "Could not replace a drawn WebView; it stays drawn")
+            picked
+        }
+    }
+
+    /** Swap a fresh, never-attached WebView into the slot of [drawn] and destroy it. Main thread. */
+    private fun replaceDrawn(drawn: WebView): WebView {
+        val index = pool.indexOfFirst { it === drawn }
+        if (index < 0) {
+            // Already swapped out after a renderer death, which destroyed it.
+            onscreen.forget(drawn)
+            return drawn
+        }
+        val replacement = createWebView(tag = drawn.tag as String)
+        pool[index] = replacement
+        onscreen.forget(drawn)
+        runCatching { drawn.destroy() }
+        return replacement
     }
 
     /**
@@ -611,12 +685,14 @@ class PhantomWebViewPool @Inject constructor(
         if (index < 0) {
             // Already swapped out (e.g. a duplicate callback for the same instance). Just destroy.
             Timber.w("Renderer death for an already-replaced WebView (tag=$tag, total=$total)")
+            onscreen.forget(dead)
             runCatching { dead.destroy() }
             return
         }
         Timber.w("Rebuilding phantom WebView pool slot after renderer death (tag=$tag, total=$total)")
         val replacement = createWebView(tag = tag ?: "pool_$index")
         pool[index] = replacement
+        onscreen.forget(dead)
         runCatching { dead.destroy() }
     }
 
@@ -735,16 +811,24 @@ class PhantomWebViewPool @Inject constructor(
      */
     private fun layoutAsViewport(webView: WebView) {
         runCatching {
-            val metrics = context.resources.displayMetrics
-            val width = metrics.widthPixels
-            val height = metrics.heightPixels - (BROWSER_CHROME_DP * metrics.density).toInt()
-            if (width <= 0 || height <= 0) return
+            val (width, height) = viewportSize() ?: return
             webView.measure(
                 MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY),
             )
             webView.layout(0, 0, width, height)
         }.onFailure { Timber.w(it, "Could not lay out the phantom WebView") }
+    }
+
+    /**
+     * The viewport in pixels: the host display's size less an allowance for the status bar and
+     * Chrome's toolbar (see [layoutAsViewport]), or null if the display reports none.
+     */
+    private fun viewportSize(): Pair<Int, Int>? {
+        val metrics = context.resources.displayMetrics
+        val width = metrics.widthPixels
+        val height = metrics.heightPixels - (BROWSER_CHROME_DP * metrics.density).toInt()
+        return if (width > 0 && height > 0) width to height else null
     }
 
     /**

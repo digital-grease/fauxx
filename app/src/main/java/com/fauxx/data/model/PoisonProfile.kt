@@ -45,6 +45,8 @@ import com.fauxx.ui.theme.ThemeMode
  * @property loadImages When true, synthetic page loads fetch images like a real browser, so
  *   `<img>` tracking pixels fire and a page view looks normal to the server. Off by default
  *   because images are most of a page's bytes, which matters on metered connections.
+ * @property pageRendering Which synthetic pages are drawn as if on screen (#322), at a battery
+ *   cost; see [PageRendering]. Every page by default.
  * @property dnsMode Resolver for Fauxx's own synthetic traffic (#227). Device-local, never synced.
  * @property dohProvider Preset id from `DohPresets` (default Quad9, matching the desktop
  *   companion), or `DohPresets.CUSTOM_ID` to use [dohCustomUrl].
@@ -102,6 +104,7 @@ data class PoisonProfile(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val resumeOnBoot: Boolean = true,
     val loadImages: Boolean = false,
+    val pageRendering: PageRendering = PageRendering.ALL_PAGES,
     val dnsMode: DnsMode = DnsMode.SYSTEM,
     val dohProvider: String = "quad9",
     val dohCustomUrl: String = "",

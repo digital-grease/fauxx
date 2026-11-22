@@ -107,6 +107,7 @@ class PoisonProfileRepositoryTest {
             themeMode = ThemeMode.DARK,                      // default SYSTEM
             resumeOnBoot = false,                            // default true
             loadImages = true,                               // default false
+            pageRendering = com.fauxx.data.model.PageRendering.SEARCH_ONLY, // default ALL_PAGES
             pauseOnBatterySaver = true,                      // default false
             dnsMode = com.fauxx.data.model.DnsMode.DOH,      // default SYSTEM
             dohProvider = "mullvad",                         // default quad9

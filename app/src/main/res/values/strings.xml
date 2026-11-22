@@ -318,6 +318,11 @@
     <string name="settings_resume_on_boot_description">After a reboot, show a notification to resume protection. Android blocks apps from silently starting themselves in the background, so a tap is required.</string>
     <string name="settings_load_images_title">Load images on synthetic pages</string>
     <string name="settings_load_images_description">On: pages load images like a real browser, so tracking pixels fire and each visit looks normal to the site. Off: images are skipped, which saves a lot of data because images are most of a page\'s size, but a browser that never loads images is unusual, and pixel-based trackers never record the visit.</string>
+    <string name="settings_page_rendering_title">Draw pages as if on screen</string>
+    <string name="settings_page_rendering_description">Pages Fauxx loads are drawn off-screen as a phone would draw them on screen, so a site cannot tell nobody is looking. This uses more battery, mostly on pages with animations or video. “Search only” draws only search sessions, and “Off” draws nothing.</string>
+    <string name="settings_page_rendering_all">All pages</string>
+    <string name="settings_page_rendering_search">Search only</string>
+    <string name="settings_page_rendering_off">Off</string>
     <string name="settings_dns_title">Custom DNS for Fauxx</string>
     <string name="settings_dns_description">Look up the sites Fauxx visits with a resolver you choose, over encrypted DNS (DNS-over-HTTPS) or a plain DNS server, instead of your device\'s DNS. Use this when Pi-hole, NextDNS or a VPN app blocks the tracker domains Fauxx needs to reach. Only Fauxx\'s own traffic uses it: its browsing, and its DNS noise if you turn that on below.</string>
     <string name="settings_dns_unavailable">Your WebView can\'t route Fauxx\'s browsing through custom DNS: it lacks the proxy feature (PROXY_OVERRIDE).</string>

@@ -1,5 +1,6 @@
 package com.fauxx.ui.viewmodels
 
+import com.fauxx.data.model.PageRendering
 import com.fauxx.data.model.DnsMode
 import com.fauxx.engine.webview.WebViewCapabilities
 import com.fauxx.network.dns.DohPresets
@@ -53,6 +54,8 @@ data class SettingsUiState(
     val resumeOnBoot: Boolean = true,
     /** Whether synthetic page loads fetch images (see [com.fauxx.data.model.PoisonProfile.loadImages]). */
     val loadImages: Boolean = false,
+    /** Which synthetic pages are drawn as if on screen (#322, see [com.fauxx.data.model.PageRendering]). */
+    val pageRendering: PageRendering = PageRendering.ALL_PAGES,
     /** Custom DNS for Fauxx's own traffic (#227). */
     val dnsMode: DnsMode = DnsMode.SYSTEM,
     val dohProvider: String = DohPresets.DEFAULT_ID,
@@ -174,6 +177,7 @@ class SettingsViewModel @Inject constructor(
     fun setThemeMode(mode: ThemeMode) { update { it.copy(themeMode = mode) } }
     fun setResumeOnBoot(v: Boolean) { update { it.copy(resumeOnBoot = v) } }
     fun setLoadImages(v: Boolean) { update { it.copy(loadImages = v) } }
+    fun setPageRendering(v: PageRendering) { update { it.copy(pageRendering = v) } }
     /**
      * Turning custom DNS on restores the mode the user last chose (plain only if its server is still
      * valid), instead of always landing on DoH and silently dropping a plain setup.
@@ -371,6 +375,7 @@ class SettingsViewModel @Inject constructor(
                     themeMode = new.themeMode,
                     resumeOnBoot = new.resumeOnBoot,
                     loadImages = new.loadImages,
+                    pageRendering = new.pageRendering,
                     dnsMode = new.dnsMode,
                     dohProvider = new.dohProvider,
                     dohCustomUrl = new.dohCustomUrl,
@@ -411,6 +416,7 @@ class SettingsViewModel @Inject constructor(
             themeMode = p.themeMode,
             resumeOnBoot = p.resumeOnBoot,
             loadImages = p.loadImages,
+            pageRendering = p.pageRendering,
             dnsMode = p.dnsMode,
             dohProvider = p.dohProvider,
             dohCustomUrl = p.dohCustomUrl,

@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fauxx.network.dns.DohPresets
+import com.fauxx.data.model.PageRendering
 import com.fauxx.data.model.DnsMode
 import com.fauxx.BuildConfig
 import com.fauxx.R
@@ -379,6 +380,30 @@ fun SettingsScreen(
                     checked = uiState.loadImages,
                     onCheckedChange = { viewModel.setLoadImages(it) }
                 )
+            }
+        }
+
+        // Drawing synthetic pages as if on screen: realism versus battery (#322)
+        SettingsCard {
+            Text(stringResource(R.string.settings_page_rendering_title), style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.settings_page_rendering_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for ((mode, label) in listOf(
+                    PageRendering.ALL_PAGES to R.string.settings_page_rendering_all,
+                    PageRendering.SEARCH_ONLY to R.string.settings_page_rendering_search,
+                    PageRendering.OFF to R.string.settings_page_rendering_off,
+                )) {
+                    ElevatedFilterChip(
+                        selected = uiState.pageRendering == mode,
+                        onClick = { viewModel.setPageRendering(mode) },
+                        label = { Text(stringResource(label)) }
+                    )
+                }
             }
         }
 
