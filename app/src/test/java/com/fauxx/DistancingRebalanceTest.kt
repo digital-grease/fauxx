@@ -3,7 +3,7 @@ package com.fauxx
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.TargetingEngine
 import com.fauxx.targeting.WeightNormalizer
-import com.fauxx.targeting.layer0.UniformEntropyLayer
+import com.fauxx.targeting.layer0.CategoryPopularityLayer
 import com.fauxx.targeting.layer1.SelfReportLayer
 import com.fauxx.targeting.layer2.AdversarialScraperLayer
 import com.fauxx.targeting.layer3.PersonaRotationLayer
@@ -119,7 +119,7 @@ class DistancingRebalanceTest {
             every { setEnabled(any()) } returns Unit
         }
         val engine = TargetingEngine(
-            UniformEntropyLayer(), layer1, layer2, layer3, normalizer,
+            CategoryPopularityLayer.even(), layer1, layer2, layer3, normalizer,
             CoroutineScope(dispatcher), Unit
         )
         try {

@@ -4,7 +4,7 @@ import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.allocation.AdversarialAllocator
 import com.fauxx.targeting.allocation.BrokerSurrogate
 import com.fauxx.targeting.allocation.CooccurrenceTable
-import com.fauxx.targeting.layer0.UniformEntropyLayer
+import com.fauxx.targeting.layer0.CategoryPopularityLayer
 import com.fauxx.targeting.layer1.SelfReportLayer
 import com.fauxx.targeting.layer2.AdversarialScraperLayer
 import com.fauxx.targeting.layer2.ProfileDriftMetric
@@ -50,7 +50,7 @@ class TargetingEngineAllocationTest {
     private fun neutral(): Map<CategoryPool, Float> = cats.associateWith { 1f }
 
     private fun engine(): TargetingEngine {
-        val l0 = UniformEntropyLayer()
+        val l0 = CategoryPopularityLayer.even()
         val l1: SelfReportLayer = mockk { every { getWeights() } returns flowOf(l1Weights()) }
         val l2: AdversarialScraperLayer = mockk(relaxed = true) { every { getWeights() } returns flowOf(neutral()) }
         val l3: PersonaRotationLayer = mockk(relaxed = true) { every { getWeights() } returns flowOf(neutral()) }

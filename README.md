@@ -29,9 +29,9 @@ Fauxx addresses this by injecting continuous, category-weighted synthetic activi
 
 Fauxx uses a **Demographic Distancing Engine**, a layered system that decides what synthetic activity to generate:
 
-### Layer 0: Baseline (Always Active)
+### Layer 0: Real-World Popularity (Always Active)
 
-Every category starts from the same weight, and none is ever dropped entirely, so decoy activity always spans the whole range of topics. On its own this layer changes nothing: the persona (Layer 3) and your optional inputs (Layers 1 and 2) shape the actual mix.
+Every category starts from how common it is on the real web, so the decoy mix leans the way real browsing does: more entertainment, technology and finance than agriculture or genealogy. Noise spread evenly over every topic is easy to tell from a real person, whose interests follow that same skew (Beugin and McDaniel, PETS 2024). The weights come from SimilarWeb's visit counts per industry for August to October 2023, as published with H. S. Xavier's "The Web unpacked" (2024). They are softened to their square root, so the most popular categories cannot crowd out the rest and a persona's rarer interests still show. No category is ever dropped entirely, so decoy activity still spans the whole range of topics. The persona (Layer 3) and your optional inputs (Layers 1 and 2) then shape the mix from that base.
 
 ### Layer 1: Self-Report (Optional)
 
@@ -55,7 +55,7 @@ Layer 3 runs on its own, whether or not Layers 1 and 2 are enabled. To avoid a p
 
 ### How Weights Combine
 
-All layers produce a weight map across content categories. These weights multiply together and normalize, so the final distribution sums to 1.0. Categories are clamped with a minimum weight of 0.001, because absence is still a signal.
+All layers produce a weight map across content categories. These weights multiply together and normalize, so the final distribution sums to 1.0. Categories are clamped with a minimum weight of 0.001, because absence is still a signal. Since Layer 0's popularity is the base, a category the other layers boost or suppress moves by the same factor whether it is popular or rare, and the Targeting screen's chart colours a category by that movement, not by its popularity.
 
 Example: if you report yourself as a 25-to-34-year-old engineer, Layer 1 suppresses the categories typical of that profile, such as TECHNOLOGY and GAMING, to 0.15×, and boosts distant ones, such as RETIREMENT and PARENTING, to 2.5×. When Layer 2 imports your ad profile and sees Google has tagged you with TECHNOLOGY, it suppresses that category further (0.05×) and boosts categories Google has never associated with you (3.0×). These multiply together, then Layer 3 blends in the current persona's preferences. The result: a decoy profile that reads like a real person, just not you.
 

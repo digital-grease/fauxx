@@ -44,6 +44,7 @@ import com.fauxx.network.dns.HostResolver
 import com.fauxx.network.dns.Resolution
 import com.fauxx.service.ResumeSpec
 import com.fauxx.targeting.TargetingEngine
+import com.fauxx.targeting.layer0.CategoryPopularityLayer
 import com.fauxx.targeting.WeightNormalizer
 import com.fauxx.targeting.layer1.DemographicProfileDao
 import com.fauxx.targeting.layer3.PersonaRateModulator
@@ -172,8 +173,13 @@ internal class EngineShapeHarness(
         every { personaForChannel(any()) } returns persona
     })
 
-    // The default stack (Layer 3 on, Layers 1 and 2 off) through the production blend and normalizer.
-    private val weights = WeightNormalizer().normalizeComplete(PersonaRotationLayer.weightsFor(persona.interests))
+    // The default stack (Layer 0's popularity prior and Layer 3 on, Layers 1 and 2 off) through the
+    // production blend and normalizer.
+    private val weights = WeightNormalizer().normalizeComplete(
+        CategoryPopularityLayer(appContext).weights.let { prior ->
+            PersonaRotationLayer.weightsFor(persona.interests).mapValues { (category, w) -> w * prior.getValue(category) }
+        }
+    )
 
     private val targetingEngine: TargetingEngine = tracked(mockk(relaxed = true) {
         every { cachedWeights } returns MutableStateFlow(weights)
@@ -309,7 +315,7 @@ internal class EngineShapeHarness(
     /** Records each logged action at the virtual time the engine logs it. */
     private val actionLogDao = object : ActionLogDao {
         override suspend fun insert(entry: ActionLogEntity): Long {
-            actions += ActionRecord(clock.currentTimeMillis(), entry.actionType, entry.success)
+            actions += ActionRecord(clock.currentTimeMillis(), entry.actionType, entry.success, entry.category)
             return actions.size.toLong()
         }
         override fun observeAll(): Flow<List<ActionLogEntity>> = flowOf(emptyList())

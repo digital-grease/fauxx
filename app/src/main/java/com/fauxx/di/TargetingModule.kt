@@ -6,7 +6,7 @@ import com.fauxx.targeting.WeightNormalizer
 import com.fauxx.targeting.allocation.AdversarialAllocator
 import com.fauxx.targeting.allocation.CooccurrenceLoader
 import com.fauxx.targeting.allocation.CooccurrenceTable
-import com.fauxx.targeting.layer0.UniformEntropyLayer
+import com.fauxx.targeting.layer0.CategoryPopularityLayer
 import com.fauxx.targeting.layer1.CustomInterestMapper
 import com.fauxx.targeting.layer1.DemographicDistanceMap
 import com.fauxx.targeting.layer1.DemographicProfileDao
@@ -62,7 +62,8 @@ object TargetingModule {
 
     @Provides
     @Singleton
-    fun provideUniformEntropyLayer(): UniformEntropyLayer = UniformEntropyLayer()
+    fun provideCategoryPopularityLayer(@ApplicationContext context: Context): CategoryPopularityLayer =
+        CategoryPopularityLayer(context)
 
     @Provides
     @Singleton
@@ -134,7 +135,7 @@ object TargetingModule {
     @Provides
     @Singleton
     fun provideTargetingEngine(
-        l0: UniformEntropyLayer,
+        l0: CategoryPopularityLayer,
         l1: SelfReportLayer,
         l2: AdversarialScraperLayer,
         l3: PersonaRotationLayer,

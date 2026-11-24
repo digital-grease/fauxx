@@ -65,6 +65,7 @@ import com.fauxx.targeting.layer2.importers.PastedCategory
 import com.fauxx.ui.format.displayNameRes
 import com.fauxx.ui.viewmodels.TargetingUiState
 import com.fauxx.ui.viewmodels.TargetingViewModel
+import com.fauxx.ui.viewmodels.WeightShaping
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -208,7 +209,7 @@ fun TargetingScreen(
 
         // Weight visualization chart
         if (uiState.weights.isNotEmpty()) {
-            WeightChart(weights = uiState.weights)
+            WeightChart(weights = uiState.weights, shaping = uiState.shaping)
         }
 
         Spacer(Modifier.height(8.dp))
@@ -399,8 +400,12 @@ private fun LayerToggleCard(
     }
 }
 
+/**
+ * The top categories by final weight, each bar coloured by [shaping]: whether a layer boosted or
+ * suppressed its category, not whether it is popular (see [com.fauxx.ui.viewmodels.weightShaping]).
+ */
 @Composable
-private fun WeightChart(weights: Map<CategoryPool, Float>) {
+private fun WeightChart(weights: Map<CategoryPool, Float>, shaping: Map<CategoryPool, WeightShaping>) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -414,16 +419,15 @@ private fun WeightChart(weights: Map<CategoryPool, Float>) {
             Spacer(Modifier.height(12.dp))
 
             val maxWeight = weights.values.maxOrNull() ?: 1f
-            val median = 1f / weights.size
 
             weights.entries
                 .sortedByDescending { it.value }
                 .take(15)
                 .forEach { (category, weight) ->
-                    val barColor = when {
-                        weight < median * 0.5f -> MaterialTheme.colorScheme.error        // Suppressed
-                        weight > median * 2f -> MaterialTheme.colorScheme.primary        // Boosted
-                        else -> MaterialTheme.colorScheme.secondary                       // Neutral
+                    val barColor = when (shaping[category]) {
+                        WeightShaping.SUPPRESSED -> MaterialTheme.colorScheme.error
+                        WeightShaping.BOOSTED -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.secondary
                     }
                     WeightBar(
                         label = stringResource(category.displayNameRes()),

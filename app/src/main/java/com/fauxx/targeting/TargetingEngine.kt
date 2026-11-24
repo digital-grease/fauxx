@@ -4,7 +4,7 @@ import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.targeting.allocation.AdversarialAllocator
 import com.fauxx.targeting.allocation.BrokerSurrogate
 import com.fauxx.targeting.allocation.CooccurrenceTable
-import com.fauxx.targeting.layer0.UniformEntropyLayer
+import com.fauxx.targeting.layer0.CategoryPopularityLayer
 import com.fauxx.targeting.layer1.SelfReportLayer
 import com.fauxx.targeting.layer2.AdversarialScraperLayer
 import com.fauxx.targeting.layer2.ProfileDriftMetric
@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.io.Closeable
 import javax.inject.Inject
@@ -28,6 +29,8 @@ import javax.inject.Singleton
  *
  * Combines all four targeting layers into a final normalized weight map via multiplicative
  * combination: finalWeight = L0 × L1 × L2 × L3, then normalized so all weights sum to 1.0.
+ * Layer 0 is how common each category is on the real web (#322), so the other layers shape a
+ * realistic base rather than an even one; [baseline] is that base on its own.
  *
  * When adversarial allocation is enabled (E4 #180), a final optimization stage perturbs that
  * normalized distribution within a KL-divergence budget to suppress what a broker-inference
@@ -45,7 +48,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class TargetingEngine private constructor(
-    private val layer0: UniformEntropyLayer,
+    private val layer0: CategoryPopularityLayer,
     private val layer1: SelfReportLayer,
     private val layer2: AdversarialScraperLayer,
     private val layer3: PersonaRotationLayer,
@@ -55,7 +58,7 @@ class TargetingEngine private constructor(
 ) : Closeable {
 
     @Inject constructor(
-        layer0: UniformEntropyLayer,
+        layer0: CategoryPopularityLayer,
         layer1: SelfReportLayer,
         layer2: AdversarialScraperLayer,
         layer3: PersonaRotationLayer,
@@ -72,7 +75,7 @@ class TargetingEngine private constructor(
      * adversarial allocation is off by default and so never runs unless explicitly enabled.
      */
     internal constructor(
-        layer0: UniformEntropyLayer,
+        layer0: CategoryPopularityLayer,
         layer1: SelfReportLayer,
         layer2: AdversarialScraperLayer,
         layer3: PersonaRotationLayer,
@@ -94,6 +97,15 @@ class TargetingEngine private constructor(
     /** Default uniform weights used before first layer emission. */
     private val uniformWeights: Map<CategoryPool, Float> =
         CategoryPool.values().associateWith { 1f / CategoryPool.values().size }
+
+    /**
+     * Layer 0 on its own, normalized: the share each category would get if no other layer shaped
+     * the mix. The Targeting screen compares the final weights against it, so a category reads as
+     * boosted or suppressed only when a layer moved it, not because it is popular or rare.
+     */
+    val baseline: StateFlow<Map<CategoryPool, Float>> = layer0.getWeights()
+        .map { normalizer.normalizeComplete(it) }
+        .stateIn(singletonScope, SharingStarted.Eagerly, uniformWeights)
 
     /**
      * Cached weight [StateFlow] that recalculates only when any layer emits new data
