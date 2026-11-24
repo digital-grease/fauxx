@@ -7,8 +7,10 @@ import android.os.Process
 import timber.log.Timber
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.db.LogMetadata
+import com.fauxx.data.location.CityCoord
 import com.fauxx.data.location.CityDatabase
 import com.fauxx.data.location.FakeRouteGenerator
+import com.fauxx.data.location.LocationAnchors
 import com.fauxx.data.model.ActionType
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
@@ -31,12 +33,21 @@ private const val MOCK_PROVIDER = MOCK_LOCATION_PROVIDER
  *
  * Implements [LocationDiagnostics] so the UI can surface why start() failed (the silent
  * failure was the user-visible symptom in issue #48).
+ *
+ * **Sensitive places (#322 item 12).** A route starts at one of [LocationAnchors]' points for a
+ * city in the persona's region, and every fix stays at least [LocationAnchors.BUFFER_M] from any
+ * sensitive place: medical facilities, places of worship, schools, shelters and the other places
+ * the FTC's location-data orders list, plus the sensitive purchases the crawl list avoids. A fake
+ * visit there would plant a sensitive inference on the real user. If no city in the persona's
+ * region has a clear point, or the list failed to load, the action is skipped rather than spoofed
+ * anywhere else.
  */
 @Singleton
 class LocationSpoofModule @Inject constructor(
     @ApplicationContext private val context: Context,
     private val routeGenerator: FakeRouteGenerator,
     private val cityDatabase: CityDatabase,
+    private val anchors: LocationAnchors,
     private val profileRepo: PoisonProfileRepository,
     private val personaLayer: PersonaRotationLayer,
     private val random: Random = Random.Default,
@@ -137,14 +148,43 @@ class LocationSpoofModule @Inject constructor(
             )
         }
 
-        val mode = FakeRouteGenerator.MovementMode.values().random(random)
         // E8 (#174): bind spoofed locations to the active persona's region so the
         // location story corroborates the demographic one. Null persona (Layer 3 off,
         // or none generated yet) keeps the unbound any-city behavior; an unmatched
-        // region hint falls back to the full list inside randomCity.
+        // region hint falls back to the full list inside randomEligibleCity.
         val persona = personaLayer.personaForChannel(PersonaChannel.LOCATION)
-        val city = cityDatabase.randomCity(regionHint = persona?.region)
-        val route = routeGenerator.generateRoute(origin = city, mode = mode, count = 5)
+        // #322 item 12: only a city with a point clear of sensitive places, and never one
+        // outside the persona's region instead.
+        val city = cityDatabase.randomEligibleCity(regionHint = persona?.region, eligible = anchors::covers)
+        val anchor = city?.let { anchors.pick(it, random) }
+        if (city == null || anchor == null) {
+            return skipped(
+                category,
+                if (anchors.loadFailed) "Skipped: the list of places clear of sensitive locations failed to load"
+                else "Skipped: no city in the persona's region has a place clear of sensitive locations",
+            )
+        }
+        val modes = FakeRouteGenerator.MovementMode.values().filter {
+            FakeRouteGenerator.minReachM(it, ROUTE_POINTS, ROUTE_INTERVAL_MS) <= anchor.reachM
+        }
+        if (modes.isEmpty()) return skipped(category, "Skipped: no room for a route clear of sensitive locations")
+        val mode = modes.random(random)
+        val route = routeGenerator.generateRoute(
+            origin = CityCoord(city.name, anchor.lat, anchor.lng, city.region),
+            mode = mode,
+            count = ROUTE_POINTS,
+            intervalMs = ROUTE_INTERVAL_MS,
+            maxReachM = anchor.reachM,
+        )
+        // The generator keeps within reach by construction; checked again so a fix near a
+        // sensitive place can never reach the provider.
+        val farthestM = route.maxOfOrNull {
+            FakeRouteGenerator.distanceM(anchor.lat, anchor.lng, it.latitude, it.longitude)
+        } ?: 0.0
+        if (farthestM > anchor.reachM) {
+            Timber.w("Route strayed %.0f m from its anchor, reach %.0f m; not spoofed", farthestM, anchor.reachM)
+            return skipped(category, "Skipped: route strayed too near a sensitive location")
+        }
 
         var lastTime = route.firstOrNull()?.time ?: 0L
         for (point in route) {
@@ -167,8 +207,21 @@ class LocationSpoofModule @Inject constructor(
             metadata = LogMetadata.toJson(
                 LogMetadata.ROUTE_POINTS to route.size.toString(),
                 LogMetadata.ROUTE_DURATION to if (durationMs > 0) "${durationMs / 1000}s" else null,
+                LogMetadata.SENSITIVE_CLEARANCE to "at least ${(anchor.clearanceM - farthestM).toInt()} m",
             )
         )
+    }
+
+    private fun skipped(category: CategoryPool, detail: String) = ActionLogEntity(
+        actionType = ActionType.LOCATION_SPOOF,
+        category = category,
+        detail = detail,
+        success = false,
+    )
+
+    private companion object {
+        const val ROUTE_POINTS = 5
+        const val ROUTE_INTERVAL_MS = 5_000L
     }
 }
 

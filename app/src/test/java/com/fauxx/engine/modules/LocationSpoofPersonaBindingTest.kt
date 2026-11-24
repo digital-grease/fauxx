@@ -5,6 +5,7 @@ import android.content.Context
 import android.location.LocationManager
 import com.fauxx.data.location.CityCoord
 import com.fauxx.data.location.CityDatabase
+import com.fauxx.data.location.LocationAnchors
 import com.fauxx.data.model.PoisonProfile
 import com.fauxx.data.model.SyntheticPersona
 import com.fauxx.data.querybank.CategoryPool
@@ -45,7 +46,7 @@ class LocationSpoofPersonaBindingTest {
         every { locationManager.removeTestProvider(any()) } just runs
 
         cityDatabase = mockk {
-            every { randomCity(any()) } returns CityCoord("Seattle", 47.6062, -122.3321, "US_WEST")
+            every { randomEligibleCity(any(), any()) } returns CityCoord("Seattle", 47.6062, -122.3321, "US_WEST")
         }
     }
 
@@ -53,6 +54,7 @@ class LocationSpoofPersonaBindingTest {
         context = context,
         routeGenerator = mockk(relaxed = true),
         cityDatabase = cityDatabase,
+        anchors = LocationAnchors { """{"cities": {"Seattle": [[47.6101, -122.3421, 260]]}}""" },
         // A REAL PoisonProfile rather than a relaxed mock: a relaxed mock hands back mocked
         // field values instead of the shipped defaults, which silently changes what the
         // module reads.
@@ -74,7 +76,7 @@ class LocationSpoofPersonaBindingTest {
 
         val result = m.onAction(CategoryPool.COOKING)
 
-        verify(exactly = 1) { cityDatabase.randomCity(regionHint = "US_WEST") }
+        verify(exactly = 1) { cityDatabase.randomEligibleCity(regionHint = "US_WEST", eligible = any()) }
         assertTrue(result.detail.contains("Seattle"))
     }
 
@@ -85,6 +87,6 @@ class LocationSpoofPersonaBindingTest {
 
         m.onAction(CategoryPool.COOKING)
 
-        verify(exactly = 1) { cityDatabase.randomCity(regionHint = null) }
+        verify(exactly = 1) { cityDatabase.randomEligibleCity(regionHint = null, eligible = any()) }
     }
 }

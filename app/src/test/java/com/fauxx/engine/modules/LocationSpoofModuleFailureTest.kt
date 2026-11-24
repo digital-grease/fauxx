@@ -5,6 +5,7 @@ import android.content.Context
 import android.location.LocationManager
 import com.fauxx.data.location.CityDatabase
 import com.fauxx.data.location.FakeRouteGenerator
+import com.fauxx.data.location.LocationAnchors
 import com.fauxx.data.querybank.CategoryPool
 import com.fauxx.engine.PoisonProfileRepository
 import io.mockk.every
@@ -51,6 +52,7 @@ class LocationSpoofModuleFailureTest {
             context = context,
             routeGenerator = mockk(relaxed = true),
             cityDatabase = mockk(relaxed = true),
+            anchors = LocationAnchors { "{\"cities\": {}}" },
             profileRepo = profileRepo,
             personaLayer = mockk { every { personaForChannel(any()) } returns null }
         )

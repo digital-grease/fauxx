@@ -79,5 +79,7 @@ scripts/*
 !scripts/build_category_popularity.py
 # #322 landing-page intents: names the IAB purchase-intent nodes and checks the exclusions.
 !scripts/build_purchase_intents.py
+# #322 item 12: where location spoofing may go, clear of sensitive places (Overture Maps, OpenStreetMap).
+!scripts/build_location_anchors.py
 # JVM attach artifacts from jstack/debugger sessions
 .attach_pid*
