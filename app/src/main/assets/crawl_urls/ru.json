@@ -174,5 +174,26 @@
 
   { "url": "https://www.psychologies.ru/couple/", "category": "RELATIONSHIPS_DATING" },
   { "url": "https://www.woman.ru/relations/", "category": "RELATIONSHIPS_DATING" },
-  { "url": "https://www.b17.ru/articles/", "category": "RELATIONSHIPS_DATING" }
+  { "url": "https://www.b17.ru/articles/", "category": "RELATIONSHIPS_DATING" },
+  { "url": "https://store.steampowered.com/category/rpg/", "category": "GAMING", "intent": 1616 },
+  { "url": "https://www.gog.com/ru/games", "category": "GAMING", "intent": 1616 },
+  { "url": "https://rog.asus.com/ru/laptops-group/", "category": "GAMING", "intent": 954 },
+  { "url": "https://www.xbox.com/ru-RU/consoles", "category": "GAMING", "intent": 971 },
+  { "url": "https://lemken.com/ru-ru/innovacionnye-mashiny/obrabotka-pochvy", "category": "AGRICULTURE", "intent": 1429 },
+  { "url": "https://amazone.net/ru/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%86%D0%B8%D1%8F-%D0%B8-%D1%86%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D1%8B%D0%B5-%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%B8%D1%8F/%D1%81%D0%B5%D0%BB%D1%8C%D1%81%D0%BA%D0%BE%D1%85%D0%BE%D0%B7%D1%8F%D0%B9%D1%81%D1%82%D0%B2%D0%B5%D0%BD%D0%BD%D0%B0%D1%8F-%D1%82%D0%B5%D1%85%D0%BD%D0%B8%D0%BA%D0%B0-%D1%83%D1%85%D0%BE%D0%B4-%D0%B7%D0%B0-%D0%BB%D0%B0%D0%BD%D0%B4%D1%88%D0%B0%D1%84%D1%82%D0%B0%D0%BC%D0%B8/%D0%BE%D0%B1%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0-%D0%BF%D0%BE%D1%87%D0%B2%D1%8B/%D0%BF%D0%BB%D1%83%D0%B3%D0%B8", "category": "AGRICULTURE", "intent": 1429 },
+  { "url": "https://www.udemy.com/courses/development/", "category": "ACADEMIC", "intent": 1374 },
+  { "url": "https://wise.com/ru/pricing/", "category": "FINANCE", "intent": 1385 },
+  { "url": "https://ru.trip.com/hotels/istanbul-hotels-list-532/", "category": "TRAVEL", "intent": 1666 },
+  { "url": "https://www.localrent.com/ru/turkey/", "category": "TRAVEL", "intent": 1652 },
+  { "url": "https://www.samsung.com/ru/smartphones/all-smartphones/", "category": "TECHNOLOGY", "intent": 961 },
+  { "url": "https://consumer.huawei.com/ru/laptops/", "category": "TECHNOLOGY", "intent": 954 },
+  { "url": "https://www.lg.com/ru/televisions", "category": "TECHNOLOGY", "intent": 966 },
+  { "url": "https://ru.yamaha.com/ru/musical-instruments/guitars-basses-amps/", "category": "MUSIC", "intent": 1473 },
+  { "url": "https://www.samsung.com/ru/watches/all-watches/", "category": "FITNESS", "intent": 957 },
+  { "url": "https://consumer.huawei.com/ru/wearables/", "category": "FITNESS", "intent": 957 },
+  { "url": "https://tilda.cc/ru/pricing/", "category": "BUSINESS", "intent": 1679 },
+  { "url": "https://www.canva.com/ru_ru/pricing/", "category": "BUSINESS", "intent": 1612 },
+  { "url": "https://fornex.com/ru/web-hosting/", "category": "BUSINESS", "intent": 1679 },
+  { "url": "https://www.bernina.com/ru-RU/%D0%9C%D0%B0%D1%88%D0%B8%D0%BD%D1%8B-RU/%D0%A8%D0%B2%D0%B5%D0%B8%D0%BD%D1%8B%D0%B5-%D0%BC%D0%B0%D1%88%D0%B8%D0%BD%D1%8B", "category": "CRAFTS", "intent": 1472 },
+  { "url": "https://www.myheritage.com/family-tree?lang=RU", "category": "HISTORY", "intent": 1381 }
 ]

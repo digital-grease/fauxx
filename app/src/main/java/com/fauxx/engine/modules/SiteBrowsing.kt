@@ -60,7 +60,8 @@ interface SiteBrowsing {
  *
  * Each step collects the page's links, picks one with [SameSiteLinks], and clicks the page's own
  * anchor, so the navigation, its referrer and the site's click instrumentation are genuine; the
- * WebView client still re-checks every navigation against the blocklist. Steps on one site are
+ * WebView client still re-checks every navigation against the blocklist. On a shop's site it never
+ * follows a link to a sensitive purchase ([CrawlListManager.isSensitiveShopPage], #322 item 7). Steps on one site are
  * more than [MIN_SAME_SITE_GAP_MS] apart, the crawl list's per-domain minimum, and browsing stops
  * at a page that failed to load (an error page or a bot check), or when no link qualifies.
  */
@@ -98,7 +99,8 @@ class SiteBrowser @Inject constructor(
             val link = SameSiteLinks.pick(
                 SameSiteLinks.candidates(
                     collectLinks(webView), pageUrl, visited,
-                    isBlocked = blocklist::isUrlBlocked,
+                    // On a shop's site, never into a section whose purchase intent is sensitive (#322 item 7).
+                    isBlocked = { blocklist.isUrlBlocked(it) || crawlListManager.isSensitiveShopPage(it) },
                     isSensitive = { queryBlocklist.isBlockedInAnyLocale(it) },
                 ),
                 random,
@@ -193,7 +195,7 @@ class SiteBrowser @Inject constructor(
  * Which link on a page to follow next (#322 item 2). Pure, so the gating is unit-testable.
  *
  * A candidate is an http(s) link on the page's own host (with or without `www.`), not a page
- * already seen in this visit, and not one of: account, login, cart, checkout, subscription,
+ * already seen in this visit, and not one of: account, login, cart, wishlist, order, checkout, subscription,
  * sharing, printing, admin or feed pages, files such as PDFs, images and archives, a URL the
  * domain blocklist blocks, or one whose words match the harmful-query blocklist (a path is often
  * a slug of the page's title). Deeper paths are likelier, since articles sit below the sections
@@ -207,6 +209,11 @@ object SameSiteLinks {
         "sso", "cart", "basket", "checkout", "subscribe", "unsubscribe", "subscription", "newsletter", "donate",
         "payment", "billing", "share", "print", "email", "admin", "wp-admin", "wp-login", "feed", "rss",
         "preferences", "settings", "privacy-settings", "cookie-settings",
+        // Shops (#322 item 7): carts and accounts as Apple, Nike and Zara and the es, fr and ru shops name them.
+        "bag", "shopping-bag", "shopping-cart", "wishlist", "favorites", "favourites", "orders", "order-status",
+        "panier", "compte", "mon-compte", "connexion", "commande", "commandes", "liste-de-souhaits",
+        "carrito", "cesta", "cuenta", "mi-cuenta", "pedido", "pedidos", "iniciar-sesion", "favoritos",
+        "korzina", "lk", "zakaz", "zakazy", "izbrannoe", "vhod",
     )
 
     private val SKIPPED_EXTENSIONS = setOf(

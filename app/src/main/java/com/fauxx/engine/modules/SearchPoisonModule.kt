@@ -463,7 +463,8 @@ class SearchPoisonModule @Inject constructor(
                             hrefs, random,
                             max = random.nextInt(1, maxLinks + 1),
                             isAllowed = crawlListManager::isCuratedHost,
-                            isBlocked = blocklist::isUrlBlocked,
+                            // #322 item 7: a result on a shop's site, never in a sensitive section.
+                            isBlocked = { blocklist.isUrlBlocked(it) || crawlListManager.isSensitiveShopPage(it) },
                         )
                         for (link in links) {
                             if (clock.currentTimeMillis() > deadline) break

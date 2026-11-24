@@ -23,10 +23,19 @@ import kotlin.math.ln
  * one of these sites, it goes to a favourite [share] of the time, the favourites weighted 1, 1/2,
  * 1/3 and so on in [sites] order (Zipf), and otherwise draws by popularity ([SitePopularity]).
  *
+ * The persona's shopping habit lives here too (#322 item 7): [landingShare] of its crawl-list
+ * visits go to an advertiser's landing page rather than an editorial page. Shops take 17.9% of the
+ * web's visits outside search, social networks, news, adult sites, e-mail and utilities (SimilarWeb,
+ * August to October 2023), the part of browsing the crawl list stands in for. About an eighth of
+ * crawl-list draws can't go to a landing page (the category has none, or it is an ad-preference
+ * dashboard visit), so a persona's share is drawn a little above that, from [LANDING_PER_MILLE]
+ * (average 20.5%), for about 18% of its visits on average.
+ *
  * @property sites The favourites, most visited first, as [SitePopularity.siteOf] names them.
  * @property share Chance a visit goes to a favourite when one fits the category.
+ * @property landingShare Chance a crawl-list visit goes to an advertiser's landing page.
  */
-data class HabitualSites(val sites: List<String>, val share: Double) {
+data class HabitualSites(val sites: List<String>, val share: Double, val landingShare: Double = 0.0) {
 
     /** Zipf weight of the favourite at [index] in [sites]. */
     fun weightAt(index: Int): Double = 1.0 / (index + 1)
@@ -34,6 +43,9 @@ data class HabitualSites(val sites: List<String>, val share: Double) {
     companion object {
         private val SITE_COUNT = 5..15
         private val SHARE_PER_MILLE = 300..600
+
+        /** Per mille of crawl-list visits a persona makes to landing pages; see the class KDoc. */
+        val LANDING_PER_MILLE = 125..285
         private const val DOMAIN = "sites"
         private const val DRAW_RESOLUTION = 1_000_000
 
@@ -54,7 +66,9 @@ data class HabitualSites(val sites: List<String>, val share: Double) {
             popularity: SitePopularity,
             localeTag: String,
         ): HabitualSites {
-            val corpus = entries.filterNot { it.isCustom }
+            // Editorial pages only: landing pages (#322 item 7) arrived after personas had favourites,
+            // and counting them would change every persona's favourites at once on that update.
+            val corpus = entries.filterNot { it.isCustom || it.isLanding }
             val inInterests = corpus.filter { interests.isEmpty() || it.category in interests }
             val sites = inInterests.map { popularity.siteOf(it.domain) }.distinct()
             val count = SITE_COUNT.first + DeviceDeriver.pick(key, "$DOMAIN:count:$localeTag", 0, SITE_COUNT.count())
@@ -68,7 +82,9 @@ data class HabitualSites(val sites: List<String>, val share: Double) {
                 .map { it.first }
             val share = (SHARE_PER_MILLE.first +
                 DeviceDeriver.pick(key, "$DOMAIN:share", 0, SHARE_PER_MILLE.count())) / 1000.0
-            return HabitualSites(chosen, share)
+            val landingShare = (LANDING_PER_MILLE.first +
+                DeviceDeriver.pick(key, "$DOMAIN:landing", 0, LANDING_PER_MILLE.count())) / 1000.0
+            return HabitualSites(chosen, share, landingShare)
         }
     }
 }

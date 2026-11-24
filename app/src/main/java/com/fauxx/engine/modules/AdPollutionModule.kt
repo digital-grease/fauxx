@@ -30,8 +30,9 @@ private val AD_DASHBOARD_URLS = listOf(
  * Loads ad-heavy pages in a background WebView and visits ad preference dashboards
  * to populate the user's ad profile with off-demographic signals.
  *
- * No ad clicks or conversions are generated: every load is a plain page visit,
- * including the occasional ad-preference dashboard visit.
+ * Part of its crawl-list pages are advertisers' own landing pages (#322 item 7), where their
+ * retargeting pixels record a purchase intent; the log names the IAB segment. No ad clicks or
+ * conversions are generated: every load is a plain page view, and nothing is added to a cart.
  */
 @Singleton
 class AdPollutionModule @Inject constructor(
@@ -134,7 +135,7 @@ class AdPollutionModule @Inject constructor(
             metadata = if (crawlEntry?.isCustom == true) {
                 LogMetadata.append(metadata, LogMetadata.SOURCE to LogMetadata.SOURCE_CUSTOM)
             } else {
-                metadata
+                LogMetadata.append(metadata, LogMetadata.PURCHASE_INTENT to crawlEntry?.let(crawlListManager::describeIntent))
             },
             success = success
         )

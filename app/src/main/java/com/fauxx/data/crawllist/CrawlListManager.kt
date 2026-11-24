@@ -44,6 +44,9 @@ private const val CLEANUP_THRESHOLD = 500
  *   of visits goes to the persona's favourite sites instead ([HabitualSites], #322 item 3).
  * - Skips URLs and domains that keep failing ([UrlHealthGate], #353), falling back to other
  *   categories and then to ignoring that memory rather than stalling.
+ * - Keeps advertisers' landing pages ([CrawlEntry.isLanding], #322 item 7) apart: a draw is a
+ *   landing page the persona's [HabitualSites.landingShare] of the time when the category has
+ *   one, and an editorial page otherwise.
  *
  * User-added sites (#328): when the user has added their own sites, a size-scaled share of
  * selections ([CustomPoolMixer]) draws from them instead, independently of [category]. They pass
@@ -82,17 +85,30 @@ class CrawlListManager @Inject constructor(
      * @param category If non-null, prefer URLs in this category.
      * @return A [CrawlEntry] to visit, or null if none is currently eligible.
      */
-    fun nextUrl(category: CategoryPool? = null): CrawlEntry? {
+    fun nextUrl(category: CategoryPool? = null): CrawlEntry? = nextUrl(category, drawLanding(category))
+
+    private fun nextUrl(category: CategoryPool?, landing: Boolean): CrawlEntry? {
         val now = clock.currentTimeMillis()
         cleanupStaleEntries(now)
         val customSites = customPool.sites()
         if (CustomPoolMixer.drawCustom(customSites.size, random)) {
             nextCustomUrl(customSites, category, now)?.let { return it }
         }
-        return pick(candidatePool(category).filter { entry -> isEligible(entry.domain, now) })
+        return pick(candidatePool(category, landing).filter { entry -> isEligible(entry.domain, now) })
             ?.also { entry ->
                 lastVisitByDomain[entry.domain] = now
             }
+    }
+
+    /**
+     * Whether this draw goes to an advertiser's landing page (#322 item 7): the persona's
+     * [HabitualSites.landingShare] of the time, and only when [category] (or, with none, the
+     * corpus) has a landing page to go to.
+     */
+    private fun drawLanding(category: CategoryPool?): Boolean {
+        val share = habitualSites()?.landingShare ?: return false
+        if (share <= 0.0 || random.nextDouble() >= share) return false
+        return currentUrls().any { it.isLanding && (category == null || it.category == category) }
     }
 
     /**
@@ -143,6 +159,10 @@ class CrawlListManager @Inject constructor(
             SitePopularity.parse(context.assets.open(POPULARITY_ASSET).bufferedReader().use { it.readText() })
         }.onFailure { Timber.w(it, "Site popularity unavailable; sites are drawn evenly") }
             .getOrDefault(SitePopularity.EVEN)
+        purchaseIntents = runCatching {
+            PurchaseIntents.parse(context.assets.open(PurchaseIntents.ASSET_PATH).bufferedReader().use { it.readText() })
+        }.onFailure { Timber.w(it, "Purchase-intent names unavailable; the log shows ids") }
+            .getOrDefault(PurchaseIntents.UNNAMED)
     }
 
     /** Test-only seam: use [popularity] instead of the bundled asset. */
@@ -180,13 +200,14 @@ class CrawlListManager @Inject constructor(
      *   corpus itself is empty for the requested category.
      */
     fun nextUrlOrWait(category: CategoryPool? = null): PendingCrawlEntry? {
+        val landing = drawLanding(category)
         // Fast path: try the normal lookup first
-        val immediate = nextUrl(category)
+        val immediate = nextUrl(category, landing)
         if (immediate != null) return PendingCrawlEntry(immediate, 0L)
 
         // All candidates are rate-limited — find the one with the shortest remaining wait
         val now = clock.currentTimeMillis()
-        val eligible = candidatePool(category)
+        val eligible = candidatePool(category, landing)
         if (eligible.isEmpty()) return null
 
         // Find the entry whose domain's rate-limit expires soonest
@@ -202,15 +223,22 @@ class CrawlListManager @Inject constructor(
     }
 
     /**
-     * The URLs a pick may choose from, before the rate limit: [category]'s entries (or every
-     * entry), minus blocklisted ones and minus those [urlHealth] holds back (#353).
+     * The URLs a pick may choose from, before the rate limit: the landing pages when [landing], the
+     * editorial pages otherwise; of those, [category]'s entries (or every entry), minus blocklisted
+     * ones and minus those [urlHealth] holds back (#353).
      *
      * Holding back must never stall the crawler. If every healthy-looking entry of [category] is
      * held back, the pick falls back to the healthy entries of any category, and if the whole
-     * corpus is held back, the memory is ignored and the plain list is used.
+     * corpus is held back, the memory is ignored and the plain list is used. Landing pages that
+     * are all held back fall back to editorial pages the same way.
      */
-    private fun candidatePool(category: CategoryPool?): List<CrawlEntry> {
-        val urls = currentUrls()
+    private fun candidatePool(category: CategoryPool?, landing: Boolean = false): List<CrawlEntry> {
+        val all = currentUrls()
+        if (landing) {
+            val landingPages = all.filter { it.isLanding && (category == null || it.category == category) }
+            landingPages.filter { !blocklist.isUrlBlocked(it.url) && isHealthy(it) }.takeIf { it.isNotEmpty() }?.let { return it }
+        }
+        val urls = all.filterNot { it.isLanding }.ifEmpty { all }
         val inCategory = if (category != null) {
             urls.filter { it.category == category }.ifEmpty { urls } // Fall back to any category
         } else {
@@ -278,6 +306,44 @@ class CrawlListManager @Inject constructor(
         return curatedHosts().any { normalized == it || normalized.endsWith(".$it") }
     }
 
+    /**
+     * True if [host] is an advertiser's site with landing pages in the active locale's corpus
+     * (#322 item 7), matched like [isCuratedHost].
+     */
+    fun isShopHost(host: String): Boolean {
+        val normalized = host.lowercase().removePrefix("www.")
+        return shopHosts().any { normalized == it || normalized.endsWith(".$it") }
+    }
+
+    /**
+     * True if [url] is on a shop's site ([isShopHost]) and its address names a sensitive purchase
+     * ([SensitivePurchases]). Browsing on and search clicks skip such pages, so a shop's menus
+     * cannot lead a visit to a purchase intent the curation keeps out.
+     */
+    fun isSensitiveShopPage(url: String): Boolean {
+        val host = runCatching { java.net.URI(url).host }.getOrNull() ?: return false
+        return isShopHost(host) && SensitivePurchases.mentions(url)
+    }
+
+    /** The purchase-intent node [entry] signals, named, or null for an editorial page. */
+    fun describeIntent(entry: CrawlEntry): String? = entry.intent?.let { purchaseIntents.describe(it) }
+
+    private val shopHostsByLocale = ConcurrentHashMap<SupportedLocale, Set<String>>()
+
+    private fun shopHosts(): Set<String> =
+        shopHostsByLocale.getOrPut(localeManager.currentLocale) {
+            currentUrls().filter { it.isLanding }.mapNotNullTo(mutableSetOf()) { entry ->
+                runCatching { java.net.URI(entry.url).host }.getOrNull()?.lowercase()?.removePrefix("www.")
+            }
+        }
+
+    /**
+     * Names of the purchase-intent nodes, read from the bundled asset with the first bundled crawl
+     * list, as [popularity] is; a list a test installs directly keeps them unnamed.
+     */
+    @Volatile
+    private var purchaseIntents: PurchaseIntents = PurchaseIntents.UNNAMED
+
     private fun curatedHosts(): Set<String> =
         hostsByLocale.getOrPut(localeManager.currentLocale) {
             currentUrls().mapNotNullTo(mutableSetOf()) { entry ->
@@ -329,6 +395,9 @@ class CrawlListManager @Inject constructor(
     @VisibleForTesting
     internal fun replaceUrlsForTest(locale: SupportedLocale, urls: List<CrawlEntry>) {
         urlsByLocale[locale] = urls
+        hostsByLocale.remove(locale)
+        shopHostsByLocale.remove(locale)
+        habitsFor = null
     }
 }
 
@@ -346,13 +415,21 @@ data class PendingCrawlEntry(
  *
  * [isCustom] marks a site the user added themselves (#328). Modules use it to keep the address out
  * of the debug log and to tag the action-log entry; it is otherwise visited like any other entry.
+ *
+ * [intent] marks an advertiser's landing page (#322 item 7): the IAB Audience Taxonomy 1.1
+ * purchase-intent node a visit there signals ([PurchaseIntents] names it). Ordinary draws leave
+ * landing pages out; the persona's [HabitualSites.landingShare] of draws goes to them instead.
  */
 data class CrawlEntry(
     val url: String,
     val domain: String,
     val category: CategoryPool,
     val isCustom: Boolean = false,
-)
+    val intent: Int? = null,
+) {
+    /** An advertiser's landing page rather than an editorial page. */
+    val isLanding: Boolean get() = intent != null
+}
 
 /**
  * Raw JSON representation of a crawl entry.
@@ -364,7 +441,8 @@ data class CrawlEntry(
 @Keep
 private data class CrawlEntryJson(
     val url: String = "",
-    val category: String = ""
+    val category: String = "",
+    val intent: Int? = null,
 ) {
     fun toCrawlEntry(): CrawlEntry? {
         if (url.isBlank()) return null
@@ -373,6 +451,6 @@ private data class CrawlEntryJson(
         val domain = try {
             android.net.Uri.parse(url).host ?: return null
         } catch (e: Exception) { return null }
-        return CrawlEntry(url, domain, cat)
+        return CrawlEntry(url, domain, cat, intent = intent?.takeIf { it > 0 })
     }
 }

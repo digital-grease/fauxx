@@ -9378,5 +9378,1145 @@
   {
     "url": "https://www.tiffany.com/engagement/",
     "category": "RELATIONSHIPS_DATING"
+  },
+  {
+    "url": "https://www.hyundaiusa.com/us/en/vehicles/tucson",
+    "category": "AUTOMOTIVE",
+    "intent": 810
+  },
+  {
+    "url": "https://www.kia.com/us/en/telluride",
+    "category": "AUTOMOTIVE",
+    "intent": 810
+  },
+  {
+    "url": "https://www.jeep.com/wrangler.html",
+    "category": "AUTOMOTIVE",
+    "intent": 818
+  },
+  {
+    "url": "https://www.chevrolet.com/trucks/silverado/1500",
+    "category": "AUTOMOTIVE",
+    "intent": 819
+  },
+  {
+    "url": "https://www.carvana.com/cars/honda-cr-v",
+    "category": "AUTOMOTIVE",
+    "intent": 833
+  },
+  {
+    "url": "https://www.pepboys.com/tires",
+    "category": "AUTOMOTIVE",
+    "intent": 860
+  },
+  {
+    "url": "https://www.weathertech.com/auto/floormats/",
+    "category": "AUTOMOTIVE",
+    "intent": 854
+  },
+  {
+    "url": "https://www.progressive.com/auto/",
+    "category": "AUTOMOTIVE",
+    "intent": 1390
+  },
+  {
+    "url": "https://www.geico.com/auto-insurance/",
+    "category": "AUTOMOTIVE",
+    "intent": 1390
+  },
+  {
+    "url": "https://www.lego.com/en-us/themes/city",
+    "category": "PARENTING",
+    "intent": 1366
+  },
+  {
+    "url": "https://www.target.com/c/toys-games/-/N-5xtb0",
+    "category": "PARENTING",
+    "intent": 1366
+  },
+  {
+    "url": "https://www.walmart.com/cp/toys/4171",
+    "category": "PARENTING",
+    "intent": 1366
+  },
+  {
+    "url": "https://www.kiwico.com/kiwi",
+    "category": "PARENTING",
+    "intent": 1366
+  },
+  {
+    "url": "https://www.crayola.com/products",
+    "category": "PARENTING",
+    "intent": 1267
+  },
+  {
+    "url": "https://www.officedepot.com/l/school-supplies",
+    "category": "PARENTING",
+    "intent": 1345
+  },
+  {
+    "url": "https://www.idtech.com/courses",
+    "category": "PARENTING",
+    "intent": 1382
+  },
+  {
+    "url": "https://www.invent.org/programs/camp-invention",
+    "category": "PARENTING",
+    "intent": 1382
+  },
+  {
+    "url": "https://www.fidelity.com/retirement/roth-ira",
+    "category": "RETIREMENT",
+    "intent": 1396
+  },
+  {
+    "url": "https://www.schwab.com/ira",
+    "category": "RETIREMENT",
+    "intent": 1396
+  },
+  {
+    "url": "https://investor.vanguard.com/accounts-plans/iras",
+    "category": "RETIREMENT",
+    "intent": 1396
+  },
+  {
+    "url": "https://www.sofi.com/invest/ira/",
+    "category": "RETIREMENT",
+    "intent": 1396
+  },
+  {
+    "url": "https://www.vikingrivercruises.com/cruise-destinations/europe/index.html",
+    "category": "RETIREMENT",
+    "intent": 1661
+  },
+  {
+    "url": "https://www.amawaterways.com/destinations/europe",
+    "category": "RETIREMENT",
+    "intent": 1661
+  },
+  {
+    "url": "https://www.roadscholar.org/find-an-adventure/",
+    "category": "RETIREMENT",
+    "intent": 1671
+  },
+  {
+    "url": "https://www.55places.com/florida",
+    "category": "RETIREMENT",
+    "intent": 1590
+  },
+  {
+    "url": "https://www.delwebb.com/homes/florida",
+    "category": "RETIREMENT",
+    "intent": 1590
+  },
+  {
+    "url": "https://www.gamestop.com/video-games/nintendo-switch",
+    "category": "GAMING",
+    "intent": 971
+  },
+  {
+    "url": "https://www.nintendo.com/us/gaming-systems/switch-2/",
+    "category": "GAMING",
+    "intent": 971
+  },
+  {
+    "url": "https://www.playstation.com/en-us/ps-plus/",
+    "category": "GAMING",
+    "intent": 1616
+  },
+  {
+    "url": "https://www.xbox.com/en-US/xbox-game-pass",
+    "category": "GAMING",
+    "intent": 1616
+  },
+  {
+    "url": "https://www.razer.com/pc/gaming-mice",
+    "category": "GAMING",
+    "intent": 970
+  },
+  {
+    "url": "https://www.logitechg.com/en-us/shop/c/gaming-mice",
+    "category": "GAMING",
+    "intent": 970
+  },
+  {
+    "url": "https://www.dell.com/en-us/shop/alienware/gaming",
+    "category": "GAMING",
+    "intent": 953
+  },
+  {
+    "url": "https://steelseries.com/gaming-headsets",
+    "category": "GAMING",
+    "intent": 946
+  },
+  {
+    "url": "https://www.humblebundle.com/store",
+    "category": "GAMING",
+    "intent": 1616
+  },
+  {
+    "url": "https://www.deere.com/en-us/products-and-solutions/tractors/compact-tractors",
+    "category": "AGRICULTURE",
+    "intent": 1429
+  },
+  {
+    "url": "https://www.kubotausa.com/tractors",
+    "category": "AGRICULTURE",
+    "intent": 1429
+  },
+  {
+    "url": "https://www.caseih.com/en-us/unitedstates/products/tractors",
+    "category": "AGRICULTURE",
+    "intent": 1429
+  },
+  {
+    "url": "https://www.johnnyseeds.com/vegetables/",
+    "category": "AGRICULTURE",
+    "intent": 1338
+  },
+  {
+    "url": "https://www.burpee.com/collections/vegetables",
+    "category": "AGRICULTURE",
+    "intent": 1338
+  },
+  {
+    "url": "https://www.mcmurrayhatchery.com/chicks.html",
+    "category": "AGRICULTURE",
+    "intent": 1429
+  },
+  {
+    "url": "https://www.purinamills.com/chicken-feed",
+    "category": "AGRICULTURE",
+    "intent": 1429
+  },
+  {
+    "url": "https://www.premier1supplies.com/c/fencing",
+    "category": "AGRICULTURE",
+    "intent": 1435
+  },
+  {
+    "url": "https://www.premier1supplies.com/c/poultry-supplies",
+    "category": "AGRICULTURE",
+    "intent": 1429
+  },
+  {
+    "url": "https://www.shopbop.com/clothing-jeans/br/v=1/13377.htm",
+    "category": "FASHION",
+    "intent": 923
+  },
+  {
+    "url": "https://www.aritzia.com/us/en/clothing/dresses",
+    "category": "FASHION",
+    "intent": 923
+  },
+  {
+    "url": "https://www.quince.com/shop/women/sweaters",
+    "category": "FASHION",
+    "intent": 923
+  },
+  {
+    "url": "https://www.ralphlauren.com/men-clothing",
+    "category": "FASHION",
+    "intent": 922
+  },
+  {
+    "url": "https://www.skechers.com/women/shoes/",
+    "category": "FASHION",
+    "intent": 930
+  },
+  {
+    "url": "https://www.toryburch.com/en-us/handbags/",
+    "category": "FASHION",
+    "intent": 932
+  },
+  {
+    "url": "https://www.bluenile.com/jewelry/rings",
+    "category": "FASHION",
+    "intent": 933
+  },
+  {
+    "url": "https://www.fossil.com/en-us/watches/",
+    "category": "FASHION",
+    "intent": 933
+  },
+  {
+    "url": "https://www.target.com/c/women-s-clothing/-/N-5xtd3",
+    "category": "FASHION",
+    "intent": 923
+  },
+  {
+    "url": "https://www.coursera.org/degrees",
+    "category": "ACADEMIC",
+    "intent": 1374
+  },
+  {
+    "url": "https://asuonline.asu.edu/online-degree-programs/",
+    "category": "ACADEMIC",
+    "intent": 1374
+  },
+  {
+    "url": "https://www.wgu.edu/online-it-degrees.html",
+    "category": "ACADEMIC",
+    "intent": 1374
+  },
+  {
+    "url": "https://www.udacity.com/catalog",
+    "category": "ACADEMIC",
+    "intent": 1374
+  },
+  {
+    "url": "https://www.datacamp.com/courses-all",
+    "category": "ACADEMIC",
+    "intent": 1374
+  },
+  {
+    "url": "https://www.vitalsource.com/textbooks",
+    "category": "ACADEMIC",
+    "intent": 1360
+  },
+  {
+    "url": "https://www.pearson.com/en-us/pearsonplus.html",
+    "category": "ACADEMIC",
+    "intent": 1360
+  },
+  {
+    "url": "https://www.manhattanprep.com/gmat/",
+    "category": "ACADEMIC",
+    "intent": 1375
+  },
+  {
+    "url": "https://www.princetonreview.com/college/sat-test-prep",
+    "category": "ACADEMIC",
+    "intent": 1375
+  },
+  {
+    "url": "https://www.zillow.com/austin-tx/",
+    "category": "REAL_ESTATE",
+    "intent": 1588
+  },
+  {
+    "url": "https://www.redfin.com/city/30818/TX/Austin",
+    "category": "REAL_ESTATE",
+    "intent": 1588
+  },
+  {
+    "url": "https://www.coldwellbankerhomes.com/ca/san-diego/",
+    "category": "REAL_ESTATE",
+    "intent": 1588
+  },
+  {
+    "url": "https://www.rent.com/illinois/chicago-apartments",
+    "category": "REAL_ESTATE",
+    "intent": 1587
+  },
+  {
+    "url": "https://hotpads.com/atlanta-ga/apartments-for-rent",
+    "category": "REAL_ESTATE",
+    "intent": 1587
+  },
+  {
+    "url": "https://www.chase.com/personal/mortgage/mortgage-rates",
+    "category": "REAL_ESTATE",
+    "intent": 1394
+  },
+  {
+    "url": "https://www.bankofamerica.com/mortgage/mortgage-rates/",
+    "category": "REAL_ESTATE",
+    "intent": 1394
+  },
+  {
+    "url": "https://www.statefarm.com/insurance/homeowners",
+    "category": "REAL_ESTATE",
+    "intent": 1391
+  },
+  {
+    "url": "https://www.lemonade.com/homeowners",
+    "category": "REAL_ESTATE",
+    "intent": 1391
+  },
+  {
+    "url": "https://www.surlatable.com/cookware-2/",
+    "category": "COOKING",
+    "intent": 1337
+  },
+  {
+    "url": "https://www.lecreuset.com/cookware.html",
+    "category": "COOKING",
+    "intent": 1337
+  },
+  {
+    "url": "https://www.all-clad.com/cookware.html",
+    "category": "COOKING",
+    "intent": 1337
+  },
+  {
+    "url": "https://madeincookware.com/collections/cookware",
+    "category": "COOKING",
+    "intent": 1337
+  },
+  {
+    "url": "https://www.zwilling.com/us/knives/",
+    "category": "COOKING",
+    "intent": 1337
+  },
+  {
+    "url": "https://www.cutco.com/shop/kitchen-knives",
+    "category": "COOKING",
+    "intent": 1337
+  },
+  {
+    "url": "https://www.breville.com/en-us/shop/espresso",
+    "category": "COOKING",
+    "intent": 1297
+  },
+  {
+    "url": "https://www.vitamix.com/us/en_us/shop/blenders",
+    "category": "COOKING",
+    "intent": 1290
+  },
+  {
+    "url": "https://shop.kingarthurbaking.com/ingredients",
+    "category": "COOKING",
+    "intent": 1047
+  },
+  {
+    "url": "https://www.academy.com/c/sports/basketball",
+    "category": "SPORTS",
+    "intent": 1621
+  },
+  {
+    "url": "https://www.academy.com/c/fan-shop/nfl",
+    "category": "SPORTS",
+    "intent": 927
+  },
+  {
+    "url": "https://www.purehockey.com/c/hockey-skates",
+    "category": "SPORTS",
+    "intent": 1623
+  },
+  {
+    "url": "https://www.tennis-warehouse.com/TennisRacquets.html",
+    "category": "SPORTS",
+    "intent": 1628
+  },
+  {
+    "url": "https://www.pgatoursuperstore.com/golf-clubs/",
+    "category": "SPORTS",
+    "intent": 1642
+  },
+  {
+    "url": "https://www.soccer.com/shop/products/footwear/soccer-cleats",
+    "category": "SPORTS",
+    "intent": 1627
+  },
+  {
+    "url": "https://www.playbaseball.com/l/fielding-gloves/-/ZD0yJmM9MjEw",
+    "category": "SPORTS",
+    "intent": 1620
+  },
+  {
+    "url": "https://www.ticketmaster.com/discover/sports",
+    "category": "SPORTS",
+    "intent": 786
+  },
+  {
+    "url": "https://www.mlb.com/tickets",
+    "category": "SPORTS",
+    "intent": 786
+  },
+  {
+    "url": "https://personal.chase.com/personal/checking",
+    "category": "FINANCE",
+    "intent": 1385
+  },
+  {
+    "url": "https://www.ally.com/bank/online-savings-account/",
+    "category": "FINANCE",
+    "intent": 1385
+  },
+  {
+    "url": "https://www.marcus.com/us/en/savings/high-yield-savings",
+    "category": "FINANCE",
+    "intent": 1385
+  },
+  {
+    "url": "https://www.capitalone.com/credit-cards/",
+    "category": "FINANCE",
+    "intent": 1388
+  },
+  {
+    "url": "https://www.americanexpress.com/us/credit-cards/",
+    "category": "FINANCE",
+    "intent": 1388
+  },
+  {
+    "url": "https://www.discover.com/credit-cards/",
+    "category": "FINANCE",
+    "intent": 1388
+  },
+  {
+    "url": "https://us.etrade.com/what-we-offer/our-accounts",
+    "category": "FINANCE",
+    "intent": 1397
+  },
+  {
+    "url": "https://www.schwab.com/brokerage",
+    "category": "FINANCE",
+    "intent": 1397
+  },
+  {
+    "url": "https://turbotax.intuit.com/personal-taxes/online/",
+    "category": "FINANCE",
+    "intent": 1399
+  },
+  {
+    "url": "https://www.booking.com/city/us/new-york.html",
+    "category": "TRAVEL",
+    "intent": 1666
+  },
+  {
+    "url": "https://www.hilton.com/en/locations/usa/florida/orlando/",
+    "category": "TRAVEL",
+    "intent": 1666
+  },
+  {
+    "url": "https://www.priceline.com/hotels",
+    "category": "TRAVEL",
+    "intent": 1666
+  },
+  {
+    "url": "https://www.kayak.com/flight-routes/New-York-NYC/London-LON",
+    "category": "TRAVEL",
+    "intent": 1651
+  },
+  {
+    "url": "https://www.southwest.com/en/flights/flights-to-hawaii",
+    "category": "TRAVEL",
+    "intent": 1651
+  },
+  {
+    "url": "https://www.ncl.com/cruise-destinations/alaska-cruises",
+    "category": "TRAVEL",
+    "intent": 1661
+  },
+  {
+    "url": "https://www.avis.com/en/locations/nam/us/fl/orlando",
+    "category": "TRAVEL",
+    "intent": 1652
+  },
+  {
+    "url": "https://shop.samsonite.com/luggage/",
+    "category": "TRAVEL",
+    "intent": 1367
+  },
+  {
+    "url": "https://www.apple.com/iphone/",
+    "category": "TECHNOLOGY",
+    "intent": 961
+  },
+  {
+    "url": "https://www.samsung.com/us/smartphones/",
+    "category": "TECHNOLOGY",
+    "intent": 961
+  },
+  {
+    "url": "https://www.lenovo.com/us/en/laptops/",
+    "category": "TECHNOLOGY",
+    "intent": 954
+  },
+  {
+    "url": "https://www.dell.com/en-us/shop/laptops/scr/laptop",
+    "category": "TECHNOLOGY",
+    "intent": 954
+  },
+  {
+    "url": "https://www.lg.com/us/tvs",
+    "category": "TECHNOLOGY",
+    "intent": 966
+  },
+  {
+    "url": "https://www.vizio.com/en/shop/tv.html",
+    "category": "TECHNOLOGY",
+    "intent": 966
+  },
+  {
+    "url": "https://ring.com/collections/home-security-cameras",
+    "category": "TECHNOLOGY",
+    "intent": 964
+  },
+  {
+    "url": "https://www.ecobee.com/en-us/smart-thermostats/",
+    "category": "TECHNOLOGY",
+    "intent": 1439
+  },
+  {
+    "url": "https://www.microsoft.com/en-us/microsoft-365/buy/compare-all-microsoft-365-products",
+    "category": "TECHNOLOGY",
+    "intent": 1614
+  },
+  {
+    "url": "https://www.petco.com/category/dog/dog-food",
+    "category": "PETS",
+    "intent": 1281
+  },
+  {
+    "url": "https://www.petco.com/category/fish",
+    "category": "PETS",
+    "intent": 1282
+  },
+  {
+    "url": "https://www.petsmart.com/cat",
+    "category": "PETS",
+    "intent": 1282
+  },
+  {
+    "url": "https://www.kaytee.com/all-products",
+    "category": "PETS",
+    "intent": 1281
+  },
+  {
+    "url": "https://www.litter-robot.com/litter-robot.html",
+    "category": "PETS",
+    "intent": 1280
+  },
+  {
+    "url": "https://www.thefarmersdog.com/",
+    "category": "PETS",
+    "intent": 1281
+  },
+  {
+    "url": "https://www.lemonade.com/pet",
+    "category": "PETS",
+    "intent": 1389
+  },
+  {
+    "url": "https://www.embracepetinsurance.com/coverage",
+    "category": "PETS",
+    "intent": 1389
+  },
+  {
+    "url": "https://www.petsbest.com/coverage",
+    "category": "PETS",
+    "intent": 1389
+  },
+  {
+    "url": "https://www.behr.com/products/paint/interior-paint",
+    "category": "HOME_IMPROVEMENT",
+    "intent": 1432
+  },
+  {
+    "url": "https://www.sherwin-williams.com/en-us/color/color-family",
+    "category": "HOME_IMPROVEMENT",
+    "intent": 1432
+  },
+  {
+    "url": "https://www.harborfreight.com/hand-tools.html",
+    "category": "HOME_IMPROVEMENT",
+    "intent": 1446
+  },
+  {
+    "url": "https://www.harborfreight.com/lawn-garden.html",
+    "category": "HOME_IMPROVEMENT",
+    "intent": 1338
+  },
+  {
+    "url": "https://www.flooranddecor.com/tile",
+    "category": "HOME_IMPROVEMENT",
+    "intent": 1430
+  },
+  {
+    "url": "https://www.ikea.com/us/en/cat/sofas-sectionals-fu003/",
+    "category": "HOME_IMPROVEMENT",
+    "intent": 1418
+  },
+  {
+    "url": "https://www.ikea.com/us/en/cat/outdoor-patio-furniture-od003/",
+    "category": "HOME_IMPROVEMENT",
+    "intent": 1416
+  },
+  {
+    "url": "https://www.ajmadison.com/refrigerators/",
+    "category": "HOME_IMPROVEMENT",
+    "intent": 1309
+  },
+  {
+    "url": "https://www.ulta.com/shop/makeup",
+    "category": "BEAUTY",
+    "intent": 1181
+  },
+  {
+    "url": "https://www.sallybeauty.com/hair-care/",
+    "category": "BEAUTY",
+    "intent": 1196
+  },
+  {
+    "url": "https://www.ulta.com/shop/skin-care",
+    "category": "BEAUTY",
+    "intent": 1217
+  },
+  {
+    "url": "https://www.fragrancenet.com/fragrances",
+    "category": "BEAUTY",
+    "intent": 1188
+  },
+  {
+    "url": "https://www.bathandbodyworks.com/c/body-care",
+    "category": "BEAUTY",
+    "intent": 1216
+  },
+  {
+    "url": "https://www.dermstore.com/c/skin-care/",
+    "category": "BEAUTY",
+    "intent": 1217
+  },
+  {
+    "url": "https://www.maybelline.com/face-makeup",
+    "category": "BEAUTY",
+    "intent": 1184
+  },
+  {
+    "url": "https://www.cerave.com/skincare",
+    "category": "BEAUTY",
+    "intent": 1217
+  },
+  {
+    "url": "https://reverb.com/cat/electric-guitars--1",
+    "category": "MUSIC",
+    "intent": 1473
+  },
+  {
+    "url": "https://usa.yamaha.com/musical-instruments/pianos/",
+    "category": "MUSIC",
+    "intent": 1473
+  },
+  {
+    "url": "https://www.amoeba.com/music/vinyl/",
+    "category": "MUSIC",
+    "intent": 1361
+  },
+  {
+    "url": "https://www.spotify.com/us/premium/",
+    "category": "MUSIC",
+    "intent": 800
+  },
+  {
+    "url": "https://www.apple.com/apple-music/",
+    "category": "MUSIC",
+    "intent": 800
+  },
+  {
+    "url": "https://www.livenation.com/",
+    "category": "MUSIC",
+    "intent": 783
+  },
+  {
+    "url": "https://www.sweetwater.com/c590--Solid_Body_Guitars",
+    "category": "MUSIC",
+    "intent": 1473
+  },
+  {
+    "url": "https://www.ticketmaster.com/discover/concerts",
+    "category": "MUSIC",
+    "intent": 783
+  },
+  {
+    "url": "https://www.roadrunnersports.com/category/mens/shoes/running",
+    "category": "FITNESS",
+    "intent": 930
+  },
+  {
+    "url": "https://www.roguefitness.com/conditioning",
+    "category": "FITNESS",
+    "intent": 1633
+  },
+  {
+    "url": "https://www.bowflex.com/pages/explore-strength-machines",
+    "category": "FITNESS",
+    "intent": 1633
+  },
+  {
+    "url": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+    "category": "FITNESS",
+    "intent": 942
+  },
+  {
+    "url": "https://www.nike.com/w/mens-running-shoes-37v7jznik1zy7ok",
+    "category": "FITNESS",
+    "intent": 930
+  },
+  {
+    "url": "https://www.saucony.com/en/mens-running/",
+    "category": "FITNESS",
+    "intent": 930
+  },
+  {
+    "url": "https://www.planetfitness.com/gym-memberships",
+    "category": "FITNESS",
+    "intent": 1593
+  },
+  {
+    "url": "https://www.24hourfitness.com/membership/membership-options/",
+    "category": "FITNESS",
+    "intent": 1593
+  },
+  {
+    "url": "https://www.sling.com/",
+    "category": "ENTERTAINMENT",
+    "intent": 800
+  },
+  {
+    "url": "https://www.hbomax.com/",
+    "category": "ENTERTAINMENT",
+    "intent": 800
+  },
+  {
+    "url": "https://www.hulu.com/welcome",
+    "category": "ENTERTAINMENT",
+    "intent": 800
+  },
+  {
+    "url": "https://www.fandango.com/",
+    "category": "ENTERTAINMENT",
+    "intent": 787
+  },
+  {
+    "url": "https://bookshop.org/categories/m/fiction",
+    "category": "ENTERTAINMENT",
+    "intent": 1360
+  },
+  {
+    "url": "https://www.broadway.com/shows/tickets/",
+    "category": "ENTERTAINMENT",
+    "intent": 784
+  },
+  {
+    "url": "https://www.miniaturemarket.com/board-games.html",
+    "category": "ENTERTAINMENT",
+    "intent": 1363
+  },
+  {
+    "url": "https://www.barnesandnoble.com/collections/books/bestselling-books",
+    "category": "ENTERTAINMENT",
+    "intent": 1360
+  },
+  {
+    "url": "https://www.homechef.com/",
+    "category": "FOOD",
+    "intent": 1405
+  },
+  {
+    "url": "https://www.marleyspoon.com/menu",
+    "category": "FOOD",
+    "intent": 1405
+  },
+  {
+    "url": "https://www.factor75.com/plans",
+    "category": "FOOD",
+    "intent": 1405
+  },
+  {
+    "url": "https://thrivemarket.com/",
+    "category": "FOOD",
+    "intent": 902
+  },
+  {
+    "url": "https://www.dominos.com/en/pages/order/menu",
+    "category": "FOOD",
+    "intent": 1404
+  },
+  {
+    "url": "https://www.adagio.com/",
+    "category": "FOOD",
+    "intent": 980
+  },
+  {
+    "url": "https://www.instacart.com/",
+    "category": "FOOD",
+    "intent": 1405
+  },
+  {
+    "url": "https://www.illy.com/en-us/coffee",
+    "category": "FOOD",
+    "intent": 977
+  },
+  {
+    "url": "https://www.vistaprint.com/business-cards",
+    "category": "BUSINESS",
+    "intent": 897
+  },
+  {
+    "url": "https://www.bluehost.com/web-hosting",
+    "category": "BUSINESS",
+    "intent": 1679
+  },
+  {
+    "url": "https://www.hostinger.com/web-hosting",
+    "category": "BUSINESS",
+    "intent": 1679
+  },
+  {
+    "url": "https://www.officedepot.com/b/office-supplies/N-1676",
+    "category": "BUSINESS",
+    "intent": 1269
+  },
+  {
+    "url": "https://slack.com/pricing",
+    "category": "BUSINESS",
+    "intent": 1615
+  },
+  {
+    "url": "https://www.moo.com/us/business-cards",
+    "category": "BUSINESS",
+    "intent": 897
+  },
+  {
+    "url": "https://workspace.google.com/pricing",
+    "category": "BUSINESS",
+    "intent": 1614
+  },
+  {
+    "url": "https://zoom.us/pricing",
+    "category": "BUSINESS",
+    "intent": 1605
+  },
+  {
+    "url": "https://www.campingworld.com/c/camping-outdoors",
+    "category": "OUTDOOR_RECREATION",
+    "intent": 1637
+  },
+  {
+    "url": "https://store.usgs.gov/recreational-passes",
+    "category": "OUTDOOR_RECREATION",
+    "intent": 792
+  },
+  {
+    "url": "https://www.mountainwarehouse.com/us/camping/tents/",
+    "category": "OUTDOOR_RECREATION",
+    "intent": 1637
+  },
+  {
+    "url": "https://www.hobie.com/kayaks/",
+    "category": "OUTDOOR_RECREATION",
+    "intent": 1636
+  },
+  {
+    "url": "https://www.trekbikes.com/us/en_US/bikes/c/B100/",
+    "category": "OUTDOOR_RECREATION",
+    "intent": 1639
+  },
+  {
+    "url": "https://www.cannondale.com/en-us/bikes",
+    "category": "OUTDOOR_RECREATION",
+    "intent": 1639
+  },
+  {
+    "url": "https://www.tackledirect.com/rods.html",
+    "category": "OUTDOOR_RECREATION",
+    "intent": 1641
+  },
+  {
+    "url": "https://www.orvis.com/fly-fishing",
+    "category": "OUTDOOR_RECREATION",
+    "intent": 1641
+  },
+  {
+    "url": "https://www.dickblick.com/categories/painting/",
+    "category": "CRAFTS",
+    "intent": 1472
+  },
+  {
+    "url": "https://www.dickblick.com/categories/crafts/",
+    "category": "CRAFTS",
+    "intent": 1472
+  },
+  {
+    "url": "https://www.jerrysartarama.com/paints-mediums",
+    "category": "CRAFTS",
+    "intent": 1472
+  },
+  {
+    "url": "https://www.yarn.com/",
+    "category": "CRAFTS",
+    "intent": 1472
+  },
+  {
+    "url": "https://www.crochet.com/yarn/view-all-yarns/c/500198",
+    "category": "CRAFTS",
+    "intent": 1472
+  },
+  {
+    "url": "https://squadron.com/non-military-kits/",
+    "category": "CRAFTS",
+    "intent": 1472
+  },
+  {
+    "url": "https://megahobby.com/",
+    "category": "CRAFTS",
+    "intent": 1472
+  },
+  {
+    "url": "https://www.brother-usa.com/c/shop/sewing-embroidery/sewing",
+    "category": "CRAFTS",
+    "intent": 1472
+  },
+  {
+    "url": "https://www.myheritage.com/pricing",
+    "category": "HISTORY",
+    "intent": 1381
+  },
+  {
+    "url": "https://www.penguinrandomhouse.com/books/history/",
+    "category": "HISTORY",
+    "intent": 1360
+  },
+  {
+    "url": "https://www.ancestry.com/offers/subscribe",
+    "category": "HISTORY",
+    "intent": 1381
+  },
+  {
+    "url": "https://engage.metmuseum.org/admission",
+    "category": "HISTORY",
+    "intent": 785
+  },
+  {
+    "url": "https://www.booksamillion.com/history",
+    "category": "HISTORY",
+    "intent": 1360
+  },
+  {
+    "url": "https://www.colonialwilliamsburg.org/visit/tickets-passes/",
+    "category": "HISTORY",
+    "intent": 785
+  },
+  {
+    "url": "https://www.monticello.org/visit/tickets-tours/",
+    "category": "HISTORY",
+    "intent": 785
+  },
+  {
+    "url": "https://alcatrazcitycruises.com/tickets/",
+    "category": "HISTORY",
+    "intent": 1671
+  },
+  {
+    "url": "https://www.bhphotovideo.com/c/browse/Telescopes-Astronomy/ci/3389",
+    "category": "SCIENCE",
+    "intent": 908
+  },
+  {
+    "url": "https://www.highpointscientific.com/telescopes",
+    "category": "SCIENCE",
+    "intent": 908
+  },
+  {
+    "url": "https://www.highpointscientific.com/binoculars-and-microscopes/microscopes",
+    "category": "SCIENCE",
+    "intent": 908
+  },
+  {
+    "url": "https://agenaastro.com/telescopes.html",
+    "category": "SCIENCE",
+    "intent": 908
+  },
+  {
+    "url": "https://www.homesciencetools.com/science-kits/",
+    "category": "SCIENCE",
+    "intent": 1366
+  },
+  {
+    "url": "https://www.homesciencetools.com/microscopes/",
+    "category": "SCIENCE",
+    "intent": 908
+  },
+  {
+    "url": "https://www.kiwico.com/us/store/cp/chemistry-sets",
+    "category": "SCIENCE",
+    "intent": 1366
+  },
+  {
+    "url": "https://www.microscope.com/all-products/laboratory-equipment",
+    "category": "SCIENCE",
+    "intent": 908
+  },
+  {
+    "url": "https://www.sunrun.com/solar-panels",
+    "category": "ENVIRONMENT",
+    "intent": 1482
+  },
+  {
+    "url": "https://enphase.com/homeowners",
+    "category": "ENVIRONMENT",
+    "intent": 1443
+  },
+  {
+    "url": "https://rivian.com/r1s",
+    "category": "ENVIRONMENT",
+    "intent": 824
+  },
+  {
+    "url": "https://www.lennox.com/residential/products/heating-cooling/heat-pumps",
+    "category": "ENVIRONMENT",
+    "intent": 1439
+  },
+  {
+    "url": "https://www.trekbikes.com/us/en_US/bikes/electric-bikes/c/B507/",
+    "category": "ENVIRONMENT",
+    "intent": 1639
+  },
+  {
+    "url": "https://www.backmarket.com/en-us",
+    "category": "ENVIRONMENT",
+    "intent": 961
+  },
+  {
+    "url": "https://www.apple.com/shop/refurbished",
+    "category": "ENVIRONMENT",
+    "intent": 942
+  },
+  {
+    "url": "https://www.hyundaiusa.com/us/en/vehicles/ioniq-5",
+    "category": "ENVIRONMENT",
+    "intent": 824
+  },
+  {
+    "url": "https://www.azazie.com/all/wedding-dresses",
+    "category": "RELATIONSHIPS_DATING",
+    "intent": 924
+  },
+  {
+    "url": "https://www.davidsbridal.com/brides/wedding-dresses",
+    "category": "RELATIONSHIPS_DATING",
+    "intent": 924
+  },
+  {
+    "url": "https://www.ritani.com/collections/engagement-rings",
+    "category": "RELATIONSHIPS_DATING",
+    "intent": 933
+  },
+  {
+    "url": "https://www.zola.com/wedding-registry",
+    "category": "RELATIONSHIPS_DATING",
+    "intent": 1505
+  },
+  {
+    "url": "https://www.birdygrey.com/collections/bridesmaid-dresses",
+    "category": "RELATIONSHIPS_DATING",
+    "intent": 924
+  },
+  {
+    "url": "https://www.bluenile.com/wedding-rings",
+    "category": "RELATIONSHIPS_DATING",
+    "intent": 933
+  },
+  {
+    "url": "https://www.minted.com/category/wedding/wedding-invitations",
+    "category": "RELATIONSHIPS_DATING",
+    "intent": 1505
+  },
+  {
+    "url": "https://www.zales.com/engagement-rings",
+    "category": "RELATIONSHIPS_DATING",
+    "intent": 933
   }
 ]

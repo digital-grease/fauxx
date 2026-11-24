@@ -119,7 +119,7 @@ class CookieSaturationModule @Inject constructor(
             metadata = if (entry.isCustom) {
                 LogMetadata.append(metadata, LogMetadata.SOURCE to LogMetadata.SOURCE_CUSTOM)
             } else {
-                metadata
+                LogMetadata.append(metadata, LogMetadata.PURCHASE_INTENT to crawlListManager.describeIntent(entry))
             },
             success = success
         )

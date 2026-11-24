@@ -9,6 +9,7 @@ import com.fauxx.data.crawllist.DomainBlocklist
 import com.fauxx.data.db.ActionLogDao
 import com.fauxx.data.db.ActionLogEntity
 import com.fauxx.data.db.CategoryCount
+import com.fauxx.data.db.LogMetadata
 import com.fauxx.data.location.CityCoord
 import com.fauxx.data.location.CityDatabase
 import com.fauxx.data.model.ActionType
@@ -315,7 +316,8 @@ internal class EngineShapeHarness(
     /** Records each logged action at the virtual time the engine logs it. */
     private val actionLogDao = object : ActionLogDao {
         override suspend fun insert(entry: ActionLogEntity): Long {
-            actions += ActionRecord(clock.currentTimeMillis(), entry.actionType, entry.success, entry.category)
+            val landing = LogMetadata.parse(entry.metadata).any { it.first == LogMetadata.PURCHASE_INTENT }
+            actions += ActionRecord(clock.currentTimeMillis(), entry.actionType, entry.success, entry.category, landing)
             return actions.size.toLong()
         }
         override fun observeAll(): Flow<List<ActionLogEntity>> = flowOf(emptyList())

@@ -73,7 +73,9 @@ Each session is one browser visit: a first query, sometimes a few refined follow
 
 ### 2. Ad Pollution
 
-Loads ad-supported pages from the category-weighted crawl list in a background WebView, and now and then visits the platforms' ad-preference dashboards. It never clicks ads or triggers conversions: every load is a plain page visit, so it cannot be mistaken for click fraud.
+Loads ad-supported pages from the category-weighted crawl list in a background WebView, and now and then visits the platforms' ad-preference dashboards. It never clicks ads, adds anything to a cart or triggers conversions: every load is a plain page view, so it cannot be mistaken for click fraud.
+
+**Advertisers' landing pages:** part of the crawl list is advertisers' own pages in the decoy's interests, such as a shop's category page or a service's plans page, where the advertisers' retargeting pixels record a purchase intent. Each one is tagged with the segment it signals in the [IAB Audience Taxonomy](https://github.com/InteractiveAdvertisingBureau/Taxonomies), the taxonomy audience segments are bought and sold by, and the log shows it. Each persona sends about a fifth of its crawl-list visits there: shops take 18% of real browsing outside search, social networks and news. No landing page is about a sensitive purchase: health and medicine, pregnancy and babies, debt and payday loans, legal trouble, alcohol, tobacco, gambling, firearms, adult products, dating, religion or funerals. On a shop's site, Fauxx never follows a link or a search result into such a section either, since a decoy segment would attach to your real device.
 
 ### 3. Location Spoofing (experimental, off by default, see limits below)
 
@@ -93,13 +95,13 @@ Presents a **stable, coherent device identity** per synthetic persona rather tha
 
 ### 5. Cookie Saturation
 
-Visits categorized URLs (about 2,400 in English, with smaller Spanish, French and Russian lists) in isolated background WebViews, accumulating tracker cookies across diverse categories. Each URL load respects a per-domain rate limit (minimum 5 seconds between hits). WebViews are pooled and confined to Fauxx's own WebView data directory, so synthetic traffic never touches your real browser's cookies.
+Visits categorized URLs (about 2,600 in English, with smaller Spanish, French and Russian lists) in isolated background WebViews, accumulating tracker cookies across diverse categories. Each URL load respects a per-domain rate limit (minimum 5 seconds between hits). WebViews are pooled and confined to Fauxx's own WebView data directory, so synthetic traffic never touches your real browser's cookies.
 
 **Per-persona cookie jars:** each synthetic persona browses with a cookie jar, site storage and cache of its own. When Fauxx rotates to a new persona, the browser identity and everything stored under the old one change together, so nothing a tracker stored under one persona can be read back under the next. This needs a recent Android System WebView; where that support is missing, all personas share one jar as before. Every persona still browses from the same phone and the same network address, and Fauxx does not fake the hardware signals a fingerprinting script reads, so a tracker that fingerprints rather than reads cookies can still tell they are one device.
 
 **Category-aware:** URL selection weighted by your targeting engine.
 
-**Reading on within a site:** after a page has loaded, Fauxx often follows one to three of the page's own links to more pages of the same site, as people read on, with a pause on each. It clicks the page's real links, so each page is reached the way a person reaches it, and it skips account, login, cart, sharing and file links. How often and how far is the persona's habit; it reads on less at High and not at all at Max, where the rate needs every visit short. A visit that reads on counts as one action, so the rate stays the same, but it loads more pages.
+**Reading on within a site:** after a page has loaded, Fauxx often follows one to three of the page's own links to more pages of the same site, as people read on, with a pause on each. It clicks the page's real links, so each page is reached the way a person reaches it, and it skips account, login, cart, wishlist, order, sharing and file links. How often and how far is the persona's habit; it reads on less at High and not at all at Max, where the rate needs every visit short. A visit that reads on counts as one action, so the rate stays the same, but it loads more pages.
 
 **Popular sites more often, and favourites:** within a category, a site is picked by how popular it is on the real web, so big sites come up often and small ones rarely, the way people browse. Popularity comes from the [Tranco](https://tranco-list.eu) top-sites ranking, bundled with the app, so looking it up sends nothing anywhere. Each persona also has 5 to 15 favourite sites from its interests that it keeps going back to, for 30 to 60% of its visits in those categories, as people return to the sites they like.
 

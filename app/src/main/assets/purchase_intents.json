@@ -1,0 +1,967 @@
+{
+ "version": 1,
+ "source": "IAB Tech Lab Audience Taxonomy 1.1, purchase-intent nodes, CC BY 3.0, https://github.com/InteractiveAdvertisingBureau/Taxonomies",
+ "excluded": {
+  "762": "Apps > Health and Fitness Apps",
+  "765": "Apps > Medical Apps",
+  "894": "Business and Industrial > Medical and Biotechnology",
+  "925": "Clothing and Accessories > Clothing > Maternity Clothing",
+  "1034": "Consumer Packaged Goods > Edible > Frozen > Other Frozen > Baby Food",
+  "1037": "Consumer Packaged Goods > Edible > General Food > Baby Food",
+  "1344": "Consumer Packaged Goods > Non-edible > Religious Items",
+  "1346": "Consumer Packaged Goods > Non-edible > Baby and Toddler Products",
+  "1387": "Finance and Insurance > Credit and Debt Repair/Credit Reporting",
+  "1393": "Finance and Insurance > Insurance > Medical Insurance",
+  "1395": "Finance and Insurance > Payday and Emergency Loans",
+  "1408": "Furniture > Baby and Toddler Furniture",
+  "1448": "Health and Medical Services",
+  "1493": "Legal Services",
+  "1498": "Life Events > Baby Showers",
+  "1501": "Life Events > Births",
+  "1502": "Life Events > Funeral Supplies and Services",
+  "1555": "Pharmaceuticals, Conditions, and Symptoms"
+ },
+ "nodes": {
+  "783": {
+   "name": "Arts and Entertainment > Experiences and Events > Concerts",
+   "ancestors": [
+    782,
+    779
+   ]
+  },
+  "784": {
+   "name": "Arts and Entertainment > Experiences and Events > Theatre and Musicals",
+   "ancestors": [
+    782,
+    779
+   ]
+  },
+  "785": {
+   "name": "Arts and Entertainment > Experiences and Events > Museums and Galleries",
+   "ancestors": [
+    782,
+    779
+   ]
+  },
+  "786": {
+   "name": "Arts and Entertainment > Experiences and Events > Sporting Events",
+   "ancestors": [
+    782,
+    779
+   ]
+  },
+  "787": {
+   "name": "Arts and Entertainment > Experiences and Events > Cinemas and Movie Events",
+   "ancestors": [
+    782,
+    779
+   ]
+  },
+  "791": {
+   "name": "Arts and Entertainment > Experiences and Events > Theme and Amusement Parks",
+   "ancestors": [
+    782,
+    779
+   ]
+  },
+  "792": {
+   "name": "Arts and Entertainment > Experiences and Events > Parks and Wildlife",
+   "ancestors": [
+    782,
+    779
+   ]
+  },
+  "800": {
+   "name": "Arts and Entertainment > Music and Video Streaming Services",
+   "ancestors": [
+    779
+   ]
+  },
+  "803": {
+   "name": "Arts and Entertainment > Ticket Services",
+   "ancestors": [
+    779
+   ]
+  },
+  "810": {
+   "name": "Automotive Ownership > New Vehicles > SUV",
+   "ancestors": [
+    806,
+    805
+   ]
+  },
+  "815": {
+   "name": "Automotive Ownership > New Vehicles > Hatchback",
+   "ancestors": [
+    806,
+    805
+   ]
+  },
+  "818": {
+   "name": "Automotive Ownership > New Vehicles > Off-Road Vehicles",
+   "ancestors": [
+    806,
+    805
+   ]
+  },
+  "819": {
+   "name": "Automotive Ownership > New Vehicles > Pickup Trucks",
+   "ancestors": [
+    806,
+    805
+   ]
+  },
+  "824": {
+   "name": "Automotive Ownership > New Vehicles > Green Vehicles",
+   "ancestors": [
+    806,
+    805
+   ]
+  },
+  "829": {
+   "name": "Automotive Ownership > Pre-Owned Vehicles",
+   "ancestors": [
+    805
+   ]
+  },
+  "833": {
+   "name": "Automotive Ownership > Pre-Owned Vehicles > SUV",
+   "ancestors": [
+    829,
+    805
+   ]
+  },
+  "854": {
+   "name": "Automotive Products > Automotive Parts and Accessories",
+   "ancestors": [
+    852
+   ]
+  },
+  "860": {
+   "name": "Automotive Products > Automotive Parts and Accessories > Automotive Tires",
+   "ancestors": [
+    854,
+    852
+   ]
+  },
+  "897": {
+   "name": "Business and Industrial > Printing/Fax/WiFi Services",
+   "ancestors": [
+    871
+   ]
+  },
+  "902": {
+   "name": "Business and Industrial > Retail > Grocery Stores and Supermarkets",
+   "ancestors": [
+    899,
+    871
+   ]
+  },
+  "908": {
+   "name": "Business and Industrial > Science and Laboratory",
+   "ancestors": [
+    871
+   ]
+  },
+  "915": {
+   "name": "Business and Industrial > Telecom Services > Mobile Phone Plans",
+   "ancestors": [
+    911,
+    871
+   ]
+  },
+  "921": {
+   "name": "Clothing and Accessories > Clothing > Children's Clothing",
+   "ancestors": [
+    920,
+    919
+   ]
+  },
+  "922": {
+   "name": "Clothing and Accessories > Clothing > Men's Clothing",
+   "ancestors": [
+    920,
+    919
+   ]
+  },
+  "923": {
+   "name": "Clothing and Accessories > Clothing > Women's Clothing",
+   "ancestors": [
+    920,
+    919
+   ]
+  },
+  "924": {
+   "name": "Clothing and Accessories > Clothing > Wedding Dresses/Bridal Wear/Tuxedos",
+   "ancestors": [
+    920,
+    919
+   ]
+  },
+  "927": {
+   "name": "Clothing and Accessories > Clothing > Sportswear",
+   "ancestors": [
+    920,
+    919
+   ]
+  },
+  "928": {
+   "name": "Clothing and Accessories > Clothing Accessories",
+   "ancestors": [
+    919
+   ]
+  },
+  "930": {
+   "name": "Clothing and Accessories > Footwear",
+   "ancestors": [
+    919
+   ]
+  },
+  "932": {
+   "name": "Clothing and Accessories > Handbags and Wallets",
+   "ancestors": [
+    919
+   ]
+  },
+  "933": {
+   "name": "Clothing and Accessories > Jewelry and Watches",
+   "ancestors": [
+    919
+   ]
+  },
+  "942": {
+   "name": "Consumer Electronics",
+   "ancestors": []
+  },
+  "946": {
+   "name": "Consumer Electronics > Audio > Headphones",
+   "ancestors": [
+    944,
+    942
+   ]
+  },
+  "953": {
+   "name": "Consumer Electronics > Computers",
+   "ancestors": [
+    942
+   ]
+  },
+  "954": {
+   "name": "Consumer Electronics > Computers > Laptops",
+   "ancestors": [
+    953,
+    942
+   ]
+  },
+  "957": {
+   "name": "Consumer Electronics > Electronics Accessories",
+   "ancestors": [
+    942
+   ]
+  },
+  "961": {
+   "name": "Consumer Electronics > Mobile Phones and Accessories",
+   "ancestors": [
+    942
+   ]
+  },
+  "964": {
+   "name": "Consumer Electronics > Security Devices",
+   "ancestors": [
+    942
+   ]
+  },
+  "966": {
+   "name": "Consumer Electronics > Televisions",
+   "ancestors": [
+    942
+   ]
+  },
+  "970": {
+   "name": "Consumer Electronics > Video Game Console Accessories",
+   "ancestors": [
+    942
+   ]
+  },
+  "971": {
+   "name": "Consumer Electronics > Video Games and Consoles",
+   "ancestors": [
+    942
+   ]
+  },
+  "977": {
+   "name": "Consumer Packaged Goods > Edible > Beverages > Coffee & Tea > Coffee",
+   "ancestors": [
+    976,
+    974,
+    973,
+    972
+   ]
+  },
+  "980": {
+   "name": "Consumer Packaged Goods > Edible > Beverages > Coffee & Tea > Tea - Bags/loose",
+   "ancestors": [
+    976,
+    974,
+    973,
+    972
+   ]
+  },
+  "1047": {
+   "name": "Consumer Packaged Goods > Edible > General Food > Baking",
+   "ancestors": [
+    1036,
+    973,
+    972
+   ]
+  },
+  "1064": {
+   "name": "Consumer Packaged Goods > Edible > General Food > Baking > Spices/Seasonings",
+   "ancestors": [
+    1047,
+    1036,
+    973,
+    972
+   ]
+  },
+  "1181": {
+   "name": "Consumer Packaged Goods > Non-edible > Beauty > Cosmetics",
+   "ancestors": [
+    1180,
+    1179,
+    972
+   ]
+  },
+  "1184": {
+   "name": "Consumer Packaged Goods > Non-edible > Beauty > Cosmetics > Facial",
+   "ancestors": [
+    1181,
+    1180,
+    1179,
+    972
+   ]
+  },
+  "1185": {
+   "name": "Consumer Packaged Goods > Non-edible > Beauty > Cosmetics > Lip",
+   "ancestors": [
+    1181,
+    1180,
+    1179,
+    972
+   ]
+  },
+  "1188": {
+   "name": "Consumer Packaged Goods > Non-edible > Beauty > Fragrance",
+   "ancestors": [
+    1180,
+    1179,
+    972
+   ]
+  },
+  "1196": {
+   "name": "Consumer Packaged Goods > Non-edible > Beauty > Hair Care",
+   "ancestors": [
+    1180,
+    1179,
+    972
+   ]
+  },
+  "1204": {
+   "name": "Consumer Packaged Goods > Non-edible > Beauty > Hair Care > Shampoo",
+   "ancestors": [
+    1196,
+    1180,
+    1179,
+    972
+   ]
+  },
+  "1215": {
+   "name": "Consumer Packaged Goods > Non-edible > Beauty > Skin Care",
+   "ancestors": [
+    1180,
+    1179,
+    972
+   ]
+  },
+  "1216": {
+   "name": "Consumer Packaged Goods > Non-edible > Beauty > Skin Care > Hand & Body Lotion",
+   "ancestors": [
+    1215,
+    1180,
+    1179,
+    972
+   ]
+  },
+  "1217": {
+   "name": "Consumer Packaged Goods > Non-edible > Beauty > Skin Care > Skin Care",
+   "ancestors": [
+    1215,
+    1180,
+    1179,
+    972
+   ]
+  },
+  "1267": {
+   "name": "Consumer Packaged Goods > Non-edible > General Merchandise > Office/School Supplies > Children's Art Supplies",
+   "ancestors": [
+    1266,
+    1219,
+    1179,
+    972
+   ]
+  },
+  "1269": {
+   "name": "Consumer Packaged Goods > Non-edible > General Merchandise > Office/School Supplies > Office Products",
+   "ancestors": [
+    1266,
+    1219,
+    1179,
+    972
+   ]
+  },
+  "1280": {
+   "name": "Consumer Packaged Goods > Non-edible > General Merchandise > Pet Care > Cat/Dog Litter",
+   "ancestors": [
+    1279,
+    1219,
+    1179,
+    972
+   ]
+  },
+  "1281": {
+   "name": "Consumer Packaged Goods > Non-edible > General Merchandise > Pet Care > Pet Food",
+   "ancestors": [
+    1279,
+    1219,
+    1179,
+    972
+   ]
+  },
+  "1282": {
+   "name": "Consumer Packaged Goods > Non-edible > General Merchandise > Pet Care > Pet Supplies",
+   "ancestors": [
+    1279,
+    1219,
+    1179,
+    972
+   ]
+  },
+  "1290": {
+   "name": "Consumer Packaged Goods > Non-edible > Household Appliances > Blenders",
+   "ancestors": [
+    1287,
+    1179,
+    972
+   ]
+  },
+  "1297": {
+   "name": "Consumer Packaged Goods > Non-edible > Household Appliances > Espresso Machines",
+   "ancestors": [
+    1287,
+    1179,
+    972
+   ]
+  },
+  "1299": {
+   "name": "Consumer Packaged Goods > Non-edible > Household Appliances > Food Processors",
+   "ancestors": [
+    1287,
+    1179,
+    972
+   ]
+  },
+  "1309": {
+   "name": "Consumer Packaged Goods > Non-edible > Household Appliances > Refrigerators",
+   "ancestors": [
+    1287,
+    1179,
+    972
+   ]
+  },
+  "1337": {
+   "name": "Consumer Packaged Goods > Non-edible > Home and Garden Products > Kitchen and Dining Products",
+   "ancestors": [
+    1332,
+    1179,
+    972
+   ]
+  },
+  "1338": {
+   "name": "Consumer Packaged Goods > Non-edible > Home and Garden Products > Lawn and Garden Products",
+   "ancestors": [
+    1332,
+    1179,
+    972
+   ]
+  },
+  "1341": {
+   "name": "Consumer Packaged Goods > Non-edible > Home and Garden Products > Plants",
+   "ancestors": [
+    1332,
+    1179,
+    972
+   ]
+  },
+  "1345": {
+   "name": "Consumer Packaged Goods > Non-edible > Back to School Supplies",
+   "ancestors": [
+    1179,
+    972
+   ]
+  },
+  "1360": {
+   "name": "Consumer Packaged Goods > Non-edible > Media > Books and Audio Books",
+   "ancestors": [
+    1357,
+    1179,
+    972
+   ]
+  },
+  "1361": {
+   "name": "Consumer Packaged Goods > Non-edible > Media > CDs and Vinyl Records",
+   "ancestors": [
+    1357,
+    1179,
+    972
+   ]
+  },
+  "1363": {
+   "name": "Consumer Packaged Goods > Non-edible > Toys and Games > Games",
+   "ancestors": [
+    1362,
+    1179,
+    972
+   ]
+  },
+  "1366": {
+   "name": "Consumer Packaged Goods > Non-edible > Toys and Games > Toys",
+   "ancestors": [
+    1362,
+    1179,
+    972
+   ]
+  },
+  "1367": {
+   "name": "Consumer Packaged Goods > Non-edible > Luggage and Bags",
+   "ancestors": [
+    1179,
+    972
+   ]
+  },
+  "1369": {
+   "name": "Education and Careers > Adult Education",
+   "ancestors": [
+    1368
+   ]
+  },
+  "1371": {
+   "name": "Education and Careers > Colleges and Universities",
+   "ancestors": [
+    1368
+   ]
+  },
+  "1373": {
+   "name": "Education and Careers > Language Learning",
+   "ancestors": [
+    1368
+   ]
+  },
+  "1374": {
+   "name": "Education and Careers > Online Education",
+   "ancestors": [
+    1368
+   ]
+  },
+  "1375": {
+   "name": "Education and Careers > Study Skills",
+   "ancestors": [
+    1368
+   ]
+  },
+  "1381": {
+   "name": "Family and Parenting > Genealogy and Family Trees",
+   "ancestors": [
+    1377
+   ]
+  },
+  "1382": {
+   "name": "Family and Parenting > Kids Activities",
+   "ancestors": [
+    1377
+   ]
+  },
+  "1385": {
+   "name": "Finance and Insurance > Banking",
+   "ancestors": [
+    1383
+   ]
+  },
+  "1388": {
+   "name": "Finance and Insurance > Credit Cards",
+   "ancestors": [
+    1383
+   ]
+  },
+  "1389": {
+   "name": "Finance and Insurance > Insurance",
+   "ancestors": [
+    1383
+   ]
+  },
+  "1390": {
+   "name": "Finance and Insurance > Insurance > Auto Insurance",
+   "ancestors": [
+    1389,
+    1383
+   ]
+  },
+  "1391": {
+   "name": "Finance and Insurance > Insurance > Home Insurance",
+   "ancestors": [
+    1390,
+    1389,
+    1383
+   ]
+  },
+  "1394": {
+   "name": "Finance and Insurance > Mortgage Lenders and Brokers",
+   "ancestors": [
+    1383
+   ]
+  },
+  "1396": {
+   "name": "Finance and Insurance > Retirement Planning",
+   "ancestors": [
+    1383
+   ]
+  },
+  "1397": {
+   "name": "Finance and Insurance > Stocks and Investments",
+   "ancestors": [
+    1383
+   ]
+  },
+  "1399": {
+   "name": "Finance and Insurance > Tax Preparation Services",
+   "ancestors": [
+    1383
+   ]
+  },
+  "1404": {
+   "name": "Food and Beverage Services > Fast Food",
+   "ancestors": [
+    1400
+   ]
+  },
+  "1405": {
+   "name": "Food and Beverage Services > Food Delivery Services",
+   "ancestors": [
+    1400
+   ]
+  },
+  "1406": {
+   "name": "Food and Beverage Services > Restaurants",
+   "ancestors": [
+    1400
+   ]
+  },
+  "1410": {
+   "name": "Furniture > Beds and Accessories",
+   "ancestors": [
+    1407
+   ]
+  },
+  "1412": {
+   "name": "Furniture > Cabinets and Storage",
+   "ancestors": [
+    1407
+   ]
+  },
+  "1416": {
+   "name": "Furniture > Outdoor Furniture",
+   "ancestors": [
+    1407
+   ]
+  },
+  "1418": {
+   "name": "Furniture > Sofas",
+   "ancestors": [
+    1407
+   ]
+  },
+  "1429": {
+   "name": "Hardware Supplies > Agriculture and Farming Equipment",
+   "ancestors": [
+    1428
+   ]
+  },
+  "1430": {
+   "name": "Hardware Supplies > Building Materials",
+   "ancestors": [
+    1428
+   ]
+  },
+  "1432": {
+   "name": "Hardware Supplies > Building Supplies",
+   "ancestors": [
+    1428
+   ]
+  },
+  "1435": {
+   "name": "Hardware Supplies > Fencing and Barriers",
+   "ancestors": [
+    1428
+   ]
+  },
+  "1439": {
+   "name": "Hardware Supplies > Heating/Ventilation/Air Conditioning",
+   "ancestors": [
+    1428
+   ]
+  },
+  "1443": {
+   "name": "Hardware Supplies > Power and Electrical Supplies",
+   "ancestors": [
+    1428
+   ]
+  },
+  "1446": {
+   "name": "Hardware Supplies > Tools",
+   "ancestors": [
+    1428
+   ]
+  },
+  "1472": {
+   "name": "Hobbies and Interests > Arts and Crafts",
+   "ancestors": [
+    1471
+   ]
+  },
+  "1473": {
+   "name": "Hobbies and Interests > Musical Instruments and Accessories",
+   "ancestors": [
+    1471
+   ]
+  },
+  "1482": {
+   "name": "Home and Garden Services > Gas and Electric Services",
+   "ancestors": [
+    1476
+   ]
+  },
+  "1505": {
+   "name": "Life Events > Wedding Services and Supplies",
+   "ancestors": [
+    1496
+   ]
+  },
+  "1547": {
+   "name": "Office Equipment and Supplies > Office Furniture",
+   "ancestors": [
+    1546
+   ]
+  },
+  "1587": {
+   "name": "Real Estate > Real Estate Rentals",
+   "ancestors": [
+    1585
+   ]
+  },
+  "1588": {
+   "name": "Real Estate > Real Estate Sales",
+   "ancestors": [
+    1585
+   ]
+  },
+  "1590": {
+   "name": "Real Estate > Residential Real Estate",
+   "ancestors": [
+    1585
+   ]
+  },
+  "1593": {
+   "name": "Recreation and Fitness Activities > Gyms and Health Clubs",
+   "ancestors": [
+    1591
+   ]
+  },
+  "1600": {
+   "name": "Software > Computer Software",
+   "ancestors": [
+    1599
+   ]
+  },
+  "1605": {
+   "name": "Software > Computer Software > Web Conferencing",
+   "ancestors": [
+    1600,
+    1599
+   ]
+  },
+  "1612": {
+   "name": "Software > Computer Software > Graphics Software",
+   "ancestors": [
+    1600,
+    1599
+   ]
+  },
+  "1614": {
+   "name": "Software > Computer Software > Productivity Software",
+   "ancestors": [
+    1600,
+    1599
+   ]
+  },
+  "1615": {
+   "name": "Software > Computer Software > Messaging Software",
+   "ancestors": [
+    1600,
+    1599
+   ]
+  },
+  "1616": {
+   "name": "Software > Computer Software > Gaming Software",
+   "ancestors": [
+    1600,
+    1599
+   ]
+  },
+  "1620": {
+   "name": "Sporting Goods > Athletics Equipment > Baseball and Softball Equipment",
+   "ancestors": [
+    1619,
+    1618
+   ]
+  },
+  "1621": {
+   "name": "Sporting Goods > Athletics Equipment > Basketball Equipment",
+   "ancestors": [
+    1619,
+    1618
+   ]
+  },
+  "1623": {
+   "name": "Sporting Goods > Athletics Equipment > Figure Skating and Hockey Equipment",
+   "ancestors": [
+    1619,
+    1618
+   ]
+  },
+  "1627": {
+   "name": "Sporting Goods > Athletics Equipment > Soccer Equipment",
+   "ancestors": [
+    1619,
+    1618
+   ]
+  },
+  "1628": {
+   "name": "Sporting Goods > Athletics Equipment > Tennis Equipment",
+   "ancestors": [
+    1619,
+    1618
+   ]
+  },
+  "1633": {
+   "name": "Sporting Goods > Exercise and Fitness Equipment",
+   "ancestors": [
+    1618
+   ]
+  },
+  "1635": {
+   "name": "Sporting Goods > Outdoor Recreation Equipment",
+   "ancestors": [
+    1618
+   ]
+  },
+  "1636": {
+   "name": "Sporting Goods > Outdoor Recreation Equipment > Boating and Water Sports Equipment",
+   "ancestors": [
+    1635,
+    1618
+   ]
+  },
+  "1637": {
+   "name": "Sporting Goods > Outdoor Recreation Equipment > Camping and Hiking Equipment",
+   "ancestors": [
+    1635,
+    1618
+   ]
+  },
+  "1639": {
+   "name": "Sporting Goods > Outdoor Recreation Equipment > Bicycles and Cycling Equipment",
+   "ancestors": [
+    1635,
+    1618
+   ]
+  },
+  "1641": {
+   "name": "Sporting Goods > Outdoor Recreation Equipment > Fishing Equipment",
+   "ancestors": [
+    1635,
+    1618
+   ]
+  },
+  "1642": {
+   "name": "Sporting Goods > Outdoor Recreation Equipment > Golf Equipment",
+   "ancestors": [
+    1635,
+    1618
+   ]
+  },
+  "1648": {
+   "name": "Sporting Goods > Outdoor Recreation Equipment > Winter Sports Equipment",
+   "ancestors": [
+    1635,
+    1618
+   ]
+  },
+  "1651": {
+   "name": "Travel and Tourism > Air Travel",
+   "ancestors": [
+    1649
+   ]
+  },
+  "1652": {
+   "name": "Travel and Tourism > Auto Rental",
+   "ancestors": [
+    1649
+   ]
+  },
+  "1661": {
+   "name": "Travel and Tourism > Cruise Travel",
+   "ancestors": [
+    1649
+   ]
+  },
+  "1666": {
+   "name": "Travel and Tourism > Hotels and Resorts",
+   "ancestors": [
+    1649
+   ]
+  },
+  "1669": {
+   "name": "Travel and Tourism > Rail Travel",
+   "ancestors": [
+    1649
+   ]
+  },
+  "1671": {
+   "name": "Travel and Tourism > Sightseeing Tours and Activities",
+   "ancestors": [
+    1649
+   ]
+  },
+  "1674": {
+   "name": "Travel and Tourism > Travel Agents and Online Travel Services",
+   "ancestors": [
+    1649
+   ]
+  },
+  "1679": {
+   "name": "Web Services > Web Hosting and Cloud Computing",
+   "ancestors": [
+    1676
+   ]
+  }
+ }
+}
