@@ -1038,12 +1038,6 @@
   "region": "EASTERN_EUROPE"
  },
  {
-  "name": "Krakow, Poland",
-  "lat": 50.0647,
-  "lng": 19.945,
-  "region": "EASTERN_EUROPE"
- },
- {
   "name": "Łódź, Poland",
   "lat": 51.7592,
   "lng": 19.456,
@@ -1339,8 +1333,8 @@
  },
  {
   "name": "Chongqing, China",
-  "lat": 29.4316,
-  "lng": 106.9123,
+  "lat": 29.5603,
+  "lng": 106.5577,
   "region": "ASIA_PACIFIC"
  },
  {
@@ -1357,8 +1351,8 @@
  },
  {
   "name": "Tianjin, China",
-  "lat": 39.3434,
-  "lng": 117.3616,
+  "lat": 39.1422,
+  "lng": 117.1767,
   "region": "ASIA_PACIFIC"
  },
  {
@@ -1525,8 +1519,8 @@
  },
  {
   "name": "Davao, Philippines",
-  "lat": 7.1907,
-  "lng": 125.4553,
+  "lat": 7.0731,
+  "lng": 125.6128,
   "region": "ASIA_PACIFIC"
  },
  {
@@ -2556,12 +2550,6 @@
   "region": "MIDDLE_EAST_AFRICA"
  },
  {
-  "name": "Kinshasa, Democratic Republic of the Congo",
-  "lat": -4.3217,
-  "lng": 15.3222,
-  "region": "MIDDLE_EAST_AFRICA"
- },
- {
   "name": "Lubumbashi, Democratic Republic of the Congo",
   "lat": -11.6609,
   "lng": 27.4794,
@@ -2810,7 +2798,7 @@
  {
   "name": "Honiara, Solomon Islands",
   "lat": -9.4333,
-  "lng": 160.05,
+  "lng": 159.95,
   "region": "ASIA_PACIFIC"
  },
  {
@@ -2833,8 +2821,8 @@
  },
  {
   "name": "Apia, Samoa",
-  "lat": -13.8314,
-  "lng": -171.872,
+  "lat": -13.8333,
+  "lng": -171.7667,
   "region": "ASIA_PACIFIC"
  },
  {
@@ -3018,12 +3006,6 @@
   "region": "WESTERN_EUROPE"
  },
  {
-  "name": "Longyearbyen, Norway",
-  "lat": 78.2232,
-  "lng": 15.6267,
-  "region": "WESTERN_EUROPE"
- },
- {
   "name": "Valletta, Malta",
   "lat": 35.8997,
   "lng": 14.5146,
@@ -3132,12 +3114,6 @@
   "region": "ASIA_PACIFIC"
  },
  {
-  "name": "Naypyidaw, Myanmar",
-  "lat": 19.7633,
-  "lng": 96.0785,
-  "region": "ASIA_PACIFIC"
- },
- {
   "name": "Kandy, Sri Lanka",
   "lat": 7.2906,
   "lng": 80.6337,
@@ -3241,8 +3217,8 @@
  },
  {
   "name": "Goa, India",
-  "lat": 15.2993,
-  "lng": 74.124,
+  "lat": 15.4957,
+  "lng": 73.8262,
   "region": "ASIA_PACIFIC"
  },
  {
@@ -3346,12 +3322,6 @@
   "lat": 40.6553,
   "lng": 109.84,
   "region": "ASIA_PACIFIC"
- },
- {
-  "name": "Medellin, Colombia",
-  "lat": 6.2476,
-  "lng": -75.5658,
-  "region": "COLOMBIA LATIN_AMERICA"
  },
  {
   "name": "Bucaramanga, Colombia",
@@ -3720,12 +3690,6 @@
   "region": "MIDDLE_EAST_AFRICA"
  },
  {
-  "name": "Ndjamena, Chad",
-  "lat": 12.1348,
-  "lng": 15.0557,
-  "region": "MIDDLE_EAST_AFRICA"
- },
- {
   "name": "Kinshasa, DR Congo",
   "lat": -4.3217,
   "lng": 15.3222,
@@ -4004,7 +3968,7 @@
  {
   "name": "Tyumen, Russia",
   "lat": 57.1522,
-  "lng": 68.0,
+  "lng": 65.5272,
   "region": "RUSSIA EASTERN_EUROPE"
  },
  {
@@ -4537,8 +4501,8 @@
  },
  {
   "name": "Pago Pago, American Samoa",
-  "lat": -14.271,
-  "lng": -170.1322,
+  "lat": -14.2781,
+  "lng": -170.7025,
   "region": "ASIA_PACIFIC"
  },
  {
@@ -4620,18 +4584,6 @@
   "region": "LATIN_AMERICA"
  },
  {
-  "name": "Kingstown, Saint Vincent",
-  "lat": 13.16,
-  "lng": -61.2248,
-  "region": "LATIN_AMERICA"
- },
- {
-  "name": "St. John's, Antigua",
-  "lat": 17.1274,
-  "lng": -61.8468,
-  "region": "LATIN_AMERICA"
- },
- {
   "name": "Charlotte Amalie, US Virgin Islands",
   "lat": 18.342,
   "lng": -64.9307,
@@ -4705,8 +4657,8 @@
  },
  {
   "name": "Belize City, Belize",
-  "lat": 17.251,
-  "lng": -88.759,
+  "lat": 17.4995,
+  "lng": -88.1976,
   "region": "LATIN_AMERICA"
  },
  {

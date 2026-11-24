@@ -36,7 +36,7 @@ was left out.
 Mobilewalla's order also lists the sites of political demonstrations while they take place. A
 fixed list cannot follow those.
 
-This runs on a developer machine and takes a few hours for the 806 cities. The app reads only the
+This runs on a developer machine and takes about an hour for the 798 cities. The app reads only the
 asset and never contacts Overture or OpenStreetMap.
 
 Data:
@@ -92,8 +92,8 @@ ROAD_CLASSES = ("primary", "secondary", "tertiary", "unclassified", "pedestrian"
 # kind, or the two together list fewer sensitive places, than these. The sources cover different
 # places (OpenStreetMap: places of worship, schools, social facilities; Overture: clinics, offices,
 # shops), so a city thin in either is probably missing a whole kind of sensitive place. Across the
-# 806 cities of November 2026 the medians are 3,590 Overture places, 1,727 OpenStreetMap places
-# and 778 sensitive places; these cut-offs sit near the tenth percentile.
+# 798 cities of November 2026 the medians are 3,666 Overture places, 1,754 OpenStreetMap places
+# and 788 sensitive places; these cut-offs sit near the tenth percentile.
 LEFT_OUT_MIN_PLACES = 300
 LEFT_OUT_MIN_SENSITIVE = 100
 
@@ -429,14 +429,15 @@ def fetch_city(city: dict) -> dict:
             "core_osm": core_osm, "features": features, "samples": samples}
 
 
-def cache_path(cache: str, name: str) -> str:
-    slug = re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_")
-    digest = hashlib.sha256(name.encode()).hexdigest()[:8]
+def cache_path(cache: str, city: dict) -> str:
+    """Keyed by name and coordinates, so a corrected city is fetched again."""
+    slug = re.sub(r"[^A-Za-z0-9]+", "_", city["name"]).strip("_")
+    digest = hashlib.sha256(f'{city["name"]}|{city["lat"]}|{city["lng"]}'.encode()).hexdigest()[:8]
     return os.path.join(cache, f"{slug}-{digest}.json.gz")
 
 
 def fetch_cached(cache: str, city: dict) -> dict:
-    path = cache_path(cache, city["name"])
+    path = cache_path(cache, city)
     if os.path.exists(path):
         with gzip.open(path, "rt") as f:
             return json.load(f)
