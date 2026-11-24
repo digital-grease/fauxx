@@ -46,8 +46,17 @@ internal data class StreamEvent(
     val isPageLoad: Boolean get() = kind != LoadKind.DNS
 }
 
-/** One action the engine logged, at the time it was logged, with the category it was dispatched in. */
-internal data class ActionRecord(val atMs: Long, val type: ActionType, val success: Boolean, val category: CategoryPool? = null)
+/**
+ * One action the engine logged, at the time it was logged, with the category it was dispatched in.
+ * [landing] marks a visit to an advertiser's landing page (#322 item 7).
+ */
+internal data class ActionRecord(
+    val atMs: Long,
+    val type: ActionType,
+    val success: Boolean,
+    val category: CategoryPool? = null,
+    val landing: Boolean = false,
+)
 
 /**
  * A finished simulation: every observable request and logged action over [days] local days
@@ -122,6 +131,8 @@ internal data class StreamShape(
     val weekendToWeekdayRatio: Double,
     /** Share of successful actions dispatched in the [WEB_TOP_CATEGORIES] (#322 item 8). */
     val webTopCategoryShare: Double,
+    /** Share of successful crawl-list visits (page visits and cookie harvests) on advertisers' landing pages (#322 item 7). */
+    val landingShare: Double,
     /** Share of the DNS module's lookups with no page load within [DNS_BURST_WINDOW_MS]. */
     val standaloneDnsShare: Double,
     /** Share of the DNS module's lookups with another of its lookups within [DNS_PAIR_WINDOW_MS] (#322 item 6). */
@@ -228,6 +239,9 @@ internal data class StreamShape(
                 webTopCategoryShare = share(recording.actions.filter { it.success && it.category != null }) {
                     it.category in WEB_TOP_CATEGORIES
                 },
+                landingShare = share(
+                    recording.actions.filter { it.success && (it.type == ActionType.PAGE_VISIT || it.type == ActionType.COOKIE_HARVEST) }
+                ) { it.landing },
                 firstTwoHoursShare = share(loads) { inWindowPart(it.atMs, recording.allowedStart, recording.allowedEnd) == WindowPart.FIRST_TWO_HOURS },
                 lastHourShare = share(loads) { inWindowPart(it.atMs, recording.allowedStart, recording.allowedEnd) == WindowPart.LAST_HOUR },
                 standaloneDnsShare = standaloneDnsShare(recording.events, loads),

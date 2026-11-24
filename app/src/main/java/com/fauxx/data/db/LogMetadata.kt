@@ -32,6 +32,8 @@ object LogMetadata {
     // E5 (#175) intent-chain search sessions: counts only, never query/link text.
     const val SESSION_QUERIES = "Session queries"
     const val SESSION_LINKS = "Links followed"
+    // #322 item 7: the IAB purchase-intent node an advertiser's landing page signals.
+    const val PURCHASE_INTENT = "Purchase intent"
     // #353: why a page visit failed, as a kind and the raw cause: "dead page, http(404)".
     const val LOAD_FAILURE = "Failure"
     // #328: set when the action drew from the user's own searches or sites. The value is fixed,

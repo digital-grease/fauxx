@@ -39,6 +39,11 @@ internal object ShapeReport {
                 pct(shape.webTopCategoryShare),
                 "${pct(StreamShape.WEB_TOP_CATEGORIES_SHARE)} of the web's topical visits",
             ),
+            Row(
+                "Crawl-list visits on advertisers' landing pages",
+                pct(shape.landingShare),
+                "18% of visits outside search, social and news go to shops",
+            ),
             Row("Searches on the most-used engine", pct(shape.topEngineShare), "100%"),
             Row("Searches with no result clicked", pct(shape.searchNoClickShare), "55%"),
             Row("Searches followed by another within 2 min", pct(shape.reSearchShare), "43%"),
