@@ -79,13 +79,15 @@ Loads ad-supported pages from the category-weighted crawl list in a background W
 
 ### 3. Location Spoofing (experimental, off by default, see limits below)
 
-Uses Android's MockLocationProvider to feed fake GPS coordinates along plausible paths, drawn from a database of about 800 world city centers. Routes are bound to the active persona's region.
+Uses Android's MockLocationProvider to feed fake GPS coordinates along plausible paths, in and around about 800 world cities. Routes are bound to the active persona's region.
 
 **This module does not currently do what its name suggests, and you should not rely on it.** Measured on Android 14: Fauxx registers an additional location provider of its own rather than replacing the system ones, so apps that ask for location the normal way (Play Services fused location, or the standard GPS provider) receive your real location, unaffected. Apps also do not select Fauxx's provider when asking the system to choose one. The fake coordinates are generated correctly and then largely go nowhere.
 
 Two further limits apply even if that is fixed. Android flags every coordinate from a mock provider, so any recipient that checks can discard them with a single call, and that flag cannot be suppressed without root. And spoofing GPS does not affect the other channels that reveal location anyway: your IP address, Wi-Fi and cell scanning, your timezone and SIM, or an address typed into an account.
 
 It is kept, off by default, because the surrounding scaffolding is sound and a future privileged approach could use it. It is not a reason to choose Fauxx.
+
+**Never near a sensitive place:** every spoofed fix keeps at least 150 m from the places whose visits the FTC has barred location data brokers from selling, in its orders against Gravy Analytics, Mobilewalla and Kochava (2025 and 2026): medical facilities, places of worship, schools and childcare, shelters and social services, prisons, union offices, LGBTQ+ venues, and military and police sites. It also keeps away from the sensitive purchases the crawl list avoids, such as pharmacies, law offices, payday lenders and liquor stores. A fake visit there would plant a sensitive inference on your real device. Routes start from points on public main roads and pedestrian streets, never residential ones. The points were checked in advance against [Overture Maps](https://overturemaps.org) and [OpenStreetMap](https://www.openstreetmap.org) data and ship with the app, so nothing is looked up while it runs. A city whose map data is too thin to check is left out: 141 of the 806 today, mostly in Asia, the Middle East and Africa. If no city in the persona's region has a clear point, Fauxx skips the spoof rather than going somewhere else.
 
 **Setup:** Android requires you to designate the mock-location app explicitly. Enable Developer Options (Settings → About phone → tap Build Number 7 times), then Developer Options → "Select mock location app" → Fauxx. The Location Spoofing toggle surfaces this dialog on first enable.
 
@@ -288,6 +290,7 @@ app/src/main/
     ├── persona_templates.json, persona_templates/  # Persona archetypes per locale
     ├── device_templates.json            # Handsets personas can present as
     ├── city_coords.json                 # About 800 city coordinates
+    ├── location_anchors.json            # Spoofing start points clear of sensitive places
     ├── blocklist.json                   # Blocked domains
     ├── demographic_distance_rules.json  # Category weight rules by demographic
     └── platform_category_map.json       # Platform string to CategoryPool mapping
@@ -460,6 +463,8 @@ Play's policies disallow Fauxx's location-spoofing and ad-profile-pollution modu
 Fauxx is licensed under the GNU Affero General Public License v3 (AGPLv3). See [LICENSE](LICENSE) for details.
 
 Site popularity uses the Tranco list (V. Le Pochat, T. Van Goethem, S. Tajalizadehkhoob, M. Korczyński, W. Joosen, "Tranco: A Research-Oriented Top Sites Ranking Hardened Against Manipulation", NDSS 2019), list 46YLX, available at https://tranco-list.eu/list/46YLX.
+
+Location spoofing's start points are derived from Overture Maps Foundation data (release 2026-11-18.0; places under the CDLA Permissive 2.0 license) and from OpenStreetMap data, © OpenStreetMap contributors, available under the Open Database License (https://www.openstreetmap.org/copyright), partly through OpenStreetMap US's Layercake extracts.
 
 By using, modifying, or distributing this software, you agree to the terms of the AGPLv3. In particular, if you run a modified version as a service, you must make the source code available to your users.
 

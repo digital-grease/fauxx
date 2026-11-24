@@ -32,6 +32,19 @@ class CityDatabase @Inject constructor(
         return pool.randomOrNull(random) ?: CityCoord("New York", 40.7128, -74.0060, "US_NORTHEAST")
     }
 
+    /**
+     * A random city that is [eligible], from [regionHint]'s cities when the hint names a region
+     * the database has, otherwise from all cities. Null when no such city is eligible.
+     *
+     * Unlike [randomCity], this never falls back from a known region to other regions or to a
+     * default city. Location Spoofing (#322 item 12) passes only cities with a point clear of
+     * sensitive places, and skips the action rather than spoof outside the persona's region.
+     */
+    fun randomEligibleCity(regionHint: String?, eligible: (CityCoord) -> Boolean): CityCoord? {
+        val inRegion = regionHint?.let { hint -> cities.filter { it.region.contains(hint, ignoreCase = true) } }
+        return inRegion.orEmpty().ifEmpty { cities }.filter(eligible).randomOrNull(random)
+    }
+
     private fun loadCities(): List<CityCoord> {
         return try {
             val json = context.assets.open("city_coords.json")

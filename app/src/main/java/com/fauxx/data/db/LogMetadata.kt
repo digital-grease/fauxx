@@ -28,6 +28,8 @@ object LogMetadata {
     const val ROUTE_POINTS = "Route points"
     const val ROUTE_DISTANCE = "Route distance"
     const val ROUTE_DURATION = "Route duration"
+    // #322 item 12: how close a spoofed route came to the nearest sensitive place.
+    const val SENSITIVE_CLEARANCE = "Nearest sensitive place"
     const val USER_AGENT = "User-Agent"
     // E5 (#175) intent-chain search sessions: counts only, never query/link text.
     const val SESSION_QUERIES = "Session queries"
