@@ -36,6 +36,25 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      # Robolectric downloads its Android runtime jars (android-all-instrumented, about 500 MB for
+      # the SDK levels the tests use) from Maven Central into ~/.m2 at test time, outside the
+      # Gradle cache. Fetched twice per run (here and in the coverage job), they got runners
+      # rate-limited: HTTP 429s and failed downloads that failed every Robolectric test class.
+      # The key changes only with the Robolectric version or the SDK levels the tests ask for.
+      - name: Robolectric cache key
+        id: robolectric
+        run: |
+          version=$(sed -n 's/^robolectric = "\(.*\)"$/\1/p' gradle/libs.versions.toml)
+          sdks=$( { grep -rhoE 'sdk = \[[0-9, ]+\]' app/src/test || true; grep -hE '^\s*(compileSdk|targetSdk) =' app/build.gradle.kts; } | sort -u | sha256sum | cut -c1-12)
+          echo "key=robolectric-${version}-${sdks}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Robolectric's Android runtime jars
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: ${{ steps.robolectric.outputs.key }}
+          restore-keys: robolectric-
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -91,6 +110,21 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: gradle
+
+      # The same Robolectric cache as the build job (see there): this job runs the tests too.
+      - name: Robolectric cache key
+        id: robolectric
+        run: |
+          version=$(sed -n 's/^robolectric = "\(.*\)"$/\1/p' gradle/libs.versions.toml)
+          sdks=$( { grep -rhoE 'sdk = \[[0-9, ]+\]' app/src/test || true; grep -hE '^\s*(compileSdk|targetSdk) =' app/build.gradle.kts; } | sort -u | sha256sum | cut -c1-12)
+          echo "key=robolectric-${version}-${sdks}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Robolectric's Android runtime jars
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: ${{ steps.robolectric.outputs.key }}
+          restore-keys: robolectric-
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
