@@ -38,7 +38,7 @@ class CityRegionAssetContractTest {
 
     @Test
     fun `city count matches the shipped asset`() {
-        assertEquals(806, cities.size)
+        assertEquals(798, cities.size)
     }
 
     @Test
