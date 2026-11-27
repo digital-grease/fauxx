@@ -28,10 +28,16 @@ import kotlin.concurrent.thread
 
 /**
  * The page-rendering setting (#322 item 11) on a real WebView: with a page drawn as if on screen,
- * it gets full-rate animation frames and its CSS animations run; detached, it gets fewer frames
- * and its animations never advance (see VisibilityProbeInstrumentedTest for the full
- * measurement). Covers every mode, drawing with the screen off, and that a WebView once drawn is
- * never handed out detached: taken off its display, it would report its page hidden.
+ * its CSS animations run; detached, they never advance (see VisibilityProbeInstrumentedTest for
+ * the full measurement). Covers every mode, drawing with the screen off, and that a WebView once
+ * drawn is never handed out detached: taken off its display, it would report its page hidden.
+ *
+ * The test tells drawn from detached by the CSS animation, not the frame rate. The probe measured
+ * about 60 animation frames a second for a drawn page and about 17 for a detached one, but a
+ * software renderer, like the emulator in CI, gives a drawn page far fewer: 33 to 69 in 2 s in CI,
+ * and down to 25 on an emulator held to one CPU, while a detached page got 14 to 60. On that
+ * emulator the CSS animation ran 23 to 25 times in 3 s in every drawn measurement, and never in a
+ * detached one.
  */
 @RunWith(AndroidJUnit4::class)
 class OnscreenRenderingInstrumentedTest {
@@ -133,21 +139,26 @@ class OnscreenRenderingInstrumentedTest {
         return JSONObject(body!!).also { Log.i(TAG, it.toString()) }
     }
 
+    /**
+     * Drawn: the CSS animation runs, 30 times in 3 s at its 100 ms period, less the time the page
+     * takes to start. The frame rate depends on the renderer (see the class comment), so it is not
+     * pinned.
+     */
     private fun assertDrawn(what: String, r: JSONObject) {
-        assertTrue("[$what] animation frames in 2 s: ${r.getInt("frames")}", r.getInt("frames") >= 80)
-        assertTrue("[$what] CSS animation iterations: ${r.getInt("iterations")}", r.getInt("iterations") >= 15)
-        assertEquals("[$what] visibility", "visible", r.getString("visibility"))
+        assertTrue("[$what] CSS animation iterations: $r", r.getInt("iterations") >= 15)
+        assertTrue("[$what] animation frames: $r", r.getInt("frames") > 0)
+        assertEquals("[$what] visibility: $r", "visible", r.getString("visibility"))
     }
 
     /**
      * Detached: CSS animations do not run, while the page still reads itself as visible and still
-     * gets frames. The detached frame rate varies (17-30 a second measured), so it is not pinned. A
-     * WebView taken off a display used to report its page hidden with no frames at all.
+     * gets frames. The detached frame rate varies (7 to 30 a second measured), so it is not pinned.
+     * A WebView taken off a display used to report its page hidden with no frames at all.
      */
     private fun assertDetached(what: String, r: JSONObject) {
-        assertTrue("[$what] animation frames in 2 s: ${r.getInt("frames")}", r.getInt("frames") > 0)
-        assertEquals("[$what] CSS animation iterations", 0, r.getInt("iterations"))
-        assertEquals("[$what] visibility", "visible", r.getString("visibility"))
+        assertEquals("[$what] CSS animation iterations: $r", 0, r.getInt("iterations"))
+        assertTrue("[$what] animation frames: $r", r.getInt("frames") > 0)
+        assertEquals("[$what] visibility: $r", "visible", r.getString("visibility"))
     }
 
     private fun setScreen(on: Boolean) {
